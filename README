@@ -1,0 +1,18 @@
+croatoan is a set of bindings to the ncurses terminal library for
+Common Lisp.
+
+It is inspired, but not derived from, cl-ncurses and cl-charms.
+
+Its main goal is to provide a higher-level, lispy/CLOSy interface,
+whereas the existing bindings clone the cryptic C API.
+
+As of now, the library is in an early, but hopefully usable stage. 
+Ncurses is old and huge and it will take a while to cover completely.
+
+The API is not yet stable.
+
+It was tested on Linux, with SBCL 1.1.8 and ncurses 5.9.
+
+The documentation is provided by the examples.
+
+You are welcome to contribute and any form of help is appreciated.
