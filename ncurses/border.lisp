@@ -54,4 +54,4 @@
 (defcfun ("mvhline"   %mvhline)  :int              (y :int) (x :int) (ch chtype) (n :int))
 (defcfun ("mvwhline"  %mvwhline) :int (win window) (y :int) (x :int) (ch chtype) (n :int))
 (defcfun ("mvvline"   %mvvline)  :int              (y :int) (x :int) (ch chtype) (n :int))
-(defcfun ("mvwvhline" %mvwvline) :int (win window) (y :int) (x :int) (ch chtype) (n :int))
+(defcfun ("mvwvline"  %mvwvline) :int (win window) (y :int) (x :int) (ch chtype) (n :int))
