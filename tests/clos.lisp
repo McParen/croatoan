@@ -125,7 +125,7 @@
                            (loop for j from 0 to 9 do
                                 (setf (aref board i j) (aref board (1- i) j)))))
 
-                    ;; find geht nicht, wir müssen checken ob _alle_ t sind.
+                    ;; find geht nicht, wir muessen checken ob _alle_ t sind.
                     (remove-complete-lines ()
                       (loop for i from 0 to 19 do
                            (when (every #'identity (loop for j from 0 to 9 for y = (aref board i j) collect y))

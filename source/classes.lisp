@@ -351,7 +351,9 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 ;; we have to make-instance of a window or a screen.
 
 (defmethod close ((stream window) &key abort)
+  (declare (ignore abort))
   (%delwin (.winptr stream)))
 
 (defmethod close ((stream screen) &key abort)
+  (declare (ignore abort))
   (%endwin))
