@@ -20,18 +20,12 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("baudrate"   %baudrate)    :void)
+(defcfun ("baudrate"   %baudrate)    :int)
 (defcfun ("erasechar"  %erasechar)   :char)
-(defcfun ("has_ic"     %has_ic)      :boolean)
-(defcfun ("has_il"     %has_il)      :boolean)
+(defcfun ("has_ic"     %has-ic)      :boolean)
+(defcfun ("has_il"     %has-il)      :boolean)
 (defcfun ("killchar"   %killchar)    :char)
 (defcfun ("longname"   %longname)    :string)
 (defcfun ("term_attrs" %term-attrs)  attr)
 (defcfun ("termattrs"  %termattrs)   chtype)
 (defcfun ("termname"   %termname)    :string)
-
-;;; High-level Lisp wrappers
-
-;;; NOTES
-
-;;; TODOs

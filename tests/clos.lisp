@@ -72,7 +72,7 @@
 
                 (position '(0 3))
                 (orientation 0)
-                (style (random 8))
+                (style 0)
                 (piece (nth orientation (nth style pieces))))
 
            (labels (;; check whether we left the board.
@@ -208,9 +208,7 @@
   (labels ((display-snake (scr body)
              (mapc #'(lambda (pair) (add-char scr (char-code #\*) :y (car pair) :x (cadr pair))) body)))
     (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
-      (let* ((width (.width scr))
-             (height (.height scr))
-             (body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
+      (let* ((body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
              (xpos (cadar body))
              (ypos (caar body))
              (dir #c(1 0)))

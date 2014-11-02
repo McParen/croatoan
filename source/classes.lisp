@@ -167,30 +167,38 @@ We cant do this because _all_ auxiliary methods are always used and combined.
 
 ;; Accessors
 
+(defgeneric .origin (window))
 (defmethod .origin ((window window))
   (list (%getbegy (slot-value window 'winptr)) (%getbegx (slot-value window 'winptr))))
+(defgeneric (setf .origin) (coordinates window))
 (defmethod (setf .origin) (coordinates (w window))
   (setf (slot-value w 'origin) coordinates)
   (%mvwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
+(defgeneric .width (window))
 (defmethod .width ((window window))
   (%getmaxx (slot-value window 'winptr)))
 
+(defgeneric .height (window))
 (defmethod .height ((window window))
   (%getmaxy (slot-value window 'winptr)))
 
+(defgeneric .cursor-position (window))
 (defmethod .cursor-position ((window window))
   (list (%getcury (slot-value window 'winptr)) (%getcurx (slot-value window 'winptr))))
 
 ;; we can move the cursor by doing this, or by calling "move". 
 ;; both will use %wmove in the background.
 ;; note that incd and decf dont work.
+(defgeneric (setf .cursor-position) (coordinates window))
 (defmethod (setf .cursor-position) (coordinates (w window))
   (setf (slot-value w 'cursor-position) coordinates)
   (%wmove (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
+(defgeneric .cursor-visibility (window))
 (defmethod .cursor-visibility ((screen screen))
   (slot-value screen 'cursor-visibility))
+(defgeneric (setf .cursor-visibility) (status screen))
 (defmethod (setf .cursor-visibility) (status (screen screen))
   (setf (slot-value screen 'cursor-visibility) status)
   (set-cursor-visibility status))
@@ -258,11 +266,11 @@ We cant do this because _all_ auxiliary methods are always used and combined.
 ;; (setf (.background window :whole-window) xchar) = (setf (.background window) xchar)
 
 
-(defgeneric .attributes (window))
+;(defgeneric .attributes (window))
 (defmethod .attributes ((window window))
   (slot-value window 'attributes))
 
-(defgeneric (setf .attributes) (attributes window))
+;(defgeneric (setf .attributes) (attributes window))
 (defmethod (setf .attributes) (attributes (window window))
   (let ((added (set-difference attributes (slot-value window 'attributes)))
         (removed (set-difference (slot-value window 'attributes) attributes)))

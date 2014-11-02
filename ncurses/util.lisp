@@ -29,7 +29,7 @@
 (defcfun ("filter"       %filter)       :void)
 (defcfun ("nofilter"     %nofilter)     :void)
 
-(defcfun ("use-env"      %use-env)      :void   (f :boolean))
+(defcfun ("use_env"      %use-env)      :void   (f :boolean))
 
 (defcfun ("putwin"       %putwin)       :int    (win window) (filep :pointer))
 (defcfun ("getwin"       %getwin)       window  (filep :pointer))

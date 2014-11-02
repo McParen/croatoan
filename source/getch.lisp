@@ -31,19 +31,6 @@
 
 
 
-;; Takes a short int returned by get-char, 
-;; returns a keyword represeting the function key.
-;; returns nil if number is not in the list.
-(defun function-key (number)
-  (car (rassoc number *key-alist*)))
-
-;; Returns t if the number is a key, nil if it is a char.
-(defun function-key-p (number)
-  (if (and (> number 255)
-           (rassoc number *key-alist*))
-      t
-      nil))
-
 ;; keys above the first 0-255 chars. cannot fit in a char variable any more.
 ;; http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/keys.html
 (defparameter *key-alist*
@@ -208,6 +195,18 @@
     (:event     . 411) 
     (:max       . 511)))
 
+;; Takes a short int returned by get-char, 
+;; returns a keyword represeting the function key.
+;; returns nil if number is not in the list.
+(defun function-key (number)
+  (car (rassoc number *key-alist*)))
+
+;; Returns t if the number is a key, nil if it is a char.
+(defun function-key-p (number)
+  (if (and (> number 255)
+           (rassoc number *key-alist*))
+      t
+      nil))
 
 #|
     ;; we dont need them defined as octal literals, this is antique.

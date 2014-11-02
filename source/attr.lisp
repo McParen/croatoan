@@ -77,10 +77,6 @@ Overwrites any previous attribute settings including the color."
   "Sets the color attribute only."
   (%wcolor-set winptr (pair->number color-pair) (null-pointer)))
 
-(defun get-bitmask (attribute)
-  "Returns an ncurses attr/chtype representing the attribute keyword."
-  (cdr (assoc attribute *bitmask-alist*)))
-
 ;;In general, only underline, bold and reverse work.
 (defparameter *bitmask-alist*
   '((:normal     . #x00000000)
@@ -102,6 +98,10 @@ Overwrites any previous attribute settings including the color."
     (:right      . #x10000000)
     (:top        . #x20000000)
     (:vertical   . #x40000000)))
+
+(defun get-bitmask (attribute)
+  "Returns an ncurses attr/chtype representing the attribute keyword."
+  (cdr (assoc attribute *bitmask-alist*)))
 
 (defparameter *valid-attributes*
   '(:standout

@@ -28,18 +28,6 @@ character."
   "Insert count newline characters into window."
   (loop repeat count do (add-char window (char-code #\newline))))
 
-;; ACS, the alternative/extended character set for line drawing.
-;; Used by functions: add-char, box and border.
-;; 
-;; * http://www.melvilletheatre.com/articles/ncurses-extended-characters/index.html
-;; * http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/misc.html
-;; 
-;; Example: (acs 'ULCORNER)
-(defun acs (char-name)
-  "Take a symbol, return the integer representing the acs char."
-  (mem-aref acs-map-array :uint64 (char-code (cdr (assoc char-name acs-alist)))))
-;; TODO: how to decide the integer size automatically?
-
 ;; pointer to the global/external c acs array, acs_map[].
 (defparameter acs-map-array (foreign-symbol-pointer "acs_map"))
 
@@ -78,6 +66,18 @@ character."
     ( :pi       . #\{ )
     ( :nequal   . #\| )
     ( :sterling . #\} )))
+
+;; ACS, the alternative/extended character set for line drawing.
+;; Used by functions: add-char, box and border.
+;; 
+;; * http://www.melvilletheatre.com/articles/ncurses-extended-characters/index.html
+;; * http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/misc.html
+;; 
+;; Example: (acs 'ULCORNER)
+(defun acs (char-name)
+  "Take a symbol, return the integer representing the acs char."
+  (mem-aref acs-map-array :uint64 (char-code (cdr (assoc char-name acs-alist)))))
+;; TODO: how to decide the integer size automatically?
 
 ;;; TODOs
 

@@ -319,8 +319,8 @@
    ;; termattrs / environment query routines
    %baudrate
    %erasechar
-   %has_ic
-   %has_il
+   %has-ic
+   %has-il
    %killchar
    %longname
    %term-attrs
