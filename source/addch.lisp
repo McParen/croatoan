@@ -1,7 +1,7 @@
 (in-package :de.anvi.croatoan)
 
 (defun add-char (window chtype &key y x)
-  "Adds the rendered char to the window, then advance the cursor.
+  "Add the rendered char to the window, then advance the cursor.
 
 If the destination coordinates y and x are given, move the cursor
 there first."
@@ -11,8 +11,8 @@ there first."
           (t
            (%waddch winptr chtype)))))
 
-(defun echo-char (window char)
-  "Puts the character to the window, then refreshes the window.
+(defun echo-char (window chtype)
+  "Add the rendered character to the window, then refresh the window.
 
 If the destination coordinates Y and X are given, move to the
 destination first and then add the character. 
@@ -20,13 +20,15 @@ destination first and then add the character.
 The only difference to add-char and a subsequent refresh is a
 performance gain if we know that we only need to output a single
 character."
-  (%wechochar window char))
+  (let ((winptr (.winptr window)))
+    (%wechochar winptr chtype)))
 
 ;; just an utility function if you dont want to use (format nil "bla
 ;; bla ~%") to insert newlines. in C you can simply insert \n.
 (defun new-line (window &optional (count 1))
   "Insert count newline characters into window."
-  (loop repeat count do (add-char window (char-code #\newline))))
+  (let ((winptr (.winptr window)))
+    (loop repeat count do (add-char winptr (char-code #\newline)))))
 
 ;; pointer to the global/external c acs array, acs_map[].
 (defparameter acs-map-array (foreign-symbol-pointer "acs_map"))
