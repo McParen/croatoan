@@ -1,22 +1,36 @@
 (in-package :de.anvi.croatoan)
 
-;; Copies a window to the virtual screen, then updates the visible
-;; physical screen. refresh = no-out-refresh + do-update
-(defun refresh (window &key (update t))
+;; refresh = no-out-refresh + do-update
+(defun refresh (window)
+  "Redisplay the window after changes have been made to it.
+
+Copies a window to the virtual screen, then updates the visible
+physical screen by the contents of the virtual screen.
+
+Only updates the changed parts of the window. In order to redraw the
+whole window, it has to be explicitely touched or marked for redraw."
   (let ((winptr (.winptr window)))
-    (if update
-        (%wrefresh winptr)
-        (%wnoutrefresh winptr))))
+        (%wrefresh winptr)))
 
-;; call this after (refresh :update nil)
-(defun update ()
-  "Updates the visible physical screen by the contents of the virtual screen.
-
-This function should be used to display the result of a batch of refresh calls."
+;; call this after several windows have been marked for refresh.
+(defun batch-refresh ()
+  "Refresh windows marked for refresh."
   (%doupdate))
 
-(defun mark-for-redraw (window &key first-line count)
-  "Mark a window or specified lines to be completely redrawn on the next refresh."
-  (if (and first-line count)
-      (%wredrawln window first-line count)
-      (%redrawwin window)))
+;; call batch-refresh after this.
+(defun mark-for-refresh (window)
+  "Mark a window for a later batch-refresh.
+
+Copy a window to the virtual screen, but do not display it on the
+visible physical screen. Call batch-refresh to display all marked
+refreshes."
+  (let ((winptr (.winptr window)))
+    (%wnoutrefresh winptr)))
+
+;; does not redraw, only marks for redrawing by refresh.
+(defun mark-for-redraw (window &key first-line no-of-lines)
+  "Mark a whole window or a number of lines to be completely redrawn on the next refresh."
+  (let ((winptr (.winptr window)))
+    (if (and first-line no-of-lines)
+        (%wredrawln winptr first-line no-of-lines)
+        (%redrawwin winptr))))
