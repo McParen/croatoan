@@ -68,6 +68,7 @@
              (:file "addch")
              (:file "addstr")
              (:file "attr")
+             (:file "beep")
              (:file "bkgd")
              (:file "border")
              (:file "clear")
