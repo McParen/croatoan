@@ -27,8 +27,7 @@ character."
 ;; bla ~%") to insert newlines. in C you can simply insert \n.
 (defun new-line (window &optional (count 1))
   "Insert count newline characters into window."
-  (let ((winptr (.winptr window)))
-    (loop repeat count do (add-char winptr (char-code #\newline)))))
+  (loop repeat count do (add-char window (char-code #\newline))))
 
 ;; pointer to the global/external c acs array, acs_map[].
 (defparameter acs-map-array (foreign-symbol-pointer "acs_map"))

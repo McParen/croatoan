@@ -695,3 +695,45 @@
 
 ;; scrolling and scrolling regions in separate windows.
 ;;(defun t11a ()
+
+;; Display available ACS (alternative character set) pseudo-graphical characters.
+(defun t12 ()
+  (let ((scr (make-instance 'screen)))
+    (unwind-protect
+         (progn
+
+(add-string scr "ACS_ULCORNER ") (add-char scr (acs :ulcorner)) (add-string scr " upper left corner") (new-line scr) 
+(add-string scr "ACS_LLCORNER ") (add-char scr (acs :llcorner)) (add-string scr " lower left corner ") (new-line scr)
+(add-string scr "ACS_URCORNER ") (add-char scr (acs :urcorner)) (add-string scr " upper right corner ") (new-line scr)
+(add-string scr "ACS_LRCORNER ") (add-char scr (acs :lrcorner)) (add-string scr " lower right corner ") (new-line scr)
+(add-string scr "ACS_LTEE     ") (add-char scr (acs :ltee    )) (add-string scr " tee pointing right ") (new-line scr)
+(add-string scr "ACS_RTEE     ") (add-char scr (acs :rtee    )) (add-string scr " tee pointing left ") (new-line scr)
+(add-string scr "ACS_BTEE     ") (add-char scr (acs :btee    )) (add-string scr " tee pointing up ") (new-line scr)
+(add-string scr "ACS_TTEE     ") (add-char scr (acs :ttee    )) (add-string scr " tee pointing down ") (new-line scr)
+(add-string scr "ACS_HLINE    ") (add-char scr (acs :hline   )) (add-string scr " horizontal line ") (new-line scr)
+(add-string scr "ACS_VLINE    ") (add-char scr (acs :vline   )) (add-string scr " vertical line ") (new-line scr)
+(add-string scr "ACS_PLUS     ") (add-char scr (acs :plus    )) (add-string scr " large plus or crossover ") (new-line scr)
+(add-string scr "ACS_S1       ") (add-char scr (acs :s1      )) (add-string scr " scan line 1 ") (new-line scr)
+(add-string scr "ACS_S9       ") (add-char scr (acs :s9      )) (add-string scr " scan line 9 ") (new-line scr)
+(add-string scr "ACS_DIAMOND  ") (add-char scr (acs :diamond )) (add-string scr " diamond ") (new-line scr)
+(add-string scr "ACS_CKBOARD  ") (add-char scr (acs :ckboard )) (add-string scr " checker board (stipple) ") (new-line scr)
+(add-string scr "ACS_DEGREE   ") (add-char scr (acs :degree  )) (add-string scr " degree symbol ") (new-line scr)
+(add-string scr "ACS_PLMINUS  ") (add-char scr (acs :plminus )) (add-string scr " plus/minus ") (new-line scr)
+(add-string scr "ACS_BULLET   ") (add-char scr (acs :bullet  )) (add-string scr " bullet ") (new-line scr)
+(add-string scr "ACS_LARROW   ") (add-char scr (acs :larrow  )) (add-string scr " arrow pointing left ") (new-line scr)
+(add-string scr "ACS_RARROW   ") (add-char scr (acs :rarrow  )) (add-string scr " arrow pointing right ") (new-line scr)
+(add-string scr "ACS_DARROW   ") (add-char scr (acs :darrow  )) (add-string scr " arrow pointing down ") (new-line scr)
+(add-string scr "ACS_UARROW   ") (add-char scr (acs :uarrow  )) (add-string scr " arrow pointing up ") (new-line scr)
+(add-string scr "ACS_BOARD    ") (add-char scr (acs :board   )) (add-string scr " board of squares ") (new-line scr)
+(add-string scr "ACS_LANTERN  ") (add-char scr (acs :lantern )) (add-string scr " lantern symbol ") (new-line scr)
+(add-string scr "ACS_BLOCK    ") (add-char scr (acs :block   )) (add-string scr " solid square block ") (new-line scr)
+(add-string scr "ACS_S3       ") (add-char scr (acs :s3      )) (add-string scr " scan line 3 ") (new-line scr)
+(add-string scr "ACS_S7       ") (add-char scr (acs :s7      )) (add-string scr " scan line 7 ") (new-line scr)
+(add-string scr "ACS_LEQUAL   ") (add-char scr (acs :lequal  )) (add-string scr " less/equal ") (new-line scr)
+(add-string scr "ACS_GEQUAL   ") (add-char scr (acs :gequal  )) (add-string scr " greater/equal ") (new-line scr)
+(add-string scr "ACS_PI       ") (add-char scr (acs :pi      )) (add-string scr " Pi ") (new-line scr)
+(add-string scr "ACS_NEQUAL   ") (add-char scr (acs :nequal  )) (add-string scr " not equal ") (new-line scr)
+(add-string scr "ACS_STERLING ") (add-char scr (acs :sterling)) (add-string scr " UK pound sign") (new-line scr)
+
+           (get-char scr))
+      (close scr))))
