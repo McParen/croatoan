@@ -69,8 +69,8 @@
     :type          cons
     :documentation "When scrolling is enabled, only scroll the window region from line y1 to y2 given as the list (y1 y2).")
 
-   (background-char
-    :initarg       :background-char
+   (background
+    :initarg       :background
     :initform      nil
     :type          complex-char
     :documentation "A complex char to form the background of a window.")
@@ -135,7 +135,6 @@
                 (setf winptr (%initscr))
                 (when enable-colors (%start-color))
                 (if input-echoing (%echo) (%noecho))
-                ;;(set-input-echoing input-echoing)
                 (set-input-reading winptr input-reading)
                 (set-cursor-visibility cursor-visibility))) ;kernel.lisp
       ;; a window is initialized when we create a new window.
@@ -255,16 +254,15 @@ We cant do this because _all_ auxiliary methods are always used and combined.
   (set-input-reading screen status)
   (setf (slot-value screen 'input-reading) status))
 
-(defgeneric .background-char (window))
-(defmethod .background-char ((window window))
-  (slot-value window 'background-char))
-(defgeneric (setf .background-char) (char window &optional target))
-(defmethod (setf .background-char) (char (window window) &optional (target :whole-window))
-  (setf (slot-value window 'background-char) char)
+(defgeneric .background (window))
+(defmethod .background ((window window))
+  (slot-value window 'background))
+(defgeneric (setf .background) (char window &optional target))
+(defmethod (setf .background) (char (window window) &optional (target :all-chars))
+  (setf (slot-value window 'background) char)
   (set-background-char (slot-value window 'winptr) char target))
 ;; (setf (.background window :new-chars) xchar)
-;; (setf (.background window :whole-window) xchar) = (setf (.background window) xchar)
-
+;; (setf (.background window :all-chars) xchar) = (setf (.background window) xchar)
 
 ;(defgeneric .attributes (window))
 (defmethod .attributes ((window window))

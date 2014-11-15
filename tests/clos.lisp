@@ -32,29 +32,6 @@
       ;; todo: unknown codes, like mose, resize and unknown function keys.
       (t (error "invalid value of char received from ncurses.")))))
 
-
-#|
-(defun pong ()
-  (let ((scr (make-instance 'screen :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)))
-    (unwind-protect
-
-         (let* ((board (make-array '(20 10) :initial-element nil)))
-
-           (clear scr)
-           (refresh scr)
-
-           (loop
-              (let ((event (get-event scr)))
-                (if event
-                    (case event
-                        (:up (rotate-piece))
-                        (#\q (return)))
-                      (progn
-                        (move-piece #c(0 -1))
-                        (sleep 0.3)))))))
-      (close scr))))
-|#
-
 (defun tetris ()
   (let ((scr (make-instance 'screen :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)))
     (unwind-protect
@@ -280,7 +257,7 @@
          (get-char scr)
 
          ;; set a background. green dots on white background.
-         (setf (.background-char scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
+         (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
 
          (refresh scr)
 
@@ -304,7 +281,7 @@
     (refresh scr)
     (get-char scr)
     
-    (setf (.background-char scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
+    (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (refresh scr)
     (get-char scr)))
 
@@ -431,7 +408,7 @@
          (get-char scr)
 
          (let ((win (make-instance 'window :height 15 :width 50 :origin '(5 5))))
-           (setf (.background-char win) (make-instance 'complex-char :color-pair '(:red :blue)))
+           (setf (.background win) (make-instance 'complex-char :color-pair '(:red :blue)))
            (add-string win "Window 1")
            (refresh win)
            (get-char win)))
@@ -455,7 +432,7 @@
            (get-char scr)
 
            (let ((win (make-instance 'window :height 15 :width 50 :origin '(5 5))))
-             (setf (.background-char win) (make-instance 'complex-char :color-pair '(:red :blue)))
+             (setf (.background win) (make-instance 'complex-char :color-pair '(:red :blue)))
              (add-string win "Window 1")
              (refresh win)
              (get-char win)
@@ -534,7 +511,7 @@
          (progn
            (clear scr)
 
-           (setf (.background-char scr) (make-instance 'complex-char :color-pair '(:black :white)))
+           (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (format t "~r" 1984)
 
            (refresh scr)
@@ -542,13 +519,13 @@
 
            (let* ((win (make-instance 'window :height 15 :width 50 :origin '(5 5)))
                   (*standard-output* win))
-             (setf (.background-char win) (make-instance 'complex-char :color-pair '(:white :black)))
+             (setf (.background win) (make-instance 'complex-char :color-pair '(:white :black)))
              (format t "~r" 1985)
              (refresh win)
              (get-char win)
              (close win))
 
-           (setf (.background-char scr) (make-instance 'complex-char :color-pair '(:black :white)))
+           (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (terpri)
            (format t "~r" 1984)
 
@@ -564,7 +541,7 @@
          (progn
            (clear scr)
 
-           (setf (.background-char scr) (make-instance 'complex-char :color-pair '(:black :white)))
+           (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (box scr)
            (move scr 1 1)
            (princ 0 scr)
@@ -575,9 +552,9 @@
                  (w2 (make-instance 'window :height 10 :width 30 :origin '(6 10)))
                  (w3 (make-instance 'window :height 10 :width 30 :origin '(9 15))))
 
-             (setf (.background-char w1) (make-instance 'complex-char :color-pair '(:white :black)))
-             (setf (.background-char w2) (make-instance 'complex-char :color-pair '(:black :white)))
-             (setf (.background-char w3) (make-instance 'complex-char :color-pair '(:white :black)))
+             (setf (.background w1) (make-instance 'complex-char :color-pair '(:white :black)))
+             (setf (.background w2) (make-instance 'complex-char :color-pair '(:black :white)))
+             (setf (.background w3) (make-instance 'complex-char :color-pair '(:white :black)))
 
              (box w1)
              (box w2)
@@ -613,7 +590,7 @@
              (close w2)
              (close w3))
 
-           (setf (.background-char scr) (make-instance 'complex-char :color-pair '(:black :white)))
+           (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
 
            (refresh scr)
            (get-char scr))

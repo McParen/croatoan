@@ -178,7 +178,7 @@
 (defun evolve ()
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
-    (setf (.background-char scr) (make-instance 'complex-char :color-pair '(:green :white)))
+    (setf (.background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
     (setq *width* (.width scr))
     (setq *height* (.height scr))
@@ -199,7 +199,7 @@
 (defun evolve2 ()
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
-    (setf (.background-char scr) (make-instance 'complex-char :color-pair '(:green :white)))
+    (setf (.background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
     (setq *width* (.width scr))
     (setq *height* (.height scr))
@@ -231,7 +231,7 @@
 (defun evolve3 ()
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
-    ;(setf (.background-char scr) (make-instance 'complex-char :color-pair '(:green :white)))
+    ;(setf (.background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
     (setq *width* (.width scr))
     (setq *height* (.height scr))
@@ -251,7 +251,7 @@
 (defun evolve4 ()
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
-    ;(setf (.background-char scr) (make-instance 'complex-char :color-pair '(:green :white)))
+    ;(setf (.background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
     (setq *width* (.width scr))
     (setq *height* (.height scr))

@@ -5,21 +5,21 @@
 ;; i.e. with bkgd we manipulate the existing text, with bkgdset the new text.
 
 ;; the attribute part of the background char is compined with any chars added.
+
+(defun set-background-char (winptr char &optional (target :whole-window))
   "Set the background character and attributes of a window.
 
 The attribute part of the background character is combined with
 characters in the window.
 
-If target is :all, the background setting is applied to all positions
-in the window. 
+If target is :all-chars, the background setting is applied to all
+characters in the window.
 
-If target is :new, it is applies only to newly added characters."
-
-(defun set-background-char (winptr char &optional (target :whole-window))
+If target is :new-chars, it is applied only to newly added characters."
   (let ((chtype (convert-char char :chtype)))
     (case target
-      (:whole-window (%wbkgd    winptr chtype))
-      (:new-chars    (%wbkgdset winptr chtype)))))
+      (:all-chars (%wbkgd    winptr chtype))
+      (:new-chars (%wbkgdset winptr chtype)))))
 
 (defun get-background-char (winptr)
   "Return the background character and attributes of window."

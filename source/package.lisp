@@ -23,7 +23,7 @@
    .enable-fkeys
    .enable-scrolling
    .scrolling-region
-   .background-char
+   .background
    .input-echoing
    .input-reading
    .cursor-visibility
@@ -132,4 +132,3 @@
    ;; wresize / resize a curses window
 
    ))
-
