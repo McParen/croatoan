@@ -33,6 +33,7 @@
    #:t11
    #:t11a
    #:t12
+   #:t13
 
    ;; clos.lisp
    #:matrix

@@ -737,3 +737,19 @@
 
            (get-char scr))
       (close scr))))
+
+;; Demonstrate flash and beep alerts.
+;; It depends on the terminal emulator whether they will work for you.
+;; They both worked in xterm for me.
+(defun t13 ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
+    (loop
+       (let ((event (get-event scr)))
+         (if event
+             (case event
+               (#\b (alert :beep))
+               (#\f (alert :flash))
+               (#\q (return)))
+             (sleep 0.1))))))
+
+;; http://de.wikibooks.org/wiki/Ncurses:_Pads
