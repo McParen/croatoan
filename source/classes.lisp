@@ -118,6 +118,7 @@
 
   (:documentation "Represents the main window created upon screen initialisation."))
 
+#|
 ;; this will be called for both window and screen.
 ;; create a curses window when an instance is created.
 (defmethod initialize-instance :after ((win window) &key)
@@ -144,25 +145,39 @@
     (set-input-blocking winptr input-blocking)
     (%scrollok winptr enable-scrolling)
     (%keypad winptr enable-fkeys)))
+|#
 
-#|
-We cant do this because _all_ auxiliary methods are always used and combined.
+;; We cant do this because _all_ auxiliary methods are always used and combined.
 
 (defmethod initialize-instance :after ((win window) &key)
-  (with-slots (winptr input-blocking enable-fkeys size origin) win
-    (setf winptr (%newwin (car size) (cadr size) (car origin) (cadr origin)))
-    (print "i've been called")
-    (set-input-blocking winptr input-blocking)
-    (%keypad winptr enable-fkeys)))
+  (with-slots (winptr height width origin) win
+    ;; just for WINDOW types
+    (when (eq (type-of win) 'window)
+      (setf winptr (%newwin height width (car origin) (cadr origin))))))
 
 (defmethod initialize-instance :after ((scr screen) &key)
-  (with-slots (winptr enable-colors cursor-visibility input-echoing input-reading) scr
-    (setf winptr (%initscr))
-    (when enable-colors (%start-color))
-    (set-input-echoing input-echoing)
-    (set-input-reading winptr input-reading)
-    (set-cursor-visibility cursor-visibility)))
-|#
+  (with-slots (winptr enable-colors cursor-visibility input-echoing input-reading input-blocking enable-fkeys enable-scrolling) scr
+    ;; just for screen window types.
+    (when (eq (type-of scr) 'screen)
+      (setf winptr (%initscr))
+      (when enable-colors (%start-color))
+      (if input-echoing (%echo) (%noecho))
+      (set-input-reading winptr input-reading)
+      (set-cursor-visibility cursor-visibility))))
+
+;; called after _all_ :after aux methods.
+;; for all window types in the hierarchy.
+(defmethod initialize-instance :around ((win window) &key)
+  ;; before :before, :after and primary.
+  (let ((result (call-next-method)))
+    ;; after :before, :after and primary.
+    (with-slots (winptr input-blocking enable-fkeys enable-scrolling) win
+      (set-input-blocking winptr input-blocking)
+      (%scrollok winptr enable-scrolling)
+      (%keypad winptr enable-fkeys))
+
+    ;; why do we have to return the result in :around aux methods?
+    result))
 
 ;; Accessors
 
