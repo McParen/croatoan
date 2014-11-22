@@ -12,6 +12,7 @@
    #:nctest2
 
    ;; clos.lisp
+   #:t00
    #:t01
    #:t02
    #:t03
@@ -39,7 +40,6 @@
    #:matrix
    #:snake
    #:tetris
-   #:pong
 
    ;; evolution.lisp
    #:evolve4 ))

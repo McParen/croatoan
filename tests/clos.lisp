@@ -236,6 +236,14 @@
                            (refresh scr)
                            (setf (nth column positions) (mod (1+ (nth column positions)) height)))))))))))
 
+;; initialize ncurses, deinitialize ncurses
+;; tests initialize-instance
+(defun t00 ()
+  (let ((scr (make-instance 'screen)))
+    (unwind-protect
+         nil
+      (close scr))))
+
 ;; clos screen, accessors, unwind-protect.
 (defun t01 ()
   (unwind-protect
@@ -250,7 +258,7 @@
          (move scr 5 5)
          (add-string scr "dear john!")
          (move-by scr 5 5)
-         (add-string scr "call me really!")
+         (add-string scr "call me maybe!")
          (refresh scr)
 
          ;; wait for keypress, works only in blocking mode, which is the default.
@@ -342,7 +350,7 @@
 
 ;; take a function given as symbol name and display its docstring. press q to exit.
 ;; Example: (a:t04 'cdr)
-(defun t04 (name)
+(defun t04 (&optional (name 'car))
   (unwind-protect
        (let ((scr (make-instance 'screen)))
          (clear scr)
@@ -368,11 +376,11 @@
 (defun t05 ()
   (unwind-protect
        (let ((scr (make-instance 'screen)))
-         (add-string scr "hello there! press a char to signal an error and go to the debugger in a messed up screen!")
+         (add-string scr "press any char to signal an error and go to the debugger in a messed up screen!")
          (refresh scr)
          (get-char scr)
          (error "zu huelf!"))
-    ;; this will be executed after we somhow return from the debugger.
+    ;; this will be executed after we somehow return from the debugger.
     (end-screen)))
 
 ;; End ncurses cleanly _before_ getting into the debugger when an error is signalled.
@@ -381,7 +389,7 @@
   (let ((*debugger-hook* #'(lambda (c h) (declare (ignore c)) (declare (ignore h)) (end-screen))))
     (unwind-protect
          (let ((scr (make-instance 'screen)))
-           (add-string scr "hello there! press a char to signal an error and go to the debugger!")
+           (add-string scr "hello there! press a char to signal an error and go to the debugger without messung up the screen!")
            (refresh scr)
            (get-char scr)
            (error "zu huelf!"))
@@ -450,32 +458,33 @@
        (let ((scr (make-instance 'screen)))
          (clear scr)
 
-         (write-char #\a)     ; writes a to the repl.
+         (write-char #\a)     ; writes a to the repl. wont be visible until we quit ncurses.
          (write-char #\b scr) ; writes b to scr.
 
-         (princ "hello")      ; repl.
+         (princ "hello")      ; repl. wont be visible until we quit ncurses.
          (princ "hello" scr)
+
+         (terpri scr)         ; 3 calls, 3 new lines will be added.
          (terpri scr)
          (terpri scr)
-         (terpri scr)
+
          (princ "there" scr)
 
-         (princ "dear" scr)
+         (fresh-line scr)     ; we call it 3 times, but only one newline will be added.
          (fresh-line scr)
          (fresh-line scr)
-         (fresh-line scr)
-         (princ "john" scr)
 
-         (format scr "--~%~r~%--" 1234)
+         (format scr "--~%~r~%--" 1234) ; each % will add a newline.
+
+         (write-char #\newline scr) ; this is the char that actually gets displayed each time.
 
          (refresh scr)
          (get-char scr))
     (end-screen)))
 
-;; when we define windows as streams, we can rebind the *standard-output* to print
-;; to a ncurses window. 
-;; this only works with standard lisp output functions,
-;; we still have to explicitely clear, close, refresh, etc. scr though.
+;; when we define windows as streams, we can rebind the *standard-output* to print to a ncurses window. 
+;; this only works with standard lisp output functions, format, write-char, terpri, print, etc.
+;; we still have to explicitely ncurses functions clear, close, refresh, etc. though.
 (defun t08a ()
   (let ((scr (make-instance 'screen)))
     (unwind-protect
@@ -496,13 +505,14 @@
              (terpri)
              (princ "there")
              (terpri)
-             (format t "~r" 5678))
+             (format t "~r" 5678)
+             (terpri))
 
            (refresh scr)
            (get-char scr))
       (close scr))))
 
-;; we can use colors on standard output and with standard lisp printing functions.
+;; we now can use colors on *standard-output* also with standard lisp printing functions.
 ;; and we can use them when other windows exist.
 (defun t08b ()
   (let* ((scr (make-instance 'screen :enable-colors t))
@@ -517,6 +527,7 @@
            (refresh scr)
            (get-char scr)
 
+           ;; temporarily bind *standard-output* to a window.
            (let* ((win (make-instance 'window :height 15 :width 50 :origin '(5 5)))
                   (*standard-output* win))
              (setf (.background win) (make-instance 'complex-char :color-pair '(:white :black)))
@@ -525,6 +536,7 @@
              (get-char win)
              (close win))
 
+           ;; *standard-output*is now again scr.
            (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (terpri)
            (format t "~r" 1984)
@@ -751,5 +763,3 @@
                (#\f (alert :flash))
                (#\q (return)))
              (sleep 0.1))))))
-
-;; http://de.wikibooks.org/wiki/Ncurses:_Pads
