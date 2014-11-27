@@ -65,6 +65,8 @@
    key-supported-p
    function-key
    function-key-p
+   key-pressed-p
+   get-event
 
    ;; getstr / accept character strings from curses terminal keyboard
 

@@ -1,37 +1,5 @@
 (in-package :de.anvi.croatoan.tests)
 
-;;; http://rosettacode.org/wiki/Keyboard_input/Keypress_check
-;;; http://invisible-island.net/ncurses/Ada95.html
-;;; https://john-millikin.com/software/haskell-ncurses/reference/haskell-ncurses/latest/UI.NCurses/
-;;; https://godoc.org/code.google.com/p/goncurses
-
-;; Returns t if a key has been pressed and a char can be read by get-char.
-;; Requires input-blocking for window to be set to nil.
-(defun key-pressed-p (window)
-  (let ((ch (get-char window)))
-    ;; ncurses get-char returns -1 when no key was pressed.
-    (unless (= ch -1)
-      ;; if a key was pressed, put it back into the input buffer so it can be rad by the next call to get-char.
-      (unget-char ch)
-      ;; Return t.
-      t)))
-
-;; works only when input-blocking is set to nil. enable-fkeys should also be t.
-;; events can be handled with case.
-;; events can be nil (no key pressed), characters #\a and function keys like :up, :down, etc.
-;; todo: mouse, resizekey
-(defun get-event (window)
-  (let ((ch (get-char window)))
-    (cond
-      ;; -1 means no key has been pressed.
-      ((= ch -1) nil) 
-      ;; 0-255 are regular chars, whch can be converted to lisp chars with code-char.
-      ((and (>= ch 0) (<= ch 255)) (code-char ch))
-      ;; if the code belongs to a known function key, return a keyword symbol.
-      ((function-key-p ch) (function-key ch))
-      ;; todo: unknown codes, like mose, resize and unknown function keys.
-      (t (error "invalid value of char received from ncurses.")))))
-
 (defun tetris ()
   (let ((scr (make-instance 'screen :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)))
     (unwind-protect
@@ -178,8 +146,6 @@
 
       ;; cleanly close ncurses at the end.
       (close scr))))
-
-
 
 (defun snake ()
   (labels ((display-snake (scr body)
