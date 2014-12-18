@@ -39,6 +39,7 @@
              (:file "key_defined")      ; check if a keycode is defined
              (:file "legacy")           ; get curses cursor and window coordinates, attributes
              (:file "legacy_coding")    ; legacy coding
+             (:file "mouse")            ; mouse interface through curses
              (:file "move")             ; move curses window cursor
              (:file "opaque")           ; curses window properties
              (:file "outopts")          ; curses output options
@@ -76,6 +77,7 @@
              (:file "initscr")
              (:file "inopts")
              (:file "kernel")
+             (:file "mouse")
              (:file "move")
              (:file "refresh")
              (:file "touch") ))
@@ -92,15 +94,6 @@
 
              (:file "clos")
              (:file "evolution") ))))
-
-;;; TODO not ported to closified croatoan:
-;;             (:file "acs")
-;;             (:file "alert")
-;;             (:file "kletva")
-;;             (:file "matrix")
-;;             (:file "scroll")
-;;             (:file "snake")
-
 
 ;;; Not even started:
 
@@ -148,4 +141,4 @@
 ;; (:file "ins_wch")
 ;; (:file "ins_wstr")
 
-;; eine funktion in pad.lisp
+

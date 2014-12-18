@@ -237,7 +237,12 @@
    ;; legacy_coding
    %use-legacy-coding
 
+   ;; mouse interface through curses
+   %getmouse
+   %mousemask
+
    ;; move / move curses window cursor
+   mevent
    %move
    %wmove
 

@@ -623,10 +623,11 @@
 ;; enable-fkeys t: fkeys have codes 255+
 ;; enable-fkeys nil: fkeys are multi-char escape codes.
 (defun t10 ()
-  (let ((scr (make-instance 'screen :input-echoing nil :enable-fkeys t :enable-scrolling t)))
+  (let ((scr (make-instance 'screen :input-echoing nil :enable-fkeys t)))
     (unwind-protect
          (progn
            (clear scr)
+           
            (format scr "~A lines high, ~A columns wide.~%~%" (.height scr) (.width scr))
            (refresh scr)
 
@@ -636,9 +637,20 @@
                   (let ((ch (get-char scr)))
                     ;; quit on q, print everything else including function keys.
                     (cond ((equal (code-char ch) #\q) (return))
-                          (t (format scr "Char: ~A, Code: ~A~%" ch (code-char ch)) 
-                             (refresh scr)))))))
+                          (t (format scr "Char: ~A, Code: ~A~%" ch (code-char ch))))))))
       (close scr))))
+
+;; cleaner key printing.
+;; prints key names instead of numeric char codes.
+(defun t10a ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t)
+    (format scr "~A lines high, ~A columns wide.~%~%" (.height scr) (.width scr))
+    (loop (let ((event (get-event scr)))
+            (when event
+              (case event
+                (#\q (return))
+                (otherwise (format scr "Event: ~A~%" event))))))))
+
 
 ;; demonstrate scrolling and scrolling regions.
 (defun t11 ()
@@ -670,9 +682,6 @@
                 (sleep 0.2)))
 
       (close scr))))
-
-;; scrolling and scrolling regions in separate windows.
-;;(defun t11a ()
 
 ;; Display available ACS (alternative character set) pseudo-graphical characters.
 (defun t12 ()
@@ -729,3 +738,61 @@
                (#\f (alert :flash))
                (#\q (return)))
              (sleep 0.1))))))
+
+;; minimal setting to get the mouse working.
+(defun t14 ()
+  (let ((scr (make-instance 'screen :input-echoing nil :input-blocking t :enable-fkeys t)))
+    (unwind-protect 
+         (progn
+           (%mousemask #b00000111111111111111111111111111 (null-pointer)) ; activate all mouse events.
+           (get-char scr)
+           (with-foreign-object (me '(:struct mevent)) ; create a pointer to the struct mevent.
+             (%getmouse me) ; save the mouse event struct to the pointed position.
+             (princ (mem-ref me '(:struct mevent)) scr) ; dereference the pointer, return a plist of the struct.
+             (get-char scr)))
+      (close scr))))
+
+(defun t14a ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
+    (%mousemask #b00000111111111111111111111111111 (null-pointer))
+    (flet ((handle-mouse-event ()
+             (with-foreign-object (me '(:struct mevent))
+               (%getmouse me)
+               (let* ((ev (mem-ref me '(:struct mevent)))
+                      (x (getf ev 'de.anvi.ncurses::x))
+                      (y (getf ev 'de.anvi.ncurses::y))
+                      (b (getf ev 'de.anvi.ncurses::bstate))
+                      (l (get-mouse-events b)))
+                 (format scr "x:~A y:~A b:~32,'0b l:~A~%" x y b l)))))
+      (loop
+         (let ((event (get-event scr)))
+           (if event
+               (case event
+                 (:mouse (handle-mouse-event))
+                 (#\q (return)))
+               (sleep 0.01)))))))
+
+(defun t14b ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
+    (%mousemask #b00000111111111111111111111111111 (null-pointer))
+    (flet ((handle-mouse-event ()
+             (with-foreign-object (me '(:struct mevent))
+               (%getmouse me)
+               (let* ((ev (mem-ref me '(:struct mevent)))
+                      (x (getf ev 'de.anvi.ncurses::x))
+                      (y (getf ev 'de.anvi.ncurses::y))
+                      (b (getf ev 'de.anvi.ncurses::bstate))
+                      (l (get-mouse-events b)))
+                 (when (member :button-1-clicked l)
+                   (move scr y x)
+                   (princ "*" scr))))))
+      (loop
+         (let ((event (get-event scr)))
+           (if event
+               (case event
+                 (:mouse (handle-mouse-event))
+                 (#\q (return)))
+               (sleep 0.1)))))))
+
+;; (cffi:convert-to-foreign '(id 1 x 1 y 2 z 3 bstate 2) '(:struct mevent))
+;; (setf ev (convert-from-foreign (mem-ref bstate '(:struct mevent)) '(:struct mevent)))
