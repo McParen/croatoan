@@ -240,9 +240,9 @@
    ;; mouse interface through curses
    %getmouse
    %mousemask
+   mevent
 
    ;; move / move curses window cursor
-   mevent
    %move
    %wmove
 

@@ -740,59 +740,55 @@
              (sleep 0.1))))))
 
 ;; minimal setting to get the mouse working.
+;; reads and prints a single mouse event.
 (defun t14 ()
   (let ((scr (make-instance 'screen :input-echoing nil :input-blocking t :enable-fkeys t)))
     (unwind-protect 
          (progn
            (%mousemask #b00000111111111111111111111111111 (null-pointer)) ; activate all mouse events.
-           (get-char scr)
+           (get-char scr) ; here you have to click to generate a mouse event.
            (with-foreign-object (me '(:struct mevent)) ; create a pointer to the struct mevent.
              (%getmouse me) ; save the mouse event struct to the pointed position.
              (princ (mem-ref me '(:struct mevent)) scr) ; dereference the pointer, return a plist of the struct.
              (get-char scr)))
       (close scr))))
 
+;; mouse events are now detected in the event loop.
+;; print the y x coordinates and the detected event.
 (defun t14a ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
     (%mousemask #b00000111111111111111111111111111 (null-pointer))
-    (flet ((handle-mouse-event ()
-             (with-foreign-object (me '(:struct mevent))
-               (%getmouse me)
-               (let* ((ev (mem-ref me '(:struct mevent)))
-                      (x (getf ev 'de.anvi.ncurses::x))
-                      (y (getf ev 'de.anvi.ncurses::y))
-                      (b (getf ev 'de.anvi.ncurses::bstate))
-                      (l (get-mouse-events b)))
-                 (format scr "x:~A y:~A b:~32,'0b l:~A~%" x y b l)))))
-      (loop
-         (let ((event (get-event scr)))
-           (if event
-               (case event
-                 (:mouse (handle-mouse-event))
-                 (#\q (return)))
-               (sleep 0.01)))))))
+    (loop
+       (let ((event (get-event scr)))
+         (if event
+             (case event
+               ;; first detect that it is a mouse event...
+               (:mouse (multiple-value-bind (mouse-event y x) (get-mouse-event)
+                         ;; then print the kind of mouse event and the coordinates.
+                         (format scr "~3A ~3A ~A~%" y x mouse-event)))
+               (#\q (return)))
+             (sleep 0.01))))))
 
+;; left click prints a 1, right click prints a 3.
 (defun t14b ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
     (%mousemask #b00000111111111111111111111111111 (null-pointer))
-    (flet ((handle-mouse-event ()
-             (with-foreign-object (me '(:struct mevent))
-               (%getmouse me)
-               (let* ((ev (mem-ref me '(:struct mevent)))
-                      (x (getf ev 'de.anvi.ncurses::x))
-                      (y (getf ev 'de.anvi.ncurses::y))
-                      (b (getf ev 'de.anvi.ncurses::bstate))
-                      (l (get-mouse-events b)))
-                 (when (member :button-1-clicked l)
-                   (move scr y x)
-                   (princ "*" scr))))))
-      (loop
-         (let ((event (get-event scr)))
-           (if event
-               (case event
-                 (:mouse (handle-mouse-event))
-                 (#\q (return)))
-               (sleep 0.1)))))))
+    (loop
+       (let ((event (get-event scr)))
+         (if event
+             (case event
+               ;; first detect that it is a mouse event...
+               (:mouse (multiple-value-bind (mouse-event y x) (get-mouse-event)
+                         (case mouse-event
+                           ;; then check what kind of mouse event it is.
+                           (:button-1-clicked (move scr y x) (princ "1" scr))
+                           (:button-3-clicked (move scr y x) (princ "3" scr)))))
+               (#\q (return)))
+             (sleep 0.01))))))
 
 ;; (cffi:convert-to-foreign '(id 1 x 1 y 2 z 3 bstate 2) '(:struct mevent))
 ;; (setf ev (convert-from-foreign (mem-ref bstate '(:struct mevent)) '(:struct mevent)))
+
+;;(with-screen-event (ev)
+;;  ((:a (sads))
+;;   (sasdka sasd))

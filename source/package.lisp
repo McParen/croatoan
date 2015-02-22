@@ -98,7 +98,7 @@
    ;; legacy_coding
 
    ;; mouse / mouse interface through curses
-   get-mouse-events
+   get-mouse-event
 
    ;; move / move curses window cursor
    move

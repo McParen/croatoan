@@ -16,10 +16,10 @@
            (:double-clicked . #o10)
            (:triple-clicked . #o20)
            (:reserved-event . #o40))))
-  (cond ((integerp event) `(ash ,event (* 6 (- ,button 1))))
-        ((symbolp event)
-         (let ((mask (cdr (assoc event *mouse-button-event-bitmask-alist*))))
-           `(ash ,mask (* 6 (- ,button 1))))))))
+    (cond ((integerp event) `(ash ,event (* 6 (- ,button 1))))
+          ((symbolp event)
+           (let ((mask (cdr (assoc event *mouse-button-event-bitmask-alist*))))
+             `(ash ,mask (* 6 (- ,button 1))))))))
 
 (defparameter *mouse-event-bitmask-alist*
   `((:button-1-released       . ,(mouse-bitmask 1 :released))
@@ -55,6 +55,24 @@
 
 ;; take a unsigned long integer representing a bitmask of mouse events,
 ;; return a list of mouse event keywords.
-(defun get-mouse-events (bitmask)
+(defun bitmask-to-keyword (bitmask)
   (loop for i in (mapcar #'car *mouse-event-bitmask-alist*)
-     if (logtest bitmask (cdr (assoc i *mouse-event-bitmask-alist*))) collect i))
+     if (logtest bitmask (cdr (assoc i *mouse-event-bitmask-alist*))) return i))
+;; use collect to catch more than 1 event at once.
+;; (format scr "~32,'0b" bitmask)
+
+;; decode and return the mouse event struct as multiple values:
+;; mouse event keyword, y coordinate integer, x coordinate integer
+(defun get-mouse-event ()
+  (flet ((plist-symbols-to-keywords (plist)
+           ;; mem-ref returns a struct as a symbol plist.
+           ;; we have to convert the symbols to keywords to transport them across packages.
+           (loop for i in plist collect (if (symbolp i) (values (intern (symbol-name i) "KEYWORD")) i))))
+    (with-foreign-object (ptr '(:struct mevent))
+      (%getmouse ptr)
+      (let* ((struct (plist-symbols-to-keywords (mem-ref ptr '(:struct mevent))))
+             (x (getf struct :x))
+             (y (getf struct :y))
+             (b (getf struct :bstate))
+             (mouse-event (bitmask-to-keyword b)))
+        (values mouse-event y x)))))
