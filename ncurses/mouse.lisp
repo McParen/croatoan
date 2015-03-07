@@ -29,8 +29,8 @@
 
 (defcstruct mevent (id :short) (x :int) (y :int) (z :int) (bstate mmask_t))
 
-(defcfun ("getmouse"   %getmouse)   :int      (event (:pointer mevent)))
+(defcfun ("getmouse"   %getmouse)   :int      (event (:pointer (:struct mevent))))
 (defcfun ("mousemask"  %mousemask)  mmask_t   (newmask mmask_t) (oldmask (:pointer mmask_t)))
 
 (defcfun ("has_mouse"  %has-mouse)  :boolean)
-(defcfun ("ungetmouse" %ungetmouse) :int      (event (:pointer mevent)))
+(defcfun ("ungetmouse" %ungetmouse) :int      (event (:pointer (:struct mevent))))
