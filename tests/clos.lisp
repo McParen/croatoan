@@ -803,3 +803,35 @@
                (#\q (return)))
              (progn
                (sleep 0.1)))))))
+
+;; resize event: arrange window _positions_ relative to the screen size.
+(defun t15a ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil :enable-colors t)
+    (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
+    (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
+    (let ((time 0)
+          ;; place a window in the center of the screen.
+          (win (make-instance 'window :height 5 :width 10 :origin (list (round (/ (.height scr) 2))
+                                                                        (round (/ (.width scr) 2))))))
+      (loop
+         (let ((event (get-event scr)))
+           (if event
+               (case event
+                 (:resize ;; if the scren is resized, relocate the window to the new center.
+                          (move win (round (/ (.height scr) 2)) (round (/ (.width scr) 2)) :target :window) 
+                          ;; better differentiation of types with methods.
+                          (move win 0 0)
+                          (format win "Y:~A X:~A" (.height scr) (.width scr))
+                          ;; repaint all windows completely by touching them before refreshing.
+                          ;; overlapping windows have to be refreshed in reverse stacking order.
+                          (mapc #'(lambda (w) (touch w) (refresh w)) 
+                                (list scr win)))
+                 (#\q (return)))
+               (progn
+                 (sleep 0.01)
+                 (move win 1 0)
+                 (incf time 0.01)
+                 (format win "~A" time)
+                 (mapc #'(lambda (w) (touch w) (refresh w)) 
+                       (list scr win)) ))))
+      (close win))))
