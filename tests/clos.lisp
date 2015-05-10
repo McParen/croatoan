@@ -753,6 +753,9 @@
              (get-char scr)))
       (close scr))))
 
+;; (cffi:convert-to-foreign '(id 1 x 1 y 2 z 3 bstate 2) '(:struct mevent))
+;; (setf ev (convert-from-foreign (mem-ref bstate '(:struct mevent)) '(:struct mevent)))
+
 ;; mouse events are now detected in the event loop.
 ;; print the y x coordinates and the detected event.
 (defun t14a ()
@@ -786,9 +789,17 @@
                (#\q (return)))
              (sleep 0.01))))))
 
-;; (cffi:convert-to-foreign '(id 1 x 1 y 2 z 3 bstate 2) '(:struct mevent))
-;; (setf ev (convert-from-foreign (mem-ref bstate '(:struct mevent)) '(:struct mevent)))
-
-;;(with-screen-event (ev)
-;;  ((:a (sads))
-;;   (sasdka sasd))
+;; resize event: the standard screen size is resized automatically.
+(defun t15 ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil :enable-colors t)
+    (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
+    (loop
+       (let ((event (get-event scr)))
+         (if event
+             (case event
+               (:resize (move scr 1 0)
+                        (format scr "~A Y lines x ~A X columns." (.height scr) (.width scr))
+                        (refresh scr))
+               (#\q (return)))
+             (progn
+               (sleep 0.1)))))))
