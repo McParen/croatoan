@@ -32,6 +32,7 @@
    ;; has to be a 2el-list so we can use 1 arg with setf.
    (origin
     :initarg       :origin
+    :type          cons
     :documentation "The (y x) coordinate of the top left corner of the window.")
 
    (width
