@@ -135,5 +135,6 @@
    ;; window / create curses windows
 
    ;; wresize / resize a curses window
+   resize
 
    ))

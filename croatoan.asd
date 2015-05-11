@@ -80,7 +80,8 @@
              (:file "mouse")
              (:file "move")
              (:file "refresh")
-             (:file "touch") ))
+             (:file "touch")
+             (:file "wresize")))
 
    ;; tests for both the CFFI ncurses wrappers and the CLOS API.
    (:module "tests"
