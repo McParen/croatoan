@@ -10,3 +10,4 @@ Makes it possible to raise unchanged overlapping windows by refreshing."
 ;;; TODOs
 
 ;; [ ] Return values, errors.
+;; [ ] Difference to redrawwin.

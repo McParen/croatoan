@@ -113,7 +113,7 @@
 
    ;; refresh / refresh curses windows and lines
    refresh
-   batch-refresh
+   refresh-marked
    mark-for-refresh
    mark-for-redraw
 

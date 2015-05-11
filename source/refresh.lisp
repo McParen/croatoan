@@ -13,7 +13,7 @@ whole window, it has to be explicitely touched or marked for redraw."
         (%wrefresh winptr)))
 
 ;; call this after several windows have been marked for refresh.
-(defun batch-refresh ()
+(defun refresh-marked ()
   "Refresh windows marked for refresh."
   (%doupdate))
 
@@ -28,6 +28,8 @@ refreshes."
     (%wnoutrefresh winptr)))
 
 ;; does not redraw, only marks for redrawing by refresh.
+;; It assumes that the display on the terminal has been corrupted.
+;; It is unclear how redrawwin differs from touchwin.
 (defun mark-for-redraw (window &key first-line no-of-lines)
   "Mark a whole window or a number of lines to be completely redrawn on the next refresh."
   (let ((winptr (.winptr window)))
