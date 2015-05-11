@@ -835,3 +835,33 @@
                  (mapc #'(lambda (w) (touch w) (refresh w)) 
                        (list scr win)) ))))
       (close win))))
+
+;; resize event: arrange window _sizes_ relative to the screen size.
+(defun t15b ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil :enable-colors t)
+    (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
+    (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
+    (let ((time 0)
+          ;; make the window slightly smaller than the standard screen.
+          (win (make-instance 'window :height (- (.height scr) 4) :width (- (.width scr) 6) :origin '(2 3))))
+      (loop
+         (let ((event (get-event scr)))
+           (if event
+               (case event
+                 (:resize ;; resize the window on every termina resize.
+                          (resize win (- (.height scr) 4) (- (.width scr) 6))
+                          (move win 0 0)
+                          (format win "Y:~A X:~A" (.height scr) (.width scr))
+                          ;; when updating several overlapping windows, using mark-for-refresh and 
+                          ;; batch-refresh instead of several calls to refresh prevents flickering.
+                          (mapc #'(lambda (w) (touch w) (mark-for-refresh w)) (list scr win))
+                          (refresh-marked))
+                 (#\q (return)))
+               (progn
+                 (sleep 0.01)
+                 (move win 1 0)
+                 (incf time 0.01)
+                 (format win "~A" time)
+                 (mapc #'(lambda (w) (touch w) (mark-for-refresh w)) (list scr win))
+                 (refresh-marked) ))))
+      (close win))))
