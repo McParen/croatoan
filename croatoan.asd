@@ -74,6 +74,7 @@
              (:file "border")
              (:file "clear")
              (:file "getch")
+             (:file "getstr")
              (:file "initscr")
              (:file "inopts")
              (:file "kernel")

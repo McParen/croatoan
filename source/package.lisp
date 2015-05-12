@@ -69,6 +69,7 @@
    get-event
 
    ;; getstr / accept character strings from curses terminal keyboard
+   get-string
 
    ;; getyx / get curses cursor and window coordinates
 
