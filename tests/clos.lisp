@@ -865,3 +865,18 @@
                  (mapc #'(lambda (w) (touch w) (mark-for-refresh w)) (list scr win))
                  (refresh-marked) ))))
       (close win))))
+
+;; test get-string
+(defun t16 ()
+  (unwind-protect
+       (let ((scr (make-instance 'screen)))
+         (clear scr)
+         (move scr 0 0)
+         (add-string scr "Type your name: ")
+         (refresh scr)
+         (let ((str (get-string scr 10)))
+           (add-string scr "Your name is: ")
+           (add-string scr str))
+         (refresh scr)
+         (get-char scr))
+    (end-screen)))

@@ -43,6 +43,7 @@
    #:t15
    #:t15a
    #:t15b
+   #:t16
 
    ;; clos.lisp
    #:matrix
