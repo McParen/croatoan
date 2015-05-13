@@ -338,6 +338,44 @@
          (get-char scr))
     (end-screen)))
 
+;; adding and removing attributes.
+(defun t04a ()
+  (unwind-protect
+       (let ((scr (make-instance 'screen :enable-colors t)))
+         (clear scr)
+         (refresh scr)
+
+         (add-string scr (write-to-string (.attributes scr)))
+         (add-char scr (char-code #\newline))
+
+         (pushnew :bold (.attributes scr))
+         (add-string scr (write-to-string (.attributes scr)))
+         (add-char scr (char-code #\newline))
+
+         (pushnew :underline (.attributes scr))
+         (add-string scr (write-to-string (.attributes scr)))
+         (add-char scr (char-code #\newline))
+
+         (pushnew :reverse (.attributes scr))
+         (add-string scr (write-to-string (.attributes scr)))
+         (add-char scr (char-code #\newline))
+
+         (setf (.attributes scr) (remove :reverse (.attributes scr)))
+         (add-string scr (write-to-string (.attributes scr)))
+         (add-char scr (char-code #\newline))
+
+         (setf (.attributes scr) (remove :underline (.attributes scr)))
+         (add-string scr (write-to-string (.attributes scr)))
+         (add-char scr (char-code #\newline))
+
+         (setf (.attributes scr) (remove :bold (.attributes scr)))
+         (add-string scr (write-to-string (.attributes scr)))
+         (add-char scr (char-code #\newline))
+
+         (refresh scr)
+         (get-char scr))
+    (end-screen)))
+
 ;; Make sure we shut down ncurses and dont mess up the terminal when an error is signaled.
 (defun t05 ()
   (unwind-protect
