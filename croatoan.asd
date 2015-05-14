@@ -73,6 +73,7 @@
              (:file "bkgd")
              (:file "border")
              (:file "clear")
+             (:file "delch")
              (:file "getch")
              (:file "getstr")
              (:file "initscr")

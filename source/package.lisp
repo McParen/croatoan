@@ -58,6 +58,7 @@
    ;; define_key / define a keycode
 
    ;; delch / delete character under the cursor in a curses window
+   delete-char
 
    ;; getch / get (or push back) characters from curses terminal keyboard
    get-char
