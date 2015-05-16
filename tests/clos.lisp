@@ -686,7 +686,28 @@
     (loop (let ((event (get-event scr)))
             (when event
               (case event
+                ;; printable chars
                 (#\q (return))
+
+                ;; non-printable ascii chars. (#\space and #\newline are standard, all others non-standard)
+                (#\escape (format scr "escape char~%"))
+                (#\tab (format scr "tab char~%"))
+                (#\space (format scr "space char~%"))
+
+                ;; NL can be either LF \n,CR \r,or CRLF \r\n, depending on the system. it is LF on ubuntu.
+                ;; NL is the standard, system independent, portable way.
+                (#\linefeed (format scr "enter/linefeed LF \n char~%"))
+                (#\return (format scr "enter/return CR \r char~%"))
+                (#\newline (format scr "enter/newline char~%")) 
+
+                (#\rubout (format scr "rubout char~%")) ;; DEL, delete char 127
+                (#\backspace (format scr "backspace char~%")) ;; BS, not the same as the :backspace key
+
+                ;; function keys
+                ;; the same as #\rubout, but different code.
+                ;; ncurses bug: :backspace is returned for windows, #\rubout for stdscr.
+                (:backspace (format scr "backspace key~%")) 
+
                 (otherwise (format scr "Event: ~A~%" event))))))))
 
 
