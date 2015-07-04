@@ -925,7 +925,8 @@
                  (refresh-marked) ))))
       (close win))))
 
-;; test get-string
+;; test get-string: read a string, then output it.
+;; the only function key we can use during input is backspace.
 (defun t16 ()
   (unwind-protect
        (let ((scr (make-instance 'screen)))
@@ -939,3 +940,38 @@
          (refresh scr)
          (get-char scr))
     (end-screen)))
+
+;; read a single line of Lisp input (30 chars max) from the last line, 
+;; evaluate it and print the result to the output window above.
+(defun t16a ()
+  (with-screen (scr :input-echoing t :input-blocking t :enable-fkeys t :cursor-visibility t :enable-colors nil)
+    (let ((out (make-instance 'window :height (1- (.height scr)) :width (.width scr) :origin '(0 0)))
+          (in (make-instance 'window :height 1 :width (.width scr) :origin (list (1- (.height scr)) 0))))
+
+      (print (eval (read-from-string (get-string in 30))) out)
+      (refresh out)
+
+      ;; blocking is t, so wait till the next keypress before exiting.
+      (get-char in) 
+
+      ;; close windows and window streams.
+      (close in)
+      (close out))))
+
+;; add a loop to the input, making it a simple repl.
+(defun t16b ()
+  (with-screen (scr :input-echoing t :input-blocking t :enable-fkeys t :cursor-visibility t :enable-colors nil)
+    (let ((out (make-instance 'window :height (1- (.height scr)) :width (.width scr) :origin '(0 0)))
+          (in (make-instance 'window :height 1 :width (.width scr) :origin (list (1- (.height scr)) 0))))
+      (loop
+         (let ((str (get-string in 30)))
+           ;; if the input line is empty (length = 0), do nothing.
+           (when (> (length str) 0)
+                ;; a single blocking q exits the loop.
+                (when (string= str "q") (return))
+                ;; after the input is read, clear the input line.
+                (clear in)
+                (print (eval (read-from-string str)) out)
+                (refresh out))))
+      (close in)
+      (close out))))
