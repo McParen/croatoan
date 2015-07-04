@@ -3,7 +3,7 @@
   :author "Anton Vidovic <anton.vidovic@gmx.de>"
   :licence "MIT"
   :version "0.0.1"
-  :depends-on (:cffi)
+  :depends-on (:cffi :trivial-gray-streams)
   :components 
 
   ;; Basic CFFI wrapper for libncurses.
