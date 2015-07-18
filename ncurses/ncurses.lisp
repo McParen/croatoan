@@ -6,6 +6,9 @@
 ;;; http://www.manpagez.com/man/3/ncurses/
 
 (define-foreign-library libncurses
+#+sb-unicode
+    (:unix (:or "libncursesw.so.5.9" "libncursesw.so.5" "libncursesw.so"))
+#-sb-unicode
     (:unix (:or "libncurses.so.5.9" "libncurses.so.5" "libncurses.so"))
     (t     (:default "libncurses")))
 
