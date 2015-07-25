@@ -88,6 +88,13 @@
     :type          cons
     :documentation "A two element list of keywords denoting the foregreound and background color of text displayed in the window.")
 
+   ;; TODO: Doesnt survive a "clear" command yet.
+   (border
+    :initarg       :border
+    :initform      nil
+    :type          boolean
+    :documentation "Enable (t) or disable (nil, default) an initial border around a window.")
+
    (winptr
     :initform      nil
     :reader        .winptr
@@ -172,9 +179,10 @@
   ;; before :before, :after and primary.
   (let ((result (call-next-method)))
     ;; after :before, :after and primary.
-    (with-slots (winptr input-blocking enable-fkeys enable-scrolling) win
+    (with-slots (winptr input-blocking enable-fkeys enable-scrolling border) win
       (set-input-blocking winptr input-blocking)
       (%scrollok winptr enable-scrolling)
+      (when border (%box winptr 0 0))
       (%keypad winptr enable-fkeys))
 
     ;; why do we have to return the result in :around aux methods?

@@ -443,7 +443,7 @@
            (refresh scr)
            (get-char scr)
 
-           (let ((win (make-instance 'window :height 15 :width 50 :origin '(5 5))))
+           (let ((win (make-instance 'window :height 15 :width 50 :origin '(5 5) :border t)))
              (setf (.background win) (make-instance 'complex-char :color-pair '(:red :blue)))
              (add-string win "Window 1")
              (refresh win)
