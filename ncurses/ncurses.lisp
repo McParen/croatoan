@@ -74,5 +74,5 @@
 ;; wherever cffi defines a boolean, we can use t and nil instead of TRUE and FALSE.
 ;;(defconstant TRUE 1)
 ;;(defconstant FALSE 0)
-(defconstant ERROR -1)
-(defconstant OK 0)
+;;(defconstant ERROR -1)
+;;(defconstant OK 0)
