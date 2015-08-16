@@ -975,3 +975,45 @@
                 (refresh out))))
       (close in)
       (close out))))
+
+;; ncurses' get-string only allows backspace.
+;; we want to extend the functionality of an input line to more resemble readline/linedit.
+;; (make-array 0 :element-type 'character :fill-pointer 0 :adjustable t) = "" empty string
+(defun t16c ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visibility t :enable-colors nil)
+    (let ((wout (make-instance 'window :height (1- (.height scr)) :width (.width scr) :origin '(0 0)))
+          (win (make-instance 'window :height 1 :width (.width scr) :origin (list (1- (.height scr)) 0) :enable-fkeys t))
+          ;; save every typed character into an input buffer which starts as an empty string.
+          (bufin (make-array 0 :element-type 'character :fill-pointer 0 :adjustable t)))
+      (loop named event-loop do
+           (let ((event (get-event win)))
+             (if event
+                 (case event
+                   (:left (move-by win 0 -1))
+                   (:right 
+                    ;; dont move cursor when we are at the last position in the inbuf.
+                    (when (< (cadr (.cursor-position win)) (fill-pointer bufin))
+                      (move-by win 0 1)))
+                   (#\newline
+                    (when (> (length bufin) 0) ; print only when the line is not empty.
+                      (princ bufin wout)
+                      (terpri wout)
+                      (setf (fill-pointer bufin) 0) ; after printing, empty the inbuf again.
+                      (clear win) 
+                      (refresh wout)))
+                   (:backspace
+                    (when (> (cadr (.cursor-position win)) 0)
+                      (move-by win 0 -1)
+                      (delete-char win)
+                      (decf (fill-pointer bufin))))
+                   (#\q (return-from event-loop))
+                   ;; push every other character (only characters, not function keys) into the
+                   ;; input buffer.
+                   (otherwise 
+                    (when (typep event 'standard-char)
+                      (progn (format win "~A" event) 
+                             (vector-push-extend event bufin)))))
+                 (progn
+                   (sleep 0.01)))))
+      (close win)
+      (close wout))))
