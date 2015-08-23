@@ -32,3 +32,11 @@
      ;; cleanly exit ncurses whatever happens.
      (end-screen)))
 
+;; window event loop, behaves like case. at the moment, it is limited to a single window.
+;; for this to work, input-reading has to be unbuffered and input-blocking has to be nil.
+;; the main window event loop name is hard coded to "event-case-loop" to be used with return-from.
+(defmacro with-event-case-loop ((window event) &body body)
+  `(loop named event-case-loop do
+        (let ((,event (get-event ,window)))
+              (case ,event
+                ,@body))))
