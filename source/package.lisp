@@ -82,6 +82,7 @@
    ;; insch / insert a character before cursor in a curses window
 
    ;; instr / get a string of characters from a curses window
+   extract-string
 
    ;; inchstr / get a string of characters (and attributes) from a curses window
 

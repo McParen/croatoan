@@ -78,6 +78,7 @@
              (:file "getstr")
              (:file "initscr")
              (:file "inopts")
+             (:file "instr")
              (:file "kernel")
              (:file "mouse")
              (:file "move")
