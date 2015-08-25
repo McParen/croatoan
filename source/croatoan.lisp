@@ -22,7 +22,8 @@
               ;; when an error is signaled and not handled, cleanly end ncurses, print the condition text
               ;; into the repl and get out of the debugger into the repl.
               ;; the debugger is annoying with ncurses apps.
-              (*debugger-hook* #'(lambda (c h) (declare (ignore h)) (end-screen) (print c) (abort))))
+              ;; add (abort) to automatically get out of the debugger.
+              (*debugger-hook* #'(lambda (c h) (declare (ignore h)) (end-screen) (print c) )))
 
           ;; clear the display when starting up.
           (clear ,screen)
