@@ -976,44 +976,49 @@
       (close in)
       (close out))))
 
-;; ncurses' get-string only allows backspace.
-;; we want to extend the functionality of an input line to more resemble readline/linedit.
-;; (make-array 0 :element-type 'character :fill-pointer 0 :adjustable t) = "" empty string
+;; ncurses' get-string only allows the backspace key.
+;; extend the functionality of the input line of the simple repl.
 (defun t16c ()
   (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visibility t :enable-colors nil)
-    (let ((wout (make-instance 'window :height (1- (.height scr)) :width (.width scr) :origin '(0 0)))
-          (win (make-instance 'window :height 1 :width (.width scr) :origin (list (1- (.height scr)) 0) :enable-fkeys t))
-          ;; save every typed character into an input buffer which starts as an empty string.
-          (bufin (make-array 0 :element-type 'character :fill-pointer 0 :adjustable t)))
-      (loop named event-loop do
-           (let ((event (get-event win)))
-             (if event
-                 (case event
-                   (:left (move-by win 0 -1))
-                   (:right 
-                    ;; dont move cursor when we are at the last position in the inbuf.
-                    (when (< (cadr (.cursor-position win)) (fill-pointer bufin))
-                      (move-by win 0 1)))
-                   (#\newline
-                    (when (> (length bufin) 0) ; print only when the line is not empty.
-                      (princ bufin wout)
-                      (terpri wout)
-                      (setf (fill-pointer bufin) 0) ; after printing, empty the inbuf again.
-                      (clear win) 
-                      (refresh wout)))
-                   (:backspace
-                    (when (> (cadr (.cursor-position win)) 0)
-                      (move-by win 0 -1)
-                      (delete-char win)
-                      (decf (fill-pointer bufin))))
-                   (#\q (return-from event-loop))
-                   ;; push every other character (only characters, not function keys) into the
-                   ;; input buffer.
-                   (otherwise 
-                    (when (typep event 'standard-char)
-                      (progn (format win "~A" event) 
-                             (vector-push-extend event bufin)))))
-                 (progn
-                   (sleep 0.01)))))
+    (let* ((wout (make-instance 'window :height (1- (.height scr)) :width (.width scr) :origin '(0 0) :enable-scrolling t))
+           (win (make-instance 'window :height 1 :width (.width scr) :origin (list (1- (.height scr)) 0) :enable-fkeys t))
+           (*standard-output* wout)
+           (n 0)) ; no of chars in the input line.
+      (with-event-case-loop (win event)
+        (:left 
+         (when (> (cadr (.cursor-position win)) 0)
+           (move-by win 0 -1)))
+        (:right 
+         (when (< (cadr (.cursor-position win)) n)
+           (move-by win 0 1)))
+        (#\newline ; RET key, C-j, C-m
+           (when (> n 0) ; only print when the line is not empty.
+             (let* ((strin (extract-string win :n n :y 0 :x 0)) 
+                    (strout (eval (read-from-string strin))))
+               (princ strin)
+               (terpri)
+               (format t "=> ~A~%~%" strout))
+             (setf n 0)
+             (clear win) ; empty the input line after evaluation.
+             (refresh wout)))
+        (:dc ; DEL key
+         (when (> n (cadr (.cursor-position win)))
+           (decf n)
+           (delete-char win)))
+        (:backspace ; BS key
+         (when (> (cadr (.cursor-position win)) 0)
+           (decf n)
+           (move-by win 0 -1)
+           (delete-char win)))
+        (#\q (return-from event-case-loop))
+        ((nil) ; when no key is hit at all
+         ;; when there is no event, get-event will return nil.
+         ;; this is the place for no-event code.
+         nil)
+        (otherwise ; all other keys
+         (when (and (typep event 'standard-char) ; but only if they are character keys
+                    (< (cadr (.cursor-position win)) (1- (.width win))))
+           (incf n)
+           (princ event win))))
       (close win)
       (close wout))))
