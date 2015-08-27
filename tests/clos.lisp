@@ -984,7 +984,7 @@
            (win (make-instance 'window :height 1 :width (.width scr) :origin (list (1- (.height scr)) 0) :enable-fkeys t))
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
-      (with-event-case-loop (win event)
+      (event-case (win event)
         (:left 
          (when (> (cadr (.cursor-position win)) 0)
            (move-by win 0 -1)))
@@ -1010,7 +1010,7 @@
            (decf n)
            (move-by win 0 -1)
            (delete-char win)))
-        (#\q (return-from event-case-loop))
+        (#\q (return-from event-case))
         ((nil) ; when no key is hit at all
          ;; when there is no event, get-event will return nil.
          ;; this is the place for no-event code.

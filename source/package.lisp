@@ -5,8 +5,7 @@
 
    ;; croatoan.lisp
    with-screen
-   with-event-case-loop
-   event-case-loop
+   event-case
 
    ;; classes
    complex-char
