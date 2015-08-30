@@ -32,15 +32,20 @@
    ;; has to be a 2el-list so we can use 1 arg with setf.
    (origin
     :initarg       :origin
+    :initform      '(0 0)
     :type          cons
     :documentation "The (y x) coordinate of the top left corner of the window.")
 
    (width
     :initarg       :width
+    :initform      0
+    :type          :integer
     :documentation "The width (second, horizontal, x dimension) of the window.")
 
    (height
     :initarg       :height
+    :initform      0
+    :type          :integer
     :documentation "The height (first, vertical, y dimension) of the window.")
 
    ;; has to be a 2el-list so we can use 1 arg with setf.
