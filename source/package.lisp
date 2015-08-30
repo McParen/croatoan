@@ -11,6 +11,7 @@
    complex-char
    window
    screen
+   sub-window
 
    ;; accessors
    .simple-char

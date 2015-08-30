@@ -126,6 +126,20 @@
 
   (:documentation "Represents the main window created upon screen initialisation."))
 
+(defclass sub-window (window)
+  ((parent
+    :initarg       :parent
+    :initform      nil
+    :type          window
+    :documentation "The parent window which will contain the sub-window.")
+   (relative
+    :initarg       :relative
+    :initform      nil
+    :type          boolean
+    :documentation "The origin of the sub-window is relative to the parent window (t) or to the screen (nil, default)."))
+  (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
+
+
 #|
 ;; this will be called for both window and screen.
 ;; create a curses window when an instance is created.
@@ -172,6 +186,18 @@
       (if input-echoing (%echo) (%noecho))
       (set-input-reading winptr input-reading)
       (set-cursor-visibility cursor-visibility))))
+
+;; sub-window has to be contained within a parent window
+;; touch parent before refreshing a subwindow
+;; move also needs a method for subwindows.
+;; Subwindows must be deleted before the main window can be deleted.
+(defmethod initialize-instance :after ((win sub-window) &key)
+  (with-slots (winptr parent height width origin relative) win
+    ;; just for SUB-WINDOW types
+    (when (eq (type-of win) 'sub-window)
+      (if relative
+          (setf winptr (%derwin (slot-value parent 'winptr) height width (car origin) (cadr origin)))
+          (setf winptr (%subwin (slot-value parent 'winptr) height width (car origin) (cadr origin)))))))
 
 ;; called after _all_ :after aux methods.
 ;; for all window types in the hierarchy.
