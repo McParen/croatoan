@@ -1022,3 +1022,21 @@
            (princ event win))))
       (close win)
       (close wout))))
+
+;; creating sub-windows and how they share memory with the parent window.
+;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
+(defun t17 ()
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((win1 (make-instance 'window :origin '(2 2) :border t))
+           (win2 (make-instance 'sub-window :parent win1 :height 5 :width 20 :origin '(4 4) :border t))
+           (win3 (make-instance 'sub-window :parent win1 :width 20 :origin '(4 4) :border t :relative t)))
+      (princ "win1" win1)
+      (princ "win2" win2)
+      (princ "win3 relative" win3)
+      (mapc #'(lambda (w) (refresh w)) (list win1 win2 win3))
+      (get-char win3)
+      (mapc #'(lambda (w) (close w)) (list win2 win3))
+      (refresh win1)
+      ;; observe that the content from win 2 and 3 is still in win1 after they have been closed.
+      (get-char win1) )))
+

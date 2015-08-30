@@ -48,6 +48,7 @@
    #:t16a
    #:t16b
    #:t16c
+   #:t17
 
    ;; clos.lisp
    #:matrix
