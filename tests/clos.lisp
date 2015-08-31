@@ -299,6 +299,17 @@
                 (#\q (return))
                 (otherwise (add-char scr (char-code event)))))))))
 
+;; using the event-case macro to simplify the event loop.
+(defun t03b2 ()
+  (with-screen (scr :input-echoing nil :input-blocking nil)
+    (clear scr)
+    (add-string scr "Type chars. Type q to quit. ")
+    (refresh scr)
+    (event-case (scr event)
+      ((nil) nil)
+      (#\q (return-from event-case))
+      (otherwise (add-char scr (char-code event))))))
+
 ;; read and display chars until a q is pressed, blocking + gray stream version.
 ;; the stream reading functiond wont work in non-blocking mode and with non-char keys.
 (defun t03c ()
