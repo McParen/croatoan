@@ -183,7 +183,7 @@
    %insch
    %winsch
    %mvinsch
-   %winsch
+   %mvwinsch
 
    ;; insstr / insert string before cursor in a curses window
    %insstr

@@ -80,6 +80,7 @@
    ;; inch / get a character and attributes from a curses window
 
    ;; insch / insert a character before cursor in a curses window
+   insert-char
 
    ;; instr / get a string of characters from a curses window
    extract-string
