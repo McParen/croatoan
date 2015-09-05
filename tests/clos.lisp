@@ -1016,6 +1016,11 @@
          (when (> n (cadr (.cursor-position win)))
            (decf n)
            (delete-char win)))
+        (:ic ; INS / Einfg key
+         (format t "(.insert-enabled win) => ~A~%" (.insert-enabled win))
+         (setf (.insert-enabled win) (not (.insert-enabled win)))
+         (format t "(.insert-enabled win) => ~A~%" (.insert-enabled win))
+         (refresh wout))
         (:backspace ; BS key
          (when (> (cadr (.cursor-position win)) 0)
            (decf n)
@@ -1050,4 +1055,3 @@
       (refresh win1)
       ;; observe that the content from win 2 and 3 is still in win1 after they have been closed.
       (get-char win1) )))
-
