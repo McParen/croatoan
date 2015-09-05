@@ -75,6 +75,16 @@
     :type          cons
     :documentation "When scrolling is enabled, only scroll the window region from line y1 to y2 given as the list (y1 y2).")
 
+   ;; IC / INS / Insert / Einfg key
+   ;; this will only apply to lisps standard output functions.
+   ;; ncurses functions add-char and insert-char can be used explicitely.
+   (insert-enabled
+    :initarg       :insert-enabled
+    :initform      nil
+    :type          boolean
+    :accessor      .insert-enabled
+    :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting (nil) it.")
+
    (background
     :initarg       :background
     :initform      nil
@@ -381,7 +391,11 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 ;;; Character Output stream
 
 (defmethod stream-write-char ((stream window) (ch character))
-  (%waddch (.winptr stream) (char-code ch)))
+  (if (.insert-enabled stream)
+      (progn
+        (%winsch (.winptr stream) (char-code ch))
+        (move-to stream :right))
+      (%waddch (.winptr stream) (char-code ch))))
 
 ;; Returns the column number where the next character would be written, i.e. the current y position
 (defmethod stream-line-column ((stream window))

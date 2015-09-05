@@ -26,6 +26,7 @@
    .enable-fkeys
    .enable-scrolling
    .scrolling-region
+   .insert-enabled
    .background
    .input-echoing
    .input-reading
