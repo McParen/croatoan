@@ -1055,3 +1055,78 @@
       (refresh win1)
       ;; observe that the content from win 2 and 3 is still in win1 after they have been closed.
       (get-char win1) )))
+
+;; by default, the sub-window displays the part of the parent window it overlaps with.
+;; we can change which part of the parent is displayed by changing the sub-windows source
+;; we can change where it is displayed by changing the sub-windows origin.
+(defun t17a ()
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let ((win (make-instance 'sub-window :parent scr :height 5 :width 20 :origin '(2 2) :border t :relative t)))
+      (move win 1 1) (princ "subwin" win)
+
+      (move scr 2 25) (princ "area1" scr)
+      (move scr 3 29) (princ "area1" scr)
+      (move scr 4 33) (princ "area1" scr)
+      (move scr 5 37) (princ "area1" scr)
+      (move scr 6 41) (princ "area1" scr)
+
+      (move scr 2 50) (princ "area2" scr)
+      (move scr 3 54) (princ "area2" scr)
+      (move scr 4 58) (princ "area2" scr)
+      (move scr 5 62) (princ "area2" scr)
+      (move scr 6 66) (princ "area2" scr)
+
+      (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
+      (get-char scr)
+
+      ;; map area 1 to subwindow win
+      (setf (.source win) '(2 25))
+      ;;(%mvderwin (.winptr win) 5 25)
+      (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
+      (get-char scr)
+
+      ;; map part of both areas to subwindow win
+      (setf (.source win) '(2 40))
+      (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
+      (get-char scr)
+
+      ;; map area 2 to subwindow win
+      (setf (.source win) '(2 50))
+      (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
+      (get-char scr)
+
+      ;;; now move win 2
+      ;; the source of the mapped area is unchanged.
+      ;; the original content of win is now visible again because it is in scr.
+     (setf (.origin win) '(10 2))
+      (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
+      (get-char scr)
+
+      ;; map area 1 to subwindow win
+      (setf (.source win) '(2 25))
+      (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
+      (get-char scr)
+
+      ;; map part of both areas to subwindow win
+      (setf (.source win) '(2 40))
+      (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
+      (get-char scr)
+
+      ;; map area 2 to subwindow win
+      (setf (.source win) '(2 50))
+      (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
+      (get-char scr)
+
+      ;;; writing to a sub-window, writes to the source position of the parent window
+      (clear win)
+      (move win 0 0) (princ "writing to sub-win" win)
+      (move win 1 0) (princ "writes to parent win" win)
+      (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
+      (get-char scr)
+
+      ;; delete the subwindow win
+      ;; the mapped content isnt displayed any more.
+      ;; now the content before the mapping should be displayed again.
+      (mapc #'(lambda (w) (close w)) (list win))
+      (refresh scr)
+      (get-char scr) )))
