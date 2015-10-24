@@ -151,7 +151,12 @@
     :initarg       :relative
     :initform      nil
     :type          boolean
-    :documentation "The origin of the sub-window is relative to the parent window (t) or to the screen (nil, default)."))
+    :documentation "The origin of the sub-window is relative to the parent window (t) or to the screen (nil, default).")
+   (source
+    :initarg       :source
+    :initform      nil
+    :type          cons
+    :documentation "Origin (y x) of the area of the parent window, which is mirrored in the subwindow. By default it is identical to the origin of the subwindow, but it does not have to be."))
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
 
 
@@ -234,10 +239,20 @@
 (defgeneric .origin (window))
 (defmethod .origin ((window window))
   (list (%getbegy (slot-value window 'winptr)) (%getbegx (slot-value window 'winptr))))
+(defmethod .origin ((win sub-window))
+  (with-slots (winptr relative) win
+    (if relative
+        (list (%getpary winptr) (%getparx winptr))
+        (list (%getbegy winptr) (%getbegx winptr)))))
 (defgeneric (setf .origin) (coordinates window))
 (defmethod (setf .origin) (coordinates (w window))
   (setf (slot-value w 'origin) coordinates)
   (%mvwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
+
+(defgeneric (setf .source) (coordinates sub-window))
+(defmethod (setf .source) (coordinates (w sub-window))
+  (setf (slot-value w 'source) coordinates)
+  (%mvderwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
 (defgeneric .width (window))
 (defmethod .width ((window window))

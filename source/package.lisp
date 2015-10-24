@@ -31,6 +31,7 @@
    .input-echoing
    .input-reading
    .cursor-visibility
+   .source
 
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add-char
