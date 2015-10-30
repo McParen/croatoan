@@ -30,11 +30,11 @@
 (defclass window (fundamental-character-input-stream fundamental-character-output-stream)
   (
    ;; has to be a 2el-list so we can use 1 arg with setf.
-   (origin
-    :initarg       :origin
+   (position
+    :initarg       :position
     :initform      '(0 0)
     :type          cons
-    :documentation "The (y x) coordinate of the top left corner of the window.")
+    :documentation "The (y=row x=column) coordinate of the top left corner of the window.")
 
    (width
     :initarg       :width
@@ -151,12 +151,13 @@
     :initarg       :relative
     :initform      nil
     :type          boolean
-    :documentation "The origin of the sub-window is relative to the parent window (t) or to the screen (nil, default).")
+    :documentation "The position of the sub-window is relative to the parent window (t) or to the screen (nil, default).")
    (source
     :initarg       :source
     :initform      nil
     :type          cons
-    :documentation "Origin (y x) of the area of the parent window, which is mirrored in the subwindow. By default it is identical to the origin of the subwindow, but it does not have to be."))
+    :documentation "Position (y x) of the area of the parent window, which is mapped to the subwindow. By default it is identical to the position of the subwindow."))
+
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
 
 
@@ -165,7 +166,7 @@
 ;; create a curses window when an instance is created.
 (defmethod initialize-instance :after ((win window) &key)
   (with-slots (winptr cursor-visibility enable-colors input-echoing input-reading 
-                      input-blocking enable-fkeys enable-scrolling height width origin) win
+                      input-blocking enable-fkeys enable-scrolling height width position) win
 
     ;; different initialisations depending on the window type.
     ;; %initscr initializes a screen, %newwin initializes a window.
@@ -181,7 +182,7 @@
                 (set-input-reading winptr input-reading)
                 (set-cursor-visibility cursor-visibility))) ;kernel.lisp
       ;; a window is initialized when we create a new window.
-      (window (setf winptr (%newwin height width (car origin) (cadr origin)))))
+      (window (setf winptr (%newwin height width (car position) (cadr position)))))
 
     ;; the following settings have to be executed for all window types.
     (set-input-blocking winptr input-blocking)
@@ -192,10 +193,10 @@
 ;; We cant do this because _all_ auxiliary methods are always used and combined.
 
 (defmethod initialize-instance :after ((win window) &key)
-  (with-slots (winptr height width origin) win
+  (with-slots (winptr height width position) win
     ;; just for WINDOW types
     (when (eq (type-of win) 'window)
-      (setf winptr (%newwin height width (car origin) (cadr origin))))))
+      (setf winptr (%newwin height width (car position) (cadr position))))))
 
 (defmethod initialize-instance :after ((scr screen) &key)
   (with-slots (winptr enable-colors cursor-visibility input-echoing input-reading input-blocking enable-fkeys enable-scrolling) scr
@@ -212,12 +213,12 @@
 ;; move also needs a method for subwindows.
 ;; Subwindows must be deleted before the main window can be deleted.
 (defmethod initialize-instance :after ((win sub-window) &key)
-  (with-slots (winptr parent height width origin relative) win
+  (with-slots (winptr parent height width position relative) win
     ;; just for SUB-WINDOW types
     (when (eq (type-of win) 'sub-window)
       (if relative
-          (setf winptr (%derwin (slot-value parent 'winptr) height width (car origin) (cadr origin)))
-          (setf winptr (%subwin (slot-value parent 'winptr) height width (car origin) (cadr origin)))))))
+          (setf winptr (%derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
+          (setf winptr (%subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
 
 ;; called after _all_ :after aux methods.
 ;; for all window types in the hierarchy.
@@ -236,19 +237,25 @@
 
 ;; Accessors
 
-(defgeneric .origin (window))
-(defmethod .origin ((window window))
+(defgeneric .position (window))
+(defmethod .position ((window window))
   (list (%getbegy (slot-value window 'winptr)) (%getbegx (slot-value window 'winptr))))
-(defmethod .origin ((win sub-window))
+(defmethod .position ((win sub-window))
   (with-slots (winptr relative) win
     (if relative
         (list (%getpary winptr) (%getparx winptr))
         (list (%getbegy winptr) (%getbegx winptr)))))
-(defgeneric (setf .origin) (coordinates window))
-(defmethod (setf .origin) (coordinates (w window))
-  (setf (slot-value w 'origin) coordinates)
+(defgeneric (setf .position) (coordinates window))
+(defmethod (setf .position) (coordinates (w window))
+  (setf (slot-value w 'position) coordinates)
   (%mvwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
+;; "The screen-relative parameters of the window are not changed. 
+;; This routine is used to display different parts of the parent 
+;; window at the same physical position on the screen."
+;;
+;; "The mvderwin() function specifies a mapping of characters.
+;; The function identifies a mapped area of the parent of the specified window"
 (defgeneric (setf .source) (coordinates sub-window))
 (defmethod (setf .source) (coordinates (w sub-window))
   (setf (slot-value w 'source) coordinates)

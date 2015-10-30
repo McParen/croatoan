@@ -19,7 +19,7 @@
    .color-pair
    .width
    .height
-   .origin
+   .position
    .cursor-position
    .winptr
    .input-blocking

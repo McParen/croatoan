@@ -430,7 +430,7 @@
          (refresh scr)
          (get-char scr)
 
-         (let ((win (make-instance 'window :height 15 :width 50 :origin '(5 5))))
+         (let ((win (make-instance 'window :height 15 :width 50 :position '(5 5))))
            (setf (.background win) (make-instance 'complex-char :color-pair '(:red :blue)))
            (add-string win "Window 1")
            (refresh win)
@@ -454,7 +454,7 @@
            (refresh scr)
            (get-char scr)
 
-           (let ((win (make-instance 'window :height 15 :width 50 :origin '(5 5) :border t)))
+           (let ((win (make-instance 'window :height 15 :width 50 :position '(5 5) :border t)))
              (setf (.background win) (make-instance 'complex-char :color-pair '(:red :blue)))
              (add-string win "Window 1")
              (refresh win)
@@ -543,7 +543,7 @@
            (get-char scr)
 
            ;; temporarily bind *standard-output* to a window.
-           (let* ((win (make-instance 'window :height 15 :width 50 :origin '(5 5)))
+           (let* ((win (make-instance 'window :height 15 :width 50 :position '(5 5)))
                   (*standard-output* win))
              (setf (.background win) (make-instance 'complex-char :color-pair '(:white :black)))
              (format t "~r" 1985)
@@ -575,9 +575,9 @@
 
            (refresh scr)
 
-           (let ((w1 (make-instance 'window :height 10 :width 30 :origin '(3 5)))
-                 (w2 (make-instance 'window :height 10 :width 30 :origin '(6 10)))
-                 (w3 (make-instance 'window :height 10 :width 30 :origin '(9 15))))
+           (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)))
+                 (w2 (make-instance 'window :height 10 :width 30 :position '(6 10)))
+                 (w3 (make-instance 'window :height 10 :width 30 :position '(9 15))))
 
              (setf (.background w1) (make-instance 'complex-char :color-pair '(:white :black)))
              (setf (.background w2) (make-instance 'complex-char :color-pair '(:black :white)))
@@ -609,7 +609,7 @@
 
              ;; move the whole window 3. note that this doesnt refresh the windows below,
              ;; they have to be refreshed separately.
-             (setf (.origin w3) '(9 20))
+             (setf (.position w3) '(9 20))
              (refresh w3)
              (get-char w3)
 
@@ -634,9 +634,9 @@
            (box scr)
            (refresh scr)
 
-           (let ((w1 (make-instance 'window :height 10 :width 30 :origin '(3 5)))
-                 (w2 (make-instance 'window :height 10 :width 30 :origin '(6 10)))
-                 (w3 (make-instance 'window :height 10 :width 30 :origin '(9 15))))
+           (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)))
+                 (w2 (make-instance 'window :height 10 :width 30 :position '(6 10)))
+                 (w3 (make-instance 'window :height 10 :width 30 :position '(9 15))))
 
              (box w1)
              (box w2)
@@ -881,7 +881,7 @@
     (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (let ((time 0)
           ;; place a window in the center of the screen.
-          (win (make-instance 'window :height 5 :width 10 :origin (list (round (/ (.height scr) 2))
+          (win (make-instance 'window :height 5 :width 10 :position (list (round (/ (.height scr) 2))
                                                                         (round (/ (.width scr) 2))))))
       (loop
          (let ((event (get-event scr)))
@@ -913,7 +913,7 @@
     (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
     (let ((time 0)
           ;; make the window slightly smaller than the standard screen.
-          (win (make-instance 'window :height (- (.height scr) 4) :width (- (.width scr) 6) :origin '(2 3))))
+          (win (make-instance 'window :height (- (.height scr) 4) :width (- (.width scr) 6) :position '(2 3))))
       (loop
          (let ((event (get-event scr)))
            (if event
@@ -956,8 +956,8 @@
 ;; evaluate it and print the result to the output window above.
 (defun t16a ()
   (with-screen (scr :input-echoing t :input-blocking t :enable-fkeys t :cursor-visibility t :enable-colors nil)
-    (let ((out (make-instance 'window :height (1- (.height scr)) :width (.width scr) :origin '(0 0)))
-          (in (make-instance 'window :height 1 :width (.width scr) :origin (list (1- (.height scr)) 0))))
+    (let ((out (make-instance 'window :height (1- (.height scr)) :width (.width scr) :position '(0 0)))
+          (in (make-instance 'window :height 1 :width (.width scr) :position (list (1- (.height scr)) 0))))
 
       (print (eval (read-from-string (get-string in 30))) out)
       (refresh out)
@@ -972,8 +972,8 @@
 ;; add a loop to the input, making it a simple repl.
 (defun t16b ()
   (with-screen (scr :input-echoing t :input-blocking t :enable-fkeys t :cursor-visibility t :enable-colors nil)
-    (let ((out (make-instance 'window :height (1- (.height scr)) :width (.width scr) :origin '(0 0)))
-          (in (make-instance 'window :height 1 :width (.width scr) :origin (list (1- (.height scr)) 0))))
+    (let ((out (make-instance 'window :height (1- (.height scr)) :width (.width scr) :position '(0 0)))
+          (in (make-instance 'window :height 1 :width (.width scr) :position (list (1- (.height scr)) 0))))
       (loop
          (let ((str (get-string in 30)))
            ;; if the input line is empty (length = 0), do nothing.
@@ -991,8 +991,8 @@
 ;; extend the functionality of the input line of the simple repl.
 (defun t16c ()
   (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visibility t :enable-colors nil)
-    (let* ((wout (make-instance 'window :height (1- (.height scr)) :width (.width scr) :origin '(0 0) :enable-scrolling t))
-           (win (make-instance 'window :height 1 :width (.width scr) :origin (list (1- (.height scr)) 0) :enable-fkeys t))
+    (let* ((wout (make-instance 'window :height (1- (.height scr)) :width (.width scr) :position '(0 0) :enable-scrolling t))
+           (win (make-instance 'window :height 1 :width (.width scr) :position (list (1- (.height scr)) 0) :enable-fkeys t))
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
       (event-case (win event)
@@ -1043,9 +1043,9 @@
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let* ((win1 (make-instance 'window :origin '(2 2) :border t))
-           (win2 (make-instance 'sub-window :parent win1 :height 5 :width 20 :origin '(4 4) :border t))
-           (win3 (make-instance 'sub-window :parent win1 :width 20 :origin '(4 4) :border t :relative t)))
+    (let* ((win1 (make-instance 'window :position '(2 2) :border t))
+           (win2 (make-instance 'sub-window :parent win1 :height 5 :width 20 :position '(4 4) :border t))
+           (win3 (make-instance 'sub-window :parent win1 :width 20 :position '(4 4) :border t :relative t)))
       (princ "win1" win1)
       (princ "win2" win2)
       (princ "win3 relative" win3)
@@ -1058,10 +1058,10 @@
 
 ;; by default, the sub-window displays the part of the parent window it overlaps with.
 ;; we can change which part of the parent is displayed by changing the sub-windows source
-;; we can change where it is displayed by changing the sub-windows origin.
+;; we can change where it is displayed by changing the sub-windows position.
 (defun t17a ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let ((win (make-instance 'sub-window :parent scr :height 5 :width 20 :origin '(2 2) :border t :relative t)))
+    (let ((win (make-instance 'sub-window :parent scr :height 5 :width 20 :position '(2 2) :border t :relative t)))
       ;; initial content written to subwin and thus to scr.
       (move win 1 1) (princ "subwin" win)
 
@@ -1097,7 +1097,7 @@
       ;; it still maps area2, but now to the new position.
       ;; the original content written to the subwin (and thus to scr because they share memory)
       ;; is now visible in scr, since the subwin overlay has moved.
-      (setf (.origin win) '(10 2))
+      (setf (.position win) '(10 2))
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
