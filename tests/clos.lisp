@@ -184,23 +184,23 @@
            (height (.height scr))
            (positions (loop repeat width collect (random height)))
            (speeds (loop repeat width collect (random 4))))
-      (loop
-         (let ((event (get-event scr)))
-           (if event
-               (case event
-                 (#\q (return)))
-               (progn
-                 (sleep 0.05)
-                 (loop for column from 0 to (1- width) do
-                      (loop repeat (nth column speeds) do
-                           (setf (.color-pair scr) '(:white :black))
-                           (add-char scr (+ 64 (random 58)) :y (mod (nth column positions) height) :x column)
-                           (setf (.color-pair scr) '(:green :black))
-                           (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 1) height) :x column)
-                           (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 3) height) :x column)
-                           (add-char scr (char-code #\space) :y (mod (- (nth column positions) 15) height) :x column)
-                           (refresh scr)
-                           (setf (nth column positions) (mod (1+ (nth column positions)) height)))))))))))
+      (event-case (scr event)
+        (#\q (return-from event-case))
+        ((nil)
+         (sleep 0.05)
+         (loop for column from 0 to (1- width) do
+              (loop repeat (nth column speeds) do
+                   (setf (.attributes scr) '(:bold))
+                   (setf (.color-pair scr) '(:white :black))
+                   (add-char scr (+ 64 (random 58)) :y (mod (nth column positions) height) :x column)
+                   (setf (.color-pair scr) '(:green :black))
+                   (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 1) height) :x column)
+                   (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 2) height) :x column)
+                   (setf (.attributes scr) '(:normal))
+                   (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 3) height) :x column)
+                   (add-char scr (char-code #\space) :y (mod (- (nth column positions) (floor height 2)) height) :x column)
+                   (refresh scr)
+                   (setf (nth column positions) (mod (1+ (nth column positions)) height)))))))))
 
 ;; initialize ncurses, deinitialize ncurses
 ;; tests initialize-instance
