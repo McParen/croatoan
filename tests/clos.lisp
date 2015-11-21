@@ -990,9 +990,11 @@
 ;; ncurses' get-string only allows the backspace key.
 ;; extend the functionality of the input line of the simple repl.
 (defun t16c ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visibility t :enable-colors nil)
+  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors nil)
     (let* ((wout (make-instance 'window :height (1- (.height scr)) :width (.width scr) :position '(0 0) :enable-scrolling t))
-           (win (make-instance 'window :height 1 :width (.width scr) :position (list (1- (.height scr)) 0) :enable-fkeys t))
+           ;; input blocking is a property of every single window, not just of the global screen.
+           (win (make-instance 'window :height 1 :width (.width scr) :position (list (1- (.height scr)) 0)
+                               :enable-fkeys t :input-blocking nil))
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
       (event-case (win event)
