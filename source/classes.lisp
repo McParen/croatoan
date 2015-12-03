@@ -360,8 +360,8 @@
   (let ((added (set-difference attributes (slot-value window 'attributes)))
         (removed (set-difference (slot-value window 'attributes) attributes)))
     (setf (slot-value window 'attributes) attributes)
-    (add-attributes (slot-value window 'winptr) added)
-    (remove-attributes (slot-value window 'winptr) removed)))
+    (add-attributes window added)
+    (remove-attributes window removed)))
 ;; TODO use %wattron and %wattroff here.
 
 
@@ -428,9 +428,14 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 (defmethod stream-read-char ((stream window))
   (code-char (%wgetch (.winptr stream))))
 
+;;(defmethod stream-read-char-no-hang ((stream window))
+;; %wgetch wie bei read-char, nur muss input-blocking nil sein.
+
 (defmethod stream-unread-char ((stream window) (ch character))
   (%ungetch (char-code ch)))
 
+;; listen = read-char-no-hang + unread
+;;(defmethod stream-listen ((stream window))
 
 ;; methods to close streams, and thus screen _and_ windows, since they are now streams.
 ;; end-screen = %endwin

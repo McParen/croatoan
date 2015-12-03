@@ -50,27 +50,38 @@ Example: (pair->number '(:white :black)) => 0"
   "Take a pair number, return a color pair in a 2 element list of keywords."
   (car (rassoc number *color-pair-alist*)))
 
-
-
-
-(defun add-attributes (winptr attributes)
+(defun add-attributes (win attributes)
   "Takes a list of keywords and turns the appropriate attributes on."
   (dolist (i attributes)
-    (%wattron winptr (get-bitmask i))))
+    (setf (.attributes win) (adjoin i (.attributes win)))
+    (%wattron (.winptr win) (get-bitmask i))))
 
-(defun remove-attributes (winptr attributes)
+(defun remove-attributes (win attributes)
   "Takes a list of keywords and turns the appropriate attributes off."
   (dolist (i attributes)
-    (%wattroff winptr (get-bitmask i))))
+    (setf (.attributes win) (remove i (.attributes win)))
+    (%wattroff (.winptr win) (get-bitmask i))))
 
 ;; (set-attributes scr '(:bold :underline))
-;; vorsicht: set-attributes overwrites color settings because it treats color as an attribute.
+;; set-attributes overwrites color settings because it treats color as an attribute.
+;; thats why we wont use it directly.
 (defun set-attributes (winptr attributes)
   "Takes a list of keywords and sets the appropriate attributes.
 
 Overwrites any previous attribute settings including the color."
   (%wattrset winptr
              (apply #'logior (loop for i in attributes collect (get-bitmask i)))))
+
+;; (%wchgat (.winptr win) 9 #x00040000 0 (null-pointer))
+(defun change-attributes (win n attributes &optional color-pair)
+  "Change the attributes and color of n characters starting at the current cursor position."
+  (let ((attrs (apply #'logior (loop for i in attributes collect (get-bitmask i))))
+        (pairno (if color-pair
+                    (pair->number color-pair)
+                    (if (.color-pair win)
+                        (.color-pair win)
+                        0))))                     
+    (%wchgat (.winptr win) n attrs pairno (null-pointer))))
 
 ;; (set-color window '(:black :white))
 (defun set-color-pair (winptr color-pair)
@@ -119,6 +130,21 @@ Overwrites any previous attribute settings including the color."
     :right 
     :top 
     :vertical))
+
+(defparameter *used-attributes*
+  '(:underline 
+    :reverse 
+    :blink 
+    :dim 
+    :bold))
+
+(defun chtype2attrs (ch)
+  (loop
+     for i in *used-attributes*
+     if (logtest ch (get-bitmask i)) collect i))
+
+(defun attrs2chtype (attrs)
+  (apply #'logior (mapcar #'get-bitmask attrs)))
 
 ;;; ------------------------------------------------------------------
 

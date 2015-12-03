@@ -44,7 +44,10 @@
 
    ;; attr / curses character and window attribute control routines
    convert-char
-
+   change-attributes
+   add-attributes
+   remove-attributes
+   
    ;; beep / curses bell and screen flash routines
    alert
 
