@@ -1201,3 +1201,21 @@
           (#\newline (return-from event-case (nth i choices)))
           (#\q (return-from event-case)))))))
 
+;; an even simpler 2-item menu is a yes-no-dialog.
+(defun t19a ()
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (flet ((draw-menu (win choices i)
+             (move win 2 0) (clear win :target :end-of-line)
+             (loop for j from 0 to (1- (length choices)) do
+                  (move win 2 (* 10 j))
+                  (format win "~A~A" (car (nth j choices)) (if (= i j) "*" ""))
+                  (refresh win))))
+      (let* ((choices '(("Yes" . t) ("No" . nil)))
+             (n (length choices))
+             (i 0)) ; current choice
+        (move scr 0 0) (format scr "User, do you want?") (refresh scr)
+        (draw-menu scr choices i)
+        (event-case (scr event)
+          ((:up :down :left :right #\tab) (setf i (mod (1+ i) n)) (draw-menu scr choices i))
+          (#\newline (return-from event-case (cdr (nth i choices)))))))))
+
