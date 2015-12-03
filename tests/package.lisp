@@ -53,6 +53,7 @@
    #:t17
    #:t17a
    #:t18
+   #:t19
    
    ;; clos.lisp
    #:matrix

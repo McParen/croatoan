@@ -1178,3 +1178,26 @@
     (refresh scr)
     (get-char scr)))
 
+;; print a simple menu, let the user choose an item by arrow keys, return the chosen item.
+;; https://www.gnu.org/software/guile-ncurses/manual/html_node/A-simple-key-usage-example.html
+(defun t19 ()
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (flet ((draw-menu (win choices i)
+             (clear win)
+             (loop for j from 0 to (1- (length choices)) do
+                  (move win j 0)
+                  (format win "~A~A" (nth j choices) (if (= i j) "*" ""))
+                  (when (= i j)
+                    (move win j 0)
+                    (change-attributes win 9 '(:reverse)))
+                  (refresh win))))
+      (let* ((choices '("Choice 0" "Choice 1" "Choice 2" "Choice 3" "Choice 4" "Choice 5" "Choice 6"))
+             (n (length choices))
+             (i 0)) ; current choice
+        (draw-menu scr choices i)
+        (event-case (scr event)
+          (:up (setf i (mod (1- i) n)) (draw-menu scr choices i))
+          (:down (setf i (mod (1+ i) n)) (draw-menu scr choices i))
+          (#\newline (return-from event-case (nth i choices)))
+          (#\q (return-from event-case)))))))
+
