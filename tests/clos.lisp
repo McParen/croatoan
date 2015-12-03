@@ -387,6 +387,38 @@
          (get-char scr))
     (end-screen)))
 
+;; a more concise way to write t04a
+(defun t04b ()
+  (with-screen (scr :enable-colors t :cursor-visibility nil)
+    (clear scr)
+
+    (print (.attributes scr) scr)
+
+    (add-attributes scr '(:bold))
+    (print (.attributes scr) scr)
+
+    (add-attributes scr '(:underline))
+    (print (.attributes scr) scr)
+
+    (add-attributes scr '(:reverse))
+    (print (.attributes scr) scr)
+
+    (remove-attributes scr '(:bold :underline :reverse))
+    (print (.attributes scr) scr)
+
+    (add-attributes scr '(:bold :underline :reverse))
+    (print (.attributes scr) scr)
+    
+    (setf (.attributes scr) nil)
+    (print (.attributes scr) scr)
+    (print "test" scr)
+
+    (move scr 6 10)
+    (change-attributes scr 10 '())
+    
+    (refresh scr)
+    (get-char scr)))
+
 ;; Make sure we shut down ncurses and dont mess up the terminal when an error is signaled.
 (defun t05 ()
   (unwind-protect
