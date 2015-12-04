@@ -5,6 +5,8 @@
 ;; i.e. with bkgd we manipulate the existing text, with bkgdset the new text.
 
 ;; the attribute part of the background char is compined with any chars added.
+;; because of that, we cant use alternate chars as background chars, since
+;; :altcharset is an attribute.
 
 (defun set-background-char (winptr char &optional (target :whole-window))
   "Set the background character and attributes of a window.

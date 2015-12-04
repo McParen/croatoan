@@ -21,6 +21,10 @@
       (%derwin parent-window height width begin-y begin-x)
       (%subwin parent-window height width begin-y begin-x)))
 
+;; This is NOT a move function, despite the name. You still move a subwindow with mvwin. 
+;; "Moving subwindows is allowed, but should be avoided."
+;; mvderwin changes the source area of a subwin, but not the output area.
+;; "This routine is used to display different parts of the parent window at the same physical position on the screen."
 (defun move-subwindow (window parent-y parent-x)
   (%mvderwin window parent-y parent-x))
 

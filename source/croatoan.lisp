@@ -34,7 +34,9 @@
      (end-screen)))
 
 ;; window event loop, behaves like case. at the moment, it is limited to a single window.
-;; for this to work, input-reading has to be unbuffered and input-blocking has to be nil.
+;; for this to work, input-reading has to be unbuffered.
+;; if input-blocking is nil, we can handle the (nil) event, i.e. stuff that happens between key presses.
+;; if input-blocking is t, the (nil) event is never returned.
 ;; the main window event loop name is hard coded to "event-case-loop" to be used with return-from.
 (defmacro event-case ((window event) &body body)
   `(loop named event-case do
