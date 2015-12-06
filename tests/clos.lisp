@@ -827,6 +827,46 @@
            (get-char scr))
       (close scr))))
 
+;; after adding gray streams and adding acs to add-char.
+;; http://melvilletheatre.com/articles/ncurses-extended-characters/index.html
+(defun t12a ()
+  (with-screen (scr)
+    (add-char scr :ulcorner) (format scr " ACS_ULCORNER / upper left corner      ~%")
+    (add-char scr :llcorner) (format scr " ACS_LLCORNER / lower left corner      ~%")
+    (add-char scr :urcorner) (format scr " ACS_URCORNER / upper right corner     ~%")
+    (add-char scr :lrcorner) (format scr " ACS_LRCORNER / lower right corner     ~%")   
+    (add-char scr :ltee    ) (format scr " ACS_LTEE     / tee pointing right     ~%")
+    (add-char scr :rtee    ) (format scr " ACS_RTEE     / tee pointing left      ~%")   
+    (add-char scr :btee    ) (format scr " ACS_BTEE     / tee pointing up        ~%")
+    (add-char scr :ttee    ) (format scr " ACS_TTEE     / tee pointing down      ~%")
+    (add-char scr :hline   ) (format scr " ACS_HLINE    / horizontal line        ~%")   
+    (add-char scr :vline   ) (format scr " ACS_VLINE    / vertical line          ~%")
+    (add-char scr :plus    ) (format scr " ACS_PLUS     / large plus or crossover~%")
+    (add-char scr :s1      ) (format scr " ACS_S1       / scan line 1            ~%")
+    (add-char scr :s9      ) (format scr " ACS_S9       / scan line 9            ~%")
+    (add-char scr :diamond ) (format scr " ACS_DIAMOND  / diamond                ~%")
+    (add-char scr :ckboard ) (format scr " ACS_CKBOARD  / checker board (stipple)~%")
+    (add-char scr :degree  ) (format scr " ACS_DEGREE   / degree symbol          ~%")
+    (add-char scr :plminus ) (format scr " ACS_PLMINUS  / plus/minus             ~%")
+    (add-char scr :bullet  ) (format scr " ACS_BULLET   / bullet                 ~%")
+    (add-char scr :larrow  ) (format scr " ACS_LARROW   / arrow pointing left    ~%")
+    (add-char scr :rarrow  ) (format scr " ACS_RARROW   / arrow pointing right   ~%")
+    (add-char scr :darrow  ) (format scr " ACS_DARROW   / arrow pointing down    ~%")
+    (add-char scr :uarrow  ) (format scr " ACS_UARROW   / arrow pointing up      ~%")
+    (add-char scr :board   ) (format scr " ACS_BOARD    / board of squares       ~%")
+    (add-char scr :lantern ) (format scr " ACS_LANTERN  / lantern symbol         ~%")
+    (add-char scr :block   ) (format scr " ACS_BLOCK    / solid square block     ~%")
+    (add-char scr :s3      ) (format scr " ACS_S3       / scan line 3            ~%")
+    (add-char scr :s7      ) (format scr " ACS_S7       / scan line 7            ~%")
+    (add-char scr :lequal  ) (format scr " ACS_LEQUAL   / less/equal             ~%")
+    (add-char scr :gequal  ) (format scr " ACS_GEQUAL   / greater/equal          ~%")
+    (add-char scr :pi      ) (format scr " ACS_PI       / Pi                     ~%")
+    (add-char scr :nequal  ) (format scr " ACS_NEQUAL   / not equal              ~%")
+    (add-char scr :sterling) (format scr " ACS_STERLING / UK pound sign          ~%")
+
+    (refresh scr)
+    (get-char scr)))
+
 ;; Demonstrate flash and beep alerts.
 ;; It depends on the terminal emulator whether they will work for you.
 ;; They both worked in xterm for me.
