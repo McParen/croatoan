@@ -1,11 +1,24 @@
 (in-package :de.anvi.croatoan)
 
-(defun add-char (window chtype &key y x)
-  "Add the rendered char to the window, then advance the cursor.
+;; (add-char scr (code-char ch) :attrs '(:bold) :color-pair '(:red :yellow))
+(defun add-char (window char &key attributes color-pair y x)
+  "Add the char to the window, then advance the cursor.
 
-If the destination coordinates y and x are given, move the cursor
-there first."
-  (let ((winptr (.winptr window)))
+If the destination coordinates y and x are given, move the cursor to the
+destination first and then add the character."
+  (let ((winptr (.winptr window))
+        (chtype (logior (typecase char
+                          ;; if the char is already an integer chtype
+                          (integer char)
+                          ;; alternative chars are given as keywords
+                          (keyword (acs char))
+                          ;; if it is a lisp char, convert it to an integer first
+                          (character (char-code char)))
+                        ;; convert the pair to an integer, then bit shift it by 8
+                        (if color-pair (ash (pair->number color-pair) 8) 0)
+                        ;; the attribute bitmasks already are bitshifted to the
+                        ;; correct position in the chtype
+                        (if attributes (attrs2chtype attributes) 0))))
     (cond ((and y x)
            (%mvwaddch winptr y x chtype))
           (t
