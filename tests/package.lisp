@@ -61,6 +61,7 @@
    #:matrix
    #:snake
    #:tetris
+   #:pipes
 
    ;; evolution.lisp
    #:evolve4 ))
