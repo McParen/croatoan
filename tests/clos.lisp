@@ -945,35 +945,20 @@
 ;; mouse events are now detected in the event loop.
 ;; print the y x coordinates and the detected event.
 (defun t14a ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
-    (%mousemask #b00000111111111111111111111111111 (null-pointer))
-    (loop
-       (let ((event (get-event scr)))
-         (if event
-             (case event
-               ;; first detect that it is a mouse event...
-               (:mouse (multiple-value-bind (mouse-event y x) (get-mouse-event)
-                         ;; then print the kind of mouse event and the coordinates.
-                         (format scr "~3A ~3A ~A~%" y x mouse-event)))
-               (#\q (return)))
-             (sleep 0.01))))))
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-fkeys t :cursor-visibility nil)
+    (set-mouse-event '(:button-1-clicked :button-2-clicked :button-3-clicked))
+    (event-case (scr event y x)
+      ((:button-1-clicked :button-2-clicked :button-3-clicked) (format scr "~3A ~3A ~A~%" y x event))
+      (#\q (return-from event-case)))))
 
 ;; left click prints a 1, right click prints a 3.
 (defun t14b ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
-    (%mousemask #b00000111111111111111111111111111 (null-pointer))
-    (loop
-       (let ((event (get-event scr)))
-         (if event
-             (case event
-               ;; first detect that it is a mouse event...
-               (:mouse (multiple-value-bind (mouse-event y x) (get-mouse-event)
-                         (case mouse-event
-                           ;; then check what kind of mouse event it is.
-                           (:button-1-clicked (move scr y x) (princ "1" scr))
-                           (:button-3-clicked (move scr y x) (princ "3" scr)))))
-               (#\q (return)))
-             (sleep 0.01))))))
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-fkeys t :cursor-visibility nil)
+    (set-mouse-event '(:button-1-clicked :button-3-clicked))
+    (event-case (scr event mouse-y mouse-x)
+      (:button-1-clicked (move scr mouse-y mouse-x) (princ "1" scr))
+      (:button-3-clicked (move scr mouse-y mouse-x) (princ "3" scr))
+      (#\q (return-from event-case)))))
 
 ;; resize event: the standard screen size is resized automatically.
 (defun t15 ()
