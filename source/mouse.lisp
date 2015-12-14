@@ -61,6 +61,17 @@
 ;; use collect to catch more than 1 event at once.
 ;; (format scr "~32,'0b" bitmask)
 
+(defun keyword-to-bitmask (keys)
+  "Take a list of mouse event keywords, return a logiored bitmask."
+  (apply #'logior (mapcar #'(lambda (x) (cdr (assoc x *mouse-event-bitmask-alist*)))
+                          keys)))
+
+(defun set-mouse-event (keyword-list)
+  "Take a list of mouse events, activate tracking of those events.
+
+Returns an integer bitmast. An empty list turns off mouse tracking."
+  (%mousemask (keyword-to-bitmask keyword-list) (null-pointer)))
+
 ;; decode and return the mouse event struct as multiple values:
 ;; mouse event keyword, y coordinate integer, x coordinate integer
 (defun get-mouse-event ()
