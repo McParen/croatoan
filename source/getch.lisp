@@ -232,7 +232,12 @@
       ;; 0-255 are regular chars, whch can be converted to lisp chars with code-char.
       ((and (>= ch 0) (<= ch 255)) (code-char ch))
       ;; if the code belongs to a known function key, return a keyword symbol.
-      ((function-key-p ch) (function-key ch))
+      ((function-key-p ch)
+       (let ((ev (function-key ch)))
+         (if (eq ev :mouse)
+             (multiple-value-bind (mev y x) (get-mouse-event)
+               (values mev y x)) ; returns 3 values, see mouse.lisp
+             (values ev nil nil))))
       ;; todo: unknown codes, like mose, resize and unknown function keys.
       (t (error "invalid value of char received from ncurses.")))))
 
@@ -436,4 +441,4 @@
 #define KEY_EVENT       0633            /* We were interrupted by an event */
 #define KEY_MAX         0777            /* Maximum key value is 0633 */
 
-|#
+|# 
