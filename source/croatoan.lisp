@@ -38,8 +38,15 @@
 ;; if input-blocking is nil, we can handle the (nil) event, i.e. stuff that happens between key presses.
 ;; if input-blocking is t, the (nil) event is never returned.
 ;; the main window event loop name is hard coded to "event-case-loop" to be used with return-from.
-(defmacro event-case ((window event) &body body)
-  `(loop named event-case do
-        (let ((,event (get-event ,window)))
+;; instead of ((nil) nil), which eats 100% CPU, use input-blocking t.
+(defmacro event-case ((window event &optional mouse-y mouse-x) &body body)
+  (if (and mouse-y mouse-x)
+      `(loop named event-case do
+            (multiple-value-bind (,event ,mouse-y ,mouse-x) (get-event ,window)
+              ;;(print (list ,event mouse-y mouse-x) ,window)
               (case ,event
-                ,@body))))
+                ,@body)))
+      `(loop named event-case do
+            (let ((,event (get-event ,window)))
+              (case ,event
+                ,@body)))))
