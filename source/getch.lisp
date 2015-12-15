@@ -237,7 +237,7 @@
          (if (eq ev :mouse)
              (multiple-value-bind (mev y x) (get-mouse-event)
                (values mev y x)) ; returns 3 values, see mouse.lisp
-             (values ev nil nil))))
+             ev)))
       ;; todo: unknown codes, like mose, resize and unknown function keys.
       (t (error "invalid value of char received from ncurses.")))))
 
