@@ -317,7 +317,7 @@
     (add-string scr "You pressed q. Now press any char to quit.")
     (get-char scr)))
 
-;; read and display chars until a q is pressed, non-blocking version.
+;; read and display chars until a q is pressed, non-blocking version (leads to 100% CPU usage).
 ;; wait for keyboard using get-char makes no sense in non-blocking code because it doesnt wait.
 (defun t03a ()
   (with-screen (scr :input-echoing nil :input-blocking nil)
@@ -329,7 +329,7 @@
        while (or (= ch -1) (not (equal (code-char ch) #\q)))
        do (unless (= ch -1) (add-char scr ch)))))
 
-;; read and display chars until a q is pressed, non-blocking version.
+;; read and display chars until a q is pressed, non-blocking version (leads to 100% CPU usage).
 ;; uses get-event for event handling.
 (defun t03b ()
   (with-screen (scr :input-echoing nil :input-blocking nil)
@@ -344,13 +344,15 @@
                 (otherwise (add-char scr (char-code event)))))))))
 
 ;; using the event-case macro to simplify the event loop.
+;; do not use ((nil) nil) with input-blocking nil, it leads to 100% CPU usage.
+;; if nothing happens in the nil case anyway, we can use blocking.
 (defun t03b2 ()
-  (with-screen (scr :input-echoing nil :input-blocking nil)
+  (with-screen (scr :input-echoing nil :input-blocking t)
     (clear scr)
     (add-string scr "Type chars. Type q to quit. ")
     (refresh scr)
     (event-case (scr event)
-      ((nil) nil)
+      ;; ((nil) nil)
       (#\q (return-from event-case))
       (otherwise (add-char scr (char-code event))))))
 
