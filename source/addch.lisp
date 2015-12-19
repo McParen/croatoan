@@ -13,7 +13,8 @@ destination first and then add the character."
                           ;; alternative chars are given as keywords
                           (keyword (acs char))
                           ;; if it is a lisp char, convert it to an integer first
-                          (character (char-code char)))
+                          (character (char-code char))
+                          (t 0))
                         ;; convert the pair to an integer, then bit shift it by 8
                         (if color-pair (ash (pair->number color-pair) 8) 0)
                         ;; the attribute bitmasks already are bitshifted to the
