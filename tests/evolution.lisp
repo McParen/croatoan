@@ -267,3 +267,21 @@
                (update-world) 
                (sleep 0.001)
                (draw-world-croatoan scr) ))))))
+
+;; use the event-case macro for event handling.
+(defun evolve5 ()
+  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
+    (clear scr)
+
+    (setq *width* (.width scr))
+    (setq *height* (.height scr))
+
+    (draw-world-croatoan scr)
+
+    (event-case (scr event)
+      (#\q (return-from event-case))
+      ((nil) 
+       (update-world) 
+       (sleep 0.001)
+       (draw-world-croatoan scr)))))
+
