@@ -1,6 +1,7 @@
 (defpackage #:de.anvi.croatoan
   ;;(:use #:common-lisp #:cffi #:de.anvi.ncurses #:sb-gray)
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:trivial-gray-streams)
+  (:nicknames #:croatoan)
   (:export 
 
    ;; croatoan.lisp
