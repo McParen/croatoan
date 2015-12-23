@@ -153,10 +153,15 @@ Overwrites any previous attribute settings including the color."
 
 (defun x2c (ch)
   "Converts a croatoan complex char to a ncurses chtype."
-  (logior (if (.simple-char ch)
-              (char-code (.simple-char ch))
-              0) ; logioring something with 0 has no effect.
-
+  (logior (let ((char (.simple-char ch)))
+            (if char
+                (typecase char
+                  (character (char-code (.simple-char ch)))
+                  (integer char)
+                  (keyword (acs char))
+                  (t 0))
+                0)) ; logioring something with 0 has no effect.
+          
           ;; if an attribute is there, add its integer or a 0.
           ;; TODO: abstract away the c&p orgy, z.B in a local macro.
           (if (member :underline  (.attributes ch)) (get-bitmask :underline)  0)
