@@ -7,9 +7,9 @@
 
 (define-foreign-library libncurses
 #+sb-unicode
-    (:unix (:or "libncursesw.so.5.9" "libncursesw.so.5" "libncursesw.so"))
+    (:unix (:or "libncursesw.so.6.0" "libncursesw.so.6" "libncursesw.so.5.9" "libncursesw.so.5" "libncursesw.so"))
 #-sb-unicode
-    (:unix (:or "libncurses.so.5.9" "libncurses.so.5" "libncurses.so"))
+    (:unix (:or "libncurses.so.6.0" "libncurses.so.6" "libncurses.so.5.9" "libncurses.so.5" "libncurses.so"))
     (t     (:default "libncurses")))
 
 (use-foreign-library libncurses)
