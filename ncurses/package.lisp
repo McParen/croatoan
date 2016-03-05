@@ -10,6 +10,17 @@
    %echochar
    %wechochar
 
+   ;; add_wch / add a complex character and rendition to a curses window, then advance the cursor
+   %add-wch
+   %wadd-wch
+   %mvadd-wch
+   %mvwadd-wch
+   %echo-wchar
+   %wecho-wchar
+   cchar_t
+   cchar-attr
+   cchar-chars
+   
    ;; addstr / add a string of characters to a curses window and advance cursor
    %addstr
    %addnstr 

@@ -14,6 +14,7 @@
 
              ;; complete
              (:file "addch")            ; add a character (with attributes) to a curses window, then advance the cursor
+             (:file "add_wch")          ; add a complex character and rendition to a curses window, then advance the cursor
              (:file "addstr")           ; add a string of characters to a curses window and advance cursor
              (:file "attr")             ; curses character and window attribute control routines
              (:file "beep")             ; curses bell and screen flash routines
