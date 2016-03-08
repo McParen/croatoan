@@ -11,6 +11,10 @@
    #:nctest
    #:nctest2
 
+   ;; unicode.lisp
+   #:ut01
+   #:ut02
+
    ;; clos.lisp
    #:t00
    #:t01

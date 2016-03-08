@@ -97,6 +97,7 @@
              ;; all base %ncurses tests belong in this file.
              ;; all other files should stay croatoan only.
              (:file "ncurses")   
+             (:file "unicode")
 
              (:file "clos")
              (:file "evolution") ))))
