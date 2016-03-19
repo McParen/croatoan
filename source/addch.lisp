@@ -82,6 +82,39 @@ character."
     ( :nequal   . #\| )
     ( :sterling . #\} )))
 
+#|
+
+For 64bit builds of ncurses 6.0, chtype is an unsigned int:
+
+#if 1 && defined(_LP64)
+typedef unsigned chtype;
+typedef unsigned mmask_t;
+#else
+typedef uint32_t chtype;
+typedef uint32_t mmask_t;
+#endif
+
+For 64bit builds of ncurses 5.9, chtype is an unsigned long:
+
+#if 0 && defined(_LP64)
+typedef unsigned chtype;
+typedef unsigned mmask_t;
+#else
+typedef unsigned long chtype;
+typedef unsigned long mmask_t;
+#endif
+
+acs_map[] is an chtype array:
+
+#if 0 || NCURSES_REENTRANT
+NCURSES_WRAPPED_VAR(chtype*, acs_map);
+#define acs_map NCURSES_PUBLIC_VAR(acs_map())
+#else
+extern NCURSES_EXPORT_VAR(chtype) acs_map[];
+#endif
+
+|#
+
 ;; ACS, the alternative/extended character set for line drawing.
 ;; Used by functions: add-char, box and border.
 ;; 
@@ -91,7 +124,10 @@ character."
 ;; Example: (acs 'ULCORNER)
 (defun acs (char-name)
   "Take a symbol, return the integer representing the acs char."
-  (mem-aref acs-map-array :uint64 (char-code (cdr (assoc char-name acs-alist)))))
+  (if (string= (subseq (%curses-version) 8 11) "6.0")
+      (mem-aref acs-map-array :unsigned-int (char-code (cdr (assoc char-name acs-alist))))
+      (mem-aref acs-map-array :unsigned-long (char-code (cdr (assoc char-name acs-alist))))))
+
 ;; TODO: how to decide the integer size automatically?
 
 ;;; TODOs
