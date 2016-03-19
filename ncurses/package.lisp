@@ -1,4 +1,5 @@
 (defpackage #:de.anvi.ncurses
+  (:documentation "Low-level CFFI bindings to the Ncurses C API. Not meant to be used directly.")
   (:use #:common-lisp #:cffi)
   (:export 
 

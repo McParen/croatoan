@@ -1,4 +1,5 @@
 (defpackage #:de.anvi.croatoan
+  (:documentation "High-level Lisp interface to the basic CFFI Ncurses API.")
   ;;(:use #:common-lisp #:cffi #:de.anvi.ncurses #:sb-gray)
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:trivial-gray-streams)
   (:nicknames #:croatoan)

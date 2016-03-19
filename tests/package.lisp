@@ -1,5 +1,5 @@
 (defpackage #:de.anvi.croatoan.tests
-  (:documentation "Misc functions for testing and debugging.")
+  (:documentation "Tests and examples demonstrating the use of the Croatoan API.")
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:de.anvi.croatoan)
 
   ;; Test functions from the REPL: (a:matrix)
