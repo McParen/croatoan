@@ -412,12 +412,18 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 
 ;;; Character Output stream
 
+;;; Mandatory methods: stream-write-char, stream-line-column
+
 (defmethod stream-write-char ((stream window) (ch character))
   (if (.insert-enabled stream)
       (progn
         (%winsch (.winptr stream) (char-code ch))
+        ;; move the cursor after the inserted character.
         (move-to stream :right))
-      (%waddch (.winptr stream) (char-code ch))))
+      ;; dont use waddch, but waddstr, so we can output unicode chars without resorting to add_wch.
+      ;; convert the lisp char into a one-character string before output.
+      (%waddstr (.winptr stream) (princ-to-string ch))))
+      ;;(%waddch (.winptr stream) (char-code ch))))
 
 ;; Returns the column number where the next character would be written, i.e. the current y position
 (defmethod stream-line-column ((stream window))
@@ -451,3 +457,10 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 (defmethod close ((stream screen) &key abort)
   (declare (ignore abort))
   (%endwin))
+
+;; SBCL bug when specializing close on gray streams:
+;; STYLE-WARNING:
+;;    Generic function CLOSE clobbers an earlier FTYPE proclamation
+;;    (FUNCTION (STREAM &KEY (:ABORT T)) (VALUES (MEMBER T) &OPTIONAL)) for the
+;; same name with (FUNCTION (T &KEY (:ABORT T)) *).
+
