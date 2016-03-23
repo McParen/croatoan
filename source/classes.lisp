@@ -429,6 +429,12 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 (defmethod stream-line-column ((stream window))
   (%getcurx (.winptr stream)))
 
+;;; Non-mandatory methods
+
+;; Default method uses repeated calls to stream-write-char
+(defmethod stream-write-string ((stream window) (str string) &optional (start 0) (end nil))
+  (%waddstr (.winptr stream) str))
+
 ;;; Character Input Stream
 
 (defmethod stream-read-char ((stream window))
