@@ -14,6 +14,7 @@
    ;; unicode.lisp
    #:ut01
    #:ut02
+   #:ut03
 
    ;; clos.lisp
    #:t00

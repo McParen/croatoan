@@ -40,3 +40,22 @@
     (%wrefresh scr)
     (%wgetch scr)
     (%endwin)))
+
+;; We do not need special "wide character" functions for displaying single UTF-8 characters.
+;; We can just use the string output function %waddstr.
+;; Here, the underlying %waddstr powers the gray stream interface displaying UTF-8.
+(defun ut03 ()
+  (with-screen (scr)
+    (clear scr)
+    ;; Even though we have a control STRING, format still writes the char
+    ;; arguments char by char with write-char.
+    (format scr "~C ~A" #\Љ #\ш)
+    (terpri scr)
+    (format scr "Без муки нет науки")
+    (terpri scr)
+    (format scr "指鹿為馬")
+    (terpri scr)
+    (format scr "μολὼν λαβέ / ΜΟΛΩΝ ΛΑΒΕ")
+    (terpri scr)
+    (refresh scr)
+    (get-char scr)))
