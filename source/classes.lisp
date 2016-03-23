@@ -415,15 +415,19 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 ;;; Mandatory methods: stream-write-char, stream-line-column
 
 (defmethod stream-write-char ((stream window) (ch character))
-  (if (.insert-enabled stream)
-      (progn
-        (%winsch (.winptr stream) (char-code ch))
-        ;; move the cursor after the inserted character.
-        (move-to stream :right))
-      ;; dont use waddch, but waddstr, so we can output unicode chars without resorting to add_wch.
-      ;; convert the lisp char into a one-character string before output.
-      (%waddstr (.winptr stream) (princ-to-string ch))))
-      ;;(%waddch (.winptr stream) (char-code ch))))
+  (let ((code (char-code ch))
+        (winptr (.winptr stream)))
+    (if (.insert-enabled stream)
+        (progn
+          (%winsch winptr code)
+          ;; move the cursor after the inserted character.
+          (move-to stream :right))
+        (if (and (>= code 0) (<= code 127))
+            ;; ascii characters (0-127) are safe to use with addch.
+            (%waddch winptr code)
+            ;; for every other char, dont use waddch, but waddstr, so we can output unicode without add_wch.
+            ;; to use waddstr, convert the lisp char into a one-character string before output.
+            (%waddstr winptr (princ-to-string ch))))))
 
 ;; Returns the column number where the next character would be written, i.e. the current y position
 (defmethod stream-line-column ((stream window))
