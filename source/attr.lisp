@@ -75,12 +75,12 @@ Overwrites any previous attribute settings including the color."
 ;; (%wchgat (.winptr win) 9 #x00040000 0 (null-pointer))
 (defun change-attributes (win n attributes &optional color-pair)
   "Change the attributes and color of n characters starting at the current cursor position."
-  (let ((attrs (apply #'logior (loop for i in attributes collect (get-bitmask i))))
+  (let ((attrs (attrs2chtype attributes))
         (pairno (if color-pair
                     (pair->number color-pair)
                     (if (.color-pair win)
                         (.color-pair win)
-                        0))))                     
+                        0))))
     (%wchgat (.winptr win) n attrs pairno (null-pointer))))
 
 ;; (set-color window '(:black :white))
