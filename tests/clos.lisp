@@ -1290,3 +1290,19 @@
           ((:up :down :left :right #\tab) (setf i (mod (1+ i) n)) (draw-menu scr choices i))
           (#\newline (return-from event-case (cdr (nth i choices)))))))))
 
+;; Passing the color attribute directly to a character.
+(defun t20 ()
+  "Display a randomly created carpet of the seven default colors, except for black."
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-colors t :cursor-visibility nil)
+    (let ((width  (.width scr))
+          (height (.height scr))
+          (colors '(:red :green :yellow :blue :magenta :cyan :white)))
+      (event-case (scr event)
+        (#\q (return-from event-case))
+        ((nil)
+         (sleep 0.001)
+         (add-char scr #\space
+                   :y (random height)
+                   :x (random width)
+                   :color-pair (list :black (nth (random 7) colors)))
+         (refresh scr))))))
