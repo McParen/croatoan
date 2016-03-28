@@ -926,6 +926,58 @@
     (refresh scr)
     (get-char scr)))
 
+;; Show the longer symbol names next to the ACS chars in a more readable table view.
+(defun t12c ()
+  (with-screen (scr)
+    (loop for i from 0 for symbol in
+         '(:upper-left-corner
+           :lower-left-corner
+           :upper-right-corner
+           :lower-right-corner
+           :tee-pointing-right
+           :tee-pointing-left
+           :tee-pointing-up
+           :tee-pointing-down
+           :horizontal-line
+           :vertical-line)
+       do (progn (move scr (+ 2 (* i 2)) 2)
+                 (add-char scr symbol)
+                 (format scr "  ~S~%~%" symbol)))
+    
+    (loop for i from 0 for symbol in
+         '(:crossover-plus
+           :scan-line-1
+           :scan-line-3
+           :scan-line-7
+           :scan-line-9
+           :diamond-symbol
+           :board
+           :checker-board
+           :degree-symbol
+           :plus-minus
+           :bullet-symbol)
+       do (progn (move scr (+ 2 (* i 2)) 30)
+                 (add-char scr symbol)
+                 (format scr "  ~S~%~%" symbol)))
+
+    (loop for i from 0 for symbol in
+         '(:arrow-pointing-left
+           :arrow-pointing-right
+           :arrow-pointing-down
+           :arrow-pointing-up
+           :lantern-symbol
+           :solid-square-block
+           :less-than-or-equal
+           :greater-than-or-equal
+           :pi
+           :not-equal
+           :uk-pound-sterling)
+       do (progn (move scr (+ 2 (* i 2)) 55)
+                 (add-char scr symbol)
+                 (format scr "  ~S~%~%" symbol)))
+    (refresh scr)
+    (get-char scr)))
+
 ;; Demonstrate flash and beep alerts.
 ;; It depends on the terminal emulator whether they will work for you.
 ;; They both worked in xterm for me.
