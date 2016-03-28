@@ -42,10 +42,14 @@ cchar_t;
 
 ;;; Low-level CFFI wrappers
 
-(defctype wchar_t :int)
+(defctype wchar_t :int32)
 
-;;(defcstruct cchar_t (attributes attr) (chars wchar_t :count 5))
-(defcstruct cchar_t (cchar-attr attr) (cchar-chars wchar_t))
+;; Intended to be used with convert-to-foreign plist translation.
+;; For some reasons, plists with pointers dont work, so we have to pass by value.
+(defcstruct cchar (cchar-attr attr) (cchar-chars wchar_t))
+
+;; Intended to be used with setcchar.
+(defcstruct cchar_t (cchar-attr attr) (cchar-chars wchar_t :count 5))
 
 (defcfun ("add_wch"    %add-wch)     :int                                 (wch (:pointer (:struct cchar_t))))
 (defcfun ("wadd_wch"   %wadd-wch)    :int  (win window)                   (wch (:pointer (:struct cchar_t))))

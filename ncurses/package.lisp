@@ -18,6 +18,8 @@
    %mvwadd-wch
    %echo-wchar
    %wecho-wchar
+   wchar_t
+   cchar
    cchar_t
    cchar-attr
    cchar-chars
@@ -127,6 +129,10 @@
    %curses-version
    %use-extended-names
 
+   ;; getcchar / Get a wide character string and rendition from a cchar_t or set a cchar_t from a wide-character string
+   %getcchar
+   %setcchar
+   
    ;; getch / get (or push back) characters from curses terminal keyboard
    %getch
    %wgetch
