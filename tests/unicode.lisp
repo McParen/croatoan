@@ -60,3 +60,29 @@
     (terpri scr)
     (refresh scr)
     (get-char scr)))
+
+;; Use the cchar_t type for setcchar.
+;; cchar-chars is a pointer to an integer array here, like the C prototype requires.
+(defun ut04 ()
+  (let ((scr (%initscr)))
+    (%start-color)
+    ;; Initialize color pair 1, yellow 3 on red 1.
+    (%init-pair 1 3 1)
+
+    (with-foreign-objects ((ptr '(:struct cchar_t))
+                           (wch 'wchar_t 5))
+      ;; Reset the wch array to zero.
+      (dotimes (i 5) (setf (mem-aref wch 'wchar_t i) 0))
+      (setf (mem-aref wch 'wchar_t) (char-code #\ш))
+      ;; Create a cchar_t containing #\ш, attribute underline, color pair yellow on red.
+      (%setcchar ptr wch #x00020000 1 (null-pointer))
+      (%wadd-wch scr ptr)
+      (%waddch scr (char-code #\newline))
+      ;; Take a look at the plist convert-from-foreign returns from cchar_t.
+      ;; Sadly that plist cant be read back because it contains a pointer.
+      ;; As of now, the convert-to-foreign function requires foreign values, not pointers.
+      (%waddstr scr (princ-to-string (convert-from-foreign ptr '(:struct cchar)))))
+
+    (%wrefresh scr)
+    (%wgetch scr)
+    (%endwin)))

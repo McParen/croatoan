@@ -15,6 +15,7 @@
    #:ut01
    #:ut02
    #:ut03
+   #:ut04
 
    ;; clos.lisp
    #:t00
