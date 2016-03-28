@@ -913,6 +913,19 @@
     (refresh scr)
     (get-char scr)))
 
+;; Smaller ACS example to explain how the ACS system works.
+(defun t12b ()
+  (with-screen (scr)
+    ;; acs takes a keyword :ulcorner, translates it to a char #\l,
+    ;; ncurses translates it at run-time to a terminal-dependent
+    ;; integer value that doesnt correspond to a char code.
+    (format scr "~A ~A ~A " #\l (char-code #\l) (acs :ulcorner))
+    ;; We cant output it in a string, but have to use add-char.
+    (add-char scr 4194412)
+    (terpri scr)
+    (refresh scr)
+    (get-char scr)))
+
 ;; Demonstrate flash and beep alerts.
 ;; It depends on the terminal emulator whether they will work for you.
 ;; They both worked in xterm for me.
