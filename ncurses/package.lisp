@@ -158,7 +158,7 @@
    %inch
    %winch
    %mvinch
-   %winch
+   %mvwinch
 
    ;; inchstr / get a string of characters (and attributes) from a curses window
    %inchstr

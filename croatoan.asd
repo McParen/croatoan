@@ -80,6 +80,7 @@
              (:file "getstr")
              (:file "initscr")
              (:file "inopts")
+             (:file "inch")
              (:file "insch")
              (:file "insstr")
              (:file "instr")
