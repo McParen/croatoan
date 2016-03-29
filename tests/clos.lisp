@@ -1371,3 +1371,16 @@
                    :x (random width)
                    :color-pair (list :black (nth (random 7) colors)))
          (refresh scr))))))
+
+;; Tests for insert-char and insert-string.
+(defun t21 ()
+  (with-screen (scr :cursor-visibility nil)
+    (move scr 0 0) (add-char scr #\a)
+    ;; overwrite b over a
+    (move scr 0 0) (add-char scr #\b)
+    ;; insert pi before b
+    (move scr 0 0) (insert-char scr :pi :color-pair (list :yellow :red))
+    ;; insert d before pi
+    (move scr 0 0) (insert-string scr "d ")
+    (refresh scr)
+    (get-char scr)))
