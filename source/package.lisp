@@ -95,6 +95,7 @@
    ;; inchstr / get a string of characters (and attributes) from a curses window
 
    ;; insstr / insert string before cursor in a curses window
+   insert-string
 
    ;; initscr / Screen initialization and manipulation routines
    end-screen

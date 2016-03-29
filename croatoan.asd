@@ -81,6 +81,7 @@
              (:file "initscr")
              (:file "inopts")
              (:file "insch")
+             (:file "insstr")
              (:file "instr")
              (:file "kernel")
              (:file "mouse")
