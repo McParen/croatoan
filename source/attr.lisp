@@ -148,6 +148,27 @@ Overwrites any previous attribute settings including the color."
 
 ;;; ------------------------------------------------------------------
 
+(defun char2chtype (char attributes color-pair)
+  "Convert a char (lisp char, char code or ACS symbol) to a chtype.
+
+attributes should be a list of attribute keywords.
+
+color-pair should be a list of a foreground and background color keyword."
+  (let ((ch (typecase char
+              ;; if the char is already an integer from char-code.
+              (integer char)
+              ;; alternative chars are given as keywords
+              (keyword (acs char))
+              ;; if it is a lisp char, convert it to an integer first
+              (character (char-code char))
+              (t 0)))
+        ;; convert the pair to an integer, then bit shift it by 8
+        (col (if color-pair (ash (pair->number color-pair) 8) 0))
+        ;; the attribute bitmasks already are bit-shifted to the
+        ;; correct position in the chtype
+        (attr (if attributes (attrs2chtype attributes) 0)))
+    ;; the 3 integers are now OR-ed together to create the chtype.
+    (logior ch attr col)))
 
 ;; Example: (x2c (c2x 2490466)) => 2490466
 
