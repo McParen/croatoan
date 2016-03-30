@@ -429,6 +429,14 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
             ;; to use waddstr, convert the lisp char into a one-character string before output.
             (%waddstr winptr (princ-to-string ch))))))
 
+;; write-char, format ~C
+(defmethod stream-write-char ((stream window) (ch complex-char))
+  (%waddch (.winptr stream) (x2c ch)))
+
+;; print, prin1, princ, format ~A, ~S
+(defmethod print-object ((ch complex-char) (stream window))
+  (%waddch (.winptr stream) (x2c ch)))
+
 ;; Returns the column number where the next character would be written, i.e. the current y position
 (defmethod stream-line-column ((stream window))
   (%getcurx (.winptr stream)))
