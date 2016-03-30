@@ -639,6 +639,24 @@
 
       (close scr))))
 
+;; Write complex chars to standard output using standard lisp output functions + gray streams.
+(defun t08c ()
+  (with-screen (scr)
+    (let ((*standard-output* scr)
+          (ch (make-instance 'complex-char :simple-char #\a :attributes '(:bold :underlined) :color-pair '(:green :black))))
+      (write-char #\a)
+      (terpri)
+      (write-char ch)
+      (terpri)
+      (princ ch)
+      (terpri)
+      (print ch)
+      (terpri)
+      (format t "~%Format:~%~S~%~A~%~C" ch ch ch)
+      (terpri))
+    (refresh scr)
+    (get-char scr)))
+
 ;; box, move
 (defun t09 ()
   (let* ((scr (make-instance 'screen :enable-colors t)))
