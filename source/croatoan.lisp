@@ -8,8 +8,10 @@
                                (input-echoing  t)
                                (enable-fkeys   t) 
                                (enable-colors  t)
+                               (use-default-colors t)
                                (cursor-visibility t))
                        &body body)
+  "Add documentation here."
   `(unwind-protect
         (let ((,screen (make-instance 'screen
                                       :input-reading  ,input-reading
@@ -17,6 +19,7 @@
                                       :input-echoing  ,input-echoing
                                       :enable-fkeys   ,enable-fkeys
                                       :enable-colors  ,enable-colors
+                                      :use-default-colors ,use-default-colors
                                       :cursor-visibility ,cursor-visibility))
 
               ;; when an error is signaled and not handled, cleanly end ncurses, print the condition text

@@ -22,10 +22,13 @@ Example: (color->number :white) => 7"
 
 ;; keys are 2 element lists of the form: (:fg :bg)
 ;; fg and bg are keyword symbols
-;; vals are integers that represent ncurses color pairs
-;; only one color pair, 1, is predefined: (:white :black).
+;; vals are integers that represent ncurses color pairs.
+;; only one color pair, 0, is predefined: (:default :default),
+;; which is identical to (:white :black) if use-default-colors is nil.
+;; if use-default-colors is t, it is whatever color pair the terminal
+;; used before the ncurses init.
 (defparameter *color-pair-alist*
-  '(((:white :black) . 0)))
+  '(((:default :default) . 0)))
 
 ;; adds the pair to curses.
 (defun pair->number (pair)

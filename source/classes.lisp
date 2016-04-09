@@ -28,9 +28,8 @@
    "A complex char consists of a simple char, a list of attribute keywords and a pair of color keywords."))
 
 (defclass window (fundamental-character-input-stream fundamental-character-output-stream)
-  (
-   ;; has to be a 2el-list so we can use 1 arg with setf.
-   (position
+  ((position
+    ;; has to be a 2el-list so we can use 1 arg with setf.
     :initarg       :position
     :initform      '(0 0)
     :type          cons
@@ -50,6 +49,7 @@
 
    ;; has to be a 2el-list so we can use 1 arg with setf.
    (cursor-position
+    :type          cons
     :documentation "The current cursor position coordinates in the form (y x).")
 
    (input-blocking
@@ -121,11 +121,19 @@
   ((enable-colors
     :initarg       :enable-colors
     :initform      nil
+    :type          boolean
     :documentation "Enable (t) or disable (nil) display of colors, if the terminal supports it.")
+
+   (use-default-colors
+    :initarg       :use-default-colors
+    :initform      nil
+    :type          boolean
+    :documentation "Use (t) the default colors of the terminal, instead of the ncurses default white on black.")
 
    (cursor-visibility
     :initarg       :cursor-visibility
     :initform      t
+    :type          boolean
     :documentation "Enable (t) or disable (nil) displaying a visible cursor.")
 
    (input-echoing
@@ -199,11 +207,14 @@
       (setf winptr (%newwin height width (car position) (cadr position))))))
 
 (defmethod initialize-instance :after ((scr screen) &key)
-  (with-slots (winptr enable-colors cursor-visibility input-echoing input-reading input-blocking enable-fkeys enable-scrolling) scr
+  (with-slots (winptr enable-colors use-default-colors cursor-visibility input-echoing input-reading input-blocking enable-fkeys enable-scrolling) scr
     ;; just for screen window types.
     (when (eq (type-of scr) 'screen)
       (setf winptr (%initscr))
-      (when enable-colors (%start-color))
+      (when enable-colors
+        (%start-color)
+        (when use-default-colors
+          (%use-default-colors)))
       (if input-echoing (%echo) (%noecho))
       (set-input-reading winptr input-reading)
       (set-cursor-visibility cursor-visibility))))
