@@ -722,7 +722,7 @@
 
 ;; the same as t09, but we can now raise the overlapping windows by hitting 1, 2 or 3.
 (defun t09a ()
-  (let* ((scr (make-instance 'screen :enable-colors t :input-blocking nil :input-echoing nil)))
+  (let* ((scr (make-instance 'screen :enable-colors t :input-blocking t :input-echoing nil :use-default-colors t :cursor-visibility nil)))
     (unwind-protect
          (progn
            (clear scr)
@@ -738,6 +738,9 @@
              (box w2)
              (box w3)
 
+             (setf (.background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
+             (setf (.background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
+             
              ;; TODO: clear, refresh, etc, should take one or more windows as arguments.
              ;; so we can do (refresh w1 w2 w3) instead of:
              (refresh w1)
