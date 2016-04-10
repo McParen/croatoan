@@ -8,7 +8,7 @@
                                (input-echoing  t)
                                (enable-fkeys   t) 
                                (enable-colors  t)
-                               (use-default-colors t)
+                               (use-default-colors nil)
                                (cursor-visibility t))
                        &body body)
   "Add documentation here."
