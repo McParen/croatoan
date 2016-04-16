@@ -9,18 +9,21 @@
   ((simple-char
     :initarg :simple-char
     :initform nil
+    :type (or null character)
     :accessor .simple-char
     :documentation "Lisp primitive character type, like #\a.")
 
    (attributes
     :initarg :attributes
     :initform '()
+    :type (or null cons)
     :accessor .attributes
     :documentation "List of keywords denoting attributes.")
 
    (color-pair
     :initarg :color-pair
-    :initform '(:white :black)
+    :initform nil
+    :type (or null cons)
     :accessor .color-pair
     :documentation "Two element list of keywords denoting a foreground and background color of the char."))
 
@@ -38,13 +41,13 @@
    (width
     :initarg       :width
     :initform      0
-    :type          :integer
+    :type          integer
     :documentation "The width (second, horizontal, x dimension) of the window.")
 
    (height
     :initarg       :height
     :initform      0
-    :type          :integer
+    :type          integer
     :documentation "The height (first, vertical, y dimension) of the window.")
 
    ;; has to be a 2el-list so we can use 1 arg with setf.
@@ -55,6 +58,7 @@
    (input-blocking
     :initarg       :input-blocking
     :initform      t
+    :type          (or boolean integer)
     :documentation "Input mode: blocking (t), non-blocking (nil) or blocking duration in (positive integer) miliseconds.")
 
    (enable-fkeys
@@ -72,7 +76,7 @@
    (scrolling-region
     :initarg       :scrolling-region
     :initform      nil
-    :type          cons
+    :type          (or null cons)
     :documentation "When scrolling is enabled, only scroll the window region from line y1 to y2 given as the list (y1 y2).")
 
    ;; IC / INS / Insert / Einfg key
@@ -88,19 +92,19 @@
    (background
     :initarg       :background
     :initform      nil
-    :type          complex-char
+    :type          (or null complex-char)
     :documentation "A complex char to form the background of a window.")
 
    (attributes
     :initarg       :attributes
     :initform      nil
-    :type          cons
+    :type          (or null cons)
     :documentation "A list of attribute keywords.")
 
    (color-pair
     :initarg       :color-pair
     :initform      nil
-    :type          cons
+    :type          (or null cons)
     :documentation "A two element list of keywords denoting the foregreound and background color of text displayed in the window.")
 
    ;; TODO: Doesnt survive a "clear" command yet.
@@ -163,7 +167,7 @@
    (source
     :initarg       :source
     :initform      nil
-    :type          cons
+    :type          (or null cons)
     :documentation "Position (y x) of the area of the parent window, which is mapped to the subwindow. By default it is identical to the position of the subwindow."))
 
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
