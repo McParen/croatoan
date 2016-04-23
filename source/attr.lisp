@@ -27,8 +27,16 @@ Example: (color->number :white) => 7"
 ;; which is identical to (:white :black) if use-default-colors is nil.
 ;; if use-default-colors is t, it is whatever color pair the terminal
 ;; used before the ncurses init.
-(defparameter *color-pair-alist*
-  '(((:default :default) . 0)))
+(defparameter *color-pair-alist* nil)
+
+;; called from initialize-instance :after ((scr screen)
+;; test with t09a
+(defun set-default-color-pair (use-default-colors)
+  (if use-default-colors
+      (progn
+        (%use-default-colors)
+        (setf *color-pair-alist* (acons '(:default :default) 0 *color-pair-alist*)))
+      (setf *color-pair-alist* (acons '(:white :black) 0 *color-pair-alist*))))
 
 ;; adds the pair to curses.
 (defun pair->number (pair)

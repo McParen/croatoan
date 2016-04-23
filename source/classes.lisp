@@ -217,8 +217,7 @@
       (setf winptr (%initscr))
       (when enable-colors
         (%start-color)
-        (when use-default-colors
-          (%use-default-colors)))
+        (set-default-color-pair use-default-colors))
       (if input-echoing (%echo) (%noecho))
       (set-input-reading winptr input-reading)
       (set-cursor-visibility cursor-visibility))))
