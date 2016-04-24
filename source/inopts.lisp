@@ -6,21 +6,27 @@
 
 ;; halfdelay is turned off by nocbreak.
 
-;; terminology: "terminal mode".
-
-;; cooked mode            = input-buffering t, cbreak=0, raw=0
-;; rare mode, cbreak mode = input-buffering nil
-;; raw mode               = input-buffering :raw
+;; terminal input modes:
+;; 
+;;                  canonical             non canonical        
+;;                  line buffered         character based
+;;                  ctrl chars processed  ^C,^S,^Q,^D processed  no ctrl chars processed
+;;                  cooked                cbreak                 raw
+;; 
+;; :buffered        x
+;; :unbuffered                            x
+;; :unbuffered-raw                                               x
 
 ;; Ported to clos, used in clos.
+;; The combination echo+getch should not be used during buffered 
 (defun set-input-reading (screen status)
   "Set whether input will be passed to the program line buffered, directly or raw."
   (with-slots (input-reading) screen
     (case status
-      (:buffered   (if (eq input-reading :raw) (%noraw) (%nocbreak)))
-      (:unbuffered (%cbreak))
-      (:raw        (%raw))
-      (otherwise (error "Valid reading states: :buffered, :unbuffered, :raw")))))
+      (:buffered       (if (eq input-reading :unbuffered-raw) (%noraw) (%nocbreak)))
+      (:unbuffered     (%cbreak))
+      (:unbuffered-raw (%raw))
+      (otherwise (error "Valid input modes: :buffered, :unbuffered, :unbuffered-raw")))))
 
 ;; Ported to clos, used in clos.
 (defun set-input-blocking (window status)

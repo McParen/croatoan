@@ -149,7 +149,8 @@
    (input-reading
     :initarg       :input-reading
     :initform      :unbuffered
-    :documentation "Set whether typed characters will be line :buffered, directly passed as :unbuffered or passed :raw."))
+    :type          keyword
+    :documentation "Set whether typed characters will be line :buffered or directly passed as :unbuffered or :unbuffered-raw."))
 
   (:documentation "Represents the main window created upon screen initialisation."))
 
