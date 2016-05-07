@@ -14,6 +14,7 @@
    window
    screen
    sub-window
+   menu
 
    ;; accessors
    .simple-char
@@ -35,6 +36,11 @@
    .cursor-visibility
    .source
 
+   .items
+   .current-item
+   .window
+   draw-menu
+   
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add-char
    echo-char

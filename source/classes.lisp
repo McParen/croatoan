@@ -173,6 +173,78 @@
 
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
 
+;; default size of ncurses menus is 16 rows, 1 col.
+(defclass menu ()
+  ((items
+    :initarg       :items
+    :initform      nil
+    :accessor      .items
+    :type          (or null cons)
+    ;; TODO: what about a list of symbols?
+    :documentation "List of strings denoting menu entries.")
+
+   (current-item
+    :initform      0
+    :type          integer
+    :accessor      .current-item
+    :documentation "Currently selected item's index.")
+
+   (max-item-width
+    :initarg       max-item-width
+    :initform      20
+    :type          (or null integer)
+    :documentation "Display max n characters of an item in the menu, limiting the max allowed menu width.")
+
+   (width
+    :initarg       :width
+    :initform      1
+    :type          integer
+    :documentation "Number of visible columns in the menu.")
+
+   (height
+    :initarg       :height
+    :initform      10
+    :type          integer
+    :documentation "Number of visible rows in the menu. If the list of items is longer, it can be vertically scrolled.")
+
+   ;; if there is no title and no border, we dont need a subwindow, and can use the menu as a one-line menu bar.
+   (title
+    :initarg       :title
+    :initform      nil
+    :type          (or null string))
+
+   (border
+    :initarg       :border
+    :initform      nil
+    :type          boolean)
+
+   (window
+    :initarg       :window
+    :initform      nil
+    :type          window
+    :reader        .window
+    :documentation "Window to which the menu is drawn."))
+
+  (:documentation  "A menu is a window providing a list of items to be selected by the user."))
+
+;; if action given, change the selection, then draw the menu.
+;; if action is nil, just redraw the menu, for example before entering the event loop.
+(defun draw-menu (menu &optional action)
+  (declare (special menu))
+  (with-accessors ((i .current-item) (items .items) (win .window)) menu
+    (let ((n (length items)))
+      (when action
+        (case action
+          (:up   (setf i (mod (1- i) n)))
+          (:down (setf i (mod (1+ i) n)))))
+      (clear win)
+      (loop for j from 0 to (1- n) do
+           (move win j 0)
+           (format win "~A ~A" (if (= i j) ">" " ") (nth j items))
+           (when (= i j)
+             (move win j 0)
+             (change-attributes win (.width win) '(:reverse))))
+      (refresh win))))
 
 #|
 ;; this will be called for both window and screen.
