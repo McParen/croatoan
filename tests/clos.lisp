@@ -1396,6 +1396,28 @@
         (refresh scr)
         (get-char scr)))))
 
+;; improved t19b, the menu can be called repeatedly with the key a.
+(defun t19c ()
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
+           (win (make-instance 'window :height (+ 2 (length choices)) :width 20 :position (list 0 30) :enable-fkeys t :border t))
+           (sub-win (make-instance 'sub-window :parent win :height (length choices) :width 18 :position (list 1 1) :relative t))
+           (menu (make-instance 'menu :items choices :window sub-win)))
+      (event-case (scr event)
+        ;; "a" draws the menu and enters a new menu-only event loop
+        (#\a (progn
+               (setf (.background win) (make-instance 'complex-char :attributes '(:bold) :color-pair '(:red :yellow)))
+               (setf (.background sub-win) (make-instance 'complex-char :color-pair '(:red :yellow)))
+               (draw-menu menu)
+               (let ((result (event-case (win event)
+                               ((:up :down) (draw-menu menu event))
+                               ;; selecting an item with enter is the only way to exit the menu loop
+                               (#\newline (return-from event-case (nth (.current-item menu) (.items menu)))))))
+                 (format scr "You chose ~A~%" result)
+                 (touch scr)
+                 (refresh scr))))
+        (#\q (return-from event-case))))))
+
 ;; Passing the color attribute directly to a character.
 (defun t20 ()
   "Display a randomly created carpet of the seven default colors, except for black."
