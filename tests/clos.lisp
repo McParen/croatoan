@@ -1245,7 +1245,8 @@
       (mapc #'(lambda (w) (close w)) (list win2 win3))
       (refresh win1)
       ;; observe that the content from win 2 and 3 is still in win1 after they have been closed.
-      (get-char win1) )))
+      (get-char win1)
+      (close win1) )))
 
 ;; by default, the sub-window displays the part of the parent window it overlaps with.
 ;; we can change which part of the parent is displayed by changing the sub-windows source
@@ -1377,6 +1378,23 @@
         (event-case (scr event)
           ((:up :down :left :right #\tab) (setf i (mod (1+ i) n)) (draw-menu scr choices i))
           (#\newline (return-from event-case (cdr (nth i choices)))))))))
+
+;; use the menu class and draw-menu function.
+(defun t19b ()
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
+           (win (make-instance 'window :height (+ 2 (length choices)) :width 20 :position (list 2 4) :enable-fkeys t :border t))
+           (sub-win (make-instance 'sub-window :parent win :height (length choices) :width 18 :position (list 1 1) :relative t))
+           (menu (make-instance 'menu :items choices :window sub-win)))
+      (setf (.background win) (make-instance 'complex-char :color-pair '(:yellow :red)))
+      (draw-menu menu)
+      (let ((result (event-case (win event)
+                      ((:up :down) (draw-menu menu event))
+                      (#\newline (return-from event-case (nth (.current-item menu) (.items menu))))
+                      (#\q (return-from event-case)))))
+        (format scr "You chose ~A" result)
+        (refresh scr)
+        (get-char scr)))))
 
 ;; Passing the color attribute directly to a character.
 (defun t20 ()
