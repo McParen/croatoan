@@ -35,7 +35,8 @@
    .input-reading
    .cursor-visibility
    .source
-
+   .closed-p
+   
    .items
    .current-item
    .window

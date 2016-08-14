@@ -150,7 +150,11 @@
     :initarg       :input-reading
     :initform      :unbuffered
     :type          keyword
-    :documentation "Set whether typed characters will be line :buffered or directly passed as :unbuffered or :unbuffered-raw."))
+    :documentation "Set whether typed characters will be line :buffered or directly passed as :unbuffered or :unbuffered-raw.")
+
+   (closed-p
+    :type          boolean
+    :documentation "Check whether the screen has been closed, without a subsequent call to refresh to reactivate it."))
 
   (:documentation "Represents the main window created upon screen initialisation."))
 
@@ -569,3 +573,9 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 ;;    (FUNCTION (STREAM &KEY (:ABORT T)) (VALUES (MEMBER T) &OPTIONAL)) for the
 ;; same name with (FUNCTION (T &KEY (:ABORT T)) *).
 
+(defgeneric .closed-p (s)
+  (:documentation "Check whether the screen has been closed, without a subsequent call to refresh to reactivate it."))
+
+(defmethod .closed-p ((s screen))
+  (declare (ignore s))
+  (%isendwin))
