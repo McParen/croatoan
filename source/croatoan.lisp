@@ -53,3 +53,9 @@
             (let ((,event (get-event ,window)))
               (case ,event
                 ,@body)))))
+
+(defmacro save-excursion (window &body body)
+  "After executing body, return the cursor in window to its initial position."
+  `(let ((pos (.cursor-position ,window)))
+     ,@body
+     (move ,window (car pos) (cadr pos))))

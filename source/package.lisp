@@ -8,6 +8,7 @@
    ;; croatoan.lisp
    with-screen
    event-case
+   save-excursion
 
    ;; classes
    complex-char
