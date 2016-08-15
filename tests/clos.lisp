@@ -1485,3 +1485,14 @@
            
            (get-char scr))
       (close scr))))
+
+(defun t23 ()
+  "Use save-excursion to return the cursor to its initial position."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility t :enable-colors t)
+    (move scr 0 0)
+    (princ "1. hello" scr)
+    (save-excursion scr
+      (move scr 5 5)
+      (princ "2. there" scr))
+    (princ "3. dear john" scr)
+    (get-char scr)))
