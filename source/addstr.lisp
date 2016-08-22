@@ -1,6 +1,8 @@
 (in-package :de.anvi.croatoan)
 
-(defun add-string (window string &key y x n)
+;; first attempt to create add-string with attributes and colors
+;; without adding a complex-string type first.
+(defun add-string (window string &key attributes color-pair y x n)
   "Add the unrendered string to the window.
 
 If n is given, write at most n chars from the string. If n is -1, as
@@ -8,15 +10,18 @@ many chars will be added that will fit on the line.
 
 If the coordinates y and x are given, move to the destination first
 and then add the string."
-  (let ((winptr (.winptr window)))
-    (cond ((and y x n)
-           (%mvwaddnstr winptr y x string n))
-          ((and y x)
-           (%mvwaddstr winptr y x string))
-          (n
-           (%waddnstr winptr string n))
-          (t
-           (%waddstr winptr string)))))
+  (when (and y x) (move window y x))
+  (let ((winptr (.winptr window))
+        (pos1 (.cursor-position window)))
+    (if n
+        (%waddnstr winptr string n)
+        (%waddstr winptr string))
+    (when (or attributes color-pair)
+      (let ((pos2 (.cursor-position window))
+            (count (if n n (length string))))
+        (move window (car pos1) (cadr pos1))
+        (change-attributes window count attributes color-pair)
+        (move window (car pos2) (cadr pos2))))))
 
 ;;; TODOs
 
