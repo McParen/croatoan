@@ -7,7 +7,11 @@
 If the destination coordinates y and x are given, move the cursor to the
 destination first and then add the character."
   (let ((winptr (.winptr window))
-        (chtype (char2chtype char attributes color-pair)))
+        ;; x2c takes xchars, char2chtype takes integers, keywords and lisp characters.
+        ;; eventually, those two should be merged.
+        (chtype (typecase char
+                  (complex-char (x2c char))
+                  (t (char2chtype char attributes color-pair)))))
     (cond ((and y x)
            (%mvwaddch winptr y x chtype))
           (t
@@ -32,6 +36,7 @@ character."
   (loop repeat count do (add-char window (char-code #\newline))))
 
 ;; pointer to the global/external c acs array, acs_map[].
+;; also see defcvar + get-var-pointer
 (defparameter acs-map-array (foreign-symbol-pointer "acs_map"))
 
 ;; ncurses maps those standard chars at runtime to the acs characters.
