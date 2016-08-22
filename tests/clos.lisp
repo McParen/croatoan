@@ -1442,18 +1442,21 @@
     ;; overwrite b over a
     (move scr 0 0) (add-char scr #\b)
     ;; insert pi before b
-    (move scr 0 0) (insert-char scr :pi :color-pair (list :yellow :red))
+    (move scr 0 0) (insert-char scr :pi :color-pair '(:yellow :red))
     ;; insert d before pi
     (move scr 0 0) (insert-string scr "d ")
     ;; change the attributes of the d
-    (move scr 0 0) (change-attributes scr 1 (list :underline) (list :green :black))
+    (move scr 0 0) (change-attributes scr 1 '(:underline) '(:green :black))
     ;; extract the complex d from the window, then print its properties.
     (let ((e (extract-char scr)))
       (move scr 1 0)
+      ;; format uses print-object specialized on complex-chars
       (format scr "~S~%~S ~S ~S" e (.simple-char e) (.attributes e) (.color-pair e))
       ;; print back the extracted char
       (move scr 3 0)
-      (add-char scr (.simple-char e) :attributes (.attributes e) :color-pair (.color-pair e)))
+      (add-char scr (.simple-char e) :attributes (.attributes e) :color-pair (.color-pair e))
+      ;; directly print the complex char
+      (add-char scr e :y 5 :x 10))
     (refresh scr)
     (get-char scr)))
 
