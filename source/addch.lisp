@@ -1,5 +1,26 @@
 (in-package :de.anvi.croatoan)
 
+;; (add scr #\a :y 10 :x 10)
+;; (add scr "b" :y 11 :x 10)
+;; (add scr #\a   :y 10 :x 10 :attributes '(:underline) :color-pair '(:yellow :red))
+;; (add scr "bat" :y 11 :x 10 :attributes '(:underline :bold) :color-pair '(:black :green))
+(defun add (window object &key attributes color-pair y x n)
+  "Add the object (char or string) to the window, then advance the cursor.
+
+If the destination coordinates y (row) and x (column) are given, move
+the cursor to the destination first and then add the object (char or
+string).
+
+If n is given for a char, write n chars.
+
+If n is given for a string, write at most n chars from the string. If
+n is -1, as many chars will be added that will fit on the line."
+  (typecase object
+    (string
+     (add-string window object :attributes attributes :color-pair color-pair :y y :x x :n n))
+    ((or integer keyword character complex-char)
+     (add-char   window object :attributes attributes :color-pair color-pair :y y :x x))))
+
 ;; Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))
 (defun add-char (window char &key attributes color-pair y x)
   "Add the char to the window, then advance the cursor.
