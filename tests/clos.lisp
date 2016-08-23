@@ -1459,7 +1459,10 @@
       (add-char scr e :y 5 :x 10)
       ;; print strings with attributes and colors
       ;; attributes dont work (yet) when a long string gets wrapped around the last column.
-      (add-string scr "string with attributes" :y 11 :x 10 :attributes '(:underline) :color-pair '(:black :green)))
+      (add-string scr "string with attributes" :y 11 :x 10 :attributes '(:underline) :color-pair '(:black :green))
+      ;; test adding both chars and strings with a single wrapper routine.
+      (add scr #\a :y 13 :x 0 :attributes '(:underline) :color-pair '(:yellow :red))
+      (add scr "string with attributes" :y 15 :x 0 :n 11 :attributes '(:underline :bold) :color-pair '(:yellow :green)))
     (refresh scr)
     (get-char scr)))
 
