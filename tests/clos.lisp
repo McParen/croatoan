@@ -1456,7 +1456,10 @@
       (move scr 3 0)
       (add-char scr (.simple-char e) :attributes (.attributes e) :color-pair (.color-pair e))
       ;; directly print the complex char
-      (add-char scr e :y 5 :x 10))
+      (add-char scr e :y 5 :x 10)
+      ;; print strings with attributes and colors
+      ;; attributes dont work (yet) when a long string gets wrapped around the last column.
+      (add-string scr "string with attributes" :y 11 :x 10 :attributes '(:underline) :color-pair '(:black :green)))
     (refresh scr)
     (get-char scr)))
 
