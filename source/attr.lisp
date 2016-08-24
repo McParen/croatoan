@@ -213,7 +213,9 @@ color-pair should be a list of a foreground and background color keyword."
 
           ;; right shift by 8 to get the color bits at their proper place in a chtype.
           ;; you cannot simply logior the pair number because that would overwrite the char.
-          (ash (pair->number (.color-pair ch)) 8)))
+          (if (.color-pair ch)
+              (ash (pair->number (.color-pair ch)) 8)
+              0)))
 
 (defun c2x (ch)
   "Converts a ncurses chtype to croatoan complex-char."
