@@ -30,6 +30,25 @@
   (:documentation
    "A complex char consists of a simple char, a list of attribute keywords and a pair of color keywords."))
 
+(defclass complex-string ()
+  ((complex-char-array
+    :initarg :complex-char-array
+    :initform (make-array 0 :element-type 'complex-char :fill-pointer 0 :adjustable t)
+    :type vector
+    :accessor .complex-char-array
+    :documentation "Lisp primitive string type."))
+
+  (:documentation
+   "A complex string consists of an array of complex characters."))
+
+(defmethod initialize-instance :after ((cstr complex-string) &key string attributes color-pair)
+  (with-slots (complex-char-array) cstr
+    (when string
+      (loop for char across string
+         do (vector-push-extend
+             (make-instance 'complex-char :simple-char char :attributes attributes :color-pair color-pair)
+             complex-char-array)))))
+
 (defclass window (fundamental-character-input-stream fundamental-character-output-stream)
   ((position
     ;; has to be a 2el-list so we can use 1 arg with setf.
@@ -234,6 +253,7 @@
 ;; if action given, change the selection, then draw the menu.
 ;; if action is nil, just redraw the menu, for example before entering the event loop.
 (defun draw-menu (menu &optional action)
+  ;; we need to make menu special in order to setf i
   (declare (special menu))
   (with-accessors ((i .current-item) (items .items) (win .window)) menu
     (let ((n (length items)))
@@ -527,6 +547,14 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 ;; print, prin1, princ, format ~A, ~S
 (defmethod print-object ((ch complex-char) (stream window))
   (%waddch (.winptr stream) (x2c ch)))
+
+(defmethod print-object ((cstr complex-string) stream)
+  (loop for ch across (.complex-char-array cstr)
+     do (princ (.simple-char ch))))
+
+(defmethod print-object ((cstr complex-string) (stream window))
+  (loop for ch across (.complex-char-array cstr)
+     do (add-char stream ch)))
 
 ;; Returns the column number where the next character would be written, i.e. the current y position
 (defmethod stream-line-column ((stream window))

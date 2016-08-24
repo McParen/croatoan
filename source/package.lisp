@@ -12,6 +12,7 @@
 
    ;; classes
    complex-char
+   complex-string
    window
    screen
    sub-window
