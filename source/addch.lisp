@@ -16,7 +16,7 @@ If n is given for a char, write n chars.
 If n is given for a string, write at most n chars from the string. If
 n is -1, as many chars will be added that will fit on the line."
   (typecase object
-    (string
+    ((or string complex-string)
      (add-string window object :attributes attributes :color-pair color-pair :y y :x x :n n))
     ((or integer keyword character complex-char)
      (add-char   window object :attributes attributes :color-pair color-pair :y y :x x))))
