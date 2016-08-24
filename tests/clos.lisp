@@ -1463,6 +1463,11 @@
       ;; test adding both chars and strings with a single wrapper routine.
       (add scr #\a :y 13 :x 0 :attributes '(:underline) :color-pair '(:yellow :red))
       (add scr "string with attributes" :y 15 :x 0 :n 11 :attributes '(:underline :bold) :color-pair '(:yellow :green)))
+    ;; test print-object specialisation on complex-string
+    (let ((str (make-instance 'complex-string :string "complex-string" :color-pair '(:blue :white) :attributes '(:underline))))
+      (format scr "~%~S~%" str)
+      (add-string scr str :y 18 :x 73 :n -1)
+      (add scr str :y 19 :x 70 :n -1))
     (refresh scr)
     (get-char scr)))
 
