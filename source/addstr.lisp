@@ -11,17 +11,32 @@ many chars will be added that will fit on the line.
 If the coordinates y and x are given, move to the destination first
 and then add the string."
   (when (and y x) (move window y x))
-  (let ((winptr (.winptr window))
-        (pos1 (.cursor-position window)))
-    (if n
-        (%waddnstr winptr string n)
-        (%waddstr winptr string))
-    (when (or attributes color-pair)
-      (let ((pos2 (.cursor-position window))
-            (count (if n n (length string))))
-        (move window (car pos1) (cadr pos1))
-        (change-attributes window count attributes color-pair)
-        (move window (car pos2) (cadr pos2))))))
+  (typecase string
+    (string
+     (progn
+       (let ((winptr (.winptr window))
+             (pos1 (.cursor-position window)))
+         (if n
+             (%waddnstr winptr string n)
+             (%waddstr winptr string))
+         (when (or attributes color-pair)
+           (let ((pos2 (.cursor-position window))
+                 (count (if n n (length string))))
+             (move window (car pos1) (cadr pos1))
+             (change-attributes window count attributes color-pair)
+             (move window (car pos2) (cadr pos2)))))))
+    (complex-string
+     (if n
+         (loop
+            repeat (if (= n -1)
+                       (- (.width window) (cadr (.cursor-position window)))
+                       n)
+            for ch across (.complex-char-array string)
+            do (add-char window ch))
+         (loop
+            for ch across (.complex-char-array string)
+            do (add-char window ch))))))
+
 
 ;;; TODOs
 
