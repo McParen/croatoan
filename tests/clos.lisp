@@ -1435,7 +1435,7 @@
                    :color-pair (list :black (nth (random 7) colors)))
          (refresh scr))))))
 
-;; Tests for insert-char, insert-string, extract-char.
+;; Tests for insert-char, insert-string, extract-complex-char.
 (defun t21 ()
   (with-screen (scr :cursor-visibility nil)
     (move scr 0 0) (add-char scr #\a)
@@ -1448,7 +1448,7 @@
     ;; change the attributes of the d
     (move scr 0 0) (change-attributes scr 1 '(:underline) '(:green :black))
     ;; extract the complex d from the window, then print its properties.
-    (let ((e (extract-char scr)))
+    (let ((e (extract-complex-char scr)))
       (move scr 1 0)
       ;; format uses print-object specialized on complex-chars
       (format scr "~S~%~S ~S ~S" e (.simple-char e) (.attributes e) (.color-pair e))

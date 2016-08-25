@@ -95,7 +95,7 @@
    ;; getyx / get curses cursor and window coordinates
 
    ;; inch / get a character and attributes from a curses window
-   extract-char
+   extract-complex-char
 
    ;; insch / insert a character before cursor in a curses window
    insert-char

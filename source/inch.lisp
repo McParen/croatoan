@@ -1,6 +1,6 @@
 (in-package :de.anvi.croatoan)
 
-(defun extract-char (window &key y x)
+(defun extract-complex-char (window &key y x)
   "Extract and return the complex char from the window.
 
 If the destination coordinates y and x are given, move the cursor
