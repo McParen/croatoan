@@ -11,7 +11,13 @@
                                (use-default-colors nil)
                                (cursor-visibility t))
                        &body body)
-  "Add documentation here."
+  "Create a screen, evaluate the forms in the body, then cleanly close the screen.
+
+Pass any arguments to the initialisation of the screen object. The screen 
+is cleared immediately after initialisation.
+
+This macro is the main entry point for writing ncurses programs with the croatoan 
+library. Do not run more than one screen at the same time."
   `(unwind-protect
         (let ((,screen (make-instance 'screen
                                       :input-reading  ,input-reading
@@ -36,13 +42,23 @@
      ;; cleanly exit ncurses whatever happens.
      (end-screen)))
 
-;; window event loop, behaves like case. at the moment, it is limited to a single window.
-;; for this to work, input-reading has to be unbuffered.
-;; if input-blocking is nil, we can handle the (nil) event, i.e. stuff that happens between key presses.
-;; if input-blocking is t, the (nil) event is never returned.
-;; the main window event loop name is hard coded to "event-case-loop" to be used with return-from.
-;; instead of ((nil) nil), which eats 100% CPU, use input-blocking t.
 (defmacro event-case ((window event &optional mouse-y mouse-x) &body body)
+  "Window event loop, events are handled by an implicit case form.
+
+For now, it is limited to events generated in a single window. So events
+from multiple windows have to be handled separately.
+
+In order for event-handling to work, input-reading has to be unbuffered.
+
+If input-blocking is nil, we can handle the (nil) event, i.e. what
+happens between key presses.
+
+If input-blocking is t, the (nil) event is never returned.
+
+The main window event loop name is hard coded to event-case-loop to be
+used with return-from.
+
+Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
   (if (and mouse-y mouse-x)
       `(loop named event-case do
             (multiple-value-bind (,event ,mouse-y ,mouse-x) (get-event ,window)
