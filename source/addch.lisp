@@ -11,32 +11,39 @@ If the destination coordinates y (row) and x (column) are given, move
 the cursor to the destination first and then add the object (char or
 string).
 
-If n is given for a char, write n chars.
+If n is given for a char, write n chars. If n is -1, as many chars
+will be added as will fit on the line.
 
 If n is given for a string, write at most n chars from the string. If
-n is -1, as many chars will be added that will fit on the line."
+n is -1, as many chars will be added as will fit on the line."
   (typecase object
     ((or string complex-string)
      (add-string window object :attributes attributes :color-pair color-pair :y y :x x :n n))
     ((or integer keyword character complex-char)
-     (add-char   window object :attributes attributes :color-pair color-pair :y y :x x))))
+     (add-char   window object :attributes attributes :color-pair color-pair :y y :x x :n n))))
 
 ;; Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))
-(defun add-char (window char &key attributes color-pair y x)
+(defun add-char (window char &key attributes color-pair y x n)
   "Add the char to the window, then advance the cursor.
 
 If the destination coordinates y and x are given, move the cursor to the
-destination first and then add the character."
+destination first and then add the character.
+
+If n is given, write n chars. If n is -1, as many chars will be added
+as will fit on the line."
+  (when (and y x) (move window y x))
   (let ((winptr (.winptr window))
-        ;; x2c takes xchars, char2chtype takes integers, keywords and lisp characters.
-        ;; eventually, those two should be merged.
+        (count (if n
+                   (if (= n -1)
+                       (- (.width window) (cadr (.cursor-position window)))
+                       n)
+                   1))
         (chtype (typecase char
                   (complex-char (x2c char))
                   (t (char2chtype char attributes color-pair)))))
-    (cond ((and y x)
-           (%mvwaddch winptr y x chtype))
-          (t
-           (%waddch winptr chtype)))))
+    (loop
+       repeat count
+       do (%waddch winptr chtype))))
 
 (defun echo-char (window chtype)
   "Add the rendered character to the window, then refresh the window.
