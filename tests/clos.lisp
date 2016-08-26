@@ -1456,12 +1456,12 @@
       (move scr 3 0)
       (add-char scr (.simple-char e) :attributes (.attributes e) :color-pair (.color-pair e))
       ;; directly print the complex char
-      (add-char scr e :y 5 :x 10)
+      (add-char scr e :y 5 :x 10 :n -1)
       ;; print strings with attributes and colors
       ;; attributes dont work (yet) when a long string gets wrapped around the last column.
       (add-string scr "string with attributes" :y 11 :x 10 :attributes '(:underline) :color-pair '(:black :green))
       ;; test adding both chars and strings with a single wrapper routine.
-      (add scr #\a :y 13 :x 0 :attributes '(:underline) :color-pair '(:yellow :red))
+      (add scr #\a :y 13 :x 0 :attributes '(:underline) :color-pair '(:yellow :red) :n -1)
       (add scr "string with attributes" :y 15 :x 0 :n 11 :attributes '(:underline :bold) :color-pair '(:yellow :green)))
     ;; test print-object specialisation on complex-string
     (let ((str (make-instance 'complex-string :string "complex-string" :color-pair '(:blue :white) :attributes '(:underline))))
