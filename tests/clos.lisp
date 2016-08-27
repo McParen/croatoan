@@ -1510,3 +1510,20 @@
       (princ "2. there" scr))
     (princ "3. dear john" scr)
     (get-char scr)))
+
+(defun t24 ()
+  "Test usage of insert-line and delete-line."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility t :enable-colors t)
+    (loop for i from 0 to (- (.height scr) 1)
+       do
+         (move scr i 0)
+         (format scr "~A" i))
+    (refresh scr)
+    (event-case (scr event)
+      (:up   (move-to scr :up)   (refresh scr))
+      (:down (move-to scr :down) (refresh scr))
+      (#\d   (delete-line scr)   (refresh scr))
+      (#\i   (insert-line scr)   (refresh scr))
+      (#\q   (return-from event-case)))
+    (get-char scr)))
+
