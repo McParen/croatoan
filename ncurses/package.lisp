@@ -125,6 +125,14 @@
    %mvdelch
    %mvwdelch
 
+   ;; deleteln / delete and insert lines in a curses window
+   %deleteln
+   %wdeleteln
+   %insdelln
+   %winsdelln
+   %insertln
+   %winsertln
+
    ;; extend / miscellaneous curses extensions
    %curses-version
    %use-extended-names

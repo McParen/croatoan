@@ -80,6 +80,10 @@
    ;; delch / delete character under the cursor in a curses window
    delete-char
 
+   ;; deleteln / delete and insert lines in a curses window
+   delete-line
+   insert-line
+
    ;; getch / get (or push back) characters from curses terminal keyboard
    get-char
    unget-char
