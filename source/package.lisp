@@ -42,8 +42,11 @@
    .items
    .current-item
    .window
+   .sub-window
    draw-menu
-   
+   update-menu
+   select-item
+
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add
    add-char

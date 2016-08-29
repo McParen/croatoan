@@ -212,63 +212,82 @@
     :accessor      .current-item
     :documentation "Currently selected item's index.")
 
-   (max-item-width
-    :initarg       max-item-width
-    :initform      20
-    :type          (or null integer)
-    :documentation "Display max n characters of an item in the menu, limiting the max allowed menu width.")
-
    (width
     :initarg       :width
-    :initform      1
+    :initform      20
     :type          integer
-    :documentation "Number of visible columns in the menu.")
+    :documentation "Width of the menu. If the items are longer, they will be cut off.")
 
    (height
     :initarg       :height
-    :initform      10
     :type          integer
-    :documentation "Number of visible rows in the menu. If the list of items is longer, it can be vertically scrolled.")
+    :documentation "Height of the displayed menu. If the list of items is longer, it can be vertically scrolled.")
 
-   ;; if there is no title and no border, we dont need a subwindow, and can use the menu as a one-line menu bar.
-   (title
-    :initarg       :title
-    :initform      nil
-    :type          (or null string))
-
-   (border
-    :initarg       :border
-    :initform      nil
-    :type          boolean)
-
+   (position
+    :initarg       :position
+    :initform      '(0 0)
+    :type          cons
+    :documentation "The (y=row x=column) coordinate of the top left corner of the menu.")
+   
    (window
     :initarg       :window
     :initform      nil
     :type          window
     :reader        .window
+    :documentation "Background and border window.")
+
+   (sub-window
+    :initarg       :sub-window
+    :initform      nil
+    :type          sub-window
+    :reader        .sub-window
     :documentation "Window to which the menu is drawn."))
 
   (:documentation  "A menu is a window providing a list of items to be selected by the user."))
 
-;; if action given, change the selection, then draw the menu.
-;; if action is nil, just redraw the menu, for example before entering the event loop.
-(defun draw-menu (menu &optional action)
+(defmethod initialize-instance :after ((menu menu) &key)
+  (with-slots (items width position window sub-window) menu
+    (setf window
+          (make-instance 'window :height (+ 2 (length items)) :width width :position position :enable-fkeys t))
+    (setf sub-window
+          (make-instance 'sub-window :parent window :height (length items) :width (- width 2) :position (list 1 1) :relative t))
+    (setf (.background window)     (make-instance 'complex-char :color-pair '(:red :yellow)))
+    (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow)))))
+
+(defun update-menu (menu event)
   ;; we need to make menu special in order to setf i
   (declare (special menu))
-  (with-accessors ((i .current-item) (items .items) (win .window)) menu
+  (with-accessors ((i .current-item) (items .items)) menu
     (let ((n (length items)))
-      (when action
-        (case action
-          (:up   (setf i (mod (1- i) n)))
-          (:down (setf i (mod (1+ i) n)))))
-      (clear win)
-      (loop for j from 0 to (1- n) do
-           (move win j 0)
-           (format win "~A ~A" (if (= i j) ">" " ") (nth j items))
-           (when (= i j)
-             (move win j 0)
-             (change-attributes win (.width win) '(:reverse))))
-      (refresh win))))
+      (case event
+        (:up   (setf i (mod (1- i) n)))
+        (:down (setf i (mod (1+ i) n)))))))
+
+(defun draw-menu (menu)
+  (with-accessors ((i .current-item) (items .items) (win .window) (sub-win .sub-window)) menu
+    (clear sub-win)
+    (loop for j from 0 to (1- (length items))
+       do
+         (move sub-win j 0)
+         (format sub-win "~A ~A" (if (= i j) ">" " ") (nth j items))
+         (when (= i j)
+           (move sub-win j 0)
+           (change-attributes sub-win (.width sub-win) '() (list :yellow :red))))
+    ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
+    ;;(touch win)
+    (box win)
+    (refresh win)
+    (refresh sub-win)))
+
+;; display a menu, let the user select an item with up and down and confirm with enter,
+;; return the selected item.
+(defun select-item (menu)
+  (draw-menu menu)
+  (event-case ((.window menu) event)
+    ((:up :down) (update-menu menu event) (draw-menu menu))
+    (#\newline (return-from event-case (nth (.current-item menu) (.items menu))))
+    ;; returns NIL
+    (#\q (return-from event-case))))
 
 #|
 ;; this will be called for both window and screen.
@@ -591,9 +610,19 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
   (declare (ignore abort))
   (%delwin (.winptr stream)))
 
+(defmethod close ((stream sub-window) &key abort)
+  (declare (ignore abort))
+  (%delwin (.winptr stream)))
+
 (defmethod close ((stream screen) &key abort)
   (declare (ignore abort))
   (%endwin))
+
+;; although it is not a stream, we will abuse close to close a menu's window and subwindow, which _are_ streams.
+(defmethod close ((menu menu) &key abort)
+  (declare (ignore abort))
+  (%delwin (.winptr (.sub-window menu)))
+  (%delwin (.winptr (.window menu))))
 
 ;; SBCL bug when specializing close on gray streams:
 ;; STYLE-WARNING:

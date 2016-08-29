@@ -1383,40 +1383,27 @@
 (defun t19b ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (win (make-instance 'window :height (+ 2 (length choices)) :width 20 :position (list 2 4) :enable-fkeys t :border t))
-           (sub-win (make-instance 'sub-window :parent win :height (length choices) :width 18 :position (list 1 1) :relative t))
-           (menu (make-instance 'menu :items choices :window sub-win)))
-      (setf (.background win) (make-instance 'complex-char :color-pair '(:yellow :red)))
-      (draw-menu menu)
-      (let ((result (event-case (win event)
-                      ((:up :down) (draw-menu menu event))
-                      (#\newline (return-from event-case (nth (.current-item menu) (.items menu))))
-                      (#\q (return-from event-case)))))
+           (menu (make-instance 'menu :items choices)))
+      (let ((result (select-item menu)))
         (format scr "You chose ~A" result)
         (refresh scr)
-        (get-char scr)))))
+        (get-char scr))
+      (close menu))))
 
 ;; improved t19b, the menu can be called repeatedly with the key a.
 (defun t19c ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (win (make-instance 'window :height (+ 2 (length choices)) :width 20 :position (list 0 30) :enable-fkeys t :border t))
-           (sub-win (make-instance 'sub-window :parent win :height (length choices) :width 18 :position (list 1 1) :relative t))
-           (menu (make-instance 'menu :items choices :window sub-win)))
+           (menu (make-instance 'menu :items choices :position (list 0 10))))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
-        (#\a (progn
-               (setf (.background win) (make-instance 'complex-char :attributes '(:bold) :color-pair '(:red :yellow)))
-               (setf (.background sub-win) (make-instance 'complex-char :color-pair '(:red :yellow)))
-               (draw-menu menu)
-               (let ((result (event-case (win event)
-                               ((:up :down) (draw-menu menu event))
-                               ;; selecting an item with enter is the only way to exit the menu loop
-                               (#\newline (return-from event-case (nth (.current-item menu) (.items menu)))))))
-                 (format scr "You chose ~A~%" result)
-                 (touch scr)
-                 (refresh scr))))
-        (#\q (return-from event-case))))))
+        (#\a (let ((result (select-item menu)))
+               (format scr "You chose ~A~%" result)
+               ;; we have to touch scr in order to make the menu disappear.
+               (touch scr)
+               (refresh scr)))
+        (#\q (return-from event-case)))
+      (close menu))))
 
 ;; Passing the color attribute directly to a character.
 (defun t20 ()
@@ -1526,4 +1513,3 @@
       (#\i   (insert-line scr)   (refresh scr))
       (#\q   (return-from event-case)))
     (get-char scr)))
-
