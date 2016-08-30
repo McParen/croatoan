@@ -17,6 +17,7 @@
    screen
    sub-window
    menu
+   menu-bar
 
    ;; accessors
    .simple-char

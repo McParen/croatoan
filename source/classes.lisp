@@ -196,6 +196,37 @@
 
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
 
+;; width = width of the window, height = 1
+;; position is always 0,0
+(defclass menu-bar ()
+  ((items
+    :initarg       :items
+    :initform      nil
+    :accessor      .items
+    :type          (or null cons)
+    :documentation "List of strings denoting menu bar entries.")
+
+   (current-item
+    :initform      0
+    :type          integer
+    :accessor      .current-item
+    :documentation "Currently selected item's index.")
+
+   (width
+    :initarg       :width
+    :initform      80
+    :type          integer
+    :documentation "Width of the menu bar, should be the same as screen width.")
+
+   (window
+    :initarg       :window
+    :initform      nil
+    :type          window
+    :reader        .window
+    :documentation "Window containing the menu bar."))
+
+  (:documentation  "A menu bar is a horizontal one-line menu that is used to start vertical menus."))
+
 ;; default size of ncurses menus is 16 rows, 1 col.
 (defclass menu ()
   ((items
@@ -244,6 +275,13 @@
     :documentation "Window to which the menu is drawn."))
 
   (:documentation  "A menu is a window providing a list of items to be selected by the user."))
+
+(defmethod initialize-instance :after ((menu menu-bar) &key)
+  (with-slots (items width window) menu
+    (setf window
+          (make-instance 'window :height 1 :width width :position (list 0 0) :enable-fkeys t))
+    (setf (.background window)
+          (make-instance 'complex-char :color-pair '(:red :yellow)))))
 
 (defmethod initialize-instance :after ((menu menu) &key)
   (with-slots (items width position window sub-window) menu
