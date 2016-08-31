@@ -1433,7 +1433,7 @@
     ;; insert d before pi
     (move scr 0 0) (insert-string scr "d ")
     ;; change the attributes of the d
-    (move scr 0 0) (change-attributes scr 1 '(:underline) '(:green :black))
+    (move scr 0 0) (change-attributes scr 1 '(:underline) :color-pair '(:green :black))
     ;; extract the complex d from the window, then print its properties.
     (let ((e (extract-complex-char scr)))
       (move scr 1 0)

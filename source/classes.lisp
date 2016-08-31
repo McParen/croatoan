@@ -310,7 +310,7 @@
          (format sub-win "~A ~A" (if (= i j) ">" " ") (nth j items))
          (when (= i j)
            (move sub-win j 0)
-           (change-attributes sub-win (.width sub-win) '() (list :yellow :red))))
+           (change-attributes sub-win (.width sub-win) '() :color-pair (list :yellow :red))))
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     ;;(touch win)
     (box win)
