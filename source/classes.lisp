@@ -196,39 +196,25 @@
 
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
 
-;; width = width of the window, height = 1
-;; position is always 0,0
-(defclass menu-bar ()
-  ((items
-    :initarg       :items
+(defclass decorated-window (window)
+  ((sub-window
+    :initarg       :sub-window
     :initform      nil
-    :accessor      .items
-    :type          (or null cons)
-    :documentation "List of strings denoting menu bar entries.")
-
-   (current-item
-    :initform      0
-    :type          integer
-    :accessor      .current-item
-    :documentation "Currently selected item's index.")
-
-   (width
-    :initarg       :width
-    :initform      80
-    :type          integer
-    :documentation "Width of the menu bar, should be the same as screen width.")
-
-   (window
-    :initarg       :window
+    :type          sub-window
+    :reader        .sub-window
+    :documentation "Content window, for example for menu contents.")
+    
+   (title
+    :initarg       :title
     :initform      nil
-    :type          window
-    :reader        .window
-    :documentation "Window containing the menu bar."))
+    :accessor      .title
+    :type          (or null string)
+    :documentation "Title of the window displayed over the border."))
 
-  (:documentation  "A menu bar is a horizontal one-line menu that is used to start vertical menus."))
+  (:documentation  "A decorated-window is a window consisting of a background window for a border and a content window."))
 
 ;; default size of ncurses menus is 16 rows, 1 col.
-(defclass menu ()
+(defclass menu-window (decorated-window)
   ((items
     :initarg       :items
     :initform      nil
@@ -243,89 +229,24 @@
     :accessor      .current-item
     :documentation "Currently selected item's index.")
 
-   (width
-    :initarg       :width
-    :initform      20
-    :type          integer
-    :documentation "Width of the menu. If the items are longer, they will be cut off.")
-
-   (height
-    :initarg       :height
-    :type          integer
-    :documentation "Height of the displayed menu. If the list of items is longer, it can be vertically scrolled.")
-
-   (position
-    :initarg       :position
-    :initform      '(0 0)
-    :type          cons
-    :documentation "The (y=row x=column) coordinate of the top left corner of the menu.")
-   
-   (window
-    :initarg       :window
+   (layout
+    :initarg       :layout
     :initform      nil
-    :type          window
-    :reader        .window
-    :documentation "Background and border window.")
-
-   (sub-window
-    :initarg       :sub-window
-    :initform      nil
-    :type          sub-window
-    :reader        .sub-window
-    :documentation "Window to which the menu is drawn."))
+    :type          (or null cons)
+    :accessor      .layout
+    :documentation "Layout (no-of-rows no-of-columns) of the items in the menu."))
 
   (:documentation  "A menu is a window providing a list of items to be selected by the user."))
 
-(defmethod initialize-instance :after ((menu menu-bar) &key)
-  (with-slots (items width window) menu
-    (setf window
-          (make-instance 'window :height 1 :width width :position (list 0 0) :enable-fkeys t))
-    (setf (.background window)
-          (make-instance 'complex-char :color-pair '(:red :yellow)))))
-
-(defmethod initialize-instance :after ((menu menu) &key)
-  (with-slots (items width position window sub-window) menu
-    (setf window
-          (make-instance 'window :height (+ 2 (length items)) :width width :position position :enable-fkeys t))
-    (setf sub-window
-          (make-instance 'sub-window :parent window :height (length items) :width (- width 2) :position (list 1 1) :relative t))
-    (setf (.background window)     (make-instance 'complex-char :color-pair '(:red :yellow)))
-    (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow)))))
-
-(defun update-menu (menu event)
-  ;; we need to make menu special in order to setf i
-  (declare (special menu))
-  (with-accessors ((i .current-item) (items .items)) menu
-    (let ((n (length items)))
-      (case event
-        (:up   (setf i (mod (1- i) n)))
-        (:down (setf i (mod (1+ i) n)))))))
-
-(defun draw-menu (menu)
-  (with-accessors ((i .current-item) (items .items) (win .window) (sub-win .sub-window)) menu
-    (clear sub-win)
-    (loop for j from 0 to (1- (length items))
-       do
-         (move sub-win j 0)
-         (format sub-win "~A ~A" (if (= i j) ">" " ") (nth j items))
-         (when (= i j)
-           (move sub-win j 0)
-           (change-attributes sub-win (.width sub-win) '() :color-pair (list :yellow :red))))
-    ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
-    ;;(touch win)
-    (box win)
-    (refresh win)
-    (refresh sub-win)))
-
-;; display a menu, let the user select an item with up and down and confirm with enter,
-;; return the selected item.
-(defun select-item (menu)
-  (draw-menu menu)
-  (event-case ((.window menu) event)
-    ((:up :down) (update-menu menu event) (draw-menu menu))
-    (#\newline (return-from event-case (nth (.current-item menu) (.items menu))))
-    ;; returns NIL
-    (#\q (return-from event-case))))
+(defmethod initialize-instance :after ((win menu-window) &key)
+  (with-slots (winptr items width position sub-window) win
+    ;; only for menu windows
+    (when (eq (type-of win) 'menu-window)
+      (setf winptr (%newwin (+ 2 (length items)) width (car position) (cadr position)))
+      (setf sub-window
+            (make-instance 'sub-window :parent win :height (length items) :width (- width 2) :position (list 1 1) :relative t))
+      (setf (.background win)        (make-instance 'complex-char :color-pair '(:red :yellow)))
+      (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) )))
 
 #|
 ;; this will be called for both window and screen.
@@ -387,6 +308,14 @@
       (if relative
           (setf winptr (%derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
           (setf winptr (%subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
+
+(defmethod initialize-instance :after ((win decorated-window) &key)
+  (with-slots (winptr width height position sub-window) win
+    ;; only for menu windows
+    (when (eq (type-of win) 'decorated-window)
+      (setf winptr (%newwin height width (car position) (cadr position)))
+      (setf sub-window
+            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
 
 ;; called after _all_ :after aux methods.
 ;; for all window types in the hierarchy.
@@ -656,11 +585,16 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
   (declare (ignore abort))
   (%endwin))
 
-;; although it is not a stream, we will abuse close to close a menu's window and subwindow, which _are_ streams.
-(defmethod close ((menu menu) &key abort)
+(defmethod close ((stream decorated-window) &key abort)
   (declare (ignore abort))
-  (%delwin (.winptr (.sub-window menu)))
-  (%delwin (.winptr (.window menu))))
+  (%delwin (.winptr (.sub-window stream)))
+  (%delwin (.winptr stream)))
+
+;; although it is not a stream, we will abuse close to close a menu's window and subwindow, which _are_ streams.
+(defmethod close ((stream menu-window) &key abort)
+  (declare (ignore abort))
+  (%delwin (.winptr (.sub-window stream)))
+  (%delwin (.winptr stream)))
 
 ;; SBCL bug when specializing close on gray streams:
 ;; STYLE-WARNING:

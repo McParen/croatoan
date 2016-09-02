@@ -87,6 +87,7 @@
              (:file "insstr")
              (:file "instr")
              (:file "kernel")
+             (:file "menu")             ; curses extension for programming menus
              (:file "mouse")
              (:file "move")
              (:file "refresh")

@@ -16,8 +16,8 @@
    window
    screen
    sub-window
-   menu
-   menu-bar
+   decorated-window
+   menu-window
 
    ;; accessors
    .simple-char
@@ -44,9 +44,6 @@
    .current-item
    .window
    .sub-window
-   draw-menu
-   update-menu
-   select-item
 
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add
@@ -130,6 +127,11 @@
    ;; legacy / get curses cursor and window coordinates, attributes
 
    ;; legacy_coding
+
+   ;; menu / curses extension for programming menus
+   draw-menu
+   update-menu
+   select-item
 
    ;; mouse / mouse interface through curses
    set-mouse-event
