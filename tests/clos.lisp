@@ -1406,6 +1406,23 @@
         (#\q (return-from event-case)))
       (close menu))))
 
+(defun t19d ()
+  "Use the arrow keys to pick a value from an 2D array menu, given as a layout parameter."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5"))
+           (menu (make-instance 'menu-window
+                                :items items :position (list 0 20) :layout (list 2 3)
+                                :title "t19d" :border t :enable-fkeys t)))
+      (event-case (scr event)
+        ;; "a" draws the menu and enters a new menu-only event loop
+        (#\a (let ((result (select-item menu)))
+               (format scr "You chose ~A~%" result)
+               ;; we have to touch scr in order to make the menu disappear.
+               (touch scr)
+               (refresh scr)))
+        (#\q (return-from event-case)))
+      (close menu))))
+
 ;; Passing the color attribute directly to a character.
 (defun t20 ()
   "Display a randomly created carpet of the seven default colors, except for black."
