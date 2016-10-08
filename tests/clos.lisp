@@ -1383,7 +1383,7 @@
 (defun t19b ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (menu (make-instance 'menu-window :items choices :width 20 :position (list 0 20) :title "t19b" :border t :enable-fkeys t)))
+           (menu (make-instance 'menu-window :items choices :position (list 0 20) :title "t19b" :border t :enable-fkeys t)))
       (let ((result (select-item menu)))
         (format scr "You chose ~A" result)
         (touch scr)
@@ -1391,11 +1391,11 @@
         (get-char scr))
       (close menu))))
 
-;; improved t19b, the menu can be called repeatedly with the key a.
 (defun t19c ()
+  "Improved t19b, the menu can be called repeatedly with the key a."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (menu (make-instance 'menu-window :items choices :width 20 :position (list 0 20) :title "t19c" :border t :enable-fkeys t)))
+           (menu (make-instance 'menu-window :items choices :position (list 0 25) :title "t19c" :border t :enable-fkeys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select-item menu)))
