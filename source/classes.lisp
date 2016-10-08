@@ -126,11 +126,11 @@
     :type          (or null cons)
     :documentation "A two element list of keywords denoting the foregreound and background color of text displayed in the window.")
 
-   ;; TODO: Doesnt survive a "clear" command yet.
    (border
     :initarg       :border
     :initform      nil
     :type          boolean
+    :reader        .border
     :documentation "Enable (t) or disable (nil, default) an initial border around a window.")
 
    (winptr
@@ -200,10 +200,10 @@
   ((sub-window
     :initarg       :sub-window
     :initform      nil
-    :type          sub-window
+    :type          (or null sub-window)
     :reader        .sub-window
     :documentation "Content window, for example for menu contents.")
-    
+
    (title
     :initarg       :title
     :initform      nil
@@ -225,28 +225,44 @@
 
    (current-item
     :initform      0
-    :type          integer
     :accessor      .current-item
+    :type          integer
     :documentation "Currently selected item's index.")
+
+   (max-item-length
+    :initarg       :max-item-length
+    :initform      15
+    :reader        .max-item-length
+    :type          integer
+    :documentation "Max number of characters displayed for a single item.")
 
    (layout
     :initarg       :layout
     :initform      nil
-    :type          (or null cons)
     :accessor      .layout
+    :type          (or null cons)
     :documentation "Layout (no-of-rows no-of-columns) of the items in the menu."))
 
   (:documentation  "A menu is a window providing a list of items to be selected by the user."))
 
 (defmethod initialize-instance :after ((win menu-window) &key)
-  (with-slots (winptr items width position sub-window) win
+  (with-slots (winptr items height width position sub-window border layout max-item-length) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
-      (setf winptr (%newwin (+ 2 (length items)) width (car position) (cadr position)))
-      (setf sub-window
-            (make-instance 'sub-window :parent win :height (length items) :width (- width 2) :position (list 1 1) :relative t))
-      (setf (.background win)        (make-instance 'complex-char :color-pair '(:red :yellow)))
-      (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) )))
+      (let ((padding (if border 1 0)))
+        ;; if no layout was given, use a vertical list (n 1)
+        (unless layout (setf layout (list (length items) 1)))
+        ;; no of rows +/- border
+        (setf height (+ (* 2 padding) (car layout)))
+        ;; this overrides any manual setting of the width and height slots.
+        (setf width (+ (* 2 padding) (* (cadr layout) max-item-length)))
+        (setf winptr (%newwin height width (car position) (cadr position)))
+        (setf sub-window
+              (make-instance 'sub-window
+                             :parent win :height (car layout) :width (* (cadr layout) max-item-length)
+                             :position (list padding padding) :relative t))
+        (setf (.background win)        (make-instance 'complex-char :color-pair '(:red :yellow)))
+        (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) ))))
 
 #|
 ;; this will be called for both window and screen.

@@ -42,6 +42,7 @@
    
    .items
    .current-item
+   .max-item-length
    .window
    .sub-window
 
