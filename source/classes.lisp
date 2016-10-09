@@ -59,14 +59,14 @@
 
    (width
     :initarg       :width
-    :initform      0
-    :type          integer
+    :initform      nil
+    :type          (or null integer)
     :documentation "The width (second, horizontal, x dimension) of the window.")
 
    (height
     :initarg       :height
-    :initform      0
-    :type          integer
+    :initform      nil
+    :type          (or null integer)
     :documentation "The height (first, vertical, y dimension) of the window.")
 
    ;; has to be a 2el-list so we can use 1 arg with setf.
@@ -252,10 +252,10 @@
       (let ((padding (if border 1 0)))
         ;; if no layout was given, use a vertical list (n 1)
         (unless layout (setf layout (list (length items) 1)))
-        ;; no of rows +/- border
-        (setf height (+ (* 2 padding) (car layout)))
-        ;; this overrides any manual setting of the width and height slots.
-        (setf width (+ (* 2 padding) (* (cadr layout) max-item-length)))
+        ;; if height and width are not given as initargs, they will be calculated,
+        ;; according to no of rows +/- border, and _not_ maximized like normal windows.
+        (unless height (setf height (+ (* 2 padding) (car layout))))
+        (unless width (setf width (+ (* 2 padding) (* (cadr layout) max-item-length))))
         (setf winptr (%newwin height width (car position) (cadr position)))
         (setf sub-window
               (make-instance 'sub-window
@@ -299,6 +299,8 @@
   (with-slots (winptr height width position) win
     ;; just for WINDOW types
     (when (eq (type-of win) 'window)
+      (unless width (setf width 0))
+      (unless height (setf height 0))
       (setf winptr (%newwin height width (car position) (cadr position))))))
 
 (defmethod initialize-instance :after ((scr screen) &key)
