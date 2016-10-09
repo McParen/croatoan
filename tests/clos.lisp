@@ -730,9 +730,10 @@
            (box scr)
            (refresh scr)
 
+           ;; the default value for width or height is "to the end of the screen".
            (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)))
-                 (w2 (make-instance 'window :height 10 :width 30 :position '(6 10)))
-                 (w3 (make-instance 'window :height 10 :width 30 :position '(9 15))))
+                 (w2 (make-instance 'window            :width 30 :position '(6 10)))
+                 (w3 (make-instance 'window :height 10           :position '(9 15))))
 
              (box w1)
              (box w2)
