@@ -181,7 +181,7 @@
   ((parent
     :initarg       :parent
     :initform      nil
-    :type          window
+    :type          (or null window)
     :documentation "The parent window which will contain the sub-window.")
    (relative
     :initarg       :relative
