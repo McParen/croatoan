@@ -1424,6 +1424,24 @@
         (#\q (return-from event-case)))
       (close menu))))
 
+;; A one-line menu without a title and border resembling a menu bar
+(defun t19e ()
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5"))
+           (menu (make-instance 'menu-window :input-blocking t
+                                :items items :position (list 0 0) :layout (list 1 6)
+                                :width (.width scr) :border t :enable-fkeys t)))
+      ;; start the output below the menu
+      (move scr 4 0)
+      ;; exit the infinite loop by exiting the menu with q.
+      (loop named menu-case
+         do
+           (let ((result (select-item menu)))
+             (unless result (return-from menu-case))
+             (format scr "You chose ~A~%" result)
+             (refresh scr)))
+      (close menu))))
+
 ;; Passing the color attribute directly to a character.
 (defun t20 ()
   "Display a randomly created carpet of the seven default colors, except for black."
