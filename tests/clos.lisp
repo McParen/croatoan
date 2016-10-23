@@ -763,6 +763,32 @@
 
       (close scr))))
 
+(defun t09b ()
+  "Use with-screen, event-case and mapc to simplify t09a."
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visibility nil)
+    (box scr)
+    (refresh scr)
+    
+    (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)  :border t))
+          (w2 (make-instance 'window            :width 30 :position '(6 10) :border t))
+          (w3 (make-instance 'window :height 10           :position '(9 15) :border t)))
+
+      (setf (.background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black))
+            (.background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
+
+      (mapc #'refresh (list w1 w2 w3))
+
+      (event-case (scr event)
+        (#\1 (touch w1) (refresh w1))
+        (#\2 (touch w2) (refresh w2))
+        (#\3 (touch w3) (refresh w3))
+        (#\q (return-from event-case))
+        (otherwise nil))
+
+      (mapc #'close (list w1 w2 w3))
+
+      ;; return nil explicitely, so it doesnt return the window list.
+      nil)))
 
 ;; port of kletva/test05.
 ;; print the screen size.
