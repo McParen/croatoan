@@ -264,6 +264,18 @@
         (setf (.background win)        (make-instance 'complex-char :color-pair '(:red :yellow)))
         (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) ))))
 
+;; if a window-position is given during make-instance, it can be simply ignored.
+;; or we can check for position and signal an error.
+(defclass pad (window)
+  ()
+  (:documentation "A pad is a window without a specified position on screen, which is specified dynamically during refresh."))
+
+(defmethod initialize-instance :after ((win pad) &key)
+  (with-slots (winptr height width) win
+    ;; just for a pad window
+    (when (eq (type-of win) 'pad)
+      (setf winptr (%newpad height width)))))
+
 #|
 ;; this will be called for both window and screen.
 ;; create a curses window when an instance is created.

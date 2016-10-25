@@ -18,6 +18,7 @@
    sub-window
    decorated-window
    menu-window
+   pad
 
    ;; accessors
    .simple-char
