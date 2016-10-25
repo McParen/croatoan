@@ -74,6 +74,7 @@
    #:t22
    #:t23
    #:t24
+   #:t25
 
    ;; clos.lisp
    #:matrix

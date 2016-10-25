@@ -1576,3 +1576,44 @@
       (#\i   (insert-line scr)   (refresh scr))
       (#\q   (return-from event-case)))
     (get-char scr)))
+
+(defun t25 ()
+  "Test initialisation and refreshing of pads."
+  (with-screen (scr :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let ((p (make-instance 'pad :height 100 :width 100)))
+
+      ;; populate the pad with numbers.
+      (loop for j from 0 to 99
+         do (loop for i from 0 to 99
+               do
+                 (move p j i)
+                 (format p "~D" (mod (* i j) 10))))
+
+      (setf (.background p) (make-instance 'complex-char :color-pair '(:green :white)))
+
+      (let ((pad-min-y     2)
+            (pad-min-x     2)
+            (screen-min-y  5)
+            (screen-min-x  5)
+            (screen-max-y 10)
+            (screen-max-x 15))
+
+      ;; the background screen has to be touched and refreshed on every move,
+      ;; otherwise we will see parts of the previously displayed pad still there.
+      (touch scr)
+      (refresh scr)
+      (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
+
+      (event-case (scr event)
+        (:up    (decf pad-min-y) (decf screen-min-y) (decf screen-max-y) (touch scr) (refresh scr)
+                (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
+        (:down  (incf pad-min-y) (incf screen-min-y) (incf screen-max-y) (touch scr) (refresh scr)
+                (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
+        (:left  (decf pad-min-x) (decf screen-min-x) (decf screen-max-x) (touch scr) (refresh scr)
+                (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
+        (:right  (incf pad-min-x) (incf screen-min-x) (incf screen-max-x) (touch scr) (refresh scr)
+                 (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
+        (#\q   (return-from event-case))
+        (otherwise nil)))
+
+      (close p))))
