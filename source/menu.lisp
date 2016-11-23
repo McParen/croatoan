@@ -53,7 +53,10 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
         (:right (setf j (mod (1+ j) n))))
       (setf item (sub2rmi layout (list i j))))))
 
-(defun draw-menu (menu)
+(defgeneric draw-menu (s)
+  (:documentation "Draw a menu."))
+
+(defmethod draw-menu ((menu menu-window))
   "Draw the current state of menu on the screen, then refresh the menu window."
   (with-accessors ((current-item .current-item) (items .items) (layout .layout) (title .title)
                    (border .border) (len .max-item-length) (sub-win .sub-window)) menu
@@ -73,9 +76,30 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
     (touch menu)
     ;; draw the title only when we have a border too, because we draw the title on top of the border.
     (when (and border title) (add menu (format nil "~7:@<~A~>" title) :y 0 :x 2))
+
     ;;(box menu)
+    ;; todo: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
+    ;; make refresh specialize on menu and decorated window in a way to do both.
     (refresh menu)
+    
     (refresh sub-win)))
+
+(defmethod draw-menu ((menu dialog-window))
+  ;; first draw a menu
+  (call-next-method)
+
+  ;; then draw the message in the reserved space above the menu.
+  (with-accessors ((message-text .message-text) (message-height .message-height)
+                   (message-pad .message-pad) (coords .message-pad-coordinates)) menu
+    ;; if there is text, and there is space reserved for the text, draw the text
+    (when (and message-text (> message-height 0))
+      (refresh message-pad
+               0                   ;pad-min-y
+               0                   ;pad-min-x
+               (first  coords)     ;screen-min-y
+               (second coords)     ;screen-min-x
+               (third  coords)     ;screen-max-y
+               (fourth coords))))) ;screen-max-x
 
 ;; display a menu, let the user select an item with up and down and confirm with enter,
 ;; return the selected item.

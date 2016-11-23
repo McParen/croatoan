@@ -18,6 +18,7 @@
    sub-window
    decorated-window
    menu-window
+   dialog-window
    pad
 
    ;; accessors
@@ -46,7 +47,11 @@
    .max-item-length
    .window
    .sub-window
-
+   .message-pad
+   .message-text
+   .message-height
+   .message-pad-coordinates
+   
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add
    add-char

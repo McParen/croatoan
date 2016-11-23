@@ -202,7 +202,7 @@
     :initform      nil
     :type          (or null sub-window)
     :reader        .sub-window
-    :documentation "Content window, for example for menu contents.")
+    :documentation "Active content window, for example for menu items.")
 
    (title
     :initarg       :title
@@ -262,6 +262,71 @@
                              :parent win :height (car layout) :width (* (cadr layout) max-item-length)
                              :position (list padding padding) :relative t))
         (setf (.background win)        (make-instance 'complex-char :color-pair '(:red :yellow)))
+        (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) ))))
+
+(defclass dialog-window (menu-window)
+  ((message-pad
+    :initform      nil
+    :type          (or null pad)
+    :reader        .message-pad
+    :documentation "Passive content window, for example for menu descriptions.")
+
+   (message-text
+    :initarg       :message-text
+    :initform      nil
+    :accessor      .message-text
+    :type          (or null string)
+    :documentation "Optional message text to describe the choices in the menu below.")
+
+   (message-height
+    :initarg       :message-height
+    :initform      0
+    :reader        .message-height
+    :type          integer
+    :documentation "Max number of lines reserved for the optional message text.")
+
+   (message-pad-coordinates
+    :initform      nil
+    :reader        .message-pad-coordinates
+    :type          (or null cons)
+    :documentation "List of four coordinates where to refresh/display the message pad: min-y min-x max-y max-x."))
+
+  (:documentation  "A dialog is a decorated menu with a title, a message and items."))
+
+(defmethod initialize-instance :after ((win dialog-window) &key)
+  (with-slots (winptr items height width position sub-window border layout max-item-length
+                      message-pad message-text message-height message-pad-coordinates) win
+    ;; only for dialog windows
+    (when (eq (type-of win) 'dialog-window)
+      ;; dialog windows should always have borders
+      (let ((padding 1))
+        ;; if no layout was given, use a vertical list (n 1)
+        (unless layout (setf layout (list (length items) 1)))
+
+        ;; if height and width are not given as initargs, they will be calculated,
+        ;; according to no of rows +/- border, and _not_ maximized like normal windows.
+        (unless height (setf height (+ message-height (* 2 padding) (car layout))))
+        (unless width (setf width (+ (* 2 padding) (* (cadr layout) max-item-length))))
+
+        (setf winptr (%newwin height width (car position) (cadr position)))
+        (setf sub-window
+              (make-instance 'sub-window
+                             :parent win :height (car layout) :width (* (cadr layout) max-item-length)
+                             :position (list (+ message-height padding) padding) :relative t))
+
+        ;; if there is space reserved for a message, and the message is provided,
+        ;; initialize a pad and set the background color.
+        (when (and message-text (> message-height 0))
+          (setf message-pad (make-instance 'pad :height message-height :width (- width 4)))
+          (setf message-pad-coordinates
+                (list (+ 1 (car position)) ;screen-min-y
+                      (+ 2 (cadr position)) ;screen-min-x
+                      (+ (+ 1 (car position)) message-height) ;screen-max-y
+                      (+ (+ 2 (cadr position) (- width 4))))) ;screen-max-x
+          (setf (.background message-pad) (make-instance 'complex-char :color-pair '(:red :yellow)))
+          (format message-pad message-text))
+
+        (setf (.background win) (make-instance 'complex-char :color-pair '(:red :yellow)))
         (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) ))))
 
 ;; if a window-position is given during make-instance, it can be simply ignored.
@@ -623,6 +688,12 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 ;; although it is not a stream, we will abuse close to close a menu's window and subwindow, which _are_ streams.
 (defmethod close ((stream menu-window) &key abort)
   (declare (ignore abort))
+  (%delwin (.winptr (.sub-window stream)))
+  (%delwin (.winptr stream)))
+
+(defmethod close ((stream dialog-window) &key abort)
+  (declare (ignore abort))
+  (%delwin (.winptr (.message-pad stream)))
   (%delwin (.winptr (.sub-window stream)))
   (%delwin (.winptr stream)))
 
