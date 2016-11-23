@@ -11,7 +11,7 @@ Ncurses is old and huge and it will take a while to cover completely.
 
 The API is not yet stable.
 
-It was tested on Linux x86_64, SBCL 1.3.10, ncurses 5.9 and 6.0.
+It was tested on Linux x86_64, Ubuntu 16.04, SBCL 1.3.11, ncurses 6.0.
 
 The documentation is provided by the examples.
 
