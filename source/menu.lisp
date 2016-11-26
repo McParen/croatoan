@@ -75,7 +75,11 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
     ;; draw the title only when we have a border too, because we draw the title on top of the border.
-    (when (and border title) (add menu (format nil "~7:@<~A~>" title) :y 0 :x 2))
+    (when (and border title)
+      ;; "|~12:@<~A~>|"
+      (flet ((make-title-string (len)
+               (concatenate 'string "|~" (write-to-string (+ len 2)) ":@<~A~>|")))
+        (add menu (format nil (make-title-string (length title)) title) :y 0 :x 2)))
 
     ;;(box menu)
     ;; todo: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
