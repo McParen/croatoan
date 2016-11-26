@@ -1468,6 +1468,27 @@
              (refresh scr)))
       (close menu))))
 
+(defun t19f ()
+  "A more fancy version of t19a, a yes-no dialog using the class dialog-window."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((items (list "Yes" "No"))
+           (menu (make-instance 'dialog-window
+                                :input-blocking t
+                                :items items :position (list 5 15) :layout (list 1 2)
+                                :width 80 :border t :enable-fkeys t
+                                :title "hello this is my dialog"
+                                :message-height 4
+                                :message-text "~%Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
+      (setf (.background scr) (make-instance 'complex-char :color-pair '(:white :black)))
+      (refresh scr)
+      (loop named menu-case
+         do
+           (let ((result (select-item menu)))
+             (unless result (return-from menu-case))
+             (format scr "You chose ~A~%" result)
+             (refresh scr)))
+      (close menu))))
+
 ;; Passing the color attribute directly to a character.
 (defun t20 ()
   "Display a randomly created carpet of the seven default colors, except for black."
