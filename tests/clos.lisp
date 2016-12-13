@@ -1365,6 +1365,35 @@
     (refresh scr)
     (get-char scr)))
 
+;; http://stackoverflow.com/questions/38684906/how-to-get-package-documentation-in-quicklisp
+(defun t18a ()
+  "Display misc quicklisp information."
+  #+quicklisp
+  (with-screen (scr)
+    (let* ((dist (ql-dist:dist "quicklisp")) ; current dist
+           ;; output to an empty broadcast stream is discraded like redirecting to /dev/null
+           (*standard-output* (make-broadcast-stream))
+           ;; Quicklisp prints its "Fetching xyz" messages to *trace-output*
+           (*trace-output* *standard-output*)
+           (installed-systems (mapcar #'ql-dist:name (ql-dist:installed-systems dist))))
+      (format scr "Quicklisp dist name          ~A~%" (ql-dist:name dist))
+      (format scr "Quicklisp dist version       ~A~%" (ql-dist:version dist))
+      (format scr "Quicklisp available version  ~A~%" (caar (ql-dist:available-versions dist)))
+      (format scr "~%Quicklisp installed releases ~{~A, ~}~%" (mapcar #'ql-dist:name (ql-dist:installed-releases dist)))
+      (format scr "~%Quicklisp installed systems  ~{~A, ~}~%~%" installed-systems)
+      (loop
+         for i in installed-systems
+         for sys = (asdf:find-system i nil)
+         do 
+           (when sys
+             (format scr "~27@A | ~A~%"
+                     i
+                     (remove #\newline (asdf:system-description sys))))))
+    (refresh scr)
+    (get-char scr))
+  #-quicklisp
+  (princ "Quicklisp not installed."))
+
 ;; print a simple menu, let the user choose an item by arrow keys, return the chosen item.
 ;; https://www.gnu.org/software/guile-ncurses/manual/html_node/A-simple-key-usage-example.html
 (defun t19 ()
