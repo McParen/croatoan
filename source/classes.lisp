@@ -305,23 +305,23 @@
 
         ;; if height and width are not given as initargs, they will be calculated,
         ;; according to no of rows +/- border, and _not_ maximized like normal windows.
-        (unless height (setf height (+ message-height (* 2 padding) (car layout))))
+        (unless height (setf height (+ 2 message-height (* 2 padding) (car layout))))
         (unless width (setf width (+ (* 2 padding) (* (cadr layout) max-item-length))))
 
         (setf winptr (%newwin height width (car position) (cadr position)))
         (setf sub-window
               (make-instance 'sub-window
                              :parent win :height (car layout) :width (* (cadr layout) max-item-length)
-                             :position (list (+ message-height padding) padding) :relative t))
+                             :position (list (+ 2 message-height padding) (+ padding 1)) :relative t))
 
         ;; if there is space reserved for a message, and the message is provided,
         ;; initialize a pad and set the background color.
         (when (and message-text (> message-height 0))
           (setf message-pad (make-instance 'pad :height message-height :width (- width 4)))
           (setf message-pad-coordinates
-                (list (+ 1 (car position)) ;screen-min-y
+                (list (+ 2 (car position)) ;screen-min-y
                       (+ 2 (cadr position)) ;screen-min-x
-                      (+ (+ 1 (car position)) message-height) ;screen-max-y
+                      (+ (+ 2 (car position)) message-height) ;screen-max-y
                       (+ (+ 2 (cadr position) (- width 4))))) ;screen-max-x
           (setf (.background message-pad) (make-instance 'complex-char :color-pair '(:red :yellow)))
           (format message-pad message-text))
