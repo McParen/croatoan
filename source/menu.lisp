@@ -58,7 +58,7 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
 
 (defmethod draw-menu ((menu menu-window))
   "Draw the current state of menu on the screen, then refresh the menu window."
-  (with-accessors ((current-item .current-item) (items .items) (layout .layout) (title .title)
+  (with-accessors ((current-item .current-item) (mark .current-item-mark) (items .items) (layout .layout) (title .title)
                    (border .border) (len .max-item-length) (sub-win .sub-window)) menu
     (clear sub-win)
     (let ((m (car layout))
@@ -68,10 +68,14 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                do
                  (let ((item (sub2rmi layout (list i j))))
                    (move sub-win i (* j len))
-                   (format sub-win "~A ~A" (if (= current-item item) ">" " ") (nth item items))
+                   (format sub-win "~A~A"
+                           (if (= current-item item)
+                               mark
+                               (make-string (length mark) :initial-element #\space))
+                           (nth item items))
                    (when (= current-item item)
                      (move sub-win i (* j len))
-                     (change-attributes sub-win len '() :color-pair (list :yellow :red)))))))
+                     (change-attributes sub-win (+ len (length mark)) '() :color-pair (list :yellow :red)))))))
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
     ;; draw the title only when we have a border too, because we draw the title on top of the border.

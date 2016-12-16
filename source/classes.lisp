@@ -229,6 +229,13 @@
     :type          integer
     :documentation "Currently selected item's index.")
 
+   (current-item-mark
+    :initarg       :current-item-mark
+    :initform      ""
+    :reader        .current-item-mark
+    :type          string
+    :documentation "A string prefixed to the current item in the menu.")
+
    (max-item-length
     :initarg       :max-item-length
     :initform      15
@@ -246,7 +253,7 @@
   (:documentation  "A menu is a window providing a list of items to be selected by the user."))
 
 (defmethod initialize-instance :after ((win menu-window) &key)
-  (with-slots (winptr items height width position sub-window border layout max-item-length) win
+  (with-slots (winptr items height width position sub-window border layout max-item-length current-item-mark) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
       (let ((padding (if border 1 0)))
@@ -255,11 +262,12 @@
         ;; if height and width are not given as initargs, they will be calculated,
         ;; according to no of rows +/- border, and _not_ maximized like normal windows.
         (unless height (setf height (+ (* 2 padding) (car layout))))
-        (unless width (setf width (+ (* 2 padding) (* (cadr layout) max-item-length))))
+        (unless width (setf width (+ (* 2 padding) (* (cadr layout) (+ (length current-item-mark) max-item-length)))))
         (setf winptr (%newwin height width (car position) (cadr position)))
         (setf sub-window
               (make-instance 'sub-window
-                             :parent win :height (car layout) :width (* (cadr layout) max-item-length)
+                             :parent win :height (car layout)
+                             :width (* (cadr layout) (+ (length current-item-mark) max-item-length))
                              :position (list padding padding) :relative t))
         (setf (.background win)        (make-instance 'complex-char :color-pair '(:red :yellow)))
         (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) ))))
@@ -294,7 +302,7 @@
   (:documentation  "A dialog is a decorated menu with a title, a message and items."))
 
 (defmethod initialize-instance :after ((win dialog-window) &key)
-  (with-slots (winptr items height width position sub-window border layout max-item-length
+  (with-slots (winptr items height width position sub-window border layout max-item-length current-item-mark
                       message-pad message-text message-height message-pad-coordinates) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
@@ -306,12 +314,13 @@
         ;; if height and width are not given as initargs, they will be calculated,
         ;; according to no of rows +/- border, and _not_ maximized like normal windows.
         (unless height (setf height (+ 2 message-height (* 2 padding) (car layout))))
-        (unless width (setf width (+ (* 2 padding) (* (cadr layout) max-item-length))))
+        (unless width (setf width (+ (* 2 padding) (* (cadr layout) (+ (length current-item-mark) max-item-length)))))
 
         (setf winptr (%newwin height width (car position) (cadr position)))
         (setf sub-window
               (make-instance 'sub-window
-                             :parent win :height (car layout) :width (* (cadr layout) max-item-length)
+                             :parent win :height (car layout)
+                             :width (* (cadr layout) (+ (length current-item-mark) max-item-length))
                              :position (list (+ 2 message-height padding) (+ padding 1)) :relative t))
 
         ;; if there is space reserved for a message, and the message is provided,
