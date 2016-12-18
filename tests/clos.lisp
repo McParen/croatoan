@@ -1450,8 +1450,10 @@
 (defun t19c ()
   "Improved t19b, the menu can be called repeatedly with the key a."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (menu (make-instance 'menu-window :items choices :position (list 0 25) :title "t19c" :border t :enable-fkeys t)))
+    (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+                      "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
+           (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
+                                :title "t19c" :border t :enable-fkeys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select-item menu)))
@@ -1482,10 +1484,10 @@
 ;; A one-line menu without a title and border resembling a menu bar
 (defun t19e ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5"))
-           (menu (make-instance 'menu-window :input-blocking t
-                                :items items :position (list 0 0) :layout (list 1 6)
-                                :width (.width scr) :border t :enable-fkeys t)))
+    (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
+           (menu (make-instance 'menu-window :input-blocking t :items items :position (list 0 0)
+                                :layout (list 1 (length items)) :scrolled-layout (list 1 4)
+                                :max-item-length 10 :width (.width scr) :border t :enable-fkeys t)))
       ;; start the output below the menu
       (move scr 4 0)
       ;; exit the infinite loop by exiting the menu with q.
@@ -1504,6 +1506,8 @@
            (menu (make-instance 'dialog-window
                                 :input-blocking t
                                 :items items :position (list 5 15) :layout (list 1 3)
+                                :max-item-length 10
+                                :current-item-mark "> "
                                 :width 60 :border t :enable-fkeys t
                                 :title "this is my dialog"
                                 :message-height 2

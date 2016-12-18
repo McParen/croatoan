@@ -248,12 +248,25 @@
     :initform      nil
     :accessor      .layout
     :type          (or null cons)
-    :documentation "Layout (no-of-rows no-of-columns) of the items in the menu."))
+    :documentation "Layout (no-of-rows no-of-columns) of the items in the menu. If nil, we have a vertical list.")
+
+   (scrolled-layout
+    :initarg       :scrolled-layout
+    :initform      nil
+    :accessor      .scrolled-layout
+    :type          (or null cons)
+    :documentation "Layout (no-of-rows no-of-columns) of the menu items actually displayed on screen.")
+
+   (scrolled-region-start
+    :initform      (list 0 0)
+    :accessor      .scrolled-region-start
+    :type          (or null cons)
+    :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region."))
 
   (:documentation  "A menu is a window providing a list of items to be selected by the user."))
 
 (defmethod initialize-instance :after ((win menu-window) &key)
-  (with-slots (winptr items height width position sub-window border layout max-item-length current-item-mark) win
+  (with-slots (winptr items height width position sub-window border layout scrolled-layout max-item-length current-item-mark) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
       (let ((padding (if border 1 0)))
@@ -261,12 +274,12 @@
         (unless layout (setf layout (list (length items) 1)))
         ;; if height and width are not given as initargs, they will be calculated,
         ;; according to no of rows +/- border, and _not_ maximized like normal windows.
-        (unless height (setf height (+ (* 2 padding) (car layout))))
+        (unless height (setf height (+ (* 2 padding) (car (or scrolled-layout layout)))))
         (unless width (setf width (+ (* 2 padding) (* (cadr layout) (+ (length current-item-mark) max-item-length)))))
         (setf winptr (%newwin height width (car position) (cadr position)))
         (setf sub-window
               (make-instance 'sub-window
-                             :parent win :height (car layout)
+                             :parent win :height (car (or scrolled-layout layout))
                              :width (* (cadr layout) (+ (length current-item-mark) max-item-length))
                              :position (list padding padding) :relative t))
         (setf (.background win)        (make-instance 'complex-char :color-pair '(:red :yellow)))

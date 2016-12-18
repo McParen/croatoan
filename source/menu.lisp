@@ -40,42 +40,77 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   "Take a menu and an event, update in-place the current item of the menu."
   ;; we need to make menu special in order to setf i in the passed menu object.
   (declare (special menu))
-  (with-accessors ((item .current-item) (items .items) (layout .layout)) menu
-    (let (;(l (length items))
-          (m (car  layout))
-          (n (cadr layout))
-          (i (car  (rmi2sub layout item)))
+  (with-accessors ((item .current-item) (items .items) (layout .layout)
+                   (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)) menu
+    (let ((i (car  (rmi2sub layout item)))
           (j (cadr (rmi2sub layout item))))
-      (case event
-        (:up    (setf i (mod (1- i) m)))
-        (:down  (setf i (mod (1+ i) m)))
-        (:left  (setf j (mod (1- j) n)))
-        (:right (setf j (mod (1+ j) n))))
+      (if scrolled-layout
+          (let ((m (car scrolled-layout))
+                (n (cadr scrolled-layout))
+                (m1 (car scrolled-region-start))
+                (n1 (cadr scrolled-region-start)))
+            (case event
+              (:up    (if (> i 0) (decf i))
+                      (when (< i m1) (decf m1)))
+              (:down  (if (< i (1- (car layout))) (incf i))
+                      (when (>= i (+ m1 m)) (incf m1)))
+              (:left  (if (> j 0) (decf j))
+                      (when (< j n1) (decf n1)))
+              (:right (if (< j (1- (cadr layout))) (incf j))
+                      (when (>= j (+ n1 n)) (incf n1))))
+            (setf scrolled-region-start (list m1 n1)))
+          ;; cycle through the menu items in case scrolling is off.
+          (let ((m (car  layout))
+                (n (cadr layout)))
+            (case event
+              (:up    (setf i (mod (1- i) m)))
+              (:down  (setf i (mod (1+ i) m)))
+              (:left  (setf j (mod (1- j) n)))
+              (:right (setf j (mod (1+ j) n))))))
       (setf item (sub2rmi layout (list i j))))))
 
 (defgeneric draw-menu (s)
   (:documentation "Draw a menu."))
 
 (defmethod draw-menu ((menu menu-window))
-  "Draw the current state of menu on the screen, then refresh the menu window."
-  (with-accessors ((current-item .current-item) (mark .current-item-mark) (items .items) (layout .layout) (title .title)
-                   (border .border) (len .max-item-length) (sub-win .sub-window)) menu
+  (with-accessors ((current-item .current-item) (mark .current-item-mark) (items .items) (layout .layout)
+                   (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)
+                   (title .title) (border .border) (len .max-item-length) (sub-win .sub-window)) menu
     (clear sub-win)
-    (let ((m (car layout))
-          (n (cadr layout)))
-      (loop for i from 0 to (1- m)
-         do (loop for j from 0 to (1- n)
-               do
-                 (let ((item (sub2rmi layout (list i j))))
-                   (move sub-win i (* j len))
-                   (format sub-win "~A~A"
-                           (if (= current-item item)
-                               mark
-                               (make-string (length mark) :initial-element #\space))
-                           (nth item items))
-                   (when (= current-item item)
-                     (move sub-win i (* j len))
-                     (change-attributes sub-win (+ len (length mark)) '() :color-pair (list :yellow :red)))))))
+    (if scrolled-layout
+        (let ((m (car scrolled-layout))
+              (n (cadr scrolled-layout))
+              (m1 (car scrolled-region-start))
+              (n1 (cadr scrolled-region-start)))
+          (loop for i from 0 to (1- m)
+             do (loop for j from 0 to (1- n)
+                   do
+                     (let ((item (sub2rmi layout (list (+ m1 i) (+ n1 j)))))
+                       ;;(format menu "~A ~A," j n1)
+                       (move sub-win i (* j len))
+                       (format sub-win "~A~A"
+                               (if (= current-item item)
+                                   mark
+                                   (make-string (length mark) :initial-element #\space))
+                               (nth item items))
+                       (when (= current-item item)
+                         (move sub-win i (* j len))
+                         (change-attributes sub-win (+ len (length mark)) '() :color-pair (list :yellow :red)))))))
+        (let ((m (car layout))
+              (n (cadr layout)))
+          (loop for i from 0 to (1- m)
+             do (loop for j from 0 to (1- n)
+                   do
+                     (let ((item (sub2rmi layout (list i j))))
+                       (move sub-win i (* j len))
+                       (format sub-win "~A~A"
+                               (if (= current-item item)
+                                   mark
+                                   (make-string (length mark) :initial-element #\space))
+                               (nth item items))
+                       (when (= current-item item)
+                         (move sub-win i (* j len))
+                         (change-attributes sub-win (+ len (length mark)) '() :color-pair (list :yellow :red))))))))
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
     ;; draw the title only when we have a border too, because we draw the title on top of the border.
@@ -84,12 +119,9 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
       (flet ((make-title-string (len)
                (concatenate 'string "|~" (write-to-string (+ len 2)) ":@<~A~>|")))
         (add menu (format nil (make-title-string (length title)) title) :y 0 :x 2)))
-
-    ;;(box menu)
     ;; todo: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
     ;; make refresh specialize on menu and decorated window in a way to do both.
     (refresh menu)
-    
     (refresh sub-win)))
 
 (defmethod draw-menu ((menu dialog-window))
