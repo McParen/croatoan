@@ -356,6 +356,20 @@
       (#\q (return-from event-case))
       (otherwise (add-char scr (char-code event))))))
 
+;; slightly improved t03b2 pasted as an example to the cliki croatoan page
+(defun t03b3 ()
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t)
+    (clear scr)
+    (move scr 2 0)
+    (format scr "Type chars. Type q to quit.~%~%")
+    (refresh scr)
+    (setf (.color-pair scr) '(:yellow :red)
+          (.attributes scr) '(:bold))
+    (event-case (scr event)
+      (#\q (return-from event-case))
+      (otherwise (princ event scr)
+                 (refresh scr)))))
+
 ;; read and display chars until a q is pressed, blocking + gray stream version.
 ;; the stream reading functiond wont work in non-blocking mode and with non-char keys.
 (defun t03c ()
