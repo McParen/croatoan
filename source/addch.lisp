@@ -45,17 +45,23 @@ as will fit on the line."
        repeat count
        do (%waddch winptr chtype))))
 
-(defun echo-char (window chtype)
-  "Add the rendered character to the window, then refresh the window.
+(defun echo (window char &key attributes color-pair y x)
+  "Add one rendered character to the window, then refresh the window.
 
 If the destination coordinates Y and X are given, move to the
-destination first and then add the character. 
+destination first and then echo the character. 
 
 The only difference to add-char and a subsequent refresh is a
 performance gain if we know that we only need to output a single
 character."
-  (let ((winptr (.winptr window)))
-    (%wechochar winptr chtype)))
+  (when (and y x) (move window y x))
+  (let ((winptr (.winptr window))
+        (chtype (typecase char
+                  (complex-char (x2c char))
+                  (t (char2chtype char attributes color-pair)))))
+    (typecase window
+      (pad (%pechochar winptr chtype))
+      (window (%wechochar winptr chtype)))))
 
 ;; just an utility function if you dont want to use (format nil "bla
 ;; bla ~%") to insert newlines. in C you can simply insert \n.

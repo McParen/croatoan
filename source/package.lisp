@@ -56,7 +56,7 @@
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add
    add-char
-   echo-char
+   echo
    new-line
    acs
 
