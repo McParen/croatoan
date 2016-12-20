@@ -1547,11 +1547,10 @@
         (#\q (return-from event-case))
         ((nil)
          (sleep 0.01)
-         (add-char scr #\space
+         (echo scr #\space
                    :y (random height)
                    :x (random width)
-                   :color-pair (list :black (nth (random 7) colors)))
-         (refresh scr))))))
+                   :color-pair (list :black (nth (random 7) colors))))))))
 
 ;; Tests for insert-char, insert-string, extract-complex-char.
 (defun t21 ()
