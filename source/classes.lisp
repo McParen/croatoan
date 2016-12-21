@@ -423,7 +423,12 @@
     ;; just for SUB-WINDOW types
     (when (eq (type-of win) 'sub-window)
       (if relative
-          (setf winptr (%derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
+          ;;(setf winptr (%derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
+          (setf winptr (let ((val (%derwin (slot-value parent 'winptr) height width (car position) (cadr position))))
+                         (if (null-pointer-p val)
+                             ;; may also be null if the parent window passed is null
+                             (error "Subwindow could not be created. Probably too big and not contained in the parent window.")
+                             val)))
           (setf winptr (%subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
 
 (defmethod initialize-instance :after ((win decorated-window) &key)
