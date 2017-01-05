@@ -641,7 +641,7 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
           (%winsch winptr code)
           ;; move the cursor after the inserted character.
           (move-to stream :right))
-        (if (and (>= code 0) (<= code 127))
+        (if (and (>= code 0) (<= code 255))
             ;; ascii characters (0-127) are safe to use with addch.
             (%waddch winptr code)
             ;; for every other char, dont use waddch, but waddstr, so we can output unicode without add_wch.
