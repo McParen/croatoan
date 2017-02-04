@@ -1,8 +1,12 @@
 (in-package :de.anvi.croatoan)
 
-;; takes a window and two coordinates. 
-;; reads in a char from the keyboard and returns it as a C char.
 (defun get-char (window &key y x)
+  "Read in a C char (single byte) from the keyboard and return it.
+
+If the destination coordinates y (row) and x (column) are given, move
+the cursor to the destination first and then read a single byte.
+
+The window from which the char is read is automatically refreshed."
   (let ((winptr (.winptr window)))
     (cond ((and y x)
            (%mvwgetch winptr y x))
