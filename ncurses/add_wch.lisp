@@ -51,11 +51,11 @@ cchar_t;
 ;; Intended to be used with setcchar.
 (defcstruct cchar_t (cchar-attr attr) (cchar-chars wchar_t :count 5))
 
-(defcfun ("add_wch"    %add-wch)     :int                                 (wch (:pointer (:struct cchar_t))))
-(defcfun ("wadd_wch"   %wadd-wch)    :int  (win window)                   (wch (:pointer (:struct cchar_t))))
+(defcfun ("add_wch"    %add-wch)    :int                                 (wch (:pointer (:struct cchar_t))))
+(defcfun ("wadd_wch"   %wadd-wch)   :int  (win window)                   (wch (:pointer (:struct cchar_t))))
 
-(defcfun ("mvadd_wch"  %mvadd-wch)   :int               (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
-(defcfun ("mvwadd_wch" %mvwadd-wch)  :int  (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
+(defcfun ("mvadd_wch"  %mvadd-wch)  :int               (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
+(defcfun ("mvwadd_wch" %mvwadd-wch) :int  (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
 
-(defcfun ("echo_wch"   %echo-wchar)  :int                                 (wch (:pointer (:struct cchar_t))))
-(defcfun ("wecho_wch"  %wecho-wchar) :int  (win window)                   (wch (:pointer (:struct cchar_t))))
+(defcfun ("echo_wch"   %echo-wch)   :int                                 (wch (:pointer (:struct cchar_t))))
+(defcfun ("wecho_wch"  %wecho-wch)  :int  (win window)                   (wch (:pointer (:struct cchar_t))))

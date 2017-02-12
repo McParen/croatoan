@@ -16,8 +16,8 @@
    %wadd-wch
    %mvadd-wch
    %mvwadd-wch
-   %echo-wchar
-   %wecho-wchar
+   %echo-wch
+   %wecho-wch
    wchar_t
    cchar
    cchar_t
