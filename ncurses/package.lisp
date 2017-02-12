@@ -176,6 +176,12 @@
    %mvinch
    %mvwinch
 
+   ;; in_wch / extract a wide character and rendition from a window
+   %in-wch
+   %mvin-wch
+   %win-wch
+   %mvwin-wch
+
    ;; inchstr / get a string of characters (and attributes) from a curses window
    %inchstr
    %inchnstr

@@ -33,6 +33,7 @@
              (:file "getstr")           ; accept character strings from curses terminal keyboard
              (:file "getyx")            ; get curses cursor and window coordinates
              (:file "inch")             ; get a character and attributes from a curses window
+             (:file "in_wch")           ; extract a wide (multi-byte) character and rendition from a window
              (:file "insch")            ; insert a character before cursor in a curses window
              (:file "instr")            ; get a string of characters from a curses window
              (:file "inchstr")          ; get a string of characters (and attributes) from a curses window
