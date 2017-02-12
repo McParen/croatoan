@@ -69,7 +69,7 @@
 (defun set-mouse-event (keyword-list)
   "Take a list of mouse events, activate tracking of those events.
 
-Returns an integer bitmast. An empty list turns off mouse tracking."
+Returns an integer bitmask. An empty list turns off mouse tracking."
   (%mousemask (keyword-to-bitmask keyword-list) (null-pointer)))
 
 ;; decode and return the mouse event struct as multiple values:
