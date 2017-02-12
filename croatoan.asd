@@ -28,6 +28,7 @@
              (:file "deleteln")         ; delete and insert lines in a curses window
              (:file "extend")           ; curses window properties
              (:file "getch")            ; get (or push back) characters from curses terminal keyboard
+             (:file "get_wch")          ; get (or push back) a wide (multi-byte) character from curses terminal keyboard
              (:file "getcchar")         ; Get a wide character string and rendition from a cchar_t or set a cchar_t from a wide-character string
              (:file "getstr")           ; accept character strings from curses terminal keyboard
              (:file "getyx")            ; get curses cursor and window coordinates

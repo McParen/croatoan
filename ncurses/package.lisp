@@ -149,6 +149,14 @@
    %ungetch
    %has-key
 
+   ;; get_wch / get (or push back) a wide (multi-byte) character from curses terminal keyboard
+   %get-wch
+   %wget-wch
+   %mvget-wch
+   %mvwget-wch
+   %unget-wch
+   wint_t
+
    ;; getstr / accept character strings from curses terminal keyboard
    %getstr
    %getnstr
