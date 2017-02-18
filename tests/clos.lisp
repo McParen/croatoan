@@ -1220,13 +1220,14 @@
 ;; ncurses' get-string only allows the backspace key.
 ;; extend the functionality of the input line of the simple repl.
 (defun t16c ()
-  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors nil)
+  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t)
     (let* ((wout (make-instance 'window :height (1- (.height scr)) :width (.width scr) :position '(0 0) :enable-scrolling t))
            ;; input blocking is a property of every single window, not just of the global screen.
            (win (make-instance 'window :height 1 :width (.width scr) :position (list (1- (.height scr)) 0)
-                               :enable-fkeys t :input-blocking nil))
+                               :enable-fkeys t :input-blocking t))
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
+      
       (event-case (win event)
         (:left 
          (when (> (cadr (.cursor-position win)) 0)
@@ -1262,9 +1263,10 @@
         ((nil) ; when no key is hit at all
          ;; when there is no event, get-event will return nil.
          ;; this is the place for no-event code.
+         ;; instead of doing nothing, set blocking to t.
          nil)
         (otherwise ; all other keys
-         (when (and (typep event 'standard-char) ; but only if they are character keys
+         (when (and (characterp event)
                     (< (cadr (.cursor-position win)) (1- (.width win))))
            (incf n)
            (princ event win))))
