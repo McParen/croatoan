@@ -1,7 +1,7 @@
 (in-package :de.anvi.croatoan)
 
 (defun extract-complex-char (window &key y x)
-  "Extract and return the complex char from the window.
+  "Extract and return the single-byte complex char from the window.
 
 If the destination coordinates y and x are given, move the cursor
 there first."
@@ -11,7 +11,3 @@ there first."
                        (t
                         (%winch winptr)))))
     (c2x chtype)))
-
-;;; TODOs
-
-;; [ ] Make it return an xchar instead of chtype.
