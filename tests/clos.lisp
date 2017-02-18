@@ -1587,6 +1587,14 @@
       (format scr "~%~S~%" str)
       (add-string scr str :y 18 :x 73 :n -1)
       (add scr str :y 19 :x 70 :n -1))
+    ;; extract the first line as a complex-string, then reprint it at line 22
+    (let ((str (extract-complex-string scr :y 0 :x 0 :n 4)))
+      (move scr 22 1)
+      (add scr str :n -1))
+    ;; extract the first line as a simple string, then reprint it at line 23
+    (let ((str (extract-string scr :y 0 :x 0 :n 4)))
+      (move scr 23 1)
+      (add scr str))
     (refresh scr)
     (get-char scr)))
 
