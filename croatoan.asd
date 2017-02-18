@@ -85,6 +85,7 @@
              (:file "initscr")
              (:file "inopts")
              (:file "inch")
+             (:file "inchstr")
              (:file "insch")
              (:file "insstr")
              (:file "instr")

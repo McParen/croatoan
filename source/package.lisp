@@ -117,6 +117,7 @@
    extract-string
 
    ;; inchstr / get a string of characters (and attributes) from a curses window
+   extract-complex-string
 
    ;; insstr / insert string before cursor in a curses window
    insert-string
