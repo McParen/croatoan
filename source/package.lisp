@@ -62,12 +62,6 @@
 
    ;; add_wch / add a wide complex character to a curses window, then advance the cursor
    add-wide-char
-
-   ;; get_wch / get (or push back) a wide (multi-byte) character from curses terminal keyboard
-   get-wide-char
-   
-   ;; in_wch / extract a wide character and rendition from a window
-   extract-wide-char
    
    ;; addstr / add a string of characters to a curses window and advance cursor
    add-string
@@ -111,6 +105,9 @@
    key-pressed-p
    get-event
 
+   ;; get_wch / get (or push back) a wide (multi-byte) character from curses terminal keyboard
+   get-wide-char
+
    ;; getstr / accept character strings from curses terminal keyboard
    get-string
 
@@ -118,6 +115,9 @@
 
    ;; inch / get a character and attributes from a curses window
    extract-complex-char
+
+   ;; in_wch / extract a wide character and rendition from a window
+   extract-wide-char
 
    ;; insch / insert a character before cursor in a curses window
    insert-char

@@ -157,11 +157,13 @@ from the given point without moving the cursor position."
     :bold))
 
 (defun chtype2attrs (ch)
+  "Take a chtype, return a list of used attribute keywords."
   (loop
      for i in *used-attributes*
      if (logtest ch (get-bitmask i)) collect i))
 
 (defun attrs2chtype (attrs)
+  "Take a list of attribute keywords, return a chtype with the attribute bits set."
   (apply #'logior (mapcar #'get-bitmask attrs)))
 
 ;;; ------------------------------------------------------------------
