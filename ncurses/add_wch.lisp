@@ -44,6 +44,9 @@ cchar_t;
 
 (defctype wchar_t :int32)
 
+;; For non-extended colors, the color pair is OR-ed into the attr value.
+;; only for extended colors, we get a new struct slot.
+
 ;; Intended to be used with convert-to-foreign plist translation.
 ;; For some reasons, plists with pointers dont work, so we have to pass by value.
 (defcstruct cchar (cchar-attr attr) (cchar-chars wchar_t))
