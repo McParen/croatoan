@@ -385,6 +385,24 @@
     (princ "You pressed q. Now press any char to quit." scr)
     (read-char scr)))
 
+(defun t03d ()
+  "Read and display wide (multi-byte) characters until q is pressed."
+  (with-screen (scr :input-echoing nil :input-blocking t)
+    (clear scr)
+    (refresh scr)
+    (loop for ch = (get-wide-char scr)
+       while (not (equal (code-char ch) #\q))
+       do
+         (clear scr)
+         (move scr 0 0)
+          ;; display the human-readable version of a char
+         (add-wide-char scr (code-char ch) :attributes (list :reverse))
+         ;; extract the wide char from the window
+         (let ((ch2 (extract-wide-char scr :y 0 :x 0)))
+           (move scr 0 3)
+           ;; display the lisp-readable version of the extracted wide char
+           (prin1 (code-char ch2) scr)))))
+
 ;; take a function given as symbol name and display its docstring. press q to exit.
 ;; Example: (a:t04 'cdr)
 (defun t04 (&optional (name 'car))
