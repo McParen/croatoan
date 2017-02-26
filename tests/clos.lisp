@@ -387,7 +387,7 @@
 
 (defun t03d ()
   "Read and display wide (multi-byte) characters until q is pressed."
-  (with-screen (scr :input-echoing nil :input-blocking t)
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t)
     (clear scr)
     (refresh scr)
     (loop for ch = (get-wide-char scr)
@@ -395,8 +395,8 @@
        do
          (clear scr)
          (move scr 0 0)
-          ;; display the human-readable version of a char
-         (add-wide-char scr (code-char ch) :attributes (list :reverse))
+         ;; display the human-readable version of a char
+         (add-wide-char scr (code-char ch) :attributes (list :bold :underline) :color-pair (list :red :yellow))
          ;; extract the wide char from the window
          (let ((ch2 (extract-wide-char scr :y 0 :x 0)))
            (move scr 0 3)

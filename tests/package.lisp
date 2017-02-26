@@ -14,6 +14,7 @@
    ;; unicode.lisp
    #:ut01
    #:ut02
+   #:ut02b
    #:ut03
    #:ut04
 

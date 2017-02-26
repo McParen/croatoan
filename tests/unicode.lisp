@@ -43,6 +43,23 @@
     (%wgetch scr)
     (%endwin)))
 
+(defun ut02b ()
+  (let ((scr (%initscr)))
+    (%start-color)
+    (%init-pair 1 1 3) ; red(1) on yellow(3)
+
+    ;; %wadd-wch
+    ;; #\CYRILLIC_CAPITAL_LETTER_LJE = #\Љ
+    (with-foreign-object (ptr '(:struct cchar))
+      ;; 2 is the attribute, 1 is the color pair, the color doesnt work.
+      (setf ptr (convert-to-foreign (list 'cchar-attr #x00020100 'cchar-chars (char-code #\Љ))
+                                    '(:struct cchar)))
+      (%wadd-wch scr ptr))
+
+    (%wrefresh scr)
+    (%wgetch scr)
+    (%endwin)))
+
 ;; We do not need special "wide character" functions for displaying single UTF-8 characters.
 ;; We can just use the string output function %waddstr.
 ;; Here, the underlying %waddstr powers the gray stream interface displaying UTF-8.
