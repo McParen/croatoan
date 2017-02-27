@@ -54,6 +54,9 @@ cchar_t;
 ;; Intended to be used with setcchar.
 (defcstruct cchar_t (cchar-attr attr) (cchar-chars wchar_t :count 5))
 
+;; convert-to-foreign and convert-from-foreign do not return structs,
+;; but pointers to structs.
+
 (defcfun ("add_wch"    %add-wch)    :int                                 (wch (:pointer (:struct cchar_t))))
 (defcfun ("wadd_wch"   %wadd-wch)   :int  (win window)                   (wch (:pointer (:struct cchar_t))))
 

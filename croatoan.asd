@@ -70,6 +70,7 @@
             ((:file "package")
              (:file "croatoan")
              (:file "classes")
+             (:file "utf8")
 
              (:file "addch")
              (:file "add_wch")
