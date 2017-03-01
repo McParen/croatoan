@@ -411,7 +411,7 @@
         (%start-color)
         (set-default-color-pair use-default-colors))
       (if input-echoing (%echo) (%noecho))
-      (set-input-reading winptr input-reading)
+      (set-input-reading scr input-reading)
       (set-cursor-visibility cursor-visibility))))
 
 ;; sub-window has to be contained within a parent window
