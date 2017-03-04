@@ -387,33 +387,25 @@
 
 (defun t03d ()
   "Read and display wide (multi-byte) characters until q is pressed."
-  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visibility nil)
     (clear scr)
     (refresh scr)
     (loop for ch = (get-wide-char scr)
        while (not (equal (code-char ch) #\q))
        do
          (clear scr)
-
-         ;; display the human-readable version of a wide char by using the %wadd_wch interface.
-         (move scr 0 0)
-         ;; adding attributes works, adding colors doesnt work.
-         (add-wide-char scr (code-char ch) :attributes (list :underline) :color-pair (list :yellow :red))
-         ;; extract the wide char added by the %wadd_wch interface.
-         (let ((ch2 (extract-wide-char scr :y 0 :x 0)))
-           (move scr 0 3)
-           ;; display the lisp-readable version of the extracted wide char
-           (prin1 (code-char ch2) scr))
-
          ;; display the human-readable version of a wide char by using the utf-8 %waddch interface.
-         (move scr 2 0)
          ;; adding both attributes and colors works this way.
-         (add-wide-char-utf-8 scr ch :attributes (list :underline) :color-pair (list :yellow :red))
+         (add-wide-char scr ch :attributes (list :underline :bold) :color-pair (list :red :yellow) :y 0 :x 0)
          ;; extract the wide char added by the utf-8 %waddch interface.
-         (let ((ch2 (extract-wide-char scr :y 2 :x 0)))
-           (move scr 2 3)
+         (let ((ch2 (extract-wide-char scr :y 0 :x 0)))
            ;; display the lisp-readable version of the extracted wide char
-           (prin1 (code-char ch2) scr)) )))
+           (move scr 1 0)
+           (prin1 (.simple-char ch2) scr)
+           ;; print the slots of the extracted complex wide char
+           (add-wide-char scr ch2 :y 2 :x 0)
+           (princ (.attributes ch2) scr)
+           (princ (.color-pair ch2) scr)))))
 
 ;; take a function given as symbol name and display its docstring. press q to exit.
 ;; Example: (a:t04 'cdr)
