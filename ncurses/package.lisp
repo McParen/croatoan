@@ -245,6 +245,16 @@
    %mvwinstr
    %mvwinnstr
 
+   ;; inwstr / extract a string of wchar_t characters from a curses window
+   %inwstr
+   %innwstr
+   %winwstr
+   %winnwstr
+   %mvinwstr
+   %mvinnwstr
+   %mvwinwstr
+   %mvwinnwstr
+
    ;; kernel / low-level curses routines
    %def-prog-mode
    %def-shell-mode

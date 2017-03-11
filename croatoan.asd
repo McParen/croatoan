@@ -36,6 +36,7 @@
              (:file "in_wch")           ; extract a wide (multi-byte) character and rendition from a window
              (:file "insch")            ; insert a character before cursor in a curses window
              (:file "instr")            ; get a string of characters from a curses window
+             (:file "inwstr")           ; extract a string of wchar_t characters from a curses window
              (:file "inchstr")          ; get a string of characters (and attributes) from a curses window
              (:file "insstr")           ; insert string before cursor in a curses window
              (:file "initscr")          ; screen initialization and manipulation routines
@@ -89,6 +90,7 @@
              (:file "inopts")
              (:file "inch")
              (:file "in_wch")
+             (:file "inwstr")           ; get a string of wide (multi-byte) characters from a curses window
              (:file "inchstr")
              (:file "insch")
              (:file "insstr")

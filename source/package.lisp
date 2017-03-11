@@ -62,7 +62,6 @@
 
    ;; add_wch / add a wide complex character to a curses window, then advance the cursor
    add-wide-char
-   add-wide-char-utf-8
    
    ;; addstr / add a string of characters to a curses window and advance cursor
    add-string
@@ -126,6 +125,9 @@
    ;; instr / get a string of characters from a curses window
    extract-string
 
+   ;; inwstr / get a string of wide (multi-byte) characters from a curses window
+   extract-wide-string
+   
    ;; inchstr / get a string of characters (and attributes) from a curses window
    extract-complex-string
 
