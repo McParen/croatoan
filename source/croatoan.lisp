@@ -55,20 +55,25 @@ happens between key presses.
 
 If input-blocking is t, the (nil) event is never returned.
 
-The main window event loop name is hard coded to event-case-loop to be
+The main window event loop name is hard coded to event-case to be
 used with return-from.
 
 Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
   (if (and mouse-y mouse-x)
-      `(loop named event-case do
-            (multiple-value-bind (,event ,mouse-y ,mouse-x) (get-event ,window)
+      `(loop :named event-case do
+          (multiple-value-bind (,event ,mouse-y ,mouse-x)
+              ;; depending on which version of ncurses is loaded, decide which event reader to use.
+              #+sb-unicode (get-wide-event ,window)
+              #-sb-unicode (get-event ,window)
               ;;(print (list ,event mouse-y mouse-x) ,window)
               (case ,event
                 ,@body)))
-      `(loop named event-case do
-            (let ((,event (get-event ,window)))
-              (case ,event
-                ,@body)))))
+      `(loop :named event-case do
+          ;; depending on which version of ncurses is loaded, decide which event reader to use.
+          (let ((,event #+sb-unicode (get-wide-event ,window)
+                        #-sb-unicode (get-event ,window)))
+            (case ,event
+              ,@body)))))
 
 (defmacro save-excursion (window &body body)
   "After executing body, return the cursor in window to its initial position."
