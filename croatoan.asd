@@ -1,5 +1,5 @@
 (asdf:defsystem :croatoan
-  :description "Common Lisp bindings for ncurses."
+  :description "Common Lisp bindings for the ncurses terminal library."
   :author "Anton Vidovic <anton.vidovic@gmx.de>"
   :licence "MIT"
   :version "0.0.1"
@@ -117,14 +117,6 @@
              (:file "clos")
              (:file "evolution") ))))
 
-;;; Not even started:
-
-;; (:file "mouse")
-;; mouse
-;; mouse interface through curses
-;; http://invisible-island.net/ncurses/man/curs_mouse.3x.html
-
-
 ;;; Useless, no need to implement.
 
 ;; (:file "print")
@@ -144,8 +136,6 @@
 
 ;; http://invisible-island.net/ncurses/man/terminfo.5.html
 
-
-
 ;;; Wide character equivalents:
 
 ;; (:file "border_set") 
@@ -162,5 +152,3 @@
 ;; (:file "inwstr")
 ;; (:file "ins_wch")
 ;; (:file "ins_wstr")
-
-
