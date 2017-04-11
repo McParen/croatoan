@@ -4,33 +4,6 @@
 ;;; add a complex character and rendition to a curses window, then advance the cursor
 ;;; http://invisible-island.net/ncurses/man/curs_add_wch.3x.html
 
-;;; C data types
-
-#|
-
-Excerpt from /usr/include/ncurses.h
-
-/*
- * cchar_t stores an array of CCHARW_MAX wide characters.  The first is
- * normally a spacing character.  The others are non-spacing.  If those
- * (spacing and nonspacing) do not fill the array, a null L'\0' follows. 
- * Otherwise, a null is assumed to follow when extracting via getcchar().
- */
-#define CCHARW_MAX	5
-typedef struct
-{
-    attr_t	attr;
-    wchar_t	chars[CCHARW_MAX];
-#if 0
-#undef NCURSES_EXT_COLORS
-#define NCURSES_EXT_COLORS 20110404
-    int		ext_color;	/* color pair, must be more than 16-bits */
-#endif
-}
-cchar_t;
-
-|#
-
 ;;; C prototypes
 
 ;;; int add_wch(const cchar_t *wch);
@@ -41,21 +14,6 @@ cchar_t;
 ;;; int wecho_wchar(WINDOW *win, const cchar_t *wch);
 
 ;;; Low-level CFFI wrappers
-
-(defctype wchar_t :int32)
-
-;; For non-extended colors, the color pair is OR-ed into the attr value.
-;; only for extended colors, we get a new struct slot.
-
-;; Intended to be used with convert-to-foreign plist translation.
-;; For some reasons, plists with pointers dont work, so we have to pass by value.
-(defcstruct cchar (cchar-attr attr) (cchar-chars wchar_t))
-
-;; Intended to be used with setcchar.
-(defcstruct cchar_t (cchar-attr attr) (cchar-chars wchar_t :count 5))
-
-;; convert-to-foreign and convert-from-foreign do not return structs,
-;; but pointers to structs.
 
 (defcfun ("add_wch"    %add-wch)    :int                                 (wch (:pointer (:struct cchar_t))))
 (defcfun ("wadd_wch"   %wadd-wch)   :int  (win window)                   (wch (:pointer (:struct cchar_t))))

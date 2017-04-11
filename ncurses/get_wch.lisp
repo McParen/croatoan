@@ -12,11 +12,7 @@
 ;; int mvwget_wch(WINDOW *win, int y, int x, wint_t *wch);
 ;; int unget_wch(const wchar_t wch);
 
-;; typedef unsigned int wint_t;
-
 ;;; Low-level CFFI wrappers
-
-(defctype wint_t :int32)
 
 (defcfun ("get_wch"    %get-wch)    :int                                (wch (:pointer wint_t)))
 (defcfun ("wget_wch"   %wget-wch)   :int (win window)                   (wch (:pointer wint_t)))

@@ -18,11 +18,6 @@
    %mvwadd-wch
    %echo-wch
    %wecho-wch
-   wchar_t
-   cchar
-   cchar_t
-   cchar-attr
-   cchar-chars
    
    ;; addstr / add a string of characters to a curses window and advance cursor
    %addstr
@@ -290,13 +285,19 @@
    ;; mouse interface through curses
    %getmouse
    %mousemask
-   mevent
 
    ;; move / move curses window cursor
    %move
    %wmove
 
    ;; ncurses / CRT screen handling and optimization package
+   wchar_t
+   cchar
+   cchar_t
+   cchar-attr
+   cchar-chars
+   cchar-colors
+   mevent
    %ERROR
    %OK
 
