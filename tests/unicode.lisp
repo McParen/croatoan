@@ -50,10 +50,21 @@
 
     ;; %wadd-wch
     ;; #\CYRILLIC_CAPITAL_LETTER_LJE = #\Љ
-    (with-foreign-object (ptr '(:struct cchar))
-      ;; 2 is the attribute, 1 is the color pair, the color doesnt work.
-      (setf ptr (convert-to-foreign (list 'cchar-attr #x00020100 'cchar-chars (char-code #\Љ))
-                                    '(:struct cchar)))
+    (with-foreign-object (ptr '(:struct cchar_t))
+      ;; 2 is the attribute, 1 is the color pair, the color doesnt work with convert-to-foreign
+      ;;(setf ptr (convert-to-foreign (list 'cchar-attr #x00020100 'cchar-chars (char-code #\Љ) 'cchar-colors 1)
+      ;;                              '(:struct cchar_t)))
+
+      ;; we have to set each slot manually in order to make the extended colors work.
+      (setf (foreign-slot-value ptr '(:struct cchar_t) 'cchar-attr) #x00020100)
+      (setf (foreign-slot-value ptr '(:struct cchar_t) 'cchar-colors) 1)
+      ;; also with cchar_t, we can not use convert to foreign at all, but have to manually add the char
+      ;; at the first place in the char array.
+      (setf (mem-aref
+             (foreign-slot-pointer ptr '(:struct cchar_t) 'cchar-chars)
+             'wchar_t
+             0)
+            (char-code #\Љ))
       (%wadd-wch scr ptr))
 
     (%wrefresh scr)
