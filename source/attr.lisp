@@ -38,9 +38,14 @@ Example: (color->number :white) => 7"
         (setf *color-pair-alist* (acons '(:default :default) 0 *color-pair-alist*)))
       (setf *color-pair-alist* (acons '(:white :black) 0 *color-pair-alist*))))
 
-;; adds the pair to curses.
 (defun pair->number (pair)
-  "Take a 2 element list of color keywords, return the pair number.
+  "Take a 2 element list of colors, return the pair number.
+
+The colors can be keywords or numbers -1:255.
+
+If it is a new pair, add them to ncurses, return the new pair number.
+
+If the pair already exists, return the pair number.
 
 Example: (pair->number '(:white :black)) => 0"
   (let ((result (assoc pair *color-pair-alist* :test #'equal)))
@@ -52,7 +57,11 @@ Example: (pair->number '(:white :black)) => 0"
         ;; add it to the alist first.
         (setf *color-pair-alist* (acons pair new-pair-number *color-pair-alist*))
         ;; then add it to ncurses.
-        (%init-pair new-pair-number (color->number (car pair)) (color->number (cadr pair)))
+        (let ((fg (car pair))
+              (bg (cadr pair)))
+          (%init-pair new-pair-number
+                      (if (numberp fg) fg (color->number fg))
+                      (if (numberp bg) bg (color->number bg))))
         ;; return the newly added pair number.
         new-pair-number))))
 
