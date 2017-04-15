@@ -171,9 +171,18 @@ from the given point without moving the cursor position."
      for i in *used-attributes*
      if (logtest ch (get-bitmask i)) collect i))
 
+;; used in: char2chtype, change-attributes
 (defun attrs2chtype (attrs)
   "Take a list of attribute keywords, return a chtype with the attribute bits set."
   (apply #'logior (mapcar #'get-bitmask attrs)))
+
+;; usage: c2x, extract wide char, everywhere where number->pair is used.
+;; first get the color attribute bits by log-AND-ing them with the ch.
+;; then right shift them by 8 to extract the color pair short int from them.
+;; then get the color pair (:white :black) associated with that number.
+(defun chtype2colors (ch)
+  "Take a chtype or attr_t integer, return a list of two keywords denoting a color pair."
+  (number->pair (ash (logand ch (get-bitmask :color)) -8)))
 
 ;;; ------------------------------------------------------------------
 
