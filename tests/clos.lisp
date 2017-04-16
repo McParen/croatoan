@@ -259,24 +259,35 @@
   (unwind-protect
        (let ((scr (make-instance 'screen :enable-colors t)))
 
-         ;; the text will be red on yellow. this doesnt set the overall background, just the text background.
-         (setf (.color-pair scr) '(:red :yellow))
-
          (clear scr)
          (move scr 0 0)
          (add-string scr "hello there!")
+
+         ;; the text will be red on yellow.
+         ;; this affects only new characters, not the whole window.
+         (setf (.color-pair scr) '(:red :yellow))
+
          (move scr 5 5)
          (add-string scr "dear john!")
-         (move-by scr 5 5)
-         (add-string scr "call me maybe!")
          (refresh scr)
 
          ;; wait for keypress, works only in blocking mode, which is the default.
          (get-char scr)
 
-         ;; set a background. green dots on white background.
-         (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
+         ;; set the background character for new characters.
+         ;; a newline sets the background till the end of the line.
+         ;;(setf (.char-background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :green)))
+         (format scr "~%Hello again!~%")
+         (refresh scr)
+         (get-char scr)
 
+         ;; finally, set the background for the whole window.
+         ;; the change is applied only to empty cells and to
+         ;; characters that have no already set attributes or colors.
+         (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
+         (refresh scr)
+         (get-char scr)
+         (setf (.background scr) (make-instance 'complex-char :simple-char #\- :color-pair '(:red :white)))
          (refresh scr)
 
          ;; wait for the next keypress, then end.
@@ -396,16 +407,17 @@
          (clear scr)
          ;; display the human-readable version of a wide char by using the utf-8 %waddch interface.
          ;; adding both attributes and colors works this way.
-         (add-wide-char scr ch :attributes (list :underline :bold) :color-pair (list :red :yellow) :y 0 :x 0)
+         (add-wide-char scr ch             :attributes (list :underline) :color-pair (list :yellow :red) :y 0 :x 0)
+         (add-wide-char scr (code-char ch) :attributes (list :bold)      :color-pair (list :yellow :red) :y 0 :x 2)
          ;; extract the wide char added by the utf-8 %waddch interface.
          (let ((ch2 (extract-wide-char scr :y 0 :x 0)))
            ;; display the lisp-readable version of the extracted wide char
            (move scr 1 0)
            (prin1 (.simple-char ch2) scr)
            ;; print the slots of the extracted complex wide char
-           (add-wide-char scr ch2 :y 2 :x 0)
            (princ (.attributes ch2) scr)
-           (princ (.color-pair ch2) scr)))))
+           (princ (.color-pair ch2) scr)
+           (add-wide-char scr ch2 :y 3 :x 0) ))))
 
 ;; take a function given as symbol name and display its docstring. press q to exit.
 ;; Example: (a:t04 'cdr)
@@ -1259,11 +1271,11 @@
            (move-by win 0 1)))
         (#\newline ; RET key, C-j, C-m
            (when (> n 0) ; only print when the line is not empty.
-             (let* ((strin (extract-string win :n n :y 0 :x 0)) 
+             (let* ((strin (extract-wide-string win :n n :y 0 :x 0)) 
                     (strout (eval (read-from-string strin))))
                (princ strin)
                (terpri)
-               (format t "=> ~A~%~%" strout))
+               (add-string wout (format nil "=> ~A~%~%" strout)))
              (setf n 0)
              (clear win) ; empty the input line after evaluation.
              (refresh wout)))
@@ -1287,11 +1299,12 @@
          ;; this is the place for no-event code.
          ;; instead of doing nothing, set blocking to t.
          nil)
-        (otherwise ; all other keys
+        ;; non-function keys, i.e. normal character keys
+        (otherwise
          (when (and (characterp event)
                     (< (cadr (.cursor-position win)) (1- (.width win))))
            (incf n)
-           (princ event win))))
+           (add-wide-char win event))))
       (close win)
       (close wout))))
 
