@@ -340,6 +340,18 @@
        while (or (= ch -1) (not (equal (code-char ch) #\q)))
        do (unless (= ch -1) (add-char scr ch)))))
 
+;; test which integer is returned by ncurses on a non-blocking nil event.
+;; when get-char is used, -1 is returned,
+;; when get-wide-char is used, 0 is returned.
+(defun t03a2 ()
+  (with-screen (scr :input-echoing nil :input-blocking nil)
+    (clear scr)
+    (add-string scr "Type chars. Type q to quit. ")
+    (refresh scr)
+    (loop for ch = (get-char scr)
+       while (not (equal ch 113)) ; 113 = q
+       do (princ ch scr))))
+
 ;; read and display chars until a q is pressed, non-blocking version (leads to 100% CPU usage).
 ;; uses get-event for event handling.
 (defun t03b ()
@@ -1122,6 +1134,14 @@
       (:button-1-clicked (move scr mouse-y mouse-x) (princ "1" scr))
       (:button-3-clicked (move scr mouse-y mouse-x) (princ "3" scr))
       (#\q (return-from event-case)))))
+
+(defun t14c ()
+  "Print all mouse events."
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-fkeys t :cursor-visibility nil)
+    (%mousemask #b00000111111111111111111111111111 (null-pointer))
+    (event-case (scr event y x)
+      (#\q (return-from event-case))
+      (t (format scr "~3A ~3A ~A~%" y x event)) )))
 
 ;; resize event: the standard screen size is resized automatically.
 (defun t15 ()
