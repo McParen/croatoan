@@ -416,8 +416,11 @@
     (when (eq (type-of scr) 'screen)
       (setf winptr (%initscr))
       (when enable-colors
-        (%start-color)
-        (set-default-color-pair use-default-colors))
+        (if (%has-colors)
+            (progn
+              (%start-color)
+              (set-default-color-pair use-default-colors))
+            (error "initialize-instance screen: This terminal does no support colors.")))
       (if input-echoing (%echo) (%noecho))
       (set-input-reading scr input-reading)
       (set-cursor-visibility cursor-visibility))))
