@@ -36,12 +36,13 @@
    .scrolling-region
    .insert-enabled
    .background
+   .char-background
    .input-echoing
    .input-reading
    .cursor-visibility
    .source
    .closed-p
-   
+
    .items
    .current-item
    .current-item-mark

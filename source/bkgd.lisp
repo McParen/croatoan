@@ -4,11 +4,11 @@
 ;; bkgdset applies only to new chars inserted after the call to bkgdset.
 ;; i.e. with bkgd we manipulate the existing text, with bkgdset the new text.
 
-;; the attribute part of the background char is compined with any chars added.
+;; the attribute part of the background char is combined with any chars added.
 ;; because of that, we cant use alternate chars as background chars, since
 ;; :altcharset is an attribute.
 
-(defun set-background-char (winptr char &optional (target :whole-window))
+(defun set-background-char (winptr char &optional (target :all-chars))
   "Set the background character and attributes of a window.
 
 The attribute part of the background character is combined with

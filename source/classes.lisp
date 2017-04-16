@@ -41,6 +41,8 @@
   (:documentation
    "A complex string consists of an array of complex characters."))
 
+;; TODO: what to do when there is no init string, when we start empty and build the string char by char,
+;; for example when extracting a complex string.
 (defmethod initialize-instance :after ((cstr complex-string) &key string attributes color-pair)
   (with-slots (complex-char-array) cstr
     (when string
@@ -112,8 +114,14 @@
     :initarg       :background
     :initform      nil
     :type          (or null complex-char)
-    :documentation "A complex char to form the background of a window.")
+    :documentation "Sets a complex char as the background of all characters in the window.")
 
+   (char-background
+    :initarg       :char-background
+    :initform      nil
+    :type          (or null complex-char)
+    :documentation "Sets a complex char as the background of new characters added to a window. A newline sets the background till the end of the line.")
+   
    (attributes
     :initarg       :attributes
     :initform      nil
@@ -563,12 +571,20 @@
 (defgeneric .background (window))
 (defmethod .background ((window window))
   (slot-value window 'background))
-(defgeneric (setf .background) (char window &optional target))
-(defmethod (setf .background) (char (window window) &optional (target :all-chars))
+(defgeneric (setf .background) (char window))
+(defmethod (setf .background) (char (window window))
   (setf (slot-value window 'background) char)
-  (set-background-char (slot-value window 'winptr) char target))
-;; (setf (.background window :new-chars) xchar)
-;; (setf (.background window :all-chars) xchar) = (setf (.background window) xchar)
+  (%wbkgd (slot-value window 'winptr)
+          (convert-char char :chtype)))
+
+(defgeneric .char-background (window))
+(defmethod .char-background ((window window))
+  (slot-value window 'char-background))
+(defgeneric (setf .char-background) (char window))
+(defmethod (setf .char-background) (char (window window))
+  (setf (slot-value window 'char-background) char)
+  (%wbkgdset (slot-value window 'winptr)
+             (convert-char char :chtype)))
 
 ;(defgeneric .attributes (window))
 (defmethod .attributes ((window window))
