@@ -20,6 +20,7 @@
    menu-window
    dialog-window
    pad
+   sub-pad
 
    ;; accessors
    .simple-char

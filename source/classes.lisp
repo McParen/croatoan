@@ -371,6 +371,21 @@
     (when (eq (type-of win) 'pad)
       (setf winptr (%newpad height width)))))
 
+(defclass sub-pad (pad)
+  ((parent
+    :initarg       :parent
+    :initform      nil
+    :type          (or null pad)
+    :documentation "The parent pad which will contain the sub-pad."))
+  (:documentation  "A sub-pad shares the memory and the display with a parent pad and has to be contained within it."))
+
+;; sub-pads always use positions relative to parent pads
+(defmethod initialize-instance :after ((win sub-pad) &key)
+  (with-slots (winptr parent height width position) win
+    ;; just for a sub-pad window
+    (when (eq (type-of win) 'sub-pad)
+      (setf winptr (%subpad (slot-value parent 'winptr) height width (car position) (cadr position))))))
+
 #|
 ;; this will be called for both window and screen.
 ;; create a curses window when an instance is created.
