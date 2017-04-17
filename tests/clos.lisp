@@ -1768,9 +1768,10 @@
     (get-char scr)))
 
 (defun t25 ()
-  "Test initialisation and refreshing of pads."
+  "Test initialisation and refreshing of pads and sub-pads."
   (with-screen (scr :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let ((p (make-instance 'pad :height 100 :width 100)))
+    (let* ((p (make-instance 'pad :height 100 :width 100))
+          (sp (make-instance 'sub-pad :parent p :height 5 :width 10 :position (list 10 10))))
 
       ;; populate the pad with numbers.
       (loop for j from 0 to 99
@@ -1779,7 +1780,17 @@
                  (move p j i)
                  (format p "~D" (mod (* i j) 10))))
 
-      (setf (.background p) (make-instance 'complex-char :color-pair '(:green :white)))
+      ;; populate the sub-pad with letters.
+      (loop for j from 0 to 4
+         do (loop for i from 0 to 9
+               do
+                 (move sp j i)
+                 (add-char sp #\X) ))
+
+      ;; we have to modify the sub-window attributes first because apparently once
+      ;; chars have attributes, they can not be changed by subsequent background changes.
+      (setf (.background sp) (make-instance 'complex-char :color-pair '(:white :red))
+            (.background p)  (make-instance 'complex-char :color-pair '(:green :white)))
 
       (let ((pad-min-y     2)
             (pad-min-x     2)
@@ -1806,4 +1817,5 @@
         (#\q   (return-from event-case))
         (otherwise nil)))
 
-      (close p))))
+      (close p)
+      (close sp))))
