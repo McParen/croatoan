@@ -1,5 +1,8 @@
 (in-package :de.anvi.croatoan)
 
+(defparameter *ansi-color-list*
+  (list :black :red :green :yellow :blue :magenta :cyan :white))
+
 (defparameter *color-alist*
   '((:default . -1)
     (:black   . 0)
@@ -19,6 +22,11 @@ Example: (color->number :white) => 7"
     (if pair
         (cdr pair)
       (error "color doesnt exist."))))
+
+;; Do not signal an error, because not all color numbers have names.
+(defun number->color (number)
+  "Take a color number, return a color keyword if the color name exists, nil otherwise."
+  (car (rassoc number *color-alist*)))
 
 ;; keys are 2 element lists of the form: (:fg :bg)
 ;; fg and bg are keyword symbols

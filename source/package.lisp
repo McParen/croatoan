@@ -3,7 +3,7 @@
   ;;(:use #:common-lisp #:cffi #:de.anvi.ncurses #:sb-gray)
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:trivial-gray-streams)
   (:nicknames #:croatoan)
-  (:export 
+  (:export
 
    ;; croatoan.lisp
    with-screen
@@ -70,6 +70,7 @@
    add-string
 
    ;; attr / curses character and window attribute control routines
+   *ansi-color-list*
    convert-char
    change-attributes
    add-attributes
