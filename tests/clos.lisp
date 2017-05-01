@@ -850,6 +850,55 @@
       ;; return nil explicitely, so it doesnt return the window list.
       nil)))
 
+;; https://www.gnu.org/software/guile-ncurses/manual/html_node/Panels-Basics.html#Panels-Basics
+;; https://www.gnu.org/software/guile-ncurses/manual/html_node/The-curses-panel-library.html
+(defun t09c ()
+  "Use a window stack to manage overlapping windows."
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :enable-fkeys t :cursor-visibility nil)
+    (box scr)
+    (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
+    (setf (.stacked scr) t)
+
+    (let ((winlst nil)
+          (n 0))
+      ;; create 8 windows (with 8 different background colors),
+      ;; add them to the local winlist and to the global stack
+      (loop for i from 0 to 7 do
+           (push (make-instance 'window :height 10 :width 30 :position (list (+ 3 (* i 1)) (+ 3 (* i 3))) :border t :stacked t)
+                 winlst))
+      ;; number them and set the background colors
+      (loop for i from 0 to 7 do
+           (setf (.attributes (nth i winlst)) (list :reverse))
+           (format (nth i winlst) "~A" i)
+           (setf (.background (nth i winlst))
+                 (make-instance 'complex-char :simple-char #\space :color-pair (list :black (nth i *ansi-color-list*)))))
+           ;;(setf (.stacked (nth i winlst)) t)
+      (refresh-stack)
+
+      (event-case (scr event)
+        ;; type 0-7 to pick a window
+        ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7)
+         ;; show the picked window number in the upper right screen corner
+         (add-char scr event :y 1 :x 78 :color-pair (list :white :black))
+         (setf n (- (char-code event) 48)))
+        ;; to raise a window to the top of the stack
+        (#\r
+         (raise (nth n winlst))
+         (refresh-stack))
+        ;; type v to toggle window visibility         
+        (#\v
+         ;; toggle visibility for window n
+         (setf (.visible (nth n winlst)) (not (.visible (nth n winlst))))
+         (refresh-stack))
+        (#\q (return-from event-case))
+        (otherwise nil))
+
+      ;; before closing them, remove all windows from the stack, so they can be GCd.
+      (empty-stack)
+      (mapc #'close winlst)
+      ;; return nil explicitely, so it doesnt return the window list.
+      nil)))
+
 ;; port of kletva/test05.
 ;; print the screen size.
 ;; print the keys and key codes of any key pressed.
