@@ -30,6 +30,9 @@
    .height
    .position
    .cursor-position
+   .border
+   .stacked
+   .visible
    .winptr
    .input-blocking
    .enable-fkeys
@@ -173,6 +176,11 @@
    ;; outopts / curses output options
 
    ;; pad / create and display curses pads
+
+   ;; panel / panel stack extension for curses
+   raise
+   empty-stack
+   refresh-stack
 
    ;; refresh / refresh curses windows and lines
    refresh

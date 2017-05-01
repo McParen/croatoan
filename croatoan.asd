@@ -99,6 +99,7 @@
              (:file "menu")             ; curses extension for programming menus
              (:file "mouse")
              (:file "move")
+             (:file "panel")
              (:file "refresh")
              (:file "touch")
              (:file "wresize")))

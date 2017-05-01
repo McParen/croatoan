@@ -141,12 +141,47 @@
     :reader        .border
     :documentation "Enable (t) or disable (nil, default) an initial border around a window.")
 
+   (stacked
+    :initarg       :stacked
+    :initform      nil
+    :type          boolean
+    :documentation "If stacked is t, the window is added to the global window stack, so overlapping windows can be refreshed in the stacking order.")
+
+   (visible
+    :initarg       :visible
+    :initform      t
+    :type          boolean
+    :accessor      .visible
+    :documentation "If visible is nil, do not refresh the window when refreshing the window stack.")
+
    (winptr
     :initform      nil
     :reader        .winptr
     :documentation "Pointer to a C/ncurses WINDOW structure after the window is created."))
 
   (:documentation "A curses window object as returned by newwin."))
+
+;; also see source/panel.lisp
+(defparameter *window-stack* nil)
+
+;; ":stacked t" or "(setf (.stacked win) t)" adds a new window to the stack
+;; "(setf (.hidden win) t)" prevents the window from being refreshed.
+(defmethod .stacked ((win window))
+  (slot-value win 'stacked))
+(defmethod (setf .stacked) (stacked (win window))
+  (if stacked
+      ;; t:   check if in stack, if not, add to stack, if yes, error
+      (if (member win *window-stack* :test #'eq)
+          (error "setf stacked t: window already on stack")
+          (progn
+            (push win *window-stack*)
+            (setf (slot-value win 'stacked) t)))
+      ;; nil: check if in stack, if yes, remove from stack, if not, error
+      (if (member win *window-stack* :test #'eq)
+          (progn
+            (setf *window-stack* (remove win *window-stack* :test #'eq))
+            (setf (slot-value win 'stacked) t))
+          (error "setf stacked nil: window not on stack"))))
 
 (defclass screen (window)
   ((enable-colors
@@ -471,11 +506,12 @@
   ;; before :before, :after and primary.
   (let ((result (call-next-method)))
     ;; after :before, :after and primary.
-    (with-slots (winptr input-blocking enable-fkeys enable-scrolling border) win
+    (with-slots (winptr input-blocking enable-fkeys enable-scrolling border stacked) win
       (set-input-blocking winptr input-blocking)
       (%scrollok winptr enable-scrolling)
       (when border (%box winptr 0 0))
-      (%keypad winptr enable-fkeys))
+      (%keypad winptr enable-fkeys)
+      (when stacked (push win *window-stack*)))
 
     ;; why do we have to return the result in :around aux methods?
     result))
@@ -726,6 +762,9 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 
 (defmethod close ((stream window) &key abort)
   (declare (ignore abort))
+  ;; if by time of closing, the window is still on the stack, remove it first.
+  (if (member stream *window-stack* :test #'eq)
+      (setf *window-stack* (remove stream *window-stack* :test #'eq)))
   (%delwin (.winptr stream)))
 
 (defmethod close ((stream sub-window) &key abort)
