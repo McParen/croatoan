@@ -13,7 +13,11 @@ and then add the string."
                    (if (= n -1)
                        (- (.width window) (cadr (.cursor-position window)))
                        n)
-                   (length string))))
+                   ;; we cant use length to determine the length of a complex string
+                   ;; because it is not a sequence.
+                   (typecase string
+                     (string (length string))
+                     (complex-string (length (.complex-char-array string)))))))
     (typecase string
       (string
        (if (or attributes color-pair)
