@@ -26,6 +26,7 @@
    .simple-char
    .attributes
    .color-pair
+   .complex-char-array
    .width
    .height
    .position
