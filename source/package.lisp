@@ -18,6 +18,7 @@
    sub-window
    decorated-window
    menu-window
+   menu-item
    dialog-window
    pad
    sub-pad
@@ -52,6 +53,8 @@
    .current-item
    .current-item-mark
    .max-item-length
+   .name
+   .value
    .window
    .sub-window
    .message-pad

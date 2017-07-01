@@ -256,6 +256,27 @@
 
   (:documentation  "A decorated-window is a window consisting of a background window for a border and a content window."))
 
+(defclass menu-item ()
+  ((name
+    :initarg       :name
+    :initform      nil
+    :reader        .name
+    :type          (or null string)
+    :documentation "Short name of a menu item displayed in the menu.")
+   (type
+    :initarg       :type
+    :initform      nil
+    :reader        .type
+    :type          (or null menu)
+    :documentation "Keyword describing the type of the item: :menu.")
+   (value
+    :initarg       :value
+    :initform      nil
+    :reader        .value
+    :type          t
+    :documentation "If the item is not a string, it can be a sub menu."))
+  (:documentation  "A menu consists of a list of menut items."))
+
 ;; default size of ncurses menus is 16 rows, 1 col.
 (defclass menu-window (decorated-window)
   ((items
@@ -329,19 +350,22 @@
         (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) ))))
 
 (defclass dialog-window (menu-window)
+  ;; this has to be a pad, so we can scroll it if the message is large.
+  ;; TODO: check how scrolling would work with a subwindow.
   ((message-pad
     :initform      nil
     :type          (or null pad)
     :reader        .message-pad
     :documentation "Passive content window, for example for menu descriptions.")
 
+   ;; check how message is called in the dialog program.
    (message-text
     :initarg       :message-text
     :initform      nil
     :accessor      .message-text
     :type          (or null string)
     :documentation "Optional message text to describe the choices in the menu below.")
-
+   ;; make shorter slot names
    (message-height
     :initarg       :message-height
     :initform      0
