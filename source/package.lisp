@@ -183,6 +183,9 @@
 
    ;; panel / panel stack extension for curses
    raise
+   raise-to-top
+   lower
+   lower-to-bottom
    empty-stack
    refresh-stack
 

@@ -8,8 +8,27 @@
 ;; (defparameter *window-stack* nil)
 
 (defun raise (win)
+  "Raise window one position in the stack."
+  (when (not (eq win (car *window-stack*)))
+    (let ((pos (position win *window-stack*)))
+      (rotatef (nth (1- pos) *window-stack*)
+               (nth     pos  *window-stack*)))))
+
+(defun raise-to-top (win)
   "Raise window to the top of the window stack."
   (setf *window-stack* (cons win (remove win *window-stack*))))
+
+(defun lower (win)
+  "Lower window one position in the stack."
+  (when (not (eq win (car (last *window-stack*))))
+    (let ((pos (position win *window-stack*)))
+      (rotatef (nth (1+ pos) *window-stack*)
+               (nth     pos  *window-stack*)))))
+
+(defun lower-to-bottom (win)
+  "Lower window to the bottom of the window stack."
+  (when (not (eq win (car (last *window-stack*))))
+    (setf *window-stack* (append (remove win *window-stack*) (list win)))))
 
 (defun empty-stack ()
   "Remove all windows from the stack."
