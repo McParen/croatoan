@@ -15,6 +15,7 @@
                do (setf (aref array i j) (nth (+ (* i n) j) list))))
       array)))
 
+;; TODO: see menu_format
 (defun rmi2sub (layout rmi)
   "Take array dimensions and an index in row-major order, return two subscripts.
 
@@ -40,11 +41,14 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   "Take a menu and an event, update in-place the current item of the menu."
   ;; we need to make menu special in order to setf i in the passed menu object.
   (declare (special menu))
-  (with-accessors ((item .current-item) (items .items) (layout .layout)
+  (with-accessors ((item .current-item-number) (items .items) (layout .layout)
                    (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)) menu
     (let ((i (car  (rmi2sub layout item)))
           (j (cadr (rmi2sub layout item))))
       (if scrolled-layout
+          ;; TODO: add option whether to cycle or not to cycle.
+          ;; now, we cycle when scrolling is off, and dont cycle when scrolling is on.
+          ;; these two settings should be independent
           (let ((m (car scrolled-layout))
                 (n (cadr scrolled-layout))
                 (m1 (car scrolled-region-start))
@@ -73,11 +77,14 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   (:documentation "Draw a menu."))
 
 (defmethod draw-menu ((menu menu-window))
-  (with-accessors ((current-item .current-item) (mark .current-item-mark) (items .items) (layout .layout)
+  (with-accessors ((current-item-number .current-item-number) (mark .current-item-mark) (items .items) (layout .layout)
                    (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)
                    (title .title) (border .border) (len .max-item-length) (sub-win .sub-window)) menu
     (clear sub-win)
     (if scrolled-layout
+        ;; when the menu is too big to be displayed at once, only a part
+        ;; is displayed, and the menu can be scrolled
+        ;; draw a menu with a scrolling layout enabled
         (let ((m (car scrolled-layout))
               (n (cadr scrolled-layout))
               (m1 (car scrolled-region-start))
@@ -85,17 +92,27 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
           (loop for i from 0 to (1- m)
              do (loop for j from 0 to (1- n)
                    do
+                      ;; the menu is given as a flat list, so we have to access it as a 2d array
+                      ;; in row major order
                      (let ((item (sub2rmi layout (list (+ m1 i) (+ n1 j)))))
                        ;;(format menu "~A ~A," j n1)
                        (move sub-win i (* j len))
                        (format sub-win "~A~A"
-                               (if (= current-item item)
+                               ;; for the current item, draw the current-item-mark
+                               ;; for all other items, draw a space
+                               (if (= current-item-number item)
                                    mark
                                    (make-string (length mark) :initial-element #\space))
-                               (nth item items))
-                       (when (= current-item item)
+                               ;; then add the item
+                               (typecase (nth item items)
+                                 (string    (nth item items))
+                                 (menu-item (.name (nth item items)))))
+                       ;; change the attributes of the current item
+                       (when (= current-item-number item)
                          (move sub-win i (* j len))
                          (change-attributes sub-win (+ len (length mark)) '() :color-pair (list :yellow :red)))))))
+        ;; when there is no scrolling, and the whole menu is displayd at once
+        ;; cycling is enabled.
         (let ((m (car layout))
               (n (cadr layout)))
           (loop for i from 0 to (1- m)
@@ -104,11 +121,11 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                      (let ((item (sub2rmi layout (list i j))))
                        (move sub-win i (* j len))
                        (format sub-win "~A~A"
-                               (if (= current-item item)
+                               (if (= current-item-number item)
                                    mark
                                    (make-string (length mark) :initial-element #\space))
                                (nth item items))
-                       (when (= current-item item)
+                       (when (= current-item-number item)
                          (move sub-win i (* j len))
                          (change-attributes sub-win (+ len (length mark)) '() :color-pair (list :yellow :red))))))))
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
@@ -141,12 +158,47 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                (third  coords)     ;screen-max-y
                (fourth coords))))) ;screen-max-x
 
-;; display a menu, let the user select an item with up and down and confirm with enter,
-;; return the selected item.
+(defun current-item (menu)
+  "Return the currently selected item of the given menu."
+  (nth (.current-item-number menu) (.items menu)))
+
+;; test submenus, test this in t19c
 (defun select-item (menu)
+  "Display a menu, let the user select an item, return the selected item.
+
+If the item is itself a menu, recursively display the sub menu."
+  (setf (.visible menu) t)
+  ;; TODO: how to better avoid refresh-stack when we have no submenus?
+  (when *window-stack* (refresh-stack))
   (draw-menu menu)
   (event-case (menu event)
     ((:up :down :left :right) (update-menu menu event) (draw-menu menu))
-    (#\newline (return-from event-case (nth (.current-item menu) (.items menu))))
+    ;; ENTER either enters a submenu or returns a selected item.
+    (#\newline
+     (let ((item (current-item menu)))
+       (typecase item
+         ;; if we have just a normal string, just return it.
+         (string
+          ;; when an item is selected, hide the menu or submenu, then return the item
+          (setf (.visible menu) nil)
+          (when *window-stack* (refresh-stack))
+          (return-from event-case item))
+         ;; a more complex item can be a sub menu, or in future, a function.
+         (menu-item
+          ;; if the item is a menu, call select-item recursively on the sub-menu
+          (let ((selected-item (select-item (.value item))))
+            ;; if we exit the submenu with q without selecting anything, we go back to the parent menu.
+            ;; we only exit the menu completely if something is selected.
+            ;; for all this to work, we have to put the overlapping menu windows in the stack.
+            (when selected-item
+              ;; when a submenu returns non-nil, hide the parent menu too.
+              ;; when the submenu is exited with q, it returns nil, and we go back to the parent menu.
+              (setf (.visible menu) nil)
+              (when *window-stack* (refresh-stack))
+              (return-from event-case selected-item)))))))
     ;; returns NIL
-    (#\q (return-from event-case))))
+    (#\q
+     ;; when q is hit to exit a menu, hide the menu or submenu, then refresh the whole stack.
+     (setf (.visible menu) nil)
+     (when *window-stack* (refresh-stack))
+     (return-from event-case nil))))

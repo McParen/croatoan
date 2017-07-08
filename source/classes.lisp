@@ -287,11 +287,11 @@
     ;; TODO: what about a list of symbols?
     :documentation "List of strings denoting menu entries.")
 
-   (current-item
+   (current-item-number
     :initform      0
-    :accessor      .current-item
+    :accessor      .current-item-number
     :type          integer
-    :documentation "Currently selected item's index.")
+    :documentation "Number of the currently selected item.")
 
    (current-item-mark
     :initarg       :current-item-mark

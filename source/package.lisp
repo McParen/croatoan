@@ -50,7 +50,7 @@
    .closed-p
 
    .items
-   .current-item
+   .current-item-number
    .current-item-mark
    .max-item-length
    .name
@@ -165,6 +165,7 @@
    draw-menu
    update-menu
    select-item
+   current-item
 
    ;; mouse / mouse interface through curses
    set-mouse-event
