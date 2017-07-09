@@ -267,8 +267,8 @@
     :initarg       :type
     :initform      nil
     :reader        .type
-    :type          (or null menu)
-    :documentation "Keyword describing the type of the item: :menu.")
+    :type          (or null keyword)
+    :documentation "Keyword describing the type of the item: :menu :function")
    (value
     :initarg       :value
     :initform      nil
