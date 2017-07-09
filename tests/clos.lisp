@@ -882,8 +882,17 @@
          (add-char scr event :y 1 :x 78 :color-pair (list :white :black))
          (setf n (- (char-code event) 48)))
         ;; to raise a window to the top of the stack
+        (#\t
+         (raise-to-top (nth n winlst))
+         (refresh-stack))
         (#\r
          (raise (nth n winlst))
+         (refresh-stack))
+        (#\l
+         (lower (nth n winlst))
+         (refresh-stack))
+        (#\b
+         (lower-to-bottom (nth n winlst))
          (refresh-stack))
         ;; type v to toggle window visibility         
         (#\v
@@ -1202,6 +1211,8 @@
              (case event
                (:resize (move scr 1 0)
                         (format scr "~A Y lines x ~A X columns." (.height scr) (.width scr))
+                        ;; the environment variables get updated on a resize event too.
+                        (format scr "~%~A Y lines x ~A X cols." %LINES %COLS)
                         (refresh scr))
                (#\q (return)))
              (progn
@@ -1555,8 +1566,8 @@
           ((:up :down :left :right #\tab) (setf i (mod (1+ i) n)) (draw-menu scr choices i))
           (#\newline (return-from event-case (cdr (nth i choices)))))))))
 
-;; use the menu class and draw-menu function.
 (defun t19b ()
+  "Use the menu class, draw-menu and select-item functions."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
            (menu (make-instance 'menu-window :items choices :position (list 0 20) :title "t19b" :border t :enable-fkeys t)))
@@ -1601,8 +1612,8 @@
         (#\q (return-from event-case)))
       (close menu))))
 
-;; A one-line menu without a title and border resembling a menu bar
 (defun t19e ()
+  "A one-line menu without a title and border resembling a menu bar."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
            (menu (make-instance 'menu-window :input-blocking t :items items :position (list 0 0)
