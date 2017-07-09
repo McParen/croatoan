@@ -1595,6 +1595,49 @@
         (#\q (return-from event-case)))
       (close menu))))
 
+(defun t19c2 ()
+  "Test the menu-item class for submenus."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+                      "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
+           ;; First, create a menu
+           (sub-menu2 (make-instance 'menu-window
+                                     :items choices ;; here we only have strings
+                                     :position (list 2 56) :scrolled-layout (list 6 1)
+                                     :title "submenu2" :border t :enable-fkeys t :visible nil))
+           ;; then the menu-item with the menu as value
+           (item2     (make-instance 'menu-item :name "sub2" :type :menu :value sub-menu2))
+           ;; then add that menu-item as an item to the next menu, and so on.
+           (sub-menu1 (make-instance 'menu-window
+                                     :items (cons item2 choices) ;; first item is a submenu
+                                     :position (list 1 41) :scrolled-layout (list 6 1)
+                                     :title "submenu1" :border t :enable-fkeys t :visible nil))
+           (item1     (make-instance 'menu-item :name "sub1" :type :menu :value sub-menu1))
+           (menu      (make-instance 'menu-window
+                                     :items (cons item1 choices)  ;; first item is a submenu
+                                     :position (list 0 25) :scrolled-layout (list 6 1)
+                                     :title "menu" :border t :enable-fkeys t :visible nil)))
+      ;; add the menus and submenus to a window stack
+      ;; TODO: what to do when the user adds his own windows to the stack?
+      ;; then menu windows have to still be on top, so they have to be stacked last or raised.
+      ;; scr has to be stacked too so we can make the menus disappear.
+      (setf (.stacked scr) t
+            (.stacked menu) t
+            (.stacked sub-menu1) t
+            (.stacked sub-menu2) t)
+      (refresh-stack)
+      (event-case (scr event)
+        ;; "a" draws the menu and enters a new menu-only event loop by calling select-item
+        (#\a (let ((result (select-item menu)))
+               (format scr "You chose ~A~%" result)
+               (format scr "Stack ~A~%" (length de.anvi.croatoan::*window-stack*))
+               (refresh-stack) ))
+        ;; "q" exits the function and all menus and submenus.
+        (#\q (return-from event-case)))
+      (close menu)
+      (close sub-menu1)
+      (close sub-menu2))))
+
 (defun t19d ()
   "Use the arrow keys to pick a value from an 2D array menu, given as a layout parameter."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
