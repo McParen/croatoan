@@ -112,7 +112,7 @@ from the given point without moving the cursor position."
         (pairno (if color-pair
                     (pair->number color-pair)
                     (if (.color-pair win)
-                        (.color-pair win)
+                        (pair->number (.color-pair win))
                         0))))
     (if (and y x)
         (%mvwchgat (.winptr win) y x n attrs pairno (null-pointer))
