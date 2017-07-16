@@ -121,7 +121,7 @@
     :initform      nil
     :type          (or null complex-char)
     :documentation "Sets a complex char as the background of new characters added to a window. A newline sets the background till the end of the line.")
-   
+
    (attributes
     :initarg       :attributes
     :initform      nil
@@ -132,7 +132,7 @@
     :initarg       :color-pair
     :initform      nil
     :type          (or null cons)
-    :documentation "A two element list of keywords denoting the foregreound and background color of text displayed in the window.")
+    :documentation "A two element list of keywords denoting the foreground and background color of text displayed in the window.")
 
    (border
     :initarg       :border
@@ -330,7 +330,8 @@
   (:documentation  "A menu is a window providing a list of items to be selected by the user."))
 
 (defmethod initialize-instance :after ((win menu-window) &key)
-  (with-slots (winptr items height width position sub-window border layout scrolled-layout max-item-length current-item-mark) win
+  (with-slots (winptr items height width position sub-window border layout scrolled-layout max-item-length
+               current-item-mark color-pair) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
       (let ((padding (if border 1 0)))
@@ -346,8 +347,12 @@
                              :parent win :height (car (or scrolled-layout layout))
                              :width (* (cadr layout) (+ (length current-item-mark) max-item-length))
                              :position (list padding padding) :relative t))
-        (setf (.background win)        (make-instance 'complex-char :color-pair '(:red :yellow)))
-        (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) ))))
+        (when color-pair
+          (setf (.color-pair win) color-pair
+                ;; we need to set the window color pair for the :reverse attribute to work
+                (.color-pair sub-window) color-pair
+                ;; we also need the background to have the whole item width colored
+                (.background sub-window) (make-instance 'complex-char :color-pair color-pair))) ))))
 
 (defclass dialog-window (menu-window)
   ;; this has to be a pad, so we can scroll it if the message is large.
@@ -518,7 +523,7 @@
 
 (defmethod initialize-instance :after ((win decorated-window) &key)
   (with-slots (winptr width height position sub-window) win
-    ;; only for menu windows
+    ;; only for decorated window types
     (when (eq (type-of win) 'decorated-window)
       (setf winptr (%newwin height width (car position) (cadr position)))
       (setf sub-window
@@ -685,6 +690,9 @@
 ;; (defmethod (setf .attributes) (attributes (window window))
 ;;   (setf (slot-value window 'attributes) attributes)
 ;;   (set-attributes window attributes))
+
+(defgeneric .color-pair (window))
+(defgeneric (setf .color-pair) (color-pair window))
 
 (defmethod .color-pair ((window window))
   (slot-value window 'color-pair))
