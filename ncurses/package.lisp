@@ -91,13 +91,18 @@
 
    ;; color / curses color manipulation routines
    %start-color
-   %init-pair
-   %init-color
    %has-colors
    %can-change-color
-   %color-content
+   %init-pair
+   %init-color
    %pair-content
+   %color-content
+   %init-extended-pair
+   %init-extended-color
+   %pair-extended-content
+   %color-extended-content
    %color-pair
+   %pair-number
    %COLOR_BLACK
    %COLOR_RED
    %COLOR_GREEN

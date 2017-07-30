@@ -38,8 +38,6 @@
 ;; int mvchgat(int y, int x, int n, attr_t attr, short color, const void *opts)
 ;; int mvwchgat(WINDOW *win, int y, int x, int n, attr_t attr, short color, const void *opts)
 
-;; C macro PAIR_NUMBER(attr_t attrs)
-
 ;;; Low-level CFFI wrappers
 
 (defcfun ("attroff"     %attroff)     :int              (attrs :int))
@@ -71,5 +69,3 @@
 (defcfun ("wchgat"      %wchgat)      :int (win window)                   (n :int) (attr attr) (color :short) (opts (:pointer :void)))
 (defcfun ("mvchgat"     %mvchgat)     :int              (y :int) (x :int) (n :int) (attr attr) (color :short) (opts (:pointer :void)))
 (defcfun ("mvwchgat"    %mvwchgat)    :int (win window) (y :int) (x :int) (n :int) (attr attr) (color :short) (opts (:pointer :void)))
-
-(defcfun ("PAIR_NUMBER" %pair-number) :short (attrs attr))
