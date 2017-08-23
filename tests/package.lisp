@@ -10,6 +10,7 @@
    ;; ncurses.lisp
    #:nctest
    #:nctest2
+   #:nctest3
 
    ;; unicode.lisp
    #:ut01
