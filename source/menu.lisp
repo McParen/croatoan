@@ -41,14 +41,12 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   "Take a menu and an event, update in-place the current item of the menu."
   ;; we need to make menu special in order to setf i in the passed menu object.
   (declare (special menu))
-  (with-accessors ((item .current-item-number) (items .items) (layout .layout)
+  (with-accessors ((item .current-item-number) (items .items) (layout .layout) (cyclic-selection .cyclic-selection)
                    (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)) menu
     (let ((i (car  (rmi2sub layout item)))
           (j (cadr (rmi2sub layout item))))
       (if scrolled-layout
-          ;; TODO: add option whether to cycle or not to cycle.
-          ;; now, we cycle when scrolling is off, and dont cycle when scrolling is on.
-          ;; these two settings should be independent
+          ;; when scrolling is on, the menu is not cycled.
           (let ((m (car scrolled-layout))
                 (n (cadr scrolled-layout))
                 (m1 (car scrolled-region-start))
@@ -63,16 +61,24 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
               (:right (if (< j (1- (cadr layout))) (incf j))
                       (when (>= j (+ n1 n)) (incf n1))))
             (setf scrolled-region-start (list m1 n1)))
-          ;; cycle through the menu items in case scrolling is off.
+          ;; scrolling is off
           (let ((m (car  layout))
                 (n (cadr layout)))
-            (case event
-              (:up    (setf i (mod (1- i) m)))
-              (:down  (setf i (mod (1+ i) m)))
-              (:left  (setf j (mod (1- j) n)))
-              (:right (setf j (mod (1+ j) n))))))
+            (if cyclic-selection
+                ;; do cycle through the items
+                (case event
+                  (:up    (setf i (mod (1- i) m)))
+                  (:down  (setf i (mod (1+ i) m)))
+                  (:left  (setf j (mod (1- j) n)))
+                  (:right (setf j (mod (1+ j) n))))
+                ;; dont cycle through the items
+                (case event
+                  (:up    (setf i (max (1- i) 0)))
+                  (:down  (setf i (min (1+ i) (1- m))))
+                  (:left  (setf j (max (1- j) 0)))
+                  (:right (setf j (min (1+ j) (1- n))))))))
       (setf item (sub2rmi layout (list i j))))))
-
+  
 (defgeneric draw-menu (s)
   (:documentation "Draw a menu."))
 

@@ -52,6 +52,7 @@
    .items
    .current-item-number
    .current-item-mark
+   .cyclic-selection
    .max-item-length
    .name
    .value

@@ -300,6 +300,13 @@
     :type          string
     :documentation "A string prefixed to the current item in the menu.")
 
+   (cyclic-selection
+    :initarg       :cyclic-selection
+    :initform      nil
+    :reader        .cyclic-selection
+    :type          boolean
+    :documentation "Wrap around when the end of a non-scrolled menu is reached.")
+
    (max-item-length
     :initarg       :max-item-length
     :initform      15
