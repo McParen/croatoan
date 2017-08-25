@@ -288,8 +288,8 @@ is successfully read."
 
 ;; (code-char (utf-8-to-unicode (bytes))) => #\a
 
-;; char-code, code-char übersetzen zwischen lisp chars und unicode code points.
-;; d.h müsste der code wchar_t compatible 32-bit integer zurckgeben.
+;; char-code and code-char translate between lisp chars and unicode code points.
+;; so we have to return wchar_t compatible 32-bit integers.
 
 #|
 ;; instead of stream, we have to use window as an argument here.
@@ -348,74 +348,3 @@ Returns the character code and the number of bytes read."
 
 => (#\A #\LATIN_SMALL_LETTER_O_WITH_DIAERESIS #\CYRILLIC_CAPITAL_LETTER_ZHE #\EURO_SIGN #\MUSICAL_SYMBOL_G_CLEF)
 |#
-
-#|
-
-http://stackoverflow.com/questions/9356169/utf-8-continuation-bytes
-
-http://www.herongyang.com/Unicode/UTF-8-UTF-8-Encoding-Algorithm.html
-
-http://stackoverflow.com/questions/6240055/manually-converting-unicode-codepoints-into-utf-8-and-utf-16
-
-http://www.codeguru.com/cpp/misc/misc/multi-lingualsupport/article.php/c10451/The-Basics-of-UTF8.htm
-
-http://emacs.stackexchange.com/questions/5732/how-to-strip-invalid-utf-8-characters-from-a-string
-
-http://stackoverflow.com/questions/41625257/basic-ncurses-menu
-
-http://www.lispforum.com/viewtopic.php?f=2&t=886
-
-https://common-lisp.net/project/trivial-utf-8/
-
-http://stackoverflow.com/questions/1543613/how-does-utf-8-variable-width-encoding-work
-
-http://stackoverflow.com/questions/3011272/would-it-be-possible-to-have-a-utf-8-like-encoding-limited-to-3-bytes-per-charac
-
-https://en.wikipedia.org/wiki/Variable-width_encoding
-        
-http://www.gigamonkeys.com/book/practical-parsing-binary-files.html
-
-http://zaemis.blogspot.de/2011/06/reading-unicode-utf-8-by-hand-in-c.html
-
-http://lisptips.com/post/44261316742/how-do-i-convert-an-integer-to-a-list-of-bits
-
-http://stackoverflow.com/questions/14380143/matching-binary-patterns-in-c
-
-http://stackoverflow.com/questions/8011700/how-do-i-extract-specific-n-bits-of-a-32-bit-unsigned-integer-in-c
-
-http://stackoverflow.com/questions/5290182/how-many-bytes-does-one-unicode-character-take
-
-http://www.cprogramming.com/tutorial/unicode.html
-
-http://stackoverflow.com/questions/31897544/parsing-utf-8-string-of-known-length-in-common-lisp-one-byte-at-a-time
-
-http://stackoverflow.com/questions/39711335/python-reading-a-utf-8-encoded-string-byte-by-byte
-
-http://stackoverflow.com/questions/14690159/is-ascii-code-7-bit-or-8-bit
-
-https://linuxprograms.wordpress.com/tag/c-utf-8-handling/
-
-http://stackoverflow.com/questions/32459506/ncurses-and-getch-handling-erase-and-arrow-characters
-
-http://stackoverflow.com/questions/526430/c-programming-how-to-program-for-unicode
-
-http://stackoverflow.com/questions/14690159/is-ascii-code-7-bit-or-8-bit
-
-https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node132.html
-
-http://www.cliki.net/CloserLookAtCharacters
-
-https://common-lisp.net/project/trivial-utf-8/
-
-http://clhs.lisp.se/Body/f_ldb.htm#ldb
-
-http://weitz.de/flexi-streams/
-
-https://en.wikipedia.org/wiki/%C3%96
-
-https://de.wikipedia.org/wiki/UTF-8
-
-http://www.utf8-zeichentabelle.de/unicode-utf8-table.pl?number=1024&htmlent=1
-
-|#
-
