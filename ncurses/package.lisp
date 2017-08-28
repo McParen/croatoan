@@ -225,6 +225,12 @@
    %mvinsch
    %mvwinsch
 
+   ;; ins_wch / insert a complex character and rendition into a window
+   %ins-wch
+   %wins-wch
+   %mvins-wch
+   %mvwins-wch
+
    ;; insstr / insert string before cursor in a curses window
    %insstr
    %insnstr

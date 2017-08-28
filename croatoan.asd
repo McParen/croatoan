@@ -35,6 +35,7 @@
              (:file "inch")             ; get a character and attributes from a curses window
              (:file "in_wch")           ; extract a wide (multi-byte) character and rendition from a window
              (:file "insch")            ; insert a character before cursor in a curses window
+             (:file "ins_wch")          ; insert a complex character and rendition into a window
              (:file "instr")            ; get a string of characters from a curses window
              (:file "inwstr")           ; extract a string of wchar_t characters from a curses window
              (:file "inchstr")          ; get a string of characters (and attributes) from a curses window
