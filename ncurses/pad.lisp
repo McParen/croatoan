@@ -40,4 +40,6 @@
   (smaxrow :int)
   (smaxcol :int))
 
-(defcfun ("pechochar" %pechochar) :int (pad window) (ch chtype))
+(defcfun ("pechochar"   %pechochar)   :int (pad window) (ch chtype))
+
+(defcfun ("pecho_wchar" %pecho-wchar) :int (pad window) (wch (:pointer (:struct cchar_t))))

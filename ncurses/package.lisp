@@ -16,8 +16,8 @@
    %wadd-wch
    %mvadd-wch
    %mvwadd-wch
-   %echo-wch
-   %wecho-wch
+   %echo-wchar
+   %wecho-wchar
    
    ;; addstr / add a string of characters to a curses window and advance cursor
    %addstr
@@ -346,6 +346,7 @@
    %prefresh
    %pnoutrefresh
    %pechochar
+   %pecho-wchar
 
    ;; refresh / refresh curses windows and lines
    %refresh
