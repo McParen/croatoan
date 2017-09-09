@@ -94,6 +94,7 @@
              (:file "inwstr")           ; get a string of wide (multi-byte) characters from a curses window
              (:file "inchstr")
              (:file "insch")
+             (:file "ins_wch")          ; insert a complex character and rendition into a window
              (:file "insstr")
              (:file "instr")
              (:file "kernel")

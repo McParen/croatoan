@@ -135,6 +135,9 @@
    ;; insch / insert a character before cursor in a curses window
    insert-char
 
+   ;; ins_wch / insert a complex character and rendition into a window
+   insert-wide-char
+
    ;; instr / get a string of characters from a curses window
    extract-string
 
