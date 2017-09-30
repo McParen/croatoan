@@ -177,8 +177,8 @@
 
    ;; move / move curses window cursor
    move
-   move-by
    move-to
+   move-window
 
    ;; opaque / curses window properties
 
