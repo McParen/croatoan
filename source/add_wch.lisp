@@ -75,3 +75,33 @@ as will fit on the line."
                                           (if (.attributes char) (attrs2chtype (.attributes char)) 0)
                                           (if (.color-pair char) (pair->number (.color-pair char)) 0)
                                           count)))))
+
+(defun echo-wide-char (window char &key attributes color-pair y x)
+  "Add one rendered character to the window, then refresh the window.
+
+If the destination coordinates Y and X are given, move to the
+destination first and then echo the character. 
+
+The only difference to add-wide-char and a subsequent refresh is a
+performance gain if we know that we only need to output a single
+character."
+  (when (and y x) (move window y x))
+  (let ((winptr (.winptr window))
+        (attr (if attributes (attrs2chtype attributes) 0))
+        (color-pair-number (if color-pair (pair->number color-pair) 0))
+        (count 1)
+        ;; for some reason, there is a special echo function for pads.
+        (fn (typecase window
+              (pad #'%pecho-wchar)
+              (window #'%wecho-wchar))))
+    (typecase char
+      ;; if we have a lisp char or an integer, use the attributes and colors passed as arguments.
+      (integer      (funcall-with-cchar_t fn winptr             char attr color-pair-number count))
+      (character    (funcall-with-cchar_t fn winptr (char-code char) attr color-pair-number count))
+      ;; if we have a complex char, use its own attributes and colors.
+      (complex-char (funcall-with-cchar_t fn
+                                          winptr
+                                          (char-code (.simple-char char))
+                                          (if (.attributes char) (attrs2chtype (.attributes char)) 0)
+                                          (if (.color-pair char) (pair->number (.color-pair char)) 0)
+                                          count)))))

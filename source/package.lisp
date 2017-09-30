@@ -73,6 +73,7 @@
    ;; add_wch / add a wide complex character to a curses window, then advance the cursor
    add-wide-char
    add-wide-char-utf-8
+   echo-wide-char
    
    ;; addstr / add a string of characters to a curses window and advance cursor
    add-string
