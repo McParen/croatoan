@@ -689,7 +689,6 @@
     (remove-attributes window removed)))
 ;; TODO use %wattron and %wattroff here.
 
-
 ;; we dont want to use set-attributes because it also overwrites the color attribute.
 ;; we want the attributes function to just handle attributes and leave the color alone.
 ;; to do that, we have to treat the attributes as a set and ignore set-attributes.
@@ -707,92 +706,36 @@
   (setf (slot-value window 'color-pair) color-pair)
   (set-color-pair (slot-value window 'winptr) color-pair))
 
+;;; print, prin1, princ, format ~A, ~S
 
+;; print a wide but simple lisp character to a window
+;; TODO: add check for .insert-enabled
+(defmethod print-object ((ch character) (stream window))
+  (add-wide-char stream ch))
 
-#|
-
-classes and methods for the gray stream interface.
-
-http://www.nhplace.com/kent/CL/Issues/stream-definition-by-user.html
-http://www.gnu.org/software/clisp/impnotes/gray-gf-char-out.html
-
-before including this, add trivial-gray-streams to asd or use the sb-gray stream package.
-
-Up to now, window and screen had no superclasses, thus they were subclasses of standard-object.
-Now, they will become bi-directional character streams.
-
-That means that we dont need separate classes for defining streams, and that windows will have
-a stream as a feature, windows now will _be_ specialized streams.
-
-fundamental-character-output-stream
-fundamental-character-input-stream
-  window
-    screen
-    subwin
-
-For the existing code, nothing will change. we will still be able to use all ncurses and croatoan
-functions.
-
-Actually, we still _need_ those functions to define the gray stream functions. But once defined,
-we will not need add-char and add-string any more, we will simply use Lisp's format, read, print, etc.
-
-|#
-
-;;; Character Output stream
-
-;;; Mandatory methods: stream-write-char, stream-line-column
-
-(defmethod stream-write-char ((stream window) (ch character))
-  (let ((code (char-code ch))
-        (winptr (.winptr stream)))
-    (if (.insert-enabled stream)
-        (progn
-          (%winsch winptr code)
-          ;; move the cursor after the inserted character.
-          (move-to stream :right))
-        (%waddch winptr code))))
-
-;; write-char, format ~C
-(defmethod stream-write-char ((stream window) (ch complex-char))
-  (%waddch (.winptr stream) (x2c ch)))
-
-;; print, prin1, princ, format ~A, ~S
+;; TODO: add check for .insert-enabled
 (defmethod print-object ((ch complex-char) (stream window))
-  (%waddch (.winptr stream) (x2c ch)))
+  (add-wide-char stream ch))
 
-(defmethod print-object ((cstr complex-string) stream)
-  (loop for ch across (.complex-char-array cstr)
-     do (princ (.simple-char ch))))
+;; print only simple chars to the lisp repl.
+(defmethod print-object ((ch complex-char) stream)
+  (princ (.simple-char ch) stream))
 
-(defmethod print-object ((cstr complex-string) (stream window))
-  (loop for ch across (.complex-char-array cstr)
-     do (add-char stream ch)))
-
-;; Returns the column number where the next character would be written, i.e. the current y position
-(defmethod stream-line-column ((stream window))
-  (%getcurx (.winptr stream)))
-
-;;; Non-mandatory methods
-
-;; Default method uses repeated calls to stream-write-char
-(defmethod stream-write-string ((stream window) (str string) &optional (start 0) (end nil))
+;; print simple strings to a ncurses widow.
+(defmethod print-object ((str string) (stream window))
   (%waddstr (.winptr stream) str))
 
-;;; Character Input Stream
+;; print complex strings to a ncurses window.
+(defmethod print-object ((cstr complex-string) (stream window))
+  (loop for ch across (.complex-char-array cstr)
+     do (add-wide-char stream ch)))
 
-(defmethod stream-read-char ((stream window))
-  (code-char (%wgetch (.winptr stream))))
+;; print only simple chars to the lisp repl.
+(defmethod print-object ((cstr complex-string) stream)
+  (loop for ch across (.complex-char-array cstr)
+     do (princ (.simple-char ch) stream)))
 
-;;(defmethod stream-read-char-no-hang ((stream window))
-;; %wgetch wie bei read-char, nur muss input-blocking nil sein.
-
-(defmethod stream-unread-char ((stream window) (ch character))
-  (%ungetch (char-code ch)))
-
-;; listen = read-char-no-hang + unread
-;;(defmethod stream-listen ((stream window))
-
-;; methods to close streams, and thus screen _and_ windows, since they are now streams.
+;; methods to close streams, and thus screen _and_ windows, since they are now gray streams.
 ;; end-screen = %endwin
 ;; delete-window = %delwin
 ;; see t07a

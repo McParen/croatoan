@@ -72,6 +72,7 @@
             ((:file "package")
              (:file "croatoan")
              (:file "classes")
+             (:file "gray_streams")
              (:file "utf8")
 
              (:file "addch")
