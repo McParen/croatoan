@@ -1,32 +1,70 @@
 (in-package :de.anvi.croatoan)
 
 (defparameter *ansi-color-list*
-  (list :black :red :green :yellow :blue :magenta :cyan :white))
+  '(:black :red :green :yellow :blue :magenta :cyan :white))
 
-(defparameter *color-alist*
-  '((:default . -1)
-    (:black   . 0)
-    (:red     . 1)
-    (:green   . 2)
-    (:yellow  . 3)
-    (:blue    . 4)
-    (:magenta . 5)
-    (:cyan    . 6)
-    (:white   . 7)))
+;; this list should be in color.lisp, not here.
+;; but attr.lisp is loaded before color.lisp.
+(defparameter *xterm-color-name-list*
+  '(:black :maroon :green :olive  :navy :purple  :teal :silver
+    :gray  :red    :lime  :yellow :blue :magenta :cyan :white))
 
-(defun color->number (color-name)
-  "Take a keyword, returns the corresponding color number.
+;; do not use the color alist but the two color lists, for 8 and 256 colors
+;; in the 256 colors mode, only the first 16 colors are named.
+(defun color-name-to-number (color-name)
+  "Take a keyword denoting a color name, return the color number."
+  (if (eq color-name :default)
+      ;; the terminal default colors are only available when
+      ;; the screen is initialized with :use-default-colors t
+      -1
+      ;; depending on whether we use 8 or 256 colors, we have different names for the same colors.
+      (let* ((color-list (if (<= %colors 8) *ansi-color-list* *xterm-color-name-list*))
+             (position (position color-name color-list)))
+        (if position
+            position
+            (error "color name does not exist.")))))
 
-Example: (color->number :white) => 7"
-  (let ((pair (assoc color-name *color-alist*)))
-    (if pair
-        (cdr pair)
-      (error "color doesnt exist."))))
+;; address a color by:
+;; integer: color number 0-255, so we can cycle through all available colors
+;; keyword: it doesnt exist for all 256 colors
+;; string: "#ff00ff" hex triplet in web-notation. string-length = 7, first char = #
 
-;; Do not signal an error, because not all color numbers have names.
-(defun number->color (number)
-  "Take a color number, return a color keyword if the color name exists, nil otherwise."
-  (car (rassoc number *color-alist*)))
+;; a color can also be given as a list, where the first element is a keyword
+;; denoting the coding scheme.
+
+;; (:number 255)
+;; (:name :black)
+;; (:hex #xff00ff)
+;; TODO: (:hex "#ff00ff")
+;; TODO: (:rgb 255 00 255)
+;; TODO: (:hsv 10 15 245)
+
+;; TODO: naming conflict with color->number
+;; after we can convert everything to a color number, add this function to
+;; pair->number, so we can generate a color pair out of every color notation.
+(defun color-to-number (color)
+  "Takes a color in various notations, converts that notation to the exact or most appropriate color number."
+  (typecase color
+    ;; hex rgb code
+    ;; we cant use hex codes when in 8-color ansi mode, because the 8 ansi colors
+    ;; are only defined by names, not by rgb color contents.
+    (integer (hex-to-sgr color))
+    ;; color name, for now ONLY the first 8 ansi colors and 16 web colors
+    ;; TODO: expand to all x11 color names
+    (keyword (color-name-to-number color))
+    ;; a list in the form of (:type value).
+    (list
+     (let ((type (car color))
+           (val (cadr color)))
+       (case type
+         ;; direct input of the color number, just return it.
+         (:number val)
+         ;; keyword denoting the color name
+         (:name (color-name-to-number color))
+         (:hex
+          (typecase val
+            ;; hex rgb notation, for example (:hex #x00ff00)
+            (integer (hex-to-sgr color)))))))))
 
 ;; keys are 2 element lists of the form: (:fg :bg)
 ;; fg and bg are keyword symbols
@@ -35,6 +73,7 @@ Example: (color->number :white) => 7"
 ;; which is identical to (:white :black) if use-default-colors is nil.
 ;; if use-default-colors is t, it is whatever color pair the terminal
 ;; used before the ncurses init.
+;; TODO: this also could be a hashmap
 (defparameter *color-pair-alist* nil)
 
 ;; called from initialize-instance :after ((scr screen)
@@ -46,14 +85,15 @@ Example: (color->number :white) => 7"
         (setf *color-pair-alist* (acons '(:default :default) 0 *color-pair-alist*)))
       (setf *color-pair-alist* (acons '(:white :black) 0 *color-pair-alist*))))
 
+;; TODO: later rename to pair-to-number
 (defun pair->number (pair)
-  "Take a 2 element list of colors, return the pair number.
+  "Take a two-element list of colors, return the ncurses pair number.
 
 The colors can be keywords or numbers -1:255.
 
-If it is a new pair, add them to ncurses, return the new pair number.
+If it is a new color pair, add it to ncurses, then return the new pair number.
 
-If the pair already exists, return the pair number.
+If the pair already exists, return its pair number.
 
 Example: (pair->number '(:white :black)) => 0"
   (let ((result (assoc pair *color-pair-alist* :test #'equal)))
@@ -67,13 +107,12 @@ Example: (pair->number '(:white :black)) => 0"
         ;; then add it to ncurses.
         (let ((fg (car pair))
               (bg (cadr pair)))
-          (%init-pair new-pair-number
-                      (if (numberp fg) fg (color->number fg))
-                      (if (numberp bg) bg (color->number bg))))
+          (%init-pair new-pair-number (color-to-number fg) (color-to-number bg)))
         ;; return the newly added pair number.
         new-pair-number))))
 
 ;; TODO: cross check with the ncurses primitives that we get the same result.
+;; TODO: number-to-pair
 (defun number->pair (number)
   "Take a pair number, return a color pair in a 2 element list of keywords."
   (car (rassoc number *color-pair-alist*)))
