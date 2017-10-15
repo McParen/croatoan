@@ -303,10 +303,13 @@
     (clear scr)
     (move scr 0 0)
     (add-string scr "hello there!")
-    (move scr 5 5)
+    (move scr 3 6)
     (add-string scr "dear john!")
-    (move-by scr 5 5)
-    (add-string scr "call me really!")
+    (move scr 3 3 :relative t)
+    (add-string scr "call me maybe!")
+    ;; setting the cursor position directly instead of using move
+    (setf (.cursor-position scr) (list 9 12))
+    (add-string scr "welcome to tijuana")
     (refresh scr)
     (get-char scr)
     
@@ -1226,13 +1229,13 @@
     (let ((time 0)
           ;; place a window in the center of the screen.
           (win (make-instance 'window :height 5 :width 10 :position (list (round (/ (.height scr) 2))
-                                                                        (round (/ (.width scr) 2))))))
+                                                                          (round (/ (.width scr) 2))))))
       (loop
          (let ((event (get-event scr)))
            (if event
                (case event
                  (:resize ;; if the scren is resized, relocate the window to the new center.
-                          (move win (round (/ (.height scr) 2)) (round (/ (.width scr) 2)) :target :window) 
+                          (move-window win (round (/ (.height scr) 2)) (round (/ (.width scr) 2))) 
                           ;; better differentiation of types with methods.
                           (move win 0 0)
                           (format win "Y:~A X:~A" (.height scr) (.width scr))
@@ -1345,10 +1348,10 @@
       (event-case (win event)
         (:left 
          (when (> (cadr (.cursor-position win)) 0)
-           (move-by win 0 -1)))
+           (move win 0 -1 :relative t)))
         (:right 
          (when (< (cadr (.cursor-position win)) n)
-           (move-by win 0 1)))
+           (move win 0 1 :relative t)))
         (#\newline ; RET key, C-j, C-m
            (when (> n 0) ; only print when the line is not empty.
              (let* ((strin (extract-wide-string win :n n :y 0 :x 0)) 
@@ -1371,7 +1374,7 @@
         (:backspace ; BS key
          (when (> (cadr (.cursor-position win)) 0)
            (decf n)
-           (move-by win 0 -1)
+           (move win 0 -1 :relative t)
            (delete-char win)))
         (#\q (return-from event-case))
         ((nil) ; when no key is hit at all
@@ -1384,7 +1387,10 @@
          (when (and (characterp event)
                     (< (cadr (.cursor-position win)) (1- (.width win))))
            (incf n)
-           (add-wide-char win event))))
+           ;; .insert-enabled does not insert if we do not use gray stream functions
+           ;;(add-wide-char win event))))
+           (write-char event win)))) ; calls stream-write-char
+           ;; (princ event win) ; calls print-object
       (close win)
       (close wout))))
 
