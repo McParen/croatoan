@@ -83,6 +83,7 @@
              (:file "bkgd")
              (:file "border")
              (:file "clear")
+             (:file "color")
              (:file "delch")
              (:file "deleteln")
              (:file "getch")
