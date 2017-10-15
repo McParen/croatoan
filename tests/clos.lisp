@@ -434,6 +434,47 @@
            (princ (.color-pair ch2) scr)
            (add-wide-char scr ch2 :y 3 :x 0) ))))
 
+;; gray stream version of t03d
+;; we can not use ~C and write-char to write complex-chars, but it works for wide chars, which are normal lisp chars.
+;; princ and ~A should work, because they rely on specialized print-object.
+;; also see t08c
+(defun t03d2 ()
+  "Use gray stream functions to read and display wide (multi-byte) characters until q is pressed."
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visibility nil)
+    (clear scr)
+    (refresh scr)
+    (loop for ch = (read-char scr)
+       while (not (equal ch #\q))
+       do
+         (clear scr)
+         (move scr 0 0)
+         ;; we only can write-char if it is a lisp character.
+         (write-char ch scr)
+         ;; the extracted "char" is not a lisp character any more, but a complex-char
+         (let ((ch2 (extract-wide-char scr :y 0 :x 0))
+               (*standard-output* scr))
+           ;; this soon will not work with sbcl and complex chars.
+           ;; write-char only takes characters, no other objects.
+           ;; even if we specialize stream-write-char to complex-chars
+           ;;(move scr 1 0)
+           ;;(write-char ch2 scr)
+           ;; this will work because it uses print-objectm, since print-object can be
+           ;; specialized on complex-chars.
+           (move scr 1 0)
+           (princ ch scr)
+           (princ ch)
+           (move scr 2 0)
+           (princ ch2 scr)
+           (princ ch2)
+           ;; aestethic ~A can be used, since it uses princ underneath
+           ;; standard ~S can not  because it cant be read back in
+           ;; character ~C can not be used because it requires characters.
+           (move scr 3 0)
+           (format scr "~A ~A" ch ch2)
+           (move scr 4 0)
+           (format t "~A ~A" ch ch2)
+           (refresh scr) ))))
+
 ;; take a function given as symbol name and display its docstring. press q to exit.
 ;; Example: (a:t04 'cdr)
 (defun t04 (&optional (name 'car))
