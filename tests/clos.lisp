@@ -744,19 +744,22 @@
       (close scr))))
 
 ;; Write complex chars to standard output using standard lisp output functions + gray streams.
+;; According to SBCL devs, write-char and ~C are not supposed to work, because according to the
+;; standard, only lisp characters should be accepted s arguments by write-char, and any other
+;; object like a complex-char should signal an error.
 (defun t08c ()
   (with-screen (scr)
     (let ((*standard-output* scr)
-          (ch (make-instance 'complex-char :simple-char #\a :attributes '(:bold :underlined) :color-pair '(:green :black))))
+          (ch (make-instance 'complex-char :simple-char #\a :attributes '(:bold :underline) :color-pair '(:green :black))))
       (write-char #\a)
       (terpri)
-      (write-char ch)
+      ;;(write-char ch)
       (terpri)
       (princ ch)
       (terpri)
       (print ch)
       (terpri)
-      (format t "~%Format:~%~S~%~A~%~C" ch ch ch)
+      (format t "~%Format:~%~S~%~A" ch ch)
       (terpri))
     (refresh scr)
     (get-char scr)))
