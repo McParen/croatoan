@@ -1759,16 +1759,10 @@
                    :x (random width)
                    :color-pair (list :black (nth (random 7) colors))))))))
 
-;; https://blog.chaitanyagupta.com/2013/10/print-bit-representation-of-signed.html
-;; https://jonasjacek.github.io/colors/
-;; http://stackoverflow.com/questions/25091638/other-colors-in-ncurses
-;; http://stackoverflow.com/questions/15105055/c-brightyellow-and-brightgreen-colors-ncurses
-;; https://en.wikipedia.org/wiki/256_colors
-;; http://www.robmeerman.co.uk/unix/256colours
-;; https://askubuntu.com/questions/821157/print-a-256-color-test-pattern-in-the-terminal
-;; https://gist.github.com/mgedmin/2762225
-;; https://serverfault.com/questions/90296/what-are-the-color-names-in-term-xterm256-for-colors-16
-;; https://gist.github.com/MicahElliott/719710
+;; it is just a coincidence that "echo" works here.
+;; echo is a chtype-function, and chtype allows only 1 byte for color pairs, which means 256 color pairs.
+;; it works only because the foreground color is always black in the example.
+;; echo-wide-char has to be used.
 (defun t20a ()
   "Display the 256 supported colors. This only works with TERM=xterm-256color in xterm and gnome-terminal."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visibility nil)
@@ -1776,8 +1770,11 @@
     (loop for i from 0 to 7 do
          (loop for j from 0 to 1 do
               (loop for k from 0 to 2 do
-                   (echo scr #\space :y j :x (+ (* i 3) k) :color-pair (list :black (+ i (* j 8)))) )))
-
+                   (echo-wide-char scr #\space
+                                   :y j
+                                   :x (+ (* i 3) k)
+                                   :color-pair (list :black
+                                                     (list :number (+ i (* j 8))))) )))
     ;; 16-231: 6x6x6 color cube
     (loop for n from 0 to 1 do
          (loop
@@ -1789,15 +1786,19 @@
               (loop for i from a1 to a2 do
                    (loop for j from 0 to 5 do
                         (loop for k from 0 to 2 do
-                             (echo scr #\space
-                                   :y (+ 3 j (* n 7))
-                                   :x (+ (* (- i a1) 3) k a3)
-                                   :color-pair (list :black (+ (* n 108) i (* j 6)))) )))))
-
+                             (echo-wide-char scr #\space
+                                             :y (+ 3 j (* n 7))
+                                             :x (+ (* (- i a1) 3) k a3)
+                                             :color-pair (list :black
+                                                               (list :number (+ (* n 108) i (* j 6)))) ))))))
     ;; 232-255: 24 shades of gray, without black and white
     (loop for i from 232 to 255 do
          (loop for k from 0 to 2 do
-              (echo scr #\space :y 17 :x (+ (* (- i 232) 3) k) :color-pair (list :black i))))
+              (echo-wide-char scr #\space
+                              :y 17
+                              :x (+ (* (- i 232) 3) k)
+                              :color-pair (list :black
+                                                (list :number i)))))
 #|
     (loop for i from 16 to 21 do
          (loop for j from 0 to 5 do
