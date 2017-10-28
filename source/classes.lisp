@@ -114,25 +114,25 @@
     :initarg       :background
     :initform      nil
     :type          (or null complex-char)
-    :documentation "Sets a complex char as the background of all characters in the window.")
+    :documentation "Sets a complex char as the background of the whole window. It does not change the colors or attributes of existing complex chars.")
 
    (char-background
     :initarg       :char-background
     :initform      nil
     :type          (or null complex-char)
-    :documentation "Sets a complex char as the background of new characters added to a window. A newline sets the background till the end of the line.")
+    :documentation "Sets a complex char as the background of simple characters added to a window. The colors and attributes of complex chars is not changed. A newline sets the background till the end of the line.")
 
    (attributes
     :initarg       :attributes
     :initform      nil
     :type          (or null cons)
-    :documentation "A list of attribute keywords.")
+    :documentation "A list of keywords denoting attributes of new characters added to a window.")
 
    (color-pair
     :initarg       :color-pair
     :initform      nil
     :type          (or null cons)
-    :documentation "A two element list of keywords denoting the foreground and background color of text displayed in the window.")
+    :documentation "A two element list of keywords denoting the foreground and background color of new characters added to a window.")
 
    (border
     :initarg       :border
@@ -263,18 +263,21 @@
     :reader        .name
     :type          (or null string)
     :documentation "Short name of a menu item displayed in the menu.")
+   
    (type
     :initarg       :type
     :initform      nil
     :reader        .type
     :type          (or null keyword)
-    :documentation "Keyword describing the type of the item: :menu :function")
+    :documentation "Keyword describing the type of the item: :string :symbol :menu :function")
+
    (value
     :initarg       :value
     :initform      nil
     :reader        .value
-    :type          t
-    :documentation "If the item is not a string, it can be a sub menu."))
+    :type          (or string menu-window function)
+    :documentation "If the item is not a string, it can be a sub menu or (not yet implemented) a function."))
+  
   (:documentation  "A menu consists of a list of menut items."))
 
 ;; default size of ncurses menus is 16 rows, 1 col.
@@ -284,8 +287,20 @@
     :initform      nil
     :accessor      .items
     :type          (or null cons)
-    ;; TODO: what about a list of symbols?
-    :documentation "List of strings denoting menu entries.")
+    :documentation "List of menu items. Item types can be strings, symbols, other menus or (not yet implemented) functions.")
+
+   (checklist
+    :initform      nil
+    :accessor      .checklist
+    :type          (or null cons)
+    :documentation "List holding information about which items have been checked in a checklist menu or dialog. Is created during object initialization.")
+
+   (type
+    :initarg       :type
+    :initform      :selection
+    :accessor      .type
+    :type          keyword
+    :documentation "Types of menus: :selection (default, can contain strings, symbols, menus) or :checklist.")
 
    (current-item-number
     :initform      0
@@ -337,8 +352,13 @@
   (:documentation  "A menu is a window providing a list of items to be selected by the user."))
 
 (defmethod initialize-instance :after ((win menu-window) &key)
-  (with-slots (winptr items height width position sub-window border layout scrolled-layout max-item-length
-               current-item-mark color-pair) win
+  (with-slots (winptr items type checklist height width position sub-window border layout scrolled-layout max-item-length
+                      current-item-mark color-pair) win
+
+    ;; allow checklists in menus and all derived classes (dialogs).
+    (when (eq type :checklist)
+      (setf checklist (make-list (length items) :initial-element nil)))
+
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
       (let ((padding (if border 1 0)))
@@ -352,13 +372,16 @@
         (setf sub-window
               (make-instance 'sub-window
                              :parent win :height (car (or scrolled-layout layout))
-                             :width (* (cadr layout) (+ (length current-item-mark) max-item-length))
+                             :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
                              :position (list padding padding) :relative t))
+
+        ;; TODO: do this once for all menus and dialogs, at the moment it is duplicated
         (when color-pair
           (setf (.color-pair win) color-pair
                 ;; we need to set the window color pair for the :reverse attribute to work
                 (.color-pair sub-window) color-pair
                 ;; we also need the background to have the whole item width colored
+                (.background win) (make-instance 'complex-char :color-pair color-pair)
                 (.background sub-window) (make-instance 'complex-char :color-pair color-pair))) ))))
 
 (defclass dialog-window (menu-window)
@@ -393,11 +416,12 @@
 
   (:documentation  "A dialog is a decorated menu with a title, a message and items."))
 
-(defmethod initialize-instance :after ((win dialog-window) &key)
-  (with-slots (winptr items height width position sub-window border layout max-item-length current-item-mark
+(defmethod initialize-instance :after ((win dialog-window) &key center)
+  (with-slots (winptr items height width position sub-window border layout max-item-length current-item-mark color-pair
                       message-pad message-text message-height message-pad-coordinates) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
+
       ;; dialog windows should always have borders
       (let ((padding 1))
         ;; if no layout was given, use a vertical list (n 1)
@@ -407,6 +431,10 @@
         ;; according to no of rows +/- border, and _not_ maximized like normal windows.
         (unless height (setf height (+ 2 message-height (* 2 padding) (car layout))))
         (unless width (setf width (+ (* 2 padding) (* (cadr layout) (+ (length current-item-mark) max-item-length)))))
+
+        ;; if the key center was given, calculate position automatically, even if it was explicitely given.
+        (when center (setf position (list (- (round (/ %LINES 2)) (round (/ height 2)))
+                                          (- (round (/ %COLS  2)) (round (/ width  2))))))
 
         (setf winptr (%newwin height width (car position) (cadr position)))
         (setf sub-window
@@ -424,11 +452,18 @@
                       (+ 2 (cadr position)) ;screen-min-x
                       (+ (+ 2 (car position)) message-height) ;screen-max-y
                       (+ (+ 2 (cadr position) (- width 4))))) ;screen-max-x
-          (setf (.background message-pad) (make-instance 'complex-char :color-pair '(:red :yellow)))
+          (when color-pair
+            (setf (.background message-pad) (make-instance 'complex-char :color-pair color-pair)))
           (format message-pad message-text))
 
-        (setf (.background win) (make-instance 'complex-char :color-pair '(:red :yellow)))
-        (setf (.background sub-window) (make-instance 'complex-char :color-pair '(:red :yellow))) ))))
+        ;; TODO: do this once for all menus and dialogs, at the moment it is duplicated
+        (when color-pair
+          (setf (.color-pair win) color-pair
+                ;; we need to set the window color pair for the :reverse attribute to work
+                (.color-pair sub-window) color-pair
+                ;; we also need the background to have the whole item width colored
+                (.background win) (make-instance 'complex-char :color-pair color-pair)
+                (.background sub-window) (make-instance 'complex-char :color-pair color-pair ))) ))))
 
 ;; if a window-position is given during make-instance, it can be simply ignored.
 ;; or we can check for position and signal an error.
@@ -664,6 +699,7 @@
 (defgeneric (setf .background) (char window))
 (defmethod (setf .background) (char (window window))
   (setf (slot-value window 'background) char)
+  ;; TODO: change this to use wide chars, so we can use unicode chars additionally to the limited small set of ACS chars
   (%wbkgd (slot-value window 'winptr)
           (convert-char char :chtype)))
 

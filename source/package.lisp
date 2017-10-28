@@ -50,6 +50,8 @@
    .closed-p
 
    .items
+   .checklist
+   .type
    .current-item-number
    .current-item-mark
    .cyclic-selection

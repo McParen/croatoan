@@ -78,7 +78,32 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                   (:left  (setf j (max (1- j) 0)))
                   (:right (setf j (min (1+ j) (1- n))))))))
       (setf item (sub2rmi layout (list i j))))))
-  
+
+(defun format-menu-item (menu item-number)
+  (with-accessors ((items .items)
+                   (checklist .checklist)
+                   (type .type)
+                   (current-item-number .current-item-number)
+                   (mark .current-item-mark)
+                   (sub-window .sub-window)) menu
+    (format sub-window "~A~A~A"
+            ;; two types of menus: :selection :checklist
+            ;; only show the checkbox before the item in checklists
+            (if (eq type :checklist)
+                (if (nth item-number checklist) "[X] " "[ ] ")
+                "")
+            ;; for the current item, draw the current-item-mark
+            ;; for all other items, draw a space
+            (if (= current-item-number item-number)
+                mark
+                (make-string (length mark) :initial-element #\space))
+            ;; then add the item
+            (let ((item (nth item-number items)))
+              (typecase item
+                (symbol (symbol-name item))
+                (string item)
+                (menu-item (.name item)))))))
+
 (defgeneric draw-menu (s)
   (:documentation "Draw a menu."))
 
@@ -98,25 +123,16 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
           (loop for i from 0 to (1- m)
              do (loop for j from 0 to (1- n)
                    do
-                      ;; the menu is given as a flat list, so we have to access it as a 2d array
-                      ;; in row major order
+                   ;; the menu is given as a flat list, so we have to access it as a 2d array in row major order
+                   ;; TODO: rename to item-number
                      (let ((item (sub2rmi layout (list (+ m1 i) (+ n1 j)))))
                        ;;(format menu "~A ~A," j n1)
                        (move sub-win i (* j len))
-                       (format sub-win "~A~A"
-                               ;; for the current item, draw the current-item-mark
-                               ;; for all other items, draw a space
-                               (if (= current-item-number item)
-                                   mark
-                                   (make-string (length mark) :initial-element #\space))
-                               ;; then add the item
-                               (typecase (nth item items)
-                                 (string    (nth item items))
-                                 (menu-item (.name (nth item items)))))
+                       (format-menu-item menu item)
                        ;; change the attributes of the current item
                        (when (= current-item-number item)
                          (move sub-win i (* j len))
-                         (change-attributes sub-win (+ len (length mark)) '(:reverse) ))))))
+                         (change-attributes sub-win len '(:reverse) ))))))
         ;; when there is no scrolling, and the whole menu is displayd at once
         ;; cycling is enabled.
         (let ((m (car layout))
@@ -126,14 +142,10 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                    do
                      (let ((item (sub2rmi layout (list i j))))
                        (move sub-win i (* j len))
-                       (format sub-win "~A~A"
-                               (if (= current-item-number item)
-                                   mark
-                                   (make-string (length mark) :initial-element #\space))
-                               (nth item items))
+                       (format-menu-item menu item)
                        (when (= current-item-number item)
                          (move sub-win i (* j len))
-                         (change-attributes sub-win (+ len (length mark)) '(:reverse) )))))))
+                         (change-attributes sub-win len '(:reverse) )))))))
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
     ;; draw the title only when we have a border too, because we draw the title on top of the border.
@@ -179,30 +191,52 @@ If the item is itself a menu, recursively display the sub menu."
   (draw-menu menu)
   (event-case (menu event)
     ((:up :down :left :right) (update-menu menu event) (draw-menu menu))
+
+    ;; x toggles whether the item is checked or unchecked (if menu type is a checklist)
+    ((#\x #\space)
+     (when (eq (.type menu) :checklist)
+       (let ((i (.current-item-number menu)))
+         (setf (nth i (.checklist menu))
+               (not (nth i (.checklist menu))))
+         (draw-menu menu))))
+
     ;; ENTER either enters a submenu or returns a selected item.
     (#\newline
-     (let ((item (current-item menu)))
-       (typecase item
-         ;; if we have just a normal string, just return it.
-         (string
-          ;; when an item is selected, hide the menu or submenu, then return the item
-          (setf (.visible menu) nil)
-          (when *window-stack* (refresh-stack))
-          (return-from event-case item))
-         ;; a more complex item can be a sub menu, or in future, a function.
-         (menu-item
-          ;; if the item is a menu, call select-item recursively on the sub-menu
-          (let ((selected-item (select-item (.value item))))
-            ;; if we exit the submenu with q without selecting anything, we go back to the parent menu.
-            ;; we only exit the menu completely if something is selected.
-            ;; for all this to work, we have to put the overlapping menu windows in the stack.
-            (when selected-item
-              ;; when a submenu returns non-nil, hide the parent menu too.
-              ;; when the submenu is exited with q, it returns nil, and we go back to the parent menu.
+     ;; if the menu type is a checklist
+     (if (eq (.type menu) :checklist)
+         ;; return all checked items in a list.
+         (with-accessors ((items .items) (checklist .checklist)) menu
+           (return-from select-item (loop for i from 0 below (length items) if (nth i checklist) collect (nth i items))))
+
+         ;; else, if the menu type is selection, act on the current item.
+         (let ((item (current-item menu)))
+           (typecase item
+             ;; if we have just a normal string or a symbol, just return it.
+             (symbol
               (setf (.visible menu) nil)
               (when *window-stack* (refresh-stack))
-              (return-from event-case selected-item)))))))
-    ;; returns NIL
+              (return-from event-case item))
+             (string
+              ;; when an item is selected, hide the menu or submenu, then return the item
+              (setf (.visible menu) nil)
+              (when *window-stack* (refresh-stack))
+              (return-from event-case item))
+             ;; a more complex item can be a sub menu, or in future, a function.
+             (menu-item
+              (when (eq (.type item) :menu)
+                ;; if the item is a menu, call select-item recursively on the sub-menu
+                (let ((selected-item (select-item (.value item))))
+                  ;; if we exit the submenu with q without selecting anything, we go back to the parent menu.
+                  ;; we only exit the menu completely if something is selected.
+                  ;; for all this to work, we have to put the overlapping menu windows in the stack.
+                  (when selected-item
+                    ;; when a submenu returns non-nil, hide the parent menu too.
+                    ;; when the submenu is exited with q, it returns nil, and we go back to the parent menu.
+                    (setf (.visible menu) nil)
+                    (when *window-stack* (refresh-stack))
+                    (return-from event-case selected-item)))))))))
+
+    ;; quitting a menu by pressing q just returns NIL
     (#\q
      ;; when q is hit to exit a menu, hide the menu or submenu, then refresh the whole stack.
      (setf (.visible menu) nil)
