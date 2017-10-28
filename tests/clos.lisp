@@ -276,7 +276,7 @@
 
          ;; set the background character for new characters.
          ;; a newline sets the background till the end of the line.
-         ;;(setf (.char-background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :green)))
+         (setf (.char-background scr) (make-instance 'complex-char :simple-char #\- :color-pair '(:white :green)))
          (format scr "~%Hello again!~%")
          (refresh scr)
          (get-char scr)
@@ -363,6 +363,7 @@
     (add-string scr "Type chars. Type q to quit. ")
     (refresh scr)
 
+    ;; TODO: should get-event only return single bytes, or should we merge it with get-wide-event?
     (loop (let ((event (get-event scr)))
             (when event
               (case event
@@ -397,7 +398,7 @@
                  (refresh scr)))))
 
 ;; read and display chars until a q is pressed, blocking + gray stream version.
-;; the stream reading functiond wont work in non-blocking mode and with non-char keys.
+;; the stream reading function wont work in non-blocking mode and with non-char keys.
 (defun t03c ()
   (with-screen (scr :input-echoing nil :input-blocking t)
     (clear scr)
@@ -428,6 +429,8 @@
          (let ((ch2 (extract-wide-char scr :y 0 :x 0)))
            ;; display the lisp-readable version of the extracted wide char
            (move scr 1 0)
+           ;; TODO: prin1, print and ~S should print unreadable #<..>
+           ;; only princ and ~A should render complex chars
            (prin1 (.simple-char ch2) scr)
            ;; print the slots of the extracted complex wide char
            (princ (.attributes ch2) scr)
@@ -603,7 +606,7 @@
     (error "zu huelf!")))
 
 ;; display a new window on the stadard screen.
-;; problem: deleting different windows is not standardized. (problem soved, example obsolete)
+;; problem: deleting different windows is not standardized. (problem solved, example obsolete)
 (defun t07 ()
   (unwind-protect
        (let ((scr (make-instance 'screen :enable-colors t)))
@@ -622,8 +625,8 @@
     ;; this will be executed after we somhow return from the debugger.
     (end-screen)))
 
-;; close now closes both widows and the main screen.
-;; but the creation now has to be outside the unwind-protect form.
+;; close now closes both windows and the main screen.
+;; but the creation of a window/screen now has to be outside the unwind-protect form.
 (defun t07a ()
   (let ((scr (make-instance 'screen :enable-colors t)))
     ;; since windows are streams now, we can use close on tem too.
@@ -847,7 +850,11 @@
              (box w3)
 
              (setf (.background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
+             ;; window w2 uses the :default fg and bg color of the terminal, because use-default-colors is t.
              (setf (.background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
+
+             ;; print currently active color pairs to w3
+             (format w3 "~A" de.anvi.croatoan::*color-pair-alist*)
              
              ;; TODO: clear, refresh, etc, should take one or more windows as arguments.
              ;; so we can do (refresh w1 w2 w3) instead of:
@@ -985,6 +992,7 @@
 (defun t10a ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t)
     (format scr "~A lines high, ~A columns wide.~%~%" (.height scr) (.width scr))
+    ;; TODO: get-event explicitely gets single-byte events, not wide events.
     (loop (let ((event (get-event scr)))
             (when event
               (case event
@@ -1388,7 +1396,6 @@
                                :enable-fkeys t :input-blocking t))
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
-      
       (event-case (win event)
         (:left 
          (when (> (cadr (.cursor-position win)) 0)
@@ -1556,6 +1563,7 @@
            (*standard-output* (make-broadcast-stream))
            ;; Quicklisp prints its "Fetching xyz" messages to *trace-output*
            (*trace-output* *standard-output*)
+           (*error-output* *standard-output*)
            (installed-systems (mapcar #'ql-dist:name (ql-dist:installed-systems dist))))
       (format scr "Quicklisp dist name          ~A~%" (ql-dist:name dist))
       (format scr "Quicklisp dist version       ~A~%" (ql-dist:version dist))
@@ -1644,29 +1652,41 @@
                (refresh scr)))
         (#\q (return-from event-case)))
       (close menu))))
-
+    
 (defun t19c2 ()
   "Test the menu-item class for submenus."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            ;; First, create a menu
+           ;; TODO: how to determine the position of the sub-menu depending on the parent menu?
            (sub-menu2 (make-instance 'menu-window
                                      :items choices ;; here we only have strings
-                                     :position (list 2 56) :scrolled-layout (list 6 1)
+                                     :position (list 2 57) :scrolled-layout (list 6 1)
+                                     ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
+                                     ;;:color-pair (list :black #x666666)
                                      :title "submenu2" :border t :enable-fkeys t :visible nil))
-           ;; then the menu-item with the menu as value
+
+           ;; then create the menu-item with the sub-menu2 as value
            (item2     (make-instance 'menu-item :name "sub2" :type :menu :value sub-menu2))
+
            ;; then add that menu-item as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons item2 choices) ;; first item is a submenu
                                      :position (list 1 41) :scrolled-layout (list 6 1)
+                                     ;;:color-pair (list :black #x999999)
                                      :title "submenu1" :border t :enable-fkeys t :visible nil))
+
+           ;; then create another item with sub-menu1 as value
            (item1     (make-instance 'menu-item :name "sub1" :type :menu :value sub-menu1))
+
+           ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons item1 choices)  ;; first item is a submenu
                                      :position (list 0 25) :scrolled-layout (list 6 1)
+                                     ;;:color-pair (list :black #xcccccc)
                                      :title "menu" :border t :enable-fkeys t :visible nil)))
+      
       ;; add the menus and submenus to a window stack
       ;; TODO: what to do when the user adds his own windows to the stack?
       ;; then menu windows have to still be on top, so they have to be stacked last or raised.
@@ -1675,13 +1695,20 @@
             (.stacked menu) t
             (.stacked sub-menu1) t
             (.stacked sub-menu2) t)
+
+      ;;(setf (.background scr) (make-instance 'complex-char :color-pair (list :black :white)))
+
       (refresh-stack)
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop by calling select-item
         (#\a (let ((result (select-item menu)))
                (format scr "You chose ~A~%" result)
+               (format scr "~A~%" (.color-pair menu))
                (format scr "Stack ~A~%" (length de.anvi.croatoan::*window-stack*))
                (refresh-stack) ))
+        ;; TODO: doesnt repaint the border, because the border already has attributes.
+        ;; setting a background doesnt change existing attributes, only existing backgrounds.
+        (#\b (setf (.color-pair menu) (list :white :black)))
         ;; "q" exits the function and all menus and submenus.
         (#\q (return-from event-case)))
       (close menu)
@@ -1693,7 +1720,7 @@
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5"))
            (menu (make-instance 'menu-window
-                                :items items :position (list 0 20) :layout (list 2 3)
+                                :items items :position (list 0 20) :layout (list 2 3) :cyclic-selection nil
                                 :title "t19d" :border t :enable-fkeys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
@@ -1710,7 +1737,9 @@
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
            (menu (make-instance 'menu-window :input-blocking t :items items :position (list 0 0)
-                                :layout (list 1 (length items)) :scrolled-layout (list 1 4)
+                                :layout (list 1 (length items))
+                                :scrolled-layout (list 1 6)
+                                ;;:color-pair (list :black :yellow)
                                 :max-item-length 10 :width (.width scr) :border t :enable-fkeys t)))
       ;; start the output below the menu
       (move scr 4 0)
@@ -1726,17 +1755,52 @@
 (defun t19f ()
   "A more fancy version of t19a, a yes-no dialog using the class dialog-window."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let* ((items (list "Yes" "No" "Maybe"))
+    (let* ((items (list "Yes" "No" "OK" 'cancel))
            (menu (make-instance 'dialog-window
                                 :input-blocking t
-                                :items items :position (list 5 15) :layout (list 1 3)
-                                :max-item-length 10
+                                :items items
+                                ;; when center is t for a dialog window, we do not need to pass the position explicitely.
+                                ;;:position (list 5 15)
+                                :center t
+                                :layout (list 1 4)
+                                :max-item-length 12
                                 :current-item-mark "> "
+                                :color-pair (list :yellow :red)
                                 :width 60 :border t :enable-fkeys t
-                                :title "this is my dialog"
+                                :title "this is my selection dialog"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
-      (setf (.background scr) (make-instance 'complex-char :color-pair '(:white :black)))
+      (refresh scr)
+      (loop named menu-case
+         do
+           (let ((result (select-item menu)))
+             (unless result (return-from menu-case))
+             (format scr "You chose ~A~%" result)
+             (refresh scr)))
+      (close menu))))
+
+(defun t19g ()
+  "A checkbox dialog."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t :use-default-colors t)
+    (let* ((items (list "Yes" "No" "OK" 'cancel "Maybe"))
+           (menu (make-instance 'dialog-window
+                                :input-blocking t
+                                :items items
+                                ;; when a menu or dialog type is a checklist, items can be checked and unchecked with x/space.
+                                :type :checklist
+                                ;; a dialog window can be automatically centered in the terminal window.
+                                :center t
+                                :layout (list 5 1)
+                                ;; TODO: the size of the dialog window should depend on scrolled layout when it is defined.
+                                ;;:scrolled-layout (list 3 1)
+                                :max-item-length 56
+                                :color-pair (list :yellow :red)
+                                ;; we do not need an item mark in a checklist
+                                :current-item-mark ""
+                                :width 60 :border t :enable-fkeys t
+                                :title "this is my checkbox dialog"
+                                :message-height 2
+                                :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
       (refresh scr)
       (loop named menu-case
          do
