@@ -659,24 +659,31 @@
          (clear scr)
 
          (write-char #\a)     ; writes a to the repl. wont be visible until we quit ncurses.
+         
          (write-char #\b scr) ; writes b to scr.
+         (terpri scr)
+         
+         (princ "hello")      ; writes to the repl. wont be visible until we quit ncurses.
 
-         (princ "hello")      ; repl. wont be visible until we quit ncurses.
          (princ "hello" scr)
-
          (terpri scr)         ; 3 calls, 3 new lines will be added.
          (terpri scr)
          (terpri scr)
 
          (princ "there" scr)
 
+         (terpri scr)
+         (write-string "dear john" scr :start 0 :end 4)
+         (terpri scr)
+         (write-string "dear john" scr :start 5)
+         
          (fresh-line scr)     ; we call it 3 times, but only one newline will be added.
          (fresh-line scr)
          (fresh-line scr)
 
          (format scr "--~%~r~%--" 1234) ; each % will add a newline.
 
-         (write-char #\newline scr) ; this is the char that actually gets displayed each time.
+         (write-char #\newline scr) ; this is the char that actually gets displayed each time terpri is called.
 
          (refresh scr)
          (get-char scr))

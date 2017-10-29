@@ -82,9 +82,10 @@ CL-USER>
 
 ;; Default method uses repeated calls to stream-write-char
 ;; We can not specialize stream-write-string on complex-strings.
-(defmethod stream-write-string ((stream window) (str string) &optional (start 0) (end nil))
+(defmethod stream-write-string ((stream window) (str-orig string) &optional (start 0) (end nil))
   ;; TODO: either do something with start and end, or (declare (ignore start end))
-  (%waddstr (.winptr stream) str))
+  (let ((str (subseq str-orig start end)))
+    (%waddstr (.winptr stream) str)))
 
 ;;; Character Input Stream
 
