@@ -18,7 +18,8 @@
              (:file "addstr")           ; add a string of characters to a curses window and advance cursor
              (:file "attr")             ; curses character and window attribute control routines
              (:file "beep")             ; curses bell and screen flash routines
-             (:file "bkgd")             ; curses window background manipulation routines 
+             (:file "bkgd")             ; curses window background manipulation routines
+             (:file "bkgrnd")           ; window complex background manipulation routines
              (:file "border")           ; create curses borders, horizontal and vertical lines 
              (:file "clear")            ; clear all or part of a curses window
              (:file "color")            ; curses color manipulation routines

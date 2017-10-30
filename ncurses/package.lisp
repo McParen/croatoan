@@ -66,6 +66,14 @@
    %wbkgd
    %getbkgd
 
+   ;; bkgrnd / window complex background manipulation routines
+   %bkgrnd
+   %wbkgrnd
+   %bkgrndset
+   %wbkgrndset
+   %getbkgrnd
+   %wgetbkgrnd
+
    ;; border / create curses borders, horizontal and vertical lines
    %border
    %wborder
