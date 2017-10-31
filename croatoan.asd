@@ -20,7 +20,8 @@
              (:file "beep")             ; curses bell and screen flash routines
              (:file "bkgd")             ; curses window background manipulation routines
              (:file "bkgrnd")           ; window complex background manipulation routines
-             (:file "border")           ; create curses borders, horizontal and vertical lines 
+             (:file "border")           ; create curses borders, horizontal and vertical lines
+             (:file "border_set")       ; create curses borders or lines using complex characters and renditions
              (:file "clear")            ; clear all or part of a curses window
              (:file "color")            ; curses color manipulation routines
              (:file "default_colors")   ; use terminal's default colors

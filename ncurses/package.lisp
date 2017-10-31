@@ -87,6 +87,19 @@
    %mvvline
    %mvwvline
 
+   ;; border_set / create curses borders or lines using complex characters and renditions
+   %border-set
+   %wborder-set
+   %box-set
+   %hline-set
+   %whline-set
+   %mvhline-set
+   %mvwhline-set
+   %vline-set
+   %wvline-set
+   %mvvline-set
+   %mvwvline-set
+
    ;; clear / clear all or part of a curses window
    %erase
    %werase
