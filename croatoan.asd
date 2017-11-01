@@ -44,6 +44,7 @@
              (:file "insstr")           ; insert string before cursor in a curses window
              (:file "initscr")          ; screen initialization and manipulation routines
              (:file "inopts")           ; curses input options
+             (:file "kernel")           ; low-level curses routines
              (:file "keybound")         ; return definition of keycode
              (:file "key_defined")      ; check if a keycode is defined
              (:file "legacy")           ; get curses cursor and window coordinates, attributes
@@ -58,15 +59,12 @@
              (:file "scroll")           ; scroll a curses window
              (:file "slk")              ; curses soft label routines
              (:file "termattrs")        ; environment query routines
+             (:file "touch")            ; curses refresh control routines
+             (:file "util")             ; miscellaneous curses utility routines
              (:file "variables")        ; curses global variables
              (:file "window")           ; create curses windows
-             (:file "wresize")          ; resize a curses window
-
-             ;; incomplete
-             (:file "kernel")           ; low-level curses routines
-             (:file "touch")            ; curses refresh control routines
-             (:file "util")))           ; miscellaneous curses utility routines
-
+             (:file "wresize")))        ; resize a curses window
+             
    ;; CLOS api on top of CFFI ncurses.
    (:module "source"
             :depends-on ("ncurses")
