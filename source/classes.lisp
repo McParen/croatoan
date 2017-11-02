@@ -114,13 +114,7 @@
     :initarg       :background
     :initform      nil
     :type          (or null complex-char)
-    :documentation "Sets a complex char as the background of the whole window. It does not change the colors or attributes of existing complex chars.")
-
-   (char-background
-    :initarg       :char-background
-    :initform      nil
-    :type          (or null complex-char)
-    :documentation "Sets a complex char as the background of simple characters added to a window. The colors and attributes of complex chars is not changed. A newline sets the background till the end of the line.")
+    :documentation "Sets a complex char as the background of the window. It does not change the colors or attributes of existing complex chars. A newline sets the background till the end of the line.")
 
    (attributes
     :initarg       :attributes
@@ -693,24 +687,16 @@
   (set-input-reading screen status)
   (setf (slot-value screen 'input-reading) status))
 
+;; TODO: change this to use wide chars, so we can use unicode chars additionally to the limited small set of ACS chars
+;; (setf (.background window nil) xchar)
+;; (setf (.background window t) xchar) = (setf (.background window) xchar)
 (defgeneric .background (window))
 (defmethod .background ((window window))
   (slot-value window 'background))
-(defgeneric (setf .background) (char window))
-(defmethod (setf .background) (char (window window))
+(defgeneric (setf .background) (char window &optional apply))
+(defmethod (setf .background) (char (window window) &optional (apply t))
   (setf (slot-value window 'background) char)
-  ;; TODO: change this to use wide chars, so we can use unicode chars additionally to the limited small set of ACS chars
-  (%wbkgd (slot-value window 'winptr)
-          (convert-char char :chtype)))
-
-(defgeneric .char-background (window))
-(defmethod .char-background ((window window))
-  (slot-value window 'char-background))
-(defgeneric (setf .char-background) (char window))
-(defmethod (setf .char-background) (char (window window))
-  (setf (slot-value window 'char-background) char)
-  (%wbkgdset (slot-value window 'winptr)
-             (convert-char char :chtype)))
+  (set-background-char (slot-value window 'winptr) char apply))
 
 ;(defgeneric .attributes (window))
 (defmethod .attributes ((window window))

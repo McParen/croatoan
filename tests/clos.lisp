@@ -274,9 +274,10 @@
          ;; wait for keypress, works only in blocking mode, which is the default.
          (get-char scr)
 
-         ;; set the background character for new characters.
+         ;; set the background character for new characters
+         ;; the optional argument nil prevents it from being applied to every window cell.
          ;; a newline sets the background till the end of the line.
-         (setf (.char-background scr) (make-instance 'complex-char :simple-char #\- :color-pair '(:white :green)))
+         (setf (.background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:white :green)))
          (format scr "~%Hello again!~%")
          (refresh scr)
          (get-char scr)

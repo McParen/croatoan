@@ -8,20 +8,22 @@
 ;; because of that, we cant use alternate chars as background chars, since
 ;; :altcharset is an attribute.
 
-(defun set-background-char (winptr char &optional (target :all-chars))
-  "Set the background character and attributes of a window.
+(defun set-background-char (winptr char &optional (apply t))
+  "Set the background character of a window.
 
 The attribute part of the background character is combined with
 characters in the window.
 
-If target is :all-chars, the background setting is applied to all
-characters in the window.
+If apply is t, the background setting is applied to all characters 
+in the window.
 
-If target is :new-chars, it is applied only to newly added characters."
+Otherwise, it is applied only to newly added characters."
   (let ((chtype (convert-char char :chtype)))
-    (case target
-      (:all-chars (%wbkgd    winptr chtype))
-      (:new-chars (%wbkgdset winptr chtype)))))
+    (if apply
+        ;; the background char is applied to every cell in the window by default.
+        (%wbkgd    winptr chtype)
+        ;; if apply is nil, the background is combined only with new characters.
+        (%wbkgdset winptr chtype))))
 
 (defun get-background-char (winptr)
   "Return the background character and attributes of window."
