@@ -117,6 +117,7 @@ Example: (pair->number '(:white :black)) => 0"
   "Take a pair number, return a color pair in a 2 element list of keywords."
   (car (rassoc number *color-pair-alist*)))
 
+;; TODO: use %wattr_on instead of %wattron, also for get and set
 (defun add-attributes (win attributes)
   "Takes a list of keywords and turns the appropriate attributes on."
   (dolist (i attributes)
@@ -162,12 +163,14 @@ from the given point without moving the cursor position."
   "Sets the color attribute only."
   (%wcolor-set winptr (pair->number color-pair) (null-pointer)))
 
-;;In general, only underline, bold and reverse work.
 (defparameter *bitmask-alist*
+  ;; the first four are not attributes, but bitmasks used to extract parts of the chtype.
   '((:normal     . #x00000000)
     (:attributes . #xffffff00)
     (:chartext   . #x000000ff)
     (:color      . #x0000ff00)
+    ;; we have 16 attributes that can be set.
+    ;; In general, only underline, bold and reverse are widely supported by terminals.
     (:standout   . #x00010000)
     (:underline  . #x00020000)
     (:reverse    . #x00040000)
@@ -182,7 +185,8 @@ from the given point without moving the cursor position."
     (:low        . #x08000000)
     (:right      . #x10000000)
     (:top        . #x20000000)
-    (:vertical   . #x40000000)))
+    (:vertical   . #x40000000)
+    (:italic     . #x80000000)))
 
 (defun get-bitmask (attribute)
   "Returns an ncurses attr/chtype representing the attribute keyword."
@@ -190,32 +194,26 @@ from the given point without moving the cursor position."
 
 (defparameter *valid-attributes*
   '(:standout
-    :underline 
-    :reverse 
-    :blink 
-    :dim 
-    :bold 
-    :altcharset 
-    :invis 
-    :protect 
-    :horizontal 
-    :left 
-    :low 
-    :right 
-    :top 
-    :vertical))
-
-(defparameter *used-attributes*
-  '(:underline 
-    :reverse 
-    :blink 
-    :dim 
-    :bold))
+    :underline
+    :reverse
+    :blink
+    :dim
+    :bold
+    :altcharset
+    :invis
+    :protect
+    :horizontal
+    :left
+    :low
+    :right
+    :top
+    :vertical
+    :italic))
 
 (defun chtype2attrs (ch)
   "Take a chtype, return a list of used attribute keywords."
   (loop
-     for i in *used-attributes*
+     for i in *valid-attributes*
      if (logtest ch (get-bitmask i)) collect i))
 
 ;; used in: char2chtype, change-attributes
