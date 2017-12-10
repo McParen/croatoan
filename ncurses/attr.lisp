@@ -40,12 +40,13 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("attroff"     %attroff)     :int              (attrs :int))
-(defcfun ("wattroff"    %wattroff)    :int (win window) (attrs :int))
-(defcfun ("attron"      %attron)      :int              (attrs :int))
-(defcfun ("wattron"     %wattron)     :int (win window) (attrs :int))
-(defcfun ("attrset"     %attrset)     :int              (attrs :int))
-(defcfun ("wattrset"    %wattrset)    :int (win window) (attrs :int))
+;; :unsigned-int should be the same size as :uint32, 4 bytes, the size of a chtype.
+(defcfun ("attroff"     %attroff)     :int              (attrs :unsigned-int))
+(defcfun ("wattroff"    %wattroff)    :int (win window) (attrs :unsigned-int))
+(defcfun ("attron"      %attron)      :int              (attrs :unsigned-int))
+(defcfun ("wattron"     %wattron)     :int (win window) (attrs :unsigned-int))
+(defcfun ("attrset"     %attrset)     :int              (attrs :unsigned-int))
+(defcfun ("wattrset"    %wattrset)    :int (win window) (attrs :unsigned-int))
 
 (defcfun ("color_set"   %color-set)   :int              (color-pair-number :short) (opts (:pointer :void)))
 (defcfun ("wcolor_set"  %wcolor-set)  :int (win window) (color-pair-number :short) (opts (:pointer :void)))
@@ -54,10 +55,10 @@
 (defcfun ("wstandend"   %wstandend)   :int (win window))
 (defcfun ("standout"    %standout)    :int)
 (defcfun ("wstandout"   %wstandout)   :int (win window))
-                       
+
 (defcfun ("attr_get"    %attr-get)    :int              (attrs (:pointer attr)) (pair (:pointer :short)) (opts (:pointer :void)))
 (defcfun ("wattr_get"   %wattr-get)   :int (win window) (attrs (:pointer attr)) (pair (:pointer :short)) (opts (:pointer :void)))
-                       
+
 (defcfun ("attr_off"    %attr-off)    :int              (attrs attr)               (opts (:pointer :void)))
 (defcfun ("wattr_off"   %wattr-off)   :int (win window) (attrs attr)               (opts (:pointer :void)))
 (defcfun ("attr_on"     %attr-on)     :int              (attrs attr)               (opts (:pointer :void)))
