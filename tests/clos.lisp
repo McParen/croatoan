@@ -1207,6 +1207,31 @@
     (refresh scr)
     (get-char scr)))
 
+(defun t12d ()
+  "Print all graphic alternative chars supported by the non-wide acs_map[128] array.
+
+Only the chars 33 to 126 are graphic, and not all are accessible through the
+keywords provided by ncurses, and the supported chars are terminal dependent."
+  (with-screen (scr)
+    (let* ((ptr (foreign-symbol-pointer "acs_map"))
+           (code (mem-aref ptr :unsigned-int (char-code #\l))))
+      (format scr "~A ~A ~A ~A " #\l (char-code #\l) (acs :upper-left-corner) code)
+      ;; l 108 4194412 4194412 ***
+      ;; 4194412 is nothing more than 108 with the A_ALTCHARSET bit turned on.
+      (add-char scr code)
+      (add-char scr (acs :upper-left-corner))
+      (add-char scr #\l :attributes (list :altcharset))
+      (terpri scr)
+      ;; so we do not really need to access acs_map, like acs is doing.
+      ;; we just need to translate chars like #\l to :upper-left-corner
+      (loop for i from 33 to 126 do
+           (add-char scr (code-char i)))
+      (terpri scr)
+      (loop for i from 33 to 126 do
+           (add-char scr (mem-aref ptr :unsigned-int i)))
+      (refresh scr)
+      (get-char scr))))
+
 ;; Demonstrate flash and beep alerts.
 ;; It depends on the terminal emulator whether they will work for you.
 ;; They both worked in xterm for me.
