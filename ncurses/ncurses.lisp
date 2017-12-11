@@ -49,20 +49,56 @@
 ;; Basic types as seen in the ncurses function prototypes.
 ;; These will only be used inside cffi wrappers.
 
+;; not used, cffi automatically translates a boolean type
 ;; typedef unsigned char bool;
-(defctype bool   :int)
+(defctype bool :unsigned-char)
 
-;; typedef unsigned long int chtype;
-(defctype chtype :int)
+#|
+--enable-lp64
+Allows an application to define _LP64 to declare chtype and mmask_t as
+simply unsigned rather than the configured types
+using the --with-chtype and --with-mmask_t options.
+
+#if 1 && defined(_LP64)
+typedef unsigned chtype;
+typedef unsigned mmask_t;
+#else
+typedef uint32_t chtype;
+typedef uint32_t mmask_t;
+#endif
+|#
+
+;; default ubuntu build options, they build for API5.
+;; --disable-lp64 --with-chtype='long' --with-mmask-t='long'
+
+;; the default type on ubuntu isnt "unsigned int" but "long", which means signed long.
+
+;; We will use the ABI6 default uint32_t instead of long.
+
+;; TODO: use ABI6 values for chtype, cchar_t and mmask: --with-chtype=uint32_t
+;;(defctype chtype :unsigned-int)
+(defctype chtype :uint32)
 
 ;; wide character type, defined in:
 ;; /usr/lib/gcc/x86_64-linux-gnu/5/include/stddef.h
+;; it has to be able to contain the 21-bit 10FFFF, which is the max allowed unicode point.
 (defctype wchar_t :int32)
 
+;; typedef unsigned int wint_t;
+;; used in get_wch.lisp
+;; wint_t needs to be a signed int to represent a negative WEOF value.
+(defctype wint_t :int32)
+
 ;; typedef chtype attr_t;
-(defctype attr   :int)
+;; TODO: rename this to attr_t
+(defctype attr :uint32
+  "The 32 bit integral type attr_t holds an OR-ed set of attributes.")
+(defctype attr_t :uint32
+  "The 32 bit integral type attr_t holds an OR-ed set of attributes.")
 
 ;; winptr = *WINDOW
+;; TODO: define window struct
+;; (defctype ptr-window (:pointer (:struct window)))
 (defctype window :pointer)
 
 ;; scrptr = *SCREEN
@@ -70,11 +106,6 @@
 
 ;; fileptr = *FILE
 (defctype file :pointer)
-
-;; typedef unsigned int wint_t;
-;; used in get_wch.lisp
-(defctype wint_t :int32)
-
 
 ;;; C structures
 
@@ -103,20 +134,31 @@ cchar_t;
 
 |#
 
-;; For non-extended colors, the color pair is OR-ed into the attr value.
-;; only for extended colors, we get a new struct slot.
+;; For non-extended colors, the color pair is OR-ed into the attr value, like it has been done
+;; with color pairs in chtypes. This is ABI5.
+
+;;(defcstruct cchar_t
+;;  "A C struct containing contains a wide char and an integer containing the color pair and attributes."
+;;  (cchar-attr   attr)
+;;  (cchar-chars  wchar_t :count 5))
+
+;; For extended colors, we get a new struct slot. This is ABI6, which is the default since ncurses 6.0, 20150808.
 
 ;; Intended to be used with setcchar.
+;; TODO: write meaningsful docstrings here.
 (defcstruct cchar_t
-  "hello"
+  "C struct containing a wide char, a color pair and attributes."
   (cchar-attr   attr)
   (cchar-chars  wchar_t :count 5)
   (cchar-colors :int))
 
+(defctype ptr-cchar_t (:pointer (:struct cchar_t)))
+
 ;; Intended to be used with convert-to-foreign plist translation.
 ;; For some reasons, plists with pointers dont work, so we have to pass by value.
+;; TODO: we dont need this any more, everything works now with the cchar_t struct.
 (defcstruct cchar
-  "hello"
+  "C struct containing a wide char, a color pair and attributes."
   (cchar-attr   attr)
   (cchar-chars  wchar_t)
   (cchar-colors :int))
@@ -137,12 +179,13 @@ cchar_t;
 ;;     int x, y, z;      /* event coordinates */
 ;;     mmask_t bstate;   /* button state bits */
 ;; } MEVENT;
-;; 
 
-(defctype mmask_t :ulong)
+;; TODO: ABI6: --with-mmask_t=uint32_t
+;;(defctype mmask_t :unsigned-int)
+(defctype mmask_t :uint32)
 
 (defcstruct mevent
-  "hello"
+  "C struct containing mouse coordinates and button state."
   (id :short)
   (x :int)
   (y :int)
