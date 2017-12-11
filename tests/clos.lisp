@@ -240,7 +240,7 @@
                    (setf (.color-pair scr) '(:green :black))
                    (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 1) height) :x column)
                    (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 2) height) :x column)
-                   (setf (.attributes scr) '(:normal))
+                   (setf (.attributes scr) '())
                    (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 3) height) :x column)
                    (add-char scr (char-code #\space) :y (mod (- (nth column positions) (floor height 2)) height) :x column)
                    (refresh scr)
@@ -490,13 +490,13 @@
          (setf (.attributes scr) '(:bold :reverse))
          (add-string scr "Docstring")
 
-         (setf (.attributes scr) '(:normal))
+         (setf (.attributes scr) '())
          (add-string scr " --> ")
 
          (setf (.attributes scr) '(:bold :underline))
          (add-string scr (format nil "~A~%~%" name))
 
-         (setf (.attributes scr) '(:normal))
+         (setf (.attributes scr) '())
          (add-string scr (documentation name 'function))
 
          (refresh scr)
