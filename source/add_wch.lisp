@@ -105,3 +105,77 @@ character."
                                           (if (.attributes char) (attrs2chtype (.attributes char)) 0)
                                           (if (.color-pair char) (pair->number (.color-pair char)) 0)
                                           count)))))
+
+;; wide-char equivalents of the ACS chars.
+;; since reading _nc_wacs doesnt work like it worked with acs_map,
+;; plan B is a direct translation from ACS names to unocide code points.
+;; source for the codes is ncurses/widechar/lib_wacs.c
+(defparameter wide-acs-alist
+  ;; VT100 symbols
+  '(( :upper-left-corner     . #x250C )       ; #\BOX_DRAWINGS_LIGHT_DOWN_AND_RIGHT           / 0xE2 0x94 0x8C
+    ( :lower-left-corner     . #x2514 )       ; #\BOX_DRAWINGS_LIGHT_UP_AND_RIGHT             / 0xE2 0x94 0x94
+    ( :upper-right-corner    . #x2510 )       ; #\BOX_DRAWINGS_LIGHT_DOWN_AND_LEFT            / 0xE2 0x94 0x90
+    ( :lower-right-corner    . #x2518 )       ; #\BOX_DRAWINGS_LIGHT_UP_AND_LEFT              / 0xE2 0x94 0x98
+    ( :tee-pointing-left     . #x2524 )       ; #\BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT        / 0xE2 0x94 0xA5
+    ( :tee-pointing-right    . #x251C )       ; #\BOX_DRAWINGS_LIGHT_VERTICAL_AND_RIGHT       / 0xE2 0x94 0x9C
+    ( :tee-pointing-up       . #x2534 )       ; #\BOX_DRAWINGS_LIGHT_UP_AND_HORIZONTAL        / 0xE2 0x94 0xB4
+    ( :tee-pointing-down     . #x252C )       ; #\BOX_DRAWINGS_LIGHT_DOWN_AND_HORIZONTAL      / 0xE2 0x94 0xAC
+    ( :horizontal-line       . #x2500 )       ; #\BOX_DRAWINGS_LIGHT_HORIZONTAL               / 0xE2 0x94 0x80
+    ( :vertical-line         . #x2502 )       ; #\BOX_DRAWINGS_LIGHT_VERTICAL                 / 0xE2 0x94 0x82
+    ( :crossover-plus        . #x253C )       ; #\BOX_DRAWINGS_LIGHT_VERTICAL_AND_HORIZONTAL  / 0xE2 0x94 0xBC
+
+    ( :scan-line-1           . #x23BA )       ; #\HORIZONTAL_SCAN_LINE-1                      / 0xE2 0x8E 0xBA
+    ( :scan-line-9           . #x23BD )       ; #\HORIZONTAL_SCAN_LINE-9                      / 0xE2 0x8E 0xBD
+    ( :diamond-symbol        . #x25C6 )       ; #\BLACK_DIAMOND                               / 0xE2 0x97 0x86
+    ( :checker-board         . #x2592 )       ; #\MEDIUM_SHADE                                / 0xE2 0x96 0x92 
+    ( :degree-symbol         . #x00B0 )       ; #\DEGREE_SIGN                                 / 0xC2 0xB0
+    ( :plus-minus            . #x00B1 )       ; #\PLUS-MINUS_SIGN                             / 0xC2 0xB1
+    ( :bullet-symbol         . #x00B7 )       ; #\MIDDLE_DOT                                  / 0xC2 0xB7
+
+    ;; Teletype 5410v1 symbols
+    ( :arrow-pointing-left   . #x2190 )       ; #\LEFTWARDS_ARROW                             / 0xE2 0x86 0x90
+    ( :arrow-pointing-right  . #x2192 )       ; #\RIGHTWARDS_ARROW                            / 0xE2 0x86 0x92
+    ( :arrow-pointing-down   . #x2193 )       ; #\DOWNWARDS_ARROW                             / 0xE2 0x86 0x93
+    ( :arrow-pointing-up     . #x2191 )       ; #\UPWARDS_ARROW                               / 0xE2 0x86 0x91
+    ( :board                 . #x2592 )       ; #\MEDIUM_SHADE                                / 0xE2 0x96 0x92
+    ( :lantern-symbol        . #x2603 )       ; #\SNOWMAN                                     / 0xE2 0x98 0x83
+    ( :solid-square-block    . #x25AE )       ; #\BLACK_VERTICAL_RECTANGLE                    / 0xE2 0x96 0xAE
+
+    ;; ncurses characters
+    ( :scan-line-3           . #x23BB )       ; #\HORIZONTAL_SCAN_LINE-3                      / 0xE2 0x8E 0xBB
+    ( :scan-line-7           . #x23BC )       ; #\HORIZONTAL_SCAN_LINE-7                      / 0xE2 0x8E 0xBC
+    ( :less-than-or-equal    . #x2264 )       ; #\LESS-THAN_OR_EQUAL_TO                       / 0xE2 0x89 0xA4
+    ( :greater-than-or-equal . #x2265 )       ; #\GREATER-THAN_OR_EQUAL_TO                    / 0xE2 0x89 0xA5
+    ( :pi                    . #x03C0 )       ; #\GREEK_SMALL_LETTER_PI                       / 0xCF 0x80
+    ( :not-equal             . #x2260 )       ; #\NOT_EQUAL_TO                                / 0xE2 0x89 0xA0
+    ( :uk-pound-sterling     . #x00A3 )       ; #\POUND_SIGN                                  / 0xC2 0xA3
+
+    ;; thick line drawing characters
+    ( :thick-upper-left-corner   . #x250F )   ; #\BOX_DRAWINGS_HEAVY_DOWN_AND_RIGHT           / 0xE2 0x94 0x8F
+    ( :thick-lower-left-corner   . #x2517 )   ; #\BOX_DRAWINGS_HEAVY_UP_AND_RIGHT             / 0xE2 0x94 0x97
+    ( :thick-upper-right-corner  . #x2513 )   ; #\BOX_DRAWINGS_HEAVY_DOWN_AND_LEFT            / 0xE2 0x94 0x93
+    ( :thick-lower-right-corner  . #x251B )   ; #\BOX_DRAWINGS_HEAVY_UP_AND_LEFT              / 0xE2 0x94 0x9B
+    ( :thick-tee-pointing-left   . #x2523 )   ; #\BOX_DRAWINGS_HEAVY_VERTICAL_AND_LEFT        / 0xE2 0x94 0xA3
+    ( :thick-tee-pointing-right  . #x252B )   ; #\BOX_DRAWINGS_HEAVY_VERTICAL_AND_RIGHT       / 0xE2 0x94 0xAB
+    ( :thick-tee-pointing-up     . #x253B )   ; #\BOX_DRAWINGS_HEAVY_UP_AND_HORIZONTAL        / 0xE2 0x94 0xBB
+    ( :thick-tee-pointing-down   . #x2533 )   ; #\BOX_DRAWINGS_HEAVY_DOWN_AND_HORIZONTAL      / 0xE2 0x94 0xB3
+    ( :thick-horizontal-line     . #x2501 )   ; #\BOX_DRAWINGS_HEAVY_HORIZONTAL               / 0xE2 0x94 0x81
+    ( :thick-vertical-line       . #x2503 )   ; #\BOX_DRAWINGS_HEAVY_VERTICAL                 / 0xE2 0x94 0x83
+    ( :thick-crossover-plus      . #x254B )   ; #\BOX_DRAWINGS_HEAVY_VERTICAL_AND_HORIZONTAL  / 0xE2 0x95 0x8B
+
+    ;; double-line drawing characters
+    ( :double-upper-left-corner  . #x2554 )   ; #\BOX_DRAWINGS_DOUBLE_DOWN_AND_RIGHT          / 0xE2 0x95 0x94
+    ( :double-lower-left-corner  . #x255A )   ; #\BOX_DRAWINGS_DOUBLE_UP_AND_RIGHT            / 0xE2 0x95 0x9A
+    ( :double-upper-right-corner . #x2557 )   ; #\BOX_DRAWINGS_DOUBLE_DOWN_AND_LEFT           / 0xE2 0x95 0x97
+    ( :double-lower-right-corner . #x255D )   ; #\BOX_DRAWINGS_DOUBLE_UP_AND_LEFT             / 0xE2 0x95 0x9D
+    ( :double-tee-pointing-left  . #x2563 )   ; #\BOX_DRAWINGS_DOUBLE_VERTICAL_AND_LEFT       / 0xE2 0x95 0xA3
+    ( :double-tee-pointing-right . #x2560 )   ; #\BOX_DRAWINGS_DOUBLE_VERTICAL_AND_RIGHT      / 0xE2 0x95 0xA0
+    ( :double-tee-pointing-up    . #x2569 )   ; #\BOX_DRAWINGS_DOUBLE_UP_AND_HORIZONTAL       / 0xE2 0x95 0xA9
+    ( :double-tee-pointing-down  . #x2566 )   ; #\BOX_DRAWINGS_DOUBLE_DOWN_AND_HORIZONTAL     / 0xE2 0x95 0xA6
+    ( :double-horizontal-line    . #x2550 )   ; #\BOX_DRAWINGS_DOUBLE_HORIZONTAL              / 0xE2 0x95 0x90
+    ( :double-vertical-line      . #x2551 )   ; #\BOX_DRAWINGS_DOUBLE_VERTICAL                / 0xE2 0x95 0x91
+    ( :double-crossover-plus     . #x256C ))) ; #\BOX_DRAWINGS_DOUBLE_VERTICAL_AND_HORIZONTAL / 0xE2 0x95 0xAC
+
+(defun wacs (char-name)
+  "Take a keyword symbol, return the wide unicode integer representing the ACS char."
+  (cdr (assoc char-name wide-acs-alist)))

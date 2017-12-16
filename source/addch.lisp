@@ -76,38 +76,70 @@ character."
 ;; ncurses maps those standard chars at runtime to the acs characters.
 ;; here we use it in the function acs.
 (defparameter acs-alist
+  ;; VT100 symbols
   '(( :upper-left-corner     . #\l )
     ( :lower-left-corner     . #\m )
     ( :upper-right-corner    . #\k )
     ( :lower-right-corner    . #\j )
-    ( :tee-pointing-right    . #\t )
     ( :tee-pointing-left     . #\u )
+    ( :tee-pointing-right    . #\t )
     ( :tee-pointing-up       . #\v )
     ( :tee-pointing-down     . #\w )
     ( :horizontal-line       . #\q )
     ( :vertical-line         . #\x )
     ( :crossover-plus        . #\n )
+
     ( :scan-line-1           . #\o )
-    ( :scan-line-3           . #\p )
-    ( :scan-line-7           . #\r )
     ( :scan-line-9           . #\s )
     ( :diamond-symbol        . #\` )
-    ( :board                 . #\h )
     ( :checker-board         . #\a )
     ( :degree-symbol         . #\f )
     ( :plus-minus            . #\g )
     ( :bullet-symbol         . #\~ )
+
+    ;; Teletype 5410v1 symbols
     ( :arrow-pointing-left   . #\, )
     ( :arrow-pointing-right  . #\+ )
     ( :arrow-pointing-down   . #\. )
     ( :arrow-pointing-up     . #\- )
+    ( :board                 . #\h )
     ( :lantern-symbol        . #\i )
     ( :solid-square-block    . #\0 )
+
+    ;; ncurses characters
+    ( :scan-line-3           . #\p )
+    ( :scan-line-7           . #\r )
     ( :less-than-or-equal    . #\y )
     ( :greater-than-or-equal . #\z )
     ( :pi                    . #\{ )
     ( :not-equal             . #\| )
-    ( :uk-pound-sterling     . #\} )))
+    ( :uk-pound-sterling     . #\} )
+
+    ;; thick line drawing characters
+    ( :thick-upper-left-corner      . #\L )
+    ( :thick-lower-left-corner      . #\M )
+    ( :thick-upper-right-corner     . #\K )
+    ( :thick-lower-right-corner     . #\J )
+    ( :thick-tee-pointing-left      . #\U )
+    ( :thick-tee-pointing-right     . #\T )
+    ( :thick-tee-pointing-up        . #\V )
+    ( :thick-tee-pointing-down      . #\W )
+    ( :thick-horizontal-line        . #\Q )
+    ( :thick-vertical-line          . #\X )
+    ( :thick-crossover-plus         . #\N )
+
+    ;; double-line drawing characters
+    ( :double-upper-left-corner     . #\C )
+    ( :double-lower-left-corner     . #\D )
+    ( :double-upper-right-corner    . #\B )
+    ( :double-lower-right-corner    . #\A )
+    ( :double-tee-pointing-left     . #\G )
+    ( :double-tee-pointing-right    . #\F )
+    ( :double-tee-pointing-up       . #\H )
+    ( :double-tee-pointing-down     . #\I )
+    ( :double-horizontal-line       . #\R )
+    ( :double-vertical-line         . #\Y )
+    ( :double-crossover-plus        . #\E )))
 
 #|
 
@@ -154,12 +186,3 @@ extern NCURSES_EXPORT_VAR(chtype) acs_map[];
   (if (string= (subseq (%curses-version) 8 11) "6.0")
       (mem-aref acs-map-array :unsigned-int (char-code (cdr (assoc char-name acs-alist))))
       (mem-aref acs-map-array :unsigned-long (char-code (cdr (assoc char-name acs-alist))))))
-
-;; TODO: how to decide the integer size automatically?
-
-;;; TODOs
-
-;; [ ] add y,x to echo-char?
-;; [ ] add type asserts.
-;; [ ] add line graphics characters as descibed in the man page.
-;; [ ] use char-code to add a lisp char, i.e. to convert it first to C (int) and then add it.

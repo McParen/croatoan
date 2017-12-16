@@ -70,6 +70,7 @@
    echo
    new-line
    acs
+   wacs
 
    ;; add_wch / add a wide complex character to a curses window, then advance the cursor
    add-wide-char
