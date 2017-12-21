@@ -29,11 +29,9 @@ as will fit on the line."
             (mapc #'(lambda (ch) (add-char window ch :attributes attributes :color-pair color-pair))
                   (unicode-to-utf-8 code-point)))))))
 
-;; we can use this for add-wide-char, echo-wide-char, insert-wide-char
-(defun funcall-with-cchar_t (fn winptr char attr_t color-pair-number count)
-  "Create a cchar_t and apply function fn to winptr and cchar_t.
-
-If optional parameter count is not given, perform the action one single time.
+;; we can use this for add-wide-char, echo-wide-char, insert-wide-char, set-wide-background-char
+(defun funcall-make-cchar_t-ptr (fn winptr char attr_t color-pair-number count)
+  "Create a cchar_t and apply function fn count times to winptr and cchar_t.
 
 cchar_t is a C struct representing a wide complex-char in ncurses.
 
@@ -47,6 +45,57 @@ This function is a wrapper around %setcchar and should not be used elsewhere."
         (funcall fn winptr ptr)
         (dotimes (i count) (funcall fn winptr ptr)) )))
 
+(defun funcall-make-cchar_t (fn window char attributes color-pair n)
+  "Assemble a cchar_t out of a char, attributes and a color-pair.
+
+char can be a lisp character, an ACS keyword, an integer code point or
+a complex char.
+
+attributes should be a list of valid attribute keywords.
+
+color-pair should be a list of a foreground and background color keyword.
+
+attributes and color-pair can be nil.
+
+If char is a complex char, attributes and color-pair are ignored."
+  (let ((winptr (.winptr window))
+        (ch
+         (typecase char
+           ;; if we have a lisp char or an integer, use the attributes and colors passed as arguments.
+           (integer char)
+           (character (char-code char))
+           (keyword (wacs char))
+           ;; if we have a complex char, use its own attributes and colors.
+           (complex-char (if (.simple-char char)
+                             (typecase (.simple-char char)
+                               (integer (.simple-char char))
+                               (character (char-code (.simple-char char)))
+                               (keyword (wacs (.simple-char char)))
+                               (otherwise (error "unknown character type")))
+                             ;; this means that the default simple char is space, otherwise
+                             ;; we can not set complex background chars.
+                             ;; TODO: set this here or as initform for complex-char?
+                             32))
+           (otherwise (error "unknown character type"))))
+        (attr_t
+         (typecase char
+           (complex-char (attrs2chtype (.attributes char)))
+           (otherwise    (attrs2chtype attributes))))
+        ;; we just need the pair number here, NOT the bit-shifted color attribute.
+        ;; we need the color attribute for chtypes.
+        (color-pair-number
+         (typecase char
+           (complex-char (if (.color-pair char) (pair->number (.color-pair char)) 0))
+           (otherwise    (if color-pair         (pair->number color-pair)         0))))
+        (count (if n
+                   (if (= n -1)
+                       (- (.width window) (cadr (.cursor-position window)))
+                       n)
+                   1)))
+    ;; After the parameters are assembled, call the lower-level function that actually
+    ;; uses %setcchar to create a cchar_t pointer and passes it to fn.
+    (funcall-make-cchar_t-ptr fn winptr ch attr_t color-pair-number count)))
+
 (defun add-wide-char (window char &key attributes color-pair y x n)
   "Add the wide (multi-byte) char to the window, then advance the cursor.
 
@@ -56,25 +105,7 @@ destination first and then add the character.
 If n is given, write n chars. If n is -1, as many chars will be added
 as will fit on the line."
   (when (and y x) (move window y x))
-  (let ((winptr (.winptr window))
-        (attr (if attributes (attrs2chtype attributes) 0))
-        (color-pair-number (if color-pair (pair->number color-pair) 0))
-        (count  (if n
-                   (if (= n -1)
-                       (- (.width window) (cadr (.cursor-position window)))
-                       n)
-                   1)))
-    (typecase char
-      ;; if we have a lisp char or an integer, use the attributes and colors passed as arguments.
-      (integer      (funcall-with-cchar_t #'%wadd-wch winptr char             attr color-pair-number count))
-      (character    (funcall-with-cchar_t #'%wadd-wch winptr (char-code char) attr color-pair-number count))
-      ;; if we have a complex char, use its own attributes and colors.
-      (complex-char (funcall-with-cchar_t #'%wadd-wch
-                                          winptr
-                                          (char-code (.simple-char char))
-                                          (if (.attributes char) (attrs2chtype (.attributes char)) 0)
-                                          (if (.color-pair char) (pair->number (.color-pair char)) 0)
-                                          count)))))
+  (funcall-make-cchar_t #'%wadd-wch window char attributes color-pair n))
 
 (defun echo-wide-char (window char &key attributes color-pair y x)
   "Add one rendered character to the window, then refresh the window.
@@ -86,25 +117,12 @@ The only difference to add-wide-char and a subsequent refresh is a
 performance gain if we know that we only need to output a single
 character."
   (when (and y x) (move window y x))
-  (let ((winptr (.winptr window))
-        (attr (if attributes (attrs2chtype attributes) 0))
-        (color-pair-number (if color-pair (pair->number color-pair) 0))
-        (count 1)
+  (let ((count 1)
         ;; for some reason, there is a special echo function for pads.
         (fn (typecase window
               (pad #'%pecho-wchar)
               (window #'%wecho-wchar))))
-    (typecase char
-      ;; if we have a lisp char or an integer, use the attributes and colors passed as arguments.
-      (integer      (funcall-with-cchar_t fn winptr             char attr color-pair-number count))
-      (character    (funcall-with-cchar_t fn winptr (char-code char) attr color-pair-number count))
-      ;; if we have a complex char, use its own attributes and colors.
-      (complex-char (funcall-with-cchar_t fn
-                                          winptr
-                                          (char-code (.simple-char char))
-                                          (if (.attributes char) (attrs2chtype (.attributes char)) 0)
-                                          (if (.color-pair char) (pair->number (.color-pair char)) 0)
-                                          count)))))
+    (funcall-make-cchar_t fn window char attributes color-pair count)))
 
 ;; wide-char equivalents of the ACS chars.
 ;; since reading _nc_wacs doesnt work like it worked with acs_map,

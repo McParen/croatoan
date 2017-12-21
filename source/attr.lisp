@@ -74,11 +74,15 @@
 ;; if use-default-colors is t, it is whatever color pair the terminal
 ;; used before the ncurses init.
 ;; TODO: this also could be a hashmap
+;; TODO: move this to be a screen variable, so it gets reset on every screen init
+;; for now it is reset to nil on evey screen init by set-default-color-pair
 (defparameter *color-pair-alist* nil)
 
 ;; called from initialize-instance :after ((scr screen)
 ;; test with t09a
 (defun set-default-color-pair (use-default-colors)
+  ;; reset the color pair alist on every screen init
+  (setf *color-pair-alist* nil)
   (if use-default-colors
       (progn
         (%use-default-colors)
@@ -188,6 +192,7 @@ from the given point without moving the cursor position."
     (:vertical   . #x40000000)
     (:italic     . #x80000000)))
 
+;; TODO: signal an error if passed an invalid attribute.
 (defun get-bitmask (attribute)
   "Returns an ncurses attr/chtype representing the attribute keyword."
   (cdr (assoc attribute *bitmask-alist*)))
@@ -216,10 +221,25 @@ from the given point without moving the cursor position."
      for i in *valid-attributes*
      if (logtest ch (get-bitmask i)) collect i))
 
-;; used in: char2chtype, change-attributes
+;; used in: make-chtype, change-attributes
 (defun attrs2chtype (attrs)
   "Take a list of attribute keywords, return a chtype with the attribute bits set."
-  (apply #'logior (mapcar #'get-bitmask attrs)))
+  (if attrs
+      ;; the attribute bitmasks already are bit-shifted to the correct position in the chtype
+      ;; we just need to OR them all together
+      (apply #'logior (mapcar #'get-bitmask attrs))
+      ;; if the attribute list is nil, logior returns 0.
+      ;; but to emphasize intent, we explicitely return 0 if the attribute list is nil.
+      0))
+
+(defun colors2chtype (color-pair)
+  "Take a list of a color pair, return a chtype with the color attribute set."
+  (if color-pair
+      ;; convert the pair to an integer, then bit shift it by 8
+      ;; right shift by 8 to get the color bits at their proper place in a chtype.
+      ;; you cannot simply logior the pair number because that would overwrite the char.
+      (ash (pair->number color-pair) 8)
+      0))
 
 ;; usage: c2x, extract wide char, everywhere where number->pair is used.
 ;; first get the color attribute bits by log-AND-ing them with the ch.
@@ -229,67 +249,66 @@ from the given point without moving the cursor position."
   "Take a chtype or attr_t integer, return a list of two keywords denoting a color pair."
   (number->pair (ash (logand ch (get-bitmask :color)) -8)))
 
+(defun char2chtype (char)
+  "Take a character in different forms, return a chtype containing that character."
+  (if char
+      (typecase char
+        ;; if the char is already an integer from char-code.
+        (integer char)
+        ;; alternative chars are given as keywords
+        ;; we use acs only when we produce chtypes, for cchar_t, we need wacs.
+        (keyword (acs char))
+        ;; if it is a lisp char, convert it to an integer first
+        (character (char-code char))
+        ;; if char is any other type, we dont handle it for now.
+        (otherwise (error "char2chtype: char is not integer, keyword or character.")))
+      0))
+
 ;;; ------------------------------------------------------------------
 
-(defun char2chtype (char attributes color-pair)
-  "Convert a char (lisp char, char code or ACS symbol) to a chtype.
+(defun make-chtype (char attributes color-pair)
+  "Assemble a chtype out of a char, attributes and a color-pair.
 
-attributes should be a list of attribute keywords.
+char can be a lisp character, an ACS keyword, or an integer code point.
 
-color-pair should be a list of a foreground and background color keyword."
-  (let ((ch (typecase char
-              ;; if the char is already an integer from char-code.
-              (integer char)
-              ;; alternative chars are given as keywords
-              (keyword (acs char))
-              ;; if it is a lisp char, convert it to an integer first
-              (character (char-code char))
-              (t 0)))
-        ;; convert the pair to an integer, then bit shift it by 8
-        (col (if color-pair (ash (pair->number color-pair) 8) 0))
-        ;; the attribute bitmasks already are bit-shifted to the
-        ;; correct position in the chtype
-        (attr (if attributes (attrs2chtype attributes) 0)))
-    ;; the 3 integers are now OR-ed together to create the chtype.
-    (logior ch attr col)))
+attributes should be a list of valid attribute keywords.
 
-;; Example: (x2c (c2x 2490466)) => 2490466
+color-pair should be a list of a foreground and background color keyword.
 
-(defun x2c (ch)
-  "Converts a croatoan complex char to a ncurses chtype."
-  (logior (let ((char (.simple-char ch)))
-            (if char
-                (typecase char
-                  (character (char-code (.simple-char ch)))
-                  (integer char)
-                  (keyword (acs char))
-                  (t 0))
-                0)) ; logioring something with 0 has no effect.
-          
-          ;; if an attribute is there, add its integer or a 0.
-          ;; TODO: abstract away the c&p orgy, z.B in a local macro.
-          (if (member :underline  (.attributes ch)) (get-bitmask :underline)  0)
-          (if (member :reverse    (.attributes ch)) (get-bitmask :reverse)    0)
-          (if (member :blink      (.attributes ch)) (get-bitmask :blink)      0)
-          (if (member :dim        (.attributes ch)) (get-bitmask :dim)        0)
-          (if (member :bold       (.attributes ch)) (get-bitmask :bold)       0)
-          (if (member :altcharset (.attributes ch)) (get-bitmask :altcharset) 0)
-          (if (member :invis      (.attributes ch)) (get-bitmask :invis)      0)
-          (if (member :protect    (.attributes ch)) (get-bitmask :protect)    0)
-          (if (member :horizontal (.attributes ch)) (get-bitmask :horizontal) 0)
-          (if (member :left       (.attributes ch)) (get-bitmask :left)       0)
-          (if (member :low        (.attributes ch)) (get-bitmask :low)        0)
-          (if (member :right      (.attributes ch)) (get-bitmask :right)      0)
-          (if (member :top        (.attributes ch)) (get-bitmask :top)        0)
-          (if (member :vertical   (.attributes ch)) (get-bitmask :vertical)   0)
+attributes and color-pair can be nil.
 
-          ;; right shift by 8 to get the color bits at their proper place in a chtype.
-          ;; you cannot simply logior the pair number because that would overwrite the char.
-          (if (.color-pair ch)
-              (ash (pair->number (.color-pair ch)) 8)
-              0)))
+If char is a complex char, and the attributes and color-pair are passed,
+they override the attributes and the color-of the complex char."
+  (typecase char
+    ;; x2c itself calls make-chtype 
+    (complex-char (xchar2chtype char))
+    ;; we first convert all three parameters to separate integers,
+    ;; then OR them together to create the chtype.
+    (otherwise    (logior (char2chtype char)
+                          (attrs2chtype attributes)
+                          (colors2chtype color-pair)))))
 
-(defun c2x (ch)
+;; we do not really need this function, but it is provided to parallel funcall-with-cchar_t.
+;; TODO: it has to accept complex-chars because funcall-make-cchar_t also does.
+(defun funcall-make-chtype (fn window char attributes color-pair count)
+  "Make a chtype and apply low-level ncurses function fn count times to window and chtype.
+
+chtype is a 32-bit integer representing a non-wide complex-char in ncurses."
+  (let ((chtype (make-chtype char attributes color-pair))
+        (winptr (.winptr window)))
+    (if (= count 1)
+        (funcall fn winptr chtype)
+        (dotimes (i count) (funcall fn winptr chtype)))))
+
+;; Example: (xchar2chtype (chtype2xchar 2490466)) => 2490466
+
+(defun xchar2chtype (ch)
+  "Convert a croatoan complex char to an integral ncurses chtype."
+  (make-chtype (.simple-char ch)
+               (.attributes ch)
+               (.color-pair ch)))
+
+(defun chtype2xchar (ch)
   "Converts a ncurses chtype to croatoan complex-char."
   (make-instance 'complex-char
                  :simple-char (code-char (logand ch (get-bitmask :chartext)))
@@ -300,7 +319,6 @@ color-pair should be a list of a foreground and background color keyword."
                  ;; then get the color pair (:white :black) associated with that number.
                  :color-pair (number->pair (ash (logand ch (get-bitmask :color)) -8))))
 
-
 (defgeneric convert-char (char result-type)
   (:documentation "Take a char and convert it to a char of result-type."))
 
@@ -308,7 +326,7 @@ color-pair should be a list of a foreground and background color keyword."
 (defmethod convert-char ((char complex-char) result-type)
   (case result-type
     (:simple-char (.simple-char char))
-    (:chtype (x2c char))))
+    (:chtype (xchar2chtype char))))
 
 ;; Lisps character object is here called "simple-char".
 (defmethod convert-char ((char character) result-type)
@@ -320,7 +338,7 @@ color-pair should be a list of a foreground and background color keyword."
 (defmethod convert-char ((char integer) result-type)
   (case result-type
     (:simple-char (code-char (logand char (get-bitmask :chartext))))
-    (:complex-char (c2x char))))
+    (:complex-char (chtype2xchar char))))
 
 
 ;;; TODOs

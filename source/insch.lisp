@@ -9,9 +9,7 @@ cursor is not changed.
 
 If the destination coordinates y and x are given, move the cursor
 there first."
+  (when (and y x) (move window y x))
   (let ((winptr (.winptr window))
-        (chtype (char2chtype char attributes color-pair)))
-    (cond ((and y x)
-           (%mvwinsch winptr y x chtype))
-          (t
-           (%winsch winptr chtype)))))
+        (chtype (make-chtype char attributes color-pair)))
+    (%winsch winptr chtype)))

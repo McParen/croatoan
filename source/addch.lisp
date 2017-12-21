@@ -22,7 +22,6 @@ n is -1, as many chars will be added as will fit on the line."
     ((or integer keyword character complex-char)
      (add-char   window object :attributes attributes :color-pair color-pair :y y :x x :n n))))
 
-;; Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))
 (defun add-char (window char &key attributes color-pair y x n)
   "Add the char to the window, then advance the cursor.
 
@@ -30,7 +29,9 @@ If the destination coordinates y and x are given, move the cursor to the
 destination first and then add the character.
 
 If n is given, write n chars. If n is -1, as many chars will be added
-as will fit on the line."
+as will fit on the line.
+
+Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
   (when (and y x) (move window y x))
   (let ((winptr (.winptr window))
         (count (if n
@@ -38,9 +39,7 @@ as will fit on the line."
                        (- (.width window) (cadr (.cursor-position window)))
                        n)
                    1))
-        (chtype (typecase char
-                  (complex-char (x2c char))
-                  (t (char2chtype char attributes color-pair)))))
+        (chtype (make-chtype char attributes color-pair)))
     (loop
        repeat count
        do (%waddch winptr chtype))))
@@ -56,10 +55,9 @@ performance gain if we know that we only need to output a single
 character."
   (when (and y x) (move window y x))
   (let ((winptr (.winptr window))
-        (chtype (typecase char
-                  (complex-char (x2c char))
-                  (t (char2chtype char attributes color-pair)))))
+        (chtype (make-chtype char attributes color-pair)))
     (typecase window
+      ;; a pad is a subclass of window, therefore we have to check pad first.
       (pad (%pechochar winptr chtype))
       (window (%wechochar winptr chtype)))))
 

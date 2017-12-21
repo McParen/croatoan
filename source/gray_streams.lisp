@@ -82,10 +82,15 @@ CL-USER>
 
 ;; Default method uses repeated calls to stream-write-char
 ;; We can not specialize stream-write-string on complex-strings.
+
+#|
 (defmethod stream-write-string ((stream window) (str-orig string) &optional (start 0) (end nil))
   ;; TODO: either do something with start and end, or (declare (ignore start end))
   (let ((str (subseq str-orig start end)))
+    ;; TODO: we can not combine %wadd-wch and %waddstr
+    ;; TODO: writing a normal string waddstr on a wide cchar background causes an SB-KERNEL::CONTROL-STACK-EXHAUSTED-ERROR
     (%waddstr (.winptr stream) str)))
+|#
 
 ;;; Character Input Stream
 

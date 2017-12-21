@@ -5,9 +5,7 @@
 
 If the destination coordinates y and x are given, move the cursor
 there first."
+  (when (and y x) (move window y x))
   (let* ((winptr (.winptr window))
-         (chtype (cond ((and y x)
-                        (%mvwinch winptr y x))
-                       (t
-                        (%winch winptr)))))
-    (c2x chtype)))
+         (chtype (%winch winptr)))
+    (chtype2xchar chtype)))

@@ -375,7 +375,7 @@
                 ;; we need to set the window color pair for the :reverse attribute to work
                 (.color-pair sub-window) color-pair
                 ;; we also need the background to have the whole item width colored
-                (.background win) (make-instance 'complex-char :color-pair color-pair)
+                (.background win)        (make-instance 'complex-char :color-pair color-pair)
                 (.background sub-window) (make-instance 'complex-char :color-pair color-pair))) ))))
 
 (defclass dialog-window (menu-window)
@@ -456,7 +456,7 @@
                 ;; we need to set the window color pair for the :reverse attribute to work
                 (.color-pair sub-window) color-pair
                 ;; we also need the background to have the whole item width colored
-                (.background win) (make-instance 'complex-char :color-pair color-pair)
+                (.background win)        (make-instance 'complex-char :color-pair color-pair)
                 (.background sub-window) (make-instance 'complex-char :color-pair color-pair ))) ))))
 
 ;; if a window-position is given during make-instance, it can be simply ignored.
@@ -534,6 +534,7 @@
         (if (%has-colors)
             (progn
               (%start-color)
+              ;; if t, set (:default :default), if nil set (:white :black), which is the ncurses default.
               (set-default-color-pair use-default-colors))
             (error "initialize-instance screen: This terminal does no support colors.")))
       (if input-echoing (%echo) (%noecho))
@@ -546,6 +547,9 @@
 ;; Subwindows must be deleted before the main window can be deleted.
 (defmethod initialize-instance :after ((win sub-window) &key)
   (with-slots (winptr parent height width position relative) win
+    ;; leaving out the size of a window maxes it out to the right and to the bottom
+    (unless width (setf width 0))
+    (unless height (setf height 0))
     ;; just for SUB-WINDOW types
     (when (eq (type-of win) 'sub-window)
       (if relative
@@ -691,25 +695,44 @@
 ;; (setf (.background window nil) xchar)
 ;; (setf (.background window t) xchar) = (setf (.background window) xchar)
 (defgeneric .background (window))
-(defmethod .background ((window window))
-  (slot-value window 'background))
+(defmethod .background ((win window))
+  ;; TODO: compare whether slot and ncurses return equal xchars
+  ;; this isnt the case if we set a ACS char, which gets translated to a code.
+  ;;(let ((slot (slot-value win 'background))
+  ;;  (ncurses (get-background-cchar_t win)))
+  (slot-value win 'background))
+
 (defgeneric (setf .background) (char window &optional apply))
 (defmethod (setf .background) (char (window window) &optional (apply t))
   (setf (slot-value window 'background) char)
-  (set-background-char (slot-value window 'winptr) char apply))
+  ;;(set-background-char (slot-value window 'winptr) char apply))
+  ;; TODO: writing a normal string waddstr on a wide cchar background causes an SB-KERNEL::CONTROL-STACK-EXHAUSTED-ERROR
+  (set-background-cchar_t window char apply))
 
 ;(defgeneric .attributes (window))
 (defmethod .attributes ((window window))
   (slot-value window 'attributes))
 
-;(defgeneric (setf .attributes) (attributes window))
+;;(defgeneric (setf .attributes) (attributes window))
+#|
 (defmethod (setf .attributes) (attributes (window window))
   (let ((added (set-difference attributes (slot-value window 'attributes)))
         (removed (set-difference (slot-value window 'attributes) attributes)))
     (setf (slot-value window 'attributes) attributes)
     (add-attributes window added)
     (remove-attributes window removed)))
+|#
 ;; TODO use %wattron and %wattroff here.
+
+(defmethod (setf .attributes) (attributes (win window))
+  (with-slots ((win-attributes attributes)) win
+    (let ((added   (set-difference     attributes win-attributes))
+          (removed (set-difference win-attributes     attributes)))
+      ;; set the list of attributes to the window slot
+      (setf win-attributes attributes)
+      ;; pass the attrbutes to add and remove to ncurses
+      (add-attributes win added)
+      (remove-attributes win removed))))
 
 ;; we dont want to use set-attributes because it also overwrites the color attribute.
 ;; we want the attributes function to just handle attributes and leave the color alone.
@@ -719,8 +742,9 @@
 ;;   (setf (slot-value window 'attributes) attributes)
 ;;   (set-attributes window attributes))
 
-(defgeneric .color-pair (window))
-(defgeneric (setf .color-pair) (color-pair window))
+;; the generic functions are already implicitly generated above in defclass.
+;;(defgeneric .color-pair (window))
+;;(defgeneric (setf .color-pair) (color-pair window))
 
 (defmethod .color-pair ((window window))
   (slot-value window 'color-pair))

@@ -81,6 +81,7 @@
              (:file "attr")
              (:file "beep")
              (:file "bkgd")
+             (:file "bkgrnd")           ; window complex background manipulation routines
              (:file "border")
              (:file "clear")
              (:file "color")
