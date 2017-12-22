@@ -1207,6 +1207,45 @@
     (refresh scr)
     (get-char scr)))
 
+(defun t12c2 ()
+  "ACS chars not available on all terminals: thick and double line drawing characters.
+
+Tested with xterm, gnome-terminal, st. Doesn't work in the linux console, aterm, eterm."
+  (with-screen (scr)
+    (loop for i from 0 for symbol in
+         '(:thick-upper-left-corner
+           :thick-lower-left-corner
+           :thick-upper-right-corner
+           :thick-lower-right-corner
+           :thick-tee-pointing-right
+           :thick-tee-pointing-left
+           :thick-tee-pointing-up
+           :thick-tee-pointing-down
+           :thick-horizontal-line
+           :thick-vertical-line
+           :thick-crossover-plus)
+       do (progn (move scr (+ 1 (* i 2)) 2)
+                 (add-char scr symbol)
+                 (format scr "  ~S~%~%" symbol)))
+
+    (loop for i from 0 for symbol in
+         '(:double-upper-left-corner
+           :double-lower-left-corner
+           :double-upper-right-corner
+           :double-lower-right-corner
+           :double-tee-pointing-right
+           :double-tee-pointing-left
+           :double-tee-pointing-up
+           :double-tee-pointing-down
+           :double-horizontal-line
+           :double-vertical-line
+           :double-crossover-plus)
+       do (progn (move scr (+ 1 (* i 2)) 40)
+                 (add-char scr symbol)
+                 (format scr "  ~S~%~%" symbol)))
+    (refresh scr)
+    (get-char scr)))
+
 (defun t12d ()
   "Print all graphic alternative chars supported by the non-wide acs_map[128] array.
 
