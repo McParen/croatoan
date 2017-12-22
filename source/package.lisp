@@ -130,7 +130,7 @@
    ;; getyx / get curses cursor and window coordinates
 
    ;; inch / get a character and attributes from a curses window
-   extract-complex-char
+   extract-char
 
    ;; in_wch / extract a wide character and rendition from a window
    extract-wide-char

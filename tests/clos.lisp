@@ -857,9 +857,9 @@
              (box w2)
              (box w3)
 
-             (setf (.background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
+             (setf (.background w1) (make-instance 'complex-char :color-pair '(:white :black)))
              ;; window w2 uses the :default fg and bg color of the terminal, because use-default-colors is t.
-             (setf (.background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
+             (setf (.background w3) (make-instance 'complex-char :color-pair '(:white :black)))
 
              ;; print currently active color pairs to w3
              (format w3 "~A" de.anvi.croatoan::*color-pair-alist*)
@@ -1225,10 +1225,12 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; so we do not really need to access acs_map, like acs is doing.
       ;; we just need to translate chars like #\l to :upper-left-corner
       (loop for i from 33 to 126 do
-           (add-char scr (code-char i)))
+           (add-char scr (code-char i))
+           (add-char scr #\space))
       (terpri scr)
       (loop for i from 33 to 126 do
-           (add-char scr (mem-aref ptr :unsigned-int i)))
+           (add-char scr (mem-aref ptr :unsigned-int i))
+           (add-char scr #\space))
       (refresh scr)
       (get-char scr))))
 
@@ -1484,7 +1486,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((win1 (make-instance 'window :position '(2 2) :border t))
            (win2 (make-instance 'sub-window :parent win1 :height 5 :width 20 :position '(4 4) :border t))
-           (win3 (make-instance 'sub-window :parent win1 :width 20 :position '(4 4) :border t :relative t)))
+           (win3 (make-instance 'sub-window :parent win1           :width 20 :position '(4 4) :border t :relative t)))
       (princ "win1" win1)
       (princ "win2" win2)
       (princ "win3 relative" win3)
@@ -1729,7 +1731,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
             (.stacked sub-menu1) t
             (.stacked sub-menu2) t)
 
-      ;;(setf (.background scr) (make-instance 'complex-char :color-pair (list :black :white)))
+      (setf (.background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
 
       (refresh-stack)
       (event-case (scr event)
@@ -1799,10 +1801,15 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :max-item-length 12
                                 :current-item-mark "> "
                                 :color-pair (list :yellow :red)
-                                :width 60 :border t :enable-fkeys t
+                                :width 60
+                                :border t
+                                :enable-fkeys t
                                 :title "this is my selection dialog"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
+
+      (setf (.background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
+      
       (refresh scr)
       (loop named menu-case
          do
@@ -1834,10 +1841,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :title "this is my checkbox dialog"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
+
+      (setf (.background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
+      
       (refresh scr)
       (loop named menu-case
          do
            (let ((result (select-item menu)))
+             ;; TODO: problem: returning an empty list exits the loop, is this ok?
              (unless result (return-from menu-case))
              (format scr "You chose ~A~%" result)
              (refresh scr)))
@@ -1854,7 +1865,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
         (#\q (return-from event-case))
         ((nil)
          (sleep 0.01)
-         (echo scr #\space
+         (echo-wide-char scr #\space
                    :y (random height)
                    :x (random width)
                    :color-pair (list :black (nth (random 7) colors))))))))
@@ -1918,12 +1929,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (refresh scr)
     (get-char scr)))
 
-;; Tests for insert-char, insert-string, extract-complex-char.
+;; Tests for insert-char, insert-string, extract-char.
 (defun t21 ()
   (with-screen (scr :cursor-visibility nil)
     (move scr 0 0) (add-char scr #\a)
     ;; overwrite b over a
-    (move scr 0 0) (add-char scr #\b)
+    (move scr 0 0)
+    (add-char scr
+              (make-instance 'complex-char :simple-char #\b :attributes (list :bold :underline) :color-pair '(:blue :yellow)))
+    (echo scr
+          (make-instance 'complex-char :simple-char #\e :attributes (list :underline) :color-pair '(:blue :yellow)))
     ;; insert pi before b
     (move scr 0 0) (insert-char scr :pi :color-pair '(:yellow :red))
     ;; insert d before pi
@@ -1931,7 +1946,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     ;; change the attributes of the d
     (move scr 0 0) (change-attributes scr 1 '(:underline) :color-pair '(:green :black))
     ;; extract the complex d from the window, then print its properties.
-    (let ((e (extract-complex-char scr)))
+    (let ((e (extract-char scr)))
       (move scr 1 0)
       ;; format uses print-object specialized on complex-chars
       (format scr "~S~%~S ~S ~S" e (.simple-char e) (.attributes e) (.color-pair e))

@@ -12,6 +12,6 @@ If the destination coordinates y and x are given, move the cursor first."
   (let* ((count (if n n (- (.width window) (cadr (.cursor-position window)))))
          (complex-string (make-instance 'complex-string)))
     (loop for i from 0 to (1- count) do
-         (vector-push-extend (extract-complex-char window) (.complex-char-array complex-string))
+         (vector-push-extend (extract-char window) (.complex-char-array complex-string))
          (move-to window :right))
     complex-string))
