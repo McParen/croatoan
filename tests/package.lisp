@@ -11,6 +11,7 @@
    #:nctest
    #:nctest2
    #:nctest3
+   #:nctest4
 
    ;; unicode.lisp
    #:ut01
