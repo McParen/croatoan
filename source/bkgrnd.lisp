@@ -30,14 +30,17 @@ Otherwise, it is applied only to newly added simple characters."
     (funcall fn (.winptr window) ptr)
     ;; the slot cchar-chars is a a pointer to the wchar_t array.
     (let* ((char (mem-aref (foreign-slot-pointer ptr '(:struct cchar_t) 'cchar-chars) 'wchar_t 0))
-           ;; the color pair is not placed into the cchar_t slot ext_color, but ORed into the attribute int.
-           ;; TODO: is this still the case with ABI6??
-           ;;(col (foreign-slot-value ptr '(:struct cchar_t) 'cchar-colors))
+           ;; ABI6
+           (col (foreign-slot-value ptr '(:struct cchar_t) 'cchar-colors))
            (attr (foreign-slot-value ptr '(:struct cchar_t) 'cchar-attr)))
       (make-instance 'complex-char
                      :simple-char (code-char char)
                      :attributes (chtype2attrs attr)
-                     :color-pair (chtype2colors attr) ))))
+                     ;; ABI6
+                     ;;:color-pair (number->pair col)
+                     ;; ABI5
+                     ;; the color pair is not placed into the cchar_t slot, but ORed into the attribute int.
+                     :color-pair (chtype2colors attr)))))
 
 (defun get-background-cchar_t (window)
   "Return the wide complex char that is the background character of the window."

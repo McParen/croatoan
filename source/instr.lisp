@@ -11,26 +11,15 @@ window. If n is given, read at most n chars.
 
 If the destination coordinates y and x are given, move the cursor to
 the destination first."
-  (with-foreign-pointer (string 200 len)
-    ;; zero the result string.
-    (setf (mem-ref string :char (1- len)) 0)
-    ;; populate the foreign string with chars.
-    ;; the c routines return ERR (-1) or the number of chars extracted.
-    (let ((retval (cond ((and y x n)
-                         (%mvwinnstr (.winptr window) y x string n))
-                        ((and y x)
-                         (%mvwinstr (.winptr window) y x string))
-                        (n
-                         (%winnstr (.winptr window) string n))
-                        (t
-                         (%winstr (.winptr window) string)))))
-      (if (= retval -1)
-          nil
-          ;; convert the char pointer to a lisp string.
-          (foreign-string-to-lisp string)))))
-
-;;; NOTES
-
-;;; TODOs
-
-;; [ ] Reimplement completely in Lisp, using extract-char.
+  (when (and y x) (move window y x))
+  (let ((len (if n n (distance-to-eol window))))
+    (with-foreign-pointer (string len)
+      ;; zero the allocated foreign string first.
+      (setf (mem-ref string :char (1- len)) 0)
+      ;; populate the foreign string with chars.
+      ;; the c routines return ERR (-1) or the number of chars extracted.
+      (let ((retval (%winnstr (.winptr window) string len)))
+        (if (= retval -1)
+            nil
+            ;; convert the char pointer to a lisp string.
+            (foreign-string-to-lisp string))))))

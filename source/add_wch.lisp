@@ -11,7 +11,7 @@ as will fit on the line."
   (when (and y x) (move window y x))
   (let ((count  (if n
                    (if (= n -1)
-                       (- (.width window) (cadr (.cursor-position window)))
+                       (distance-to-eol window)
                        n)
                    1))
         (code-point (typecase char
@@ -67,11 +67,12 @@ If char is a complex char, attributes and color-pair are ignored."
            (keyword (wacs char))
            ;; if we have a complex char, use its own attributes and colors.
            (complex-char (if (.simple-char char)
-                             (typecase (.simple-char char)
-                               (integer (.simple-char char))
-                               (character (char-code (.simple-char char)))
-                               (keyword (wacs (.simple-char char)))
-                               (otherwise (error "unknown character type")))
+                             (let ((sch (.simple-char char)))
+                               (typecase sch
+                                 (integer sch)
+                                 (character (char-code sch))
+                                 (keyword (wacs sch))
+                                 (otherwise (error "unknown character type"))))
                              ;; this means that the default simple char is space, otherwise
                              ;; we can not set complex background chars.
                              ;; TODO: set this here or as initform for complex-char?
@@ -89,7 +90,7 @@ If char is a complex char, attributes and color-pair are ignored."
            (otherwise    (if color-pair         (pair->number color-pair)         0))))
         (count (if n
                    (if (= n -1)
-                       (- (.width window) (cadr (.cursor-position window)))
+                       (distance-to-eol window)
                        n)
                    1)))
     ;; After the parameters are assembled, call the lower-level function that actually

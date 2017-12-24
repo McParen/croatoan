@@ -22,6 +22,14 @@ n is -1, as many chars will be added as will fit on the line."
     ((or integer keyword character complex-char)
      (add-char   window object :attributes attributes :color-pair color-pair :y y :x x :n n))))
 
+(defun distance-to-eol (window)
+  "Return the number of columns from the cursor position to the end of the line in the window."
+  (- (.width window) (cadr (.cursor-position window))))
+
+(defun distance-to-eos (window)
+  "Return the number of lines from the cursor position to the bottom of the window."
+  (- (.height window) (car (.cursor-position window))))
+
 (defun add-char (window char &key attributes color-pair y x n)
   "Add the char to the window, then advance the cursor.
 
@@ -36,7 +44,7 @@ Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
   (let ((winptr (.winptr window))
         (count (if n
                    (if (= n -1)
-                       (- (.width window) (cadr (.cursor-position window)))
+                       (distance-to-eol window)
                        n)
                    1))
         (chtype (make-chtype char attributes color-pair)))
