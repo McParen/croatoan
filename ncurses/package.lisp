@@ -323,12 +323,17 @@
    %wmove
 
    ;; ncurses / CRT screen handling and optimization package
+   chtype
    wchar_t
+   wint_t
+   attr_t
    cchar
    cchar_t
+   ptr-cchar_t
    cchar-attr
    cchar-chars
    cchar-colors
+   mmask_t
    mevent
    %ERROR
    %OK

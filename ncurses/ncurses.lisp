@@ -148,7 +148,7 @@ cchar_t;
 ;; TODO: write meaningsful docstrings here.
 (defcstruct cchar_t
   "C struct containing a wide char, a color pair and attributes."
-  (cchar-attr   attr)
+  (cchar-attr   attr_t)
   (cchar-chars  wchar_t :count 5)
   (cchar-colors :int))
 
@@ -159,7 +159,7 @@ cchar_t;
 ;; TODO: we dont need this any more, everything works now with the cchar_t struct.
 (defcstruct cchar
   "C struct containing a wide char, a color pair and attributes."
-  (cchar-attr   attr)
+  (cchar-attr   attr_t)
   (cchar-chars  wchar_t)
   (cchar-colors :int))
 
