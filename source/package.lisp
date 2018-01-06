@@ -31,7 +31,11 @@
    .width
    .height
    .position
+   .position-y
+   .position-x
    .cursor-position
+   .cursor-position-y
+   .cursor-position-x
    .border
    .stacked
    .visible

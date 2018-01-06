@@ -600,6 +600,39 @@
   (setf (slot-value w 'position) coordinates)
   (%mvwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
+;; The slots position-y and position-x dont exist, but the pseudo accessors
+;; exist for convenience.
+
+(defgeneric .position-y (window))
+(defmethod .position-y ((win window))
+  (%getbegy (slot-value win 'winptr)))
+(defmethod .position-y ((win sub-window))
+  (with-slots (winptr relative) win
+    (if relative
+        (%getpary winptr)
+        (%getbegy winptr))))
+
+(defgeneric .position-x (window))
+(defmethod .position-x ((win window))
+  (%getbegx (slot-value win 'winptr)))
+(defmethod .position-x ((win sub-window))
+  (with-slots (winptr relative) win
+    (if relative
+        (%getparx winptr)
+        (%getbegx winptr))))
+
+(defgeneric (setf .position-y) (y window))
+(defmethod (setf .position-y) (y (win window))
+  (let ((x (cadr (slot-value win 'position))))
+    (setf (slot-value win 'position) (list y x))
+    (%mvwin (slot-value win 'winptr) y x)))
+
+(defgeneric (setf .position-x) (x window))
+(defmethod (setf .position-x) (x (win window))
+  (let ((y (car (slot-value win 'position))))
+    (setf (slot-value win 'position) (list y x))
+    (%mvwin (slot-value win 'winptr) y x)))
+
 ;; "The screen-relative parameters of the window are not changed. 
 ;; This routine is used to display different parts of the parent 
 ;; window at the same physical position on the screen."
@@ -630,6 +663,29 @@
 (defmethod (setf .cursor-position) (coordinates (w window))
   (setf (slot-value w 'cursor-position) coordinates)
   (%wmove (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
+
+;; The slots position-y and position-x dont exist, but the pseudo accessors
+;; exist for convenience.
+
+(defgeneric .cursor-position-y (window))
+(defmethod .cursor-position-y ((win window))
+  (%getcury (slot-value win 'winptr)))
+
+(defgeneric .cursor-position-x (window))
+(defmethod .cursor-position-x ((win window))
+  (%getcurx (slot-value win 'winptr)))
+
+(defgeneric (setf .cursor-position-y) (y window))
+(defmethod (setf .cursor-position-y) (y (win window))
+  (let ((x (cadr (slot-value win 'cursor-position))))
+    (setf (slot-value win 'cursor-position) (list y x))
+    (%wmove (slot-value win 'winptr) y x)))
+
+(defgeneric (setf .cursor-position-x) (x window))
+(defmethod (setf .cursor-position-x) (x (win window))
+  (let ((y (car (slot-value win 'cursor-position))))
+    (setf (slot-value win 'cursor-position) (list y x))
+    (%wmove (slot-value win 'winptr) y x)))
 
 (defgeneric .cursor-visibility (window))
 (defmethod .cursor-visibility ((screen screen))
