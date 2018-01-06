@@ -9,7 +9,8 @@
                                (enable-fkeys   t) 
                                (enable-colors  t)
                                (use-default-colors nil)
-                               (cursor-visibility t))
+                               (cursor-visibility t)
+                               (stacked nil))
                        &body body)
   "Create a screen, evaluate the forms in the body, then cleanly close the screen.
 
@@ -26,7 +27,8 @@ library. Do not run more than one screen at the same time."
                                       :enable-fkeys   ,enable-fkeys
                                       :enable-colors  ,enable-colors
                                       :use-default-colors ,use-default-colors
-                                      :cursor-visibility ,cursor-visibility))
+                                      :cursor-visibility ,cursor-visibility
+                                      :stacked ,stacked))
 
               ;; when an error is signaled and not handled, cleanly end ncurses, print the condition text
               ;; into the repl and get out of the debugger into the repl.
