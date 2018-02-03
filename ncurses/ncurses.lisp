@@ -4,15 +4,22 @@
 ;;; CRT screen handling and optimization package
 ;;; http://invisible-island.net/ncurses/man/ncurses.3x.html
 
-(define-foreign-library libncurses
-#+sb-unicode
+;; The wide multi-byte library is preferred and will be loaded when the underlying lisp system supports unicode.
+(define-foreign-library libncursesw
     (:darwin (:or "libncursesw.6.dylib" "libncursesw.5.dylib" "libncursesw.dylib" "libcurses.dylib"))
-    (:unix (:or "libncursesw.so.6.0" "libncursesw.so.6" "libncursesw.so.5.9" "libncursesw.so.5" "libncursesw.so"))
-#-sb-unicode
-    (:darwin (:or "libncurses.6.dylib" "libncurses.5.dylib" "libncurses.dylib" "libcurses.dylib"))
-    (:unix (:or "libncurses.so.6.0" "libncurses.so.6" "libncurses.so.5.9" "libncurses.so.5" "libncurses.so"))
-    (t     (:default "libncurses")))
+    (:unix   (:or "libncursesw.so.6.1" "libncursesw.so.6.0" "libncursesw.so.6" "libncursesw.so.5.9" "libncursesw.so.5" "libncursesw.so"))
+    (t       (:default "libncursesw")))
 
+#+(or sb-unicode unicode)
+(use-foreign-library libncursesw)
+
+;; Attempt to use the legacy single-byte library only when the lisp implementation doesnt support unicode.
+(define-foreign-library libncurses
+    (:darwin (:or "libncurses.6.dylib" "libncurses.5.dylib" "libncurses.dylib" "libcurses.dylib"))
+    (:unix   (:or "libncurses.so.6.1" "libncurses.so.6.0" "libncurses.so.6" "libncurses.so.5.9" "libncurses.so.5" "libncurses.so"))
+    (t       (:default "libncurses")))
+
+#-(or sb-unicode unicode)
 (use-foreign-library libncurses)
 
 ;;; ------------------------------------------------------------------
