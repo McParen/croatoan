@@ -189,6 +189,4 @@ extern NCURSES_EXPORT_VAR(chtype) acs_map[];
 ;; Example: (acs 'ULCORNER)
 (defun acs (char-name)
   "Take a symbol, return the integer representing the acs char."
-  (if (string= (subseq (%curses-version) 8 11) "6.0")
-      (mem-aref acs-map-array :unsigned-int (char-code (cdr (assoc char-name acs-alist))))
-      (mem-aref acs-map-array :unsigned-long (char-code (cdr (assoc char-name acs-alist))))))
+  (mem-aref acs-map-array 'chtype (char-code (cdr (assoc char-name acs-alist)))))
