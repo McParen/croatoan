@@ -26,7 +26,7 @@ n is -1, as many chars will be added as will fit on the line."
   "Return the number of columns from the cursor position to the end of the line in the window."
   (- (.width window) (cadr (.cursor-position window))))
 
-(defun distance-to-eos (window)
+(defun distance-to-bottom (window)
   "Return the number of lines from the cursor position to the bottom of the window."
   (- (.height window) (car (.cursor-position window))))
 
