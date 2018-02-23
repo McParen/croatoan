@@ -9,7 +9,7 @@
   ((simple-char
     :initarg :simple-char
     :initform nil
-    :type (or null character keyword)
+    :type (or null integer character keyword)
     :accessor .simple-char
     :documentation "Lisp primitive character type, like #\a.")
 
