@@ -2097,12 +2097,12 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (setf (.background sp) (make-instance 'complex-char :color-pair '(:white :red))
             (.background p)  (make-instance 'complex-char :color-pair '(:green :white)))
 
-      (let ((pad-min-y     2)
-            (pad-min-x     2)
-            (screen-min-y  5)
-            (screen-min-x  5)
-            (screen-max-y 10)
-            (screen-max-x 15))
+      (let ((pad-min-y     0)
+            (pad-min-x     0)
+            (screen-min-y  0)
+            (screen-min-x  0)
+            (screen-max-y  5)
+            (screen-max-x 10))
 
       ;; the background screen has to be touched and refreshed on every move,
       ;; otherwise we will see parts of the previously displayed pad still there.
