@@ -2124,3 +2124,41 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
       (close p)
       (close sp))))
+
+(defun t26 ()
+  "Test accessors of window and cursor positions."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility t :enable-colors t :stacked t)
+    (let ((win (make-instance 'window :height 5 :width 20 :position (list 0 0) :stacked t)))
+
+      (setf (.background scr) (make-instance 'complex-char :color-pair '(:white :red))
+            (.background win) (make-instance 'complex-char :color-pair '(:black :yellow)))
+
+      (refresh-stack)
+      (get-char scr)
+      
+      (setf (.position win) (list 2 4))
+      (refresh-stack)
+      (get-char scr)
+
+      (setf (.position-y win) 4)
+      (refresh-stack)
+      (get-char scr)
+
+      (setf (.position-x win) 8)
+      (refresh-stack)
+      (get-char scr)
+
+      (setf (.cursor-position win) (list 0 0))
+      (princ "a" win)
+      (refresh-stack)
+      (get-char scr)
+      
+      (setf (.cursor-position-y win) 2)
+      (princ "b" win)
+      (refresh-stack)
+      (get-char scr)
+
+      (setf (.cursor-position-x win) 4)
+      (princ "c" win)
+      (refresh-stack)
+      (get-char scr))))

@@ -91,6 +91,7 @@
    #:t23
    #:t24
    #:t25
+   #:t26
 
    ;; clos.lisp
    #:matrix
