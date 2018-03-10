@@ -7,6 +7,8 @@
 
    ;; croatoan.lisp
    with-screen
+   with-window
+   with-windows
    event-case
    save-excursion
 

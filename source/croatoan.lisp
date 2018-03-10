@@ -44,6 +44,42 @@ library. Do not run more than one screen at the same time."
      ;; cleanly exit ncurses whatever happens.
      (end-screen)))
 
+(defmacro with-window ((win &rest options) &body body)
+  "Create a window, evaluate the forms in the body, then cleanly close the window.
+
+Pass any arguments to the initialisation of the window object.
+
+Example:
+
+(with-window (win :input-echoing t
+  body)"
+  `(let ((,win (make-instance 'window ,@options)))
+     (unwind-protect
+          (progn
+            ,@body)
+       (close ,win))))
+
+;; see similar macro cffi:with-foreign-objects.
+(defmacro with-windows (bindings &body body)
+  "Create one or more windows, evaluate the forms in the body, then cleanly close the windows.
+
+Pass any arguments to the initialisation of the window objects.
+
+Example:
+
+(with-windows ((win1 :input-echoing t)
+               (win2 :input-echoing t))
+  body)"
+  (if bindings
+      ;; execute the bindings recursively
+      `(with-window ,(car bindings)
+         ;; the cdr is the body
+         (with-windows ,(cdr bindings)
+           ,@body))
+      ;; finally, execute the body.
+      `(progn
+         ,@body)))
+
 (defmacro event-case ((window event &optional mouse-y mouse-x) &body body)
   "Window event loop, events are handled by an implicit case form.
 
