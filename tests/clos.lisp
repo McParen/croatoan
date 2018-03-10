@@ -1519,6 +1519,104 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (close win)
       (close wout))))
 
+(defun remove-nth (n list)
+  (declare
+    (type (integer 0) n)
+    (type list list))
+  "Remove element at nth place from the list, decreasing the length of the list.
+
+Example: (remove-nth 3 '(a b c d e)) => (A B C E)"
+  (assert (>= n 0))
+  (assert (> (length list) n))
+  (if (or (zerop n) (null list))
+    (cdr list)
+    (cons (car list) (remove-nth (1- n) (cdr list)))))
+
+(defun insert-nth (n element list)
+  (declare
+    (type (integer 0) n)
+    (type list list))
+  "Insert element into list at nth place, increasing the length of the list.
+
+Example: (insert-nth 3 'x '(a b c d e)) => (A B C X D E)"
+  (assert (>= n 0))
+  (assert (>= (length list) n))
+  (if (or (zerop n) (null list))
+      (cons element list)
+      (cons (car list) (insert-nth (1- n) element (cdr list)))))
+
+(defun replace-nth (n element list)
+  (declare
+    (type (integer 0) n)
+    (type list list))
+  "Replaces element of list at nth place, not increasing the length of the list.
+
+Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
+  (assert (>= n 0))
+  (assert (>= (length list) n))
+  (if (or (zerop n) (null list))
+      (cons element (cdr list))
+      (cons (car list) (replace-nth (1- n) element (cdr list)))))
+
+;; buffer: (3 2 1)
+;; screen: 123
+;; in the buffer, elements are added to the left and counted from the left.
+;; on the screen, the list is displayed in reverse.
+(defun t16d ()
+  "Use an input buffer instead of extracting the string from the window. Create windows using the with-windows macro."
+  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t)
+    (with-windows ((wout :height (1- (.height scr)) :width (.width scr) :position '(0 0) :enable-scrolling t)
+                   (win  :height 1                  :width (.width scr) :position (list (1- (.height scr)) 0) :enable-fkeys t :input-blocking t))
+      (let ((*standard-output* wout)
+            (inbuf nil) ; input buffer character list
+            (inptr 0))  ; position of the next character in the buffer
+        (event-case (win event)
+          (#\q (return-from event-case))
+          (:left
+           (when (> inptr 0) (decf inptr))
+           (move win 0 inptr))
+          (:right
+           (when (< inptr (length inbuf)) (incf inptr))
+           (move win 0 inptr))
+          (#\newline
+           (when (> (length inbuf) 0)
+             (format t "~A~%" (coerce (reverse inbuf) 'string)) (refresh wout)
+             (setf inbuf nil inptr 0)
+             (clear win)
+             (move win 0 inptr)
+             (refresh win)))
+          (:dc
+           (when (> (length inbuf) inptr)
+             (setf inbuf (remove-nth (- (length inbuf) (1+ inptr)) inbuf))
+             (clear win)
+             (add-string win (coerce (reverse inbuf) 'string))
+             (move win 0 inptr)
+             (refresh win)))
+          (:backspace
+           (when (> inptr 0)
+             (decf inptr)
+             (setf inbuf (remove-nth (- (length inbuf) 1 inptr) inbuf))
+             (clear win)
+             (add-string win (coerce (reverse inbuf) 'string))
+             (move win 0 inptr)
+             (refresh win)))
+          (:ic
+           (format t "(.insert-enabled win) => ~A~%" (.insert-enabled win))
+           (setf (.insert-enabled win) (not (.insert-enabled win)))
+           (format t "(.insert-enabled win) => ~A~%" (.insert-enabled win))
+           (refresh wout))
+          (otherwise
+           (if (= inptr (length inbuf))
+               (setf inbuf (cons event inbuf))
+               (if (.insert-enabled win)
+                   (setf inbuf (insert-nth (- (length inbuf) inptr) event inbuf))
+                   (setf inbuf (replace-nth (- (length inbuf) (1+ inptr)) event inbuf))))
+           (incf inptr)
+           (clear win)
+           (add-string win (coerce (reverse inbuf) 'string))
+           (move win 0 inptr)
+           (refresh win)))))))
+
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
