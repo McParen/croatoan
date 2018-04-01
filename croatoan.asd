@@ -101,14 +101,17 @@
              (:file "insstr")
              (:file "instr")
              (:file "kernel")
-             (:file "menu")             ; curses extension for programming menus
              (:file "mouse")
              (:file "move")
              (:file "panel")
              (:file "refresh")
              (:file "touch")
-             (:file "wresize")))
+             (:file "wresize")
 
+             ;; Extension libraries
+             (:file "form")             ; curses extension for programming forms
+             (:file "menu")))           ; curses extension for programming menus
+             
    ;; tests for both the CFFI ncurses wrappers and the CLOS API.
    (:module "tests"
             :depends-on ("source")

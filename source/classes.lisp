@@ -459,6 +459,66 @@
                 (.background win)        (make-instance 'complex-char :color-pair color-pair)
                 (.background sub-window) (make-instance 'complex-char :color-pair color-pair ))) ))))
 
+(defclass field ()
+  ((position
+    :initarg       :position
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .position
+    :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the field.")
+
+   (height
+    :initarg       :height
+    :initform      1
+    :type          (or null integer)
+    :accessor      .height
+    :documentation "The height (number of lines) of the field. The default is 1, a single-line field.")
+
+   (width
+    :initarg       :width
+    :initform      nil
+    :type          (or null integer)
+    :accessor      .width
+    :documentation "The width of the field.")
+
+   (buffer
+    :initform      nil
+    :type          (or null list)
+    :accessor      .buffer
+    :documentation "List containing the characters in the field.")
+
+   (fill-pointer
+    :initform      0
+    :type          integer
+    :accessor      .fill-pointer
+    :documentation "The current position in the input buffer to which the next character will be written."))
+
+  (:documentation ""))
+
+(defclass form-window (decorated-window)
+  ((fields
+    :initarg       :fields
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .fields
+    :documentation "List of fields.")
+
+   (current-field-number
+    :initform      0
+    :accessor      .current-field-number
+    :type          integer
+    :documentation "Number of the currently selected field."))
+
+  (:documentation ""))
+
+(defmethod initialize-instance :after ((win form-window) &key)
+  (with-slots (winptr height width position sub-window border) win
+    ;; only for form windows
+    (when (eq (type-of win) 'form-window)
+      (setf winptr (%newwin height width (car position) (cadr position)))
+      (setf sub-window
+            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
+
 ;; if a window-position is given during make-instance, it can be simply ignored.
 ;; or we can check for position and signal an error.
 (defclass pad (window)

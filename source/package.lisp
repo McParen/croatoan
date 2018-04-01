@@ -24,6 +24,9 @@
    dialog-window
    pad
    sub-pad
+   field
+   form-window
+   edit
 
    ;; accessors
    .simple-char
@@ -69,6 +72,10 @@
    .message-text
    .message-height
    .message-pad-coordinates
+
+   ;; field
+   .buffer
+   .fill-pointer
    
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add
