@@ -107,7 +107,11 @@
 
    ;; border / create curses borders, horizontal and vertical lines
    box
+   draw-border
 
+   ;; border_set / create curses borders or lines using complex characters and renditions
+   draw-wide-border
+   
    ;; clear / clear all or part of a curses window
    clear
 

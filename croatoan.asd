@@ -83,6 +83,7 @@
              (:file "bkgd")
              (:file "bkgrnd")           ; window complex background manipulation routines
              (:file "border")
+             (:file "border_set")       ; create curses borders or lines using complex characters and renditions
              (:file "clear")
              (:file "color")
              (:file "delch")
