@@ -101,15 +101,15 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
       `(loop :named event-case do
           (multiple-value-bind (,event ,mouse-y ,mouse-x)
               ;; depending on which version of ncurses is loaded, decide which event reader to use.
-              #+sb-unicode (get-wide-event ,window)
-              #-sb-unicode (get-event ,window)
+              #+(or sb-unicode unicode openmcl-unicode-strings) (get-wide-event ,window)
+              #-(or sb-unicode unicode openmcl-unicode-strings) (get-event ,window)
               ;;(print (list ,event mouse-y mouse-x) ,window)
               (case ,event
                 ,@body)))
       `(loop :named event-case do
           ;; depending on which version of ncurses is loaded, decide which event reader to use.
-          (let ((,event #+sb-unicode (get-wide-event ,window)
-                        #-sb-unicode (get-event ,window)))
+          (let ((,event #+(or sb-unicode unicode openmcl-unicode-strings) (get-wide-event ,window)
+                        #-(or sb-unicode unicode openmcl-unicode-strings) (get-event ,window)))
             (case ,event
               ,@body)))))
 
