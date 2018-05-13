@@ -318,6 +318,34 @@
     (refresh scr)
     (get-char scr)))
 
+(defun t02a ()
+  "Set and get a wide character background."
+  (with-screen (scr)
+    ;;(de.anvi.croatoan::funcall-make-cchar_t-ptr #'%wbkgrnd (.winptr scr) 0 0 0 1)
+
+    ;; if we set char 0 as background, ncurses sets char 32 (space), which is obviously the default char.
+    ;; also setting 0 leads to the color pair not being accepted.
+    ;; TODO: check that only graphic chars are set.
+    (setf (.background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair '(:yellow :red)))
+    (get-char scr)
+
+    (move scr 0 0)
+    ;; the low-level function returns the code.
+    (let ((ch (de.anvi.croatoan::get-background-cchar_t scr)))
+      (format scr "ch: ~A~%" ch)
+      (format scr "~A ~A ~A" (char-code (.simple-char ch)) (.attributes ch) (.color-pair ch)))
+
+    (move scr 2 0)
+    ;; the high level interface returns what was set by the high-level setf.
+    ;; TODO: when we set .background to :board, should it return :board or the numeric code point?
+    (let ((ch (.background scr)))
+      (if ch
+          (format scr "~A ~A ~A" (.simple-char ch) (.attributes ch) (.color-pair ch))
+          (format scr "ch: ~A" ch)))
+
+    (refresh scr)
+    (get-char scr)))
+
 ;; read and display chars until a q is pressed, blocking version.
 (defun t03 ()
   (with-screen (scr :input-echoing nil :input-blocking t)
