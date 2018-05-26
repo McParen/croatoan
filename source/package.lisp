@@ -25,8 +25,8 @@
    pad
    sub-pad
    field
+   form
    form-window
-   edit
 
    ;; accessors
    .simple-char
@@ -57,6 +57,7 @@
    .source
    .closed-p
 
+   ;; menu
    .items
    .checklist
    .type
@@ -73,9 +74,11 @@
    .message-height
    .message-pad-coordinates
 
-   ;; field
+   ;; form
    .buffer
    .fill-pointer
+   .fields
+   .current-field-number
    
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add
@@ -128,6 +131,12 @@
    delete-line
    insert-line
 
+   ;; form / curses extension for programming forms
+   draw-field
+   draw-form
+   edit-field
+   edit-form
+   
    ;; getch / get (or push back) characters from curses terminal keyboard
    get-char
    unget-char

@@ -467,6 +467,7 @@
     :accessor      .position
     :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the field.")
 
+   ;; multiline fields not yet supported
    (height
     :initarg       :height
     :initform      1
@@ -481,6 +482,8 @@
     :accessor      .width
     :documentation "The width of the field.")
 
+   ;; TODO: max-height and max-width, to limit the number of lines and cols when scrolling is enabled.
+   
    (buffer
     :initform      nil
     :type          (or null list)
@@ -493,9 +496,9 @@
     :accessor      .fill-pointer
     :documentation "The current position in the input buffer to which the next character will be written."))
 
-  (:documentation ""))
+  (:documentation "A field is an editable part of the screen for user input."))
 
-(defclass form-window (decorated-window)
+(defclass form ()
   ((fields
     :initarg       :fields
     :initform      nil
@@ -509,6 +512,10 @@
     :type          integer
     :documentation "Number of the currently selected field."))
 
+  (:documentation "A form is a list of fields."))
+
+(defclass form-window (form decorated-window)
+  ()
   (:documentation ""))
 
 (defmethod initialize-instance :after ((win form-window) &key)
