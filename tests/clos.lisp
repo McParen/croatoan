@@ -1645,6 +1645,24 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
            (move win 0 inptr)
            (refresh win)))))))
 
+(defun t16e ()
+  "Use the experimental implementation of fields."
+  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
+    (let ((*standard-output* scr)
+          (field (make-instance 'field :position (list 3 20) :width 20)))
+      
+      ;; pressing ^A (for "accept") exits the edit mode
+      (edit-field scr field)
+
+      (clear scr)
+      ;; display the contents of the input buffer of the field
+      (format t "buffer: ~A~%" (.buffer field))
+      (format t "string: ~A" (coerce (reverse (.buffer field)) 'string))
+      (refresh scr)
+
+      ;; wait for keypress, then exit
+      (get-char scr) )))
+
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
