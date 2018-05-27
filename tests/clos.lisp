@@ -1663,6 +1663,36 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       ;; wait for keypress, then exit
       (get-char scr) )))
 
+(defun t16f ()
+  "Use two fields, which then comprise a form."
+  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
+    (let* ((*standard-output* scr)
+           (field1 (make-instance 'field :position (list 3 20) :width 20))
+           (field2 (make-instance 'field :position (list 5 20) :width 20))
+           (field3 (make-instance 'field :position (list 7 20) :width 20))
+           (form (make-instance 'form :fields (list field1 field2 field3))))
+
+      ;; pressing ^A (for "accept") exits the edit mode
+      ;; TAB cycles the fields
+      (edit-form scr form)
+
+      (clear scr)
+
+      ;; display the contents of the input buffer of all fields of the form
+      (format t "buffer1: ~A~%" (.buffer field1))
+      (format t "string1: ~A~%" (coerce (reverse (.buffer field1)) 'string))
+
+      (format t "buffer2: ~A~%" (.buffer field2))
+      (format t "string2: ~A~%" (coerce (reverse (.buffer field2)) 'string))
+
+      (format t "buffer3: ~A~%" (.buffer field3))
+      (format t "string3: ~A" (coerce (reverse (.buffer field3)) 'string))
+
+      (refresh scr)
+
+      ;; wait for keypress, then exit
+      (get-char scr) )))
+
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
