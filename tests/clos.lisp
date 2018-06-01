@@ -944,10 +944,12 @@
 ;; https://www.gnu.org/software/guile-ncurses/manual/html_node/The-curses-panel-library.html
 (defun t09c ()
   "Use a window stack to manage overlapping windows."
-  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :enable-fkeys t :cursor-visibility nil)
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :enable-fkeys t :cursor-visibility nil :stacked t)
     (box scr)
     (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
-    (setf (.stacked scr) t)
+    ;; we have to stack scr because the event loop runs on scr, and this refreshes scr implicitely every time
+    ;; and overlaps the other windows
+    ;;(setf (.stacked scr) t)
 
     (let ((winlst nil)
           (n 0))
