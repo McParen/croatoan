@@ -2338,3 +2338,79 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (princ "c" win)
       (refresh-stack)
       (get-char scr))))
+
+(defun t27 ()
+  "Use run-event-loop and define-event-handler instead of event-case to handle keyboard events."
+  (with-screen (scr :input-echoing nil :input-blocking t)
+
+    ;; q ends the loop.
+    (define-event-handler (scr #\q) #'exit-event-loop)
+
+    ;; a and s add a string to the window.
+    (define-event-handler (scr #\a)
+      (lambda (win event) (format win "Hello there.~%")))
+    (define-event-handler (scr #\s)
+      (lambda (win event) (format win "Dear John.~%")))
+
+    ;; d clears the window.
+    (define-event-handler (scr #\d)
+      (lambda (win event) (clear win)))
+
+    (clear scr)
+    (add-string scr "Type a, s or d. Type q to quit.")
+    (refresh scr)
+
+    (run-event-loop scr)))
+
+(defun t28-hello (win event)
+  (format win "Hello there ~A.~%" event))
+
+(defun t28-clear (win event)
+  (declare (ignore event))
+  (clear win))
+
+(defparameter *t28-event-handlers*
+  `((#\q . ,#'exit-event-loop)
+    (#\a . ,#'t28-hello)
+    (#\d . ,#'t28-clear)))
+
+(defun t28 ()
+  "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
+  (with-screen (scr :input-echoing nil :input-blocking t)
+    (setf (.event-handler-alist scr) *t28-event-handlers*)
+
+    (define-event-handler (scr #\s)
+      (lambda (win event) (format win "Dear John ~A~%" event)))
+
+    ;; Default handler for all events without defined handlers.
+    (define-event-handler (scr :default)
+      (lambda (win event) (format win "Default event handler ~A~%" event)))
+
+    (clear scr)
+    (add-string scr "Type a, s or d. Type q to quit.")
+    (refresh scr)
+
+    (run-event-loop scr)))
+
+(defun t28a ()
+  "Use run-event-loop with non-blocking events."
+  (with-screen (scr :input-echoing nil :input-blocking nil)
+
+    (setf (.event-handler-alist scr) *t28-event-handlers*)
+
+    (define-event-handler (scr #\s)
+      (lambda (win event) (format win "Dear John ~A~%" event)))
+
+    ;; The handler function for the nil event will be called
+    ;; between keyboard events.
+    (define-event-handler (scr nil)
+        (lambda (win event) (format win "sleep ~A " event)))
+
+    (clear scr)
+    (add-string scr "Type a, s or d. Type q to quit.")
+    (refresh scr)
+
+    ;; For the same effect, you can set :input-blocking to 1000.
+    (setf (.frame-rate scr) 1)
+
+    (run-event-loop scr)))

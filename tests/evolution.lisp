@@ -247,8 +247,8 @@
          (sleep 0.001)
          (draw-world-croatoan scr) )))))
 
-;; uses get-event to separate between events and the body, instead of key-pressed-p.
 (defun evolve4 ()
+  "Uses get-event to separate between events and the body, instead of key-pressed-p."
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
     ;(setf (.background scr) (make-instance 'complex-char :color-pair '(:green :white)))
@@ -268,8 +268,8 @@
                (sleep 0.001)
                (draw-world-croatoan scr) ))))))
 
-;; use the event-case macro for event handling.
 (defun evolve5 ()
+  "Use the event-case macro for event handling."
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
 
@@ -285,3 +285,27 @@
        (sleep 0.001)
        (draw-world-croatoan scr)))))
 
+(defun update-game-state (win event)
+  "Main game state update function for evolve6, called during the nil event handling."
+  (declare (ignore event))
+  (update-world)
+  (draw-world-croatoan win))
+
+(defun evolve6 ()
+  "Use the run-event-loop for event handling."
+  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
+    (clear scr)
+
+    (setq *width* (.width scr))
+    (setq *height* (.height scr))
+
+    (define-event-handler (scr #\q) #'exit-event-loop)
+    (define-event-handler (scr nil) #'update-game-state)
+
+    ;; For the same effect, set :input-blocking to 1 milisecond.
+    (setf (.frame-rate scr) 1000)
+
+    ;; Draw the world once before entering the main loop.
+    (draw-world-croatoan scr)
+    
+    (run-event-loop scr)))

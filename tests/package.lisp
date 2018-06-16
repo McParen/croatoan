@@ -96,6 +96,9 @@
    #:t24
    #:t25
    #:t26
+   #:t27
+   #:t28
+   #:t28a
 
    ;; clos.lisp
    #:matrix
@@ -104,4 +107,5 @@
    #:pipes
 
    ;; evolution.lisp
-   #:evolve5 ))
+   #:evolve5
+   #:evolve6))
