@@ -82,6 +82,13 @@
     :type          (or boolean integer)
     :documentation "Input mode: blocking (t), non-blocking (nil) or blocking duration in (positive integer) miliseconds.")
 
+   (frame-rate
+    :initarg       :frame-rate
+    :initform      nil
+    :type          (or null integer)
+    :accessor      .frame-rate
+    :documentation "When input-blocking is nil, sleep for 1/frame-rate seconds between event loop cycles. Has the same effect as setting input-blocking duration, and should thus not be sued simultaneously.xs")
+
    (enable-fkeys
     :initarg       :enable-fkeys
     :initform      nil
@@ -110,6 +117,12 @@
     :accessor      .insert-enabled
     :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting (nil) it.")
 
+   (event-handler-alist
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .event-handler-alist
+    :documentation "Contains the events (characters or keywords) as keys and handlers as values. Used by the run-event-loop function.")
+   
    (background
     :initarg       :background
     :initform      nil

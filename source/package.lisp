@@ -10,6 +10,9 @@
    with-window
    with-windows
    event-case
+   run-event-loop
+   exit-event-loop
+   define-event-handler
    save-excursion
 
    ;; classes
@@ -46,10 +49,12 @@
    .visible
    .winptr
    .input-blocking
+   .frame-rate
    .enable-fkeys
    .enable-scrolling
    .scrolling-region
    .insert-enabled
+   .event-handler-alist
    .background
    .input-echoing
    .input-reading
