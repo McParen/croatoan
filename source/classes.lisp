@@ -521,9 +521,16 @@
 
    (current-field-number
     :initform      0
-    :accessor      .current-field-number
     :type          integer
-    :documentation "Number of the currently selected field."))
+    :accessor      .current-field-number
+    :documentation "Number of the currently selected field.")
+
+   (window
+    :initarg       :window
+    :initform      nil
+    :type          (or null window)
+    :accessor      .window
+    :documentation "Window created separately and then associated with the form."))
 
   (:documentation "A form is a list of fields."))
 
