@@ -140,7 +140,8 @@
    draw-field
    draw-form
    edit-field
-   edit-form
+   edit
+   field-buffer-to-string
    
    ;; getch / get (or push back) characters from curses terminal keyboard
    get-char
