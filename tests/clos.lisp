@@ -1666,32 +1666,25 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (get-char scr) )))
 
 (defun t16f ()
-  "Use two fields, which then comprise a form."
+  "Use the improved form editing function EDIT."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
-    (let* ((*standard-output* scr)
-           (field1 (make-instance 'field :position (list 3 20) :width 20))
+    ;; TODO: give fields individual names
+    (let* ((field1 (make-instance 'field :position (list 3 20) :width 20))
            (field2 (make-instance 'field :position (list 5 20) :width 20))
            (field3 (make-instance 'field :position (list 7 20) :width 20))
-           (form (make-instance 'form :fields (list field1 field2 field3))))
+           (form (make-instance 'form :fields (list field1 field2 field3) :window scr)))
 
       ;; pressing ^A (for "accept") exits the edit mode
       ;; TAB cycles the fields
-      (edit-form scr form)
-
+      (edit form)
       (clear scr)
 
       ;; display the contents of the input buffer of all fields of the form
-      (format t "buffer1: ~A~%" (.buffer field1))
-      (format t "string1: ~A~%" (coerce (reverse (.buffer field1)) 'string))
-
-      (format t "buffer2: ~A~%" (.buffer field2))
-      (format t "string2: ~A~%" (coerce (reverse (.buffer field2)) 'string))
-
-      (format t "buffer3: ~A~%" (.buffer field3))
-      (format t "string3: ~A" (coerce (reverse (.buffer field3)) 'string))
+      ;; use field-buffer-to-string to get the contents of the field buffer as a string instead of a list of chars.
+      (loop for i in (.fields form) do
+        (format scr "~A ~A ~%" (.buffer i) (field-buffer-to-string i)))
 
       (refresh scr)
-
       ;; wait for keypress, then exit
       (get-char scr) )))
 
