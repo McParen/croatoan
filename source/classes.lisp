@@ -525,6 +525,13 @@
     :accessor      .current-field-number
     :documentation "Number of the currently selected field.")
 
+   ;; has to be updated every time the current field number is updated.
+   (current-field
+    :initform      nil
+    :type          (or null field)
+    :accessor      .current-field
+    :documentation "Currently selected field object.")
+   
    (window
     :initarg       :window
     :initform      nil
@@ -533,6 +540,10 @@
     :documentation "Window created separately and then associated with the form."))
 
   (:documentation "A form is a list of fields."))
+
+(defmethod initialize-instance :after ((form form) &key)
+  ;; Initialize the current field as the first field from the fields list.
+  (setf (slot-value form 'current-field) (car (slot-value form 'fields))))
 
 (defclass form-window (form decorated-window)
   ()

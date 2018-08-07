@@ -195,90 +195,98 @@ clear = write space combined with the background char."
 (defun select-prev-field (form)
   "Select the previous field in a form's field list."
   ;;(declare (special form))
-  (with-accessors ((fields .fields) (current-field-number .current-field-number) (win .window)) form
+  (with-accessors ((fields .fields) (current-field-number .current-field-number) (current-field .current-field) (win .window)) form
     ;; use mod to cycle the field list.
-    (setf current-field-number (mod (- current-field-number 1) (length fields))))
+    (setf current-field-number (mod (- current-field-number 1) (length fields)))
+    ;; TODO: before we can set the prev current field, we have to setf the first current field.
+    (setf current-field (nth current-field-number fields)))
   ;; after we switched the field number, we also have to move the cursor.
   (update-cursor-position form))
 
 (defun select-next-field (form)
   "Select the next field in a form's field list."
   ;;(declare (special form))
-  (with-accessors ((fields .fields) (current-field-number .current-field-number) (win .window)) form
+  (with-accessors ((fields .fields) (current-field-number .current-field-number) (current-field .current-field) (win .window)) form
     ;; use mod to cycle the field list.
-    (setf current-field-number (mod (+ current-field-number 1) (length fields))))
+    (setf current-field-number (mod (+ current-field-number 1) (length fields)))
+    (setf current-field (nth current-field-number fields)))
   ;; after we switched the field number, we also have to move the cursor.
   (update-cursor-position form))
 
 (defun move-prev-char (form)
   "Move the cursor to the previous char in the current field."
-  (with-accessors ((fields .fields) (current-field-number .current-field-number) (win .window)) form
-    (let ((current-field (nth current-field-number fields)))
-      (with-accessors ((pos .position) (inptr .fill-pointer)) current-field
+  (with-accessors ((current-field .current-field) (win .window)) form
+      (with-accessors ((inptr .fill-pointer)) current-field
         (when (> inptr 0)
-          (decf inptr)))))
+          (decf inptr))))
         ;; (move win (car pos) (+ (cadr pos) inptr)))
   (update-cursor-position form))
 
 (defun move-next-char (form)
   "Move the cursor to the previous char in the current field."
-  (with-accessors ((fields .fields) (current-field-number .current-field-number) (win .window)) form
-    (let ((current-field (nth current-field-number fields)))
-      (with-accessors ((pos .position) (inbuf .buffer) (inptr .fill-pointer)) current-field
+  (with-accessors ((current-field .current-field) (win .window)) form
+      (with-accessors ((inbuf .buffer) (inptr .fill-pointer)) current-field
         (when (< inptr (length inbuf))
-          (incf inptr)))))
+          (incf inptr))))
         ;; (move win (car pos) (+ (cadr pos) inptr)))
   (update-cursor-position form))
 
 ;; :backspace, delete one char to the left
 (defun delete-prev-char (form)
   "Delete the previous char in the current field, moving the cursor to the left."
-  (with-accessors ((fields .fields) (current-field-number .current-field-number) (win .window)) form
-    (let ((current-field (nth current-field-number fields)))
-      (with-accessors ((pos .position) (inbuf .buffer) (inptr .fill-pointer)) current-field
-        (when (> inptr 0)
-          (decf inptr)
-          (setf inbuf (remove-nth (- (length inbuf) 1 inptr) inbuf))))
-      ;; we dont have to redraw the complete form, just the changed field.
-      (draw-field win current-field))))
+  (with-accessors ((current-field .current-field) (win .window)) form
+    (with-accessors ((inbuf .buffer) (inptr .fill-pointer)) current-field
+      (when (> inptr 0)
+        (decf inptr)
+        (setf inbuf (remove-nth (- (length inbuf) 1 inptr) inbuf))))
+    ;; we dont have to redraw the complete form, just the changed field.
+    (draw-field win current-field)))
 
 ;; :dc, delete one char to the right
 (defun delete-next-char (form)
   "Delete the next char in the current field, not moving the cursor."
-  (with-accessors ((fields .fields) (current-field-number .current-field-number) (win .window)) form
-    (let ((current-field (nth current-field-number fields)))
-      (with-accessors ((pos .position) (inbuf .buffer) (inptr .fill-pointer)) current-field
-        ;; we can only delete to the right if the inptr is not at the end of the inbuf.
-        (when (> (length inbuf) inptr)
-          (setf inbuf (remove-nth (- (length inbuf) (1+ inptr)) inbuf))))
-      (draw-field win current-field))))
+  (with-accessors ((current-field .current-field) (win .window)) form
+    (with-accessors ((inbuf .buffer) (inptr .fill-pointer)) current-field
+      ;; we can only delete to the right if the inptr is not at the end of the inbuf.
+      (when (> (length inbuf) inptr)
+        (setf inbuf (remove-nth (- (length inbuf) (1+ inptr)) inbuf))))
+    (draw-field win current-field)))
 
 ;; TODO: test that char is graphic
-(defun insert-graphic-char (form char)
-  "Add char that to the current field of the form."
-  (with-accessors ((fields .fields) (current-field-number .current-field-number) (win .window)) form
-    (let ((current-field (nth current-field-number fields)))
-      (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer)) current-field
-        (let ((len (length inbuf)))
-          ;; only add chars when we haven reached the max width of the field
-          ;; longer buffers and scrolling are not supported yet.
-          (unless (= len width)
-            ;; if we're at the end of the inbuf
-            (if (= inptr len)
-                ;; just add another char to the inbuf
-                (setf inbuf (cons char inbuf))
-                ;; if we're in the middle of the field, either insert or replace
-                (if (.insert-enabled win)
-                    (setf inbuf (insert-nth  (- len inptr)      char inbuf))
-                    (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf)))))
-          ;; both replacing and inserting advance the cursor
-          (incf inptr)))
-      ;; after were done with editing, redraw the field.
-      (draw-field win current-field))))
+(defun form-add-char (form char)
+  "Add char to the current field of the form."
+  (with-accessors ((current-field .current-field) (win .window)) form
+    (with-accessors ((width .width) (inbuf .buffer) (inptr .fill-pointer)) current-field
+      (let ((len (length inbuf)))
+        ;; only add chars when we haven reached the max width of the field
+        ;; longer buffers and scrolling are not supported yet.
+        (unless (= len width)
+          ;; if we're at the end of the inbuf
+          (if (= inptr len)
+              ;; just add another char to the inbuf
+              (setf inbuf (cons char inbuf))
+              ;; if we're in the middle of the field, either insert or replace
+              (if (.insert-enabled win)
+                  (setf inbuf (insert-nth  (- len inptr)      char inbuf))
+                  (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf)))))
+        ;; both replacing and inserting advance the cursor
+        (incf inptr)))
+    ;; after were done with editing, redraw the field.
+    (draw-field win current-field)))
 
 (defun field-buffer-to-string (field)
   "Return the value of the field buffer (list of chars) as a string."
   (coerce (reverse (.buffer field)) 'string))
+
+(defun debug-print-field-buffer (form event)
+  (declare (ignore event))
+  (with-accessors ((current-field .current-field) (win .window)) form
+    (with-accessors ((inbuf .buffer) (inptr .fill-pointer)) current-field
+      (when (> (length inbuf) 0)
+        (clear win)
+        (format win "~A ~%" (coerce (reverse inbuf) 'string))
+        (setf inbuf nil inptr 0)
+        (draw win form) ))))
 
 ;; here we do not pass the window to the function, but we associate the window with the form in the window slot
 ;; see t16f
@@ -288,49 +296,37 @@ clear = write space combined with the background char."
   ;; we need this only when we want to edit the field values in place instead of returning the form object
   ;;(declare (special form))
   (draw (.window form) form)
-  (with-accessors ((fields .fields) (current-field-number .current-field-number) (win .window)) form
+  (with-accessors ((current-field .current-field) (win .window)) form
     ;; TODO: we need better event handling than a event-case.
     ;; a user needs to be able to pass his own keybindings (alist or hash table)
-    (loop named event-case do
-      ;; TODO: how to recognize function keys here?
-      (let ((event (get-wide-event win))
-            ;; we have to get the current field and its acessors every time we go through the loop.
-            (current-field (nth current-field-number fields)))
-        (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer)) current-field
-          (case event
+    (event-case (win event)
+      ;; Use C-a ^A #\soh 1 to exit the edit loop.
+      ;; TODO: what to return, a form or the buffers?
+      ;; TODO: we need a function and throw-catch so the user can bind his own key to accept the form.
+      ;; TODO: trim left and right spaces before returning
+      (#\soh (return-from event-case nil))
 
-            ;; Use C-a ^A #\soh 1 to exit the edit loop.
-            ;; TODO: what to return, a form or the buffers?
-            ;; TODO: we need a function and throw-catch so the user can bind his own key to accept the form.
-            ;; TODO: trim left and right spaces before returning
-            (#\soh (return-from event-case nil))
-
-            ;; TODO: the parameter form doesnt fit to the (handler win event) form used in run-event-loop.
-            ;; this means that the used cant simply bind these functions to the events
-            ;; how do we reconcile this?
-            ;; maybe accept no arguments and only a rest parameter and every handler has to pick arguments by itself?
+      ;; TODO: the parameter form doesnt fit to the (handler win event) form used in run-event-loop.
+      ;; this means that the used cant simply bind these functions to the events
+      ;; how do we reconcile this?
+      ;; maybe accept no arguments and only a rest parameter and every handler has to pick arguments by itself?
             
-            ;; TAB, C-i, S-TAB (= :btab)
-            ((:btab :up)   (select-prev-field form))
-            ((#\tab :down) (select-next-field form))
-            (:left         (move-prev-char form))
-            (:right        (move-next-char form))
-            (:backspace    (delete-prev-char form))
-            (:dc           (delete-next-char form))
+      ;; TAB, C-i, S-TAB (= :btab)
+      ((:btab :up)   (select-prev-field form))
+      ((#\tab :down) (select-next-field form))
+      (:left         (move-prev-char form))
+      (:right        (move-next-char form))
+      (:backspace    (delete-prev-char form))
+      (:dc           (delete-next-char form))
 
-            ;; for debugging, return prints the content of the buffer and then deletes the buffer
-            ;; PROBLEM: how is the user supposed to add bindings to the event loop?
-            ;; everything we have done here is hard-coding all the keys.
-            ;; TODO: we dont want to define handlers here, the user should define them in his keybindings.
-            (#\newline
-             (when (> (length inbuf) 0)
-               (clear win)
-               (format win "~A ~%" (coerce (reverse inbuf) 'string))
-               (setf inbuf nil inptr 0)
-               (draw win form) ))
+      ;; for debugging, return prints the content of the buffer and then deletes the buffer
+      ;; PROBLEM: how is the user supposed to add bindings to the event loop?
+      ;; everything we have done here is hard-coding all the keys.
+      ;; TODO: we dont want to define handlers here, the user should define them in his keybindings.
+      (#\newline     (debug-print-field-buffer form event))
 
-            ;; toggle insert/overwrite mode
-            (:ic (setf (.insert-enabled win) (not (.insert-enabled win))))
+      ;; toggle insert/overwrite mode
+      (:ic (setf (.insert-enabled win) (not (.insert-enabled win))))
 
-            ;; TODO: try to print only graphic chars.
-            (otherwise (insert-graphic-char form event)) ))))))
+      ;; TODO: try to print only graphic chars.
+      (otherwise (form-add-char form event)) )))
