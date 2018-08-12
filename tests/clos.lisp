@@ -1022,7 +1022,7 @@
                   (let ((ch (get-char scr)))
                     ;; quit on q, print everything else including function keys.
                     (cond ((equal (code-char ch) #\q) (return))
-                          (t (format scr "Char: ~A, Code: ~A~%" ch (code-char ch))))))))
+                          (t (format scr "Code: ~A, Char: ~A~%" ch (code-char ch))))))))
       (close scr))))
 
 ;; cleaner key printing.
@@ -1511,6 +1511,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (when (> n 0) ; only print when the line is not empty.
              (let* ((strin (extract-wide-string win :n n :y 0 :x 0)) 
                     (strout (eval (read-from-string strin))))
+               (print (length strin))
                (princ strin)
                (terpri)
                (add-string wout (format nil "=> ~A~%~%" strout)))
@@ -1672,11 +1673,11 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
     (let* ((field1 (make-instance 'field :position (list 3 20) :width 20))
            (field2 (make-instance 'field :position (list 5 20) :width 20))
            (field3 (make-instance 'field :position (list 7 20) :width 20))
-           (form (make-instance 'form :fields (list field1 field2 field3) :window scr)))
+           (form   (make-instance 'form :fields (list field1 field2 field3))))
 
       ;; pressing ^A (for "accept") exits the edit mode
       ;; TAB cycles the fields
-      (edit form)
+      (edit scr form)
       (clear scr)
 
       ;; display the contents of the input buffer of all fields of the form
@@ -1772,10 +1773,17 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (get-char scr) )))
 
 ;; Display misc system information
+;; https://github.com/rudolfochrist/dotfiles/blob/master/.rc.lisp
 (defun t18 ()
   (with-screen (scr)
     (format scr "Lisp implementation type:    ~A~%" (lisp-implementation-type))
     (format scr "Lisp implementation version: ~A~%" (lisp-implementation-version))
+    (format scr "Machine type (Arch)          ~A~%" (machine-type))
+    (format scr "Machine version (CPU)        ~A~%" (machine-version))
+    (format scr "Software type (OS)           ~A~%" (software-type))
+    (format scr "Software version (OS)        ~A~%" (software-version))
+    (format scr "Machine instance (hostname)  ~A~%" (machine-instance))
+    (format scr "User HOME                    ~A~%" (user-homedir-pathname))
     (format scr "Ncurses version:             ~A~%" (de.anvi.ncurses:%curses-version))
     (format scr "Terminal:                    ~A~%" (%termname))
     (format scr "Colors supported:            ~A~%" (%has-colors))
@@ -2050,6 +2058,7 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
 
+      ;; #x2592 = :board
       (setf (.background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
       
       (refresh scr)
@@ -2179,7 +2188,7 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (move scr 22 1)
       (add scr str :n -1))
     ;; extract the first line as a simple string, then reprint it at line 23
-    (let ((str (extract-string scr :y 0 :x 0 :n 4)))
+    (let ((str (extract-string scr :y 0 :x 0 :n 5)))
       (move scr 23 1)
       (add scr str))
     (refresh scr)
