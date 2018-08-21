@@ -1675,6 +1675,9 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
            (field3 (make-instance 'field :position (list 7 20) :width 20))
            (form   (make-instance 'form :fields (list field1 field2 field3))))
 
+      ;; for debugging, return prints the content of the buffer and then deletes the buffer
+      (define-event-handler (scr #\newline)  #'de.anvi.croatoan::debug-print-field-buffer)
+
       ;; pressing ^A (for "accept") exits the edit mode
       ;; TAB cycles the fields
       (edit scr form)

@@ -283,44 +283,40 @@ clear = write space combined with the background char."
         (setf inbuf nil inptr 0)
         (draw win form) ))))
 
-;; here we do not pass the window to the function, but we associate the window with the form in the window slot
-;; see t16f
+;; see example t16f
 (defun edit (win form)
-  "Let the user edit the form fields, then return the form object."
-  ;; declaring the field special lets the object keep its contents after the edit functions returns
-  ;; we need this only when we want to edit the field values in place instead of returning the form object
-  ;;(declare (special form))
+  "Allow the used to edit the form elements in-place."
   (draw win form)
-  ;; TODO: we need better event handling than a event-case.
-  ;; a user needs to be able to pass his own keybindings (alist or hash table)
-  (event-case (win event)
-    ;; Use C-a ^A #\soh 1 to exit the edit loop.
-    ;; TODO: what to return, a form or the buffers?
-    ;; TODO: we need a function and throw-catch so the user can bind his own key to accept the form.
-    ;; TODO: trim left and right spaces before returning
-    (#\soh (return-from event-case nil))
 
-    ;; TODO: the parameter form doesnt fit to the (handler win event) form used in run-event-loop.
-    ;; this means that the used cant simply bind these functions to the events
-    ;; how do we reconcile this?
-    ;; maybe accept no arguments and only a rest parameter and every handler has to pick arguments by itself?
-            
-    ;; TAB, C-i, S-TAB (= :btab)
-    ((:btab :up)   (select-prev-field win event form))
-    ((#\tab :down) (select-next-field win event form))
-    (:left         (move-prev-char    win event form))
-    (:right        (move-next-char    win event form))
-    (:backspace    (delete-prev-char  win event form))
-    (:dc           (delete-next-char  win event form))
+  ;; for now, some bindings are predefined here in the library.
+  ;; the user can change them or add new ones before calling edit.
 
-    ;; for debugging, return prints the content of the buffer and then deletes the buffer
-    ;; PROBLEM: how is the user supposed to add bindings to the event loop?
-    ;; everything we have done here is hard-coding all the keys.
-    ;; TODO: we dont want to define handlers here, the user should define them in his keybindings.
-    (#\newline     (debug-print-field-buffer win event form))
+  ;; Use C-a ^A #\soh 1 to exit the edit loop.
+  ;; TODO: what to return?
+  (define-event-handler (win #\soh)      #'exit-event-loop)
+  
+  (define-event-handler (win :btab)      #'select-prev-field)
+  (define-event-handler (win :up)        #'select-prev-field)
+  (define-event-handler (win #\tab)      #'select-next-field)
+  (define-event-handler (win :down)      #'select-next-field)
+  (define-event-handler (win :left)      #'move-prev-char)
+  (define-event-handler (win :right)     #'move-next-char)
+  (define-event-handler (win :backspace) #'delete-prev-char)
+  (define-event-handler (win :dc)        #'delete-next-char)
+  
+  ;; TODO: try to print only graphic chars.
+  (define-event-handler (win :default)   #'form-add-char)
 
-    ;; toggle insert/overwrite mode
-    (:ic (setf (.insert-enabled win) (not (.insert-enabled win))))
+  ;; for debugging, return prints the content of the buffer and then deletes the buffer
+  ;; defined by the suer in t16f instead of here.
+  ;;(define-event-handler (win #\newline)  #'debug-print-field-buffer)
 
-    ;; TODO: try to print only graphic chars.
-    (otherwise (form-add-char win event form)) ))
+  (define-event-handler (win :ic)
+    ;; If the optional argument is passed to run-event-loop,
+    ;; the handler functions have to handle it.  
+    (lambda (win event form)
+      (setf (.insert-enabled win) (not (.insert-enabled win)))))
+
+  ;; the optional arg form will be passed by run-event-loop to the
+  ;; event handler functions along with win and event.
+  (run-event-loop win form))
