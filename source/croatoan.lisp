@@ -135,11 +135,13 @@ delay in miliseconds."
   `(setf (slot-value ,window 'event-handler-alist)
          (acons ,event ,handler-function (slot-value ,window 'event-handler-alist))))
 
-(defun run-event-loop (win)
+(defun run-event-loop (win &optional args)
   "Read events from the window, then call predefined event handler functions on the events.
 
 The handlers can be defined by the macro define-event-handler, or by directly setting
-the window's event-handler-alist."
+the window's event-handler-alist.
+
+Args is either a single additional argument passed to the handlers, or a list of arguments."
   ;; provide a non-local exit point so we can exit the loop from an event handler.
   ;; one of the events MUST provide a way to exist the event loop by throw 'event-loop
   ;; example use:
@@ -152,34 +154,49 @@ the window's event-handler-alist."
        (let ((event (get-wide-event win)))
          ;; when event is not nil (it is nil only when input-blocking is nil)
          (if event
+             ;; event-pair = (event . #'handler)
              (let ((event-pair (assoc event (slot-value win 'event-handler-alist))))
                ;; if there is no registered event handler, assoc will return nil
                (if event-pair
-                   ;; if the event handler is defined
-                   (funcall (cdr event-pair) win event)
+                   ;; if the event handler is defined, call it with two arguments, win and event.
+                   ;;(funcall (cdr event-pair) win event)
+                   ;; pass args as a LIST to the handler, not as separate parameters as apply would do.
+
+                   ;; we only want to have to deal with args if an additional argument is passed to run-event-loop
+                   ;; if none are passed, the handlers should only have to take window and event as params.
+                   (if args
+                       (funcall (cdr event-pair) win event args)
+                       (funcall (cdr event-pair) win event))
+
                    ;; if no handler is defined for the event, call the default handler
                    (let ((event-pair (assoc :default (slot-value win 'event-handler-alist))))
                      (if event-pair
                          ;; if a handler for :default is defined
-                         (funcall (cdr event-pair) win event)
+                         (if args
+                             (funcall (cdr event-pair) win event args)
+                             (funcall (cdr event-pair) win event))
+                         
                          ;; if a handler for :default is not defined, the event is ignored.
                          nil)) ))
-             ;; what to do between key presses
+             ;; what to do between key presses (nil event)
              ;; the user has to define a handler for the nil event
              ;; TODO: ensure that the nil event is only processed when :input-blocking is nil (or a delay)
              (let ((event-pair (assoc nil (slot-value win 'event-handler-alist))))
                (if event-pair
                    ;; call the handler associated with the nil event
-                   (funcall (cdr event-pair) win nil)
+                   (if args
+                       (funcall (cdr event-pair) win event args)
+                       (funcall (cdr event-pair) win event))
+                   
                    ;; default action for the nil event when input-blocking is nil
                    nil)
                ;; sleep between the nil events to reduce the CPU load
                (when (.frame-rate win)
                  (sleep (/ 1.0 (.frame-rate win))))) )))))
 
-(defun exit-event-loop (win event)
+(defun exit-event-loop (win event &optional args)
   "Associate this function with an event to exit the event loop."
-  (declare (ignore win event))
+  (declare (ignore win event args))
   (throw 'event-loop :exit-event-loop))
 
 (defmacro save-excursion (window &body body)
