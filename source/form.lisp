@@ -293,25 +293,25 @@ clear = write space combined with the background char."
 
   ;; Use C-a ^A #\soh 1 to exit the edit loop.
   ;; TODO: what to return?
-  (define-event-handler (win #\soh)      #'exit-event-loop)
+  (add-event-handler (win #\soh)      'exit-event-loop)
   
-  (define-event-handler (win :btab)      #'select-prev-field)
-  (define-event-handler (win :up)        #'select-prev-field)
-  (define-event-handler (win #\tab)      #'select-next-field)
-  (define-event-handler (win :down)      #'select-next-field)
-  (define-event-handler (win :left)      #'move-prev-char)
-  (define-event-handler (win :right)     #'move-next-char)
-  (define-event-handler (win :backspace) #'delete-prev-char)
-  (define-event-handler (win :dc)        #'delete-next-char)
+  (add-event-handler (win :btab)      'select-prev-field)
+  (add-event-handler (win :up)        'select-prev-field)
+  (add-event-handler (win #\tab)      'select-next-field)
+  (add-event-handler (win :down)      'select-next-field)
+  (add-event-handler (win :left)      'move-prev-char)
+  (add-event-handler (win :right)     'move-next-char)
+  (add-event-handler (win :backspace) 'delete-prev-char)
+  (add-event-handler (win :dc)        'delete-next-char)
   
   ;; TODO: try to print only graphic chars.
-  (define-event-handler (win :default)   #'form-add-char)
+  (add-event-handler (win :default)   'form-add-char)
 
   ;; for debugging, return prints the content of the buffer and then deletes the buffer
   ;; defined by the suer in t16f instead of here.
-  ;;(define-event-handler (win #\newline)  #'debug-print-field-buffer)
+  ;;(add-event-handler (win #\newline) 'debug-print-field-buffer)
 
-  (define-event-handler (win :ic)
+  (add-event-handler (win :ic)
     ;; If the optional argument is passed to run-event-loop,
     ;; the handler functions have to handle it.  
     (lambda (win event form)

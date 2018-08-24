@@ -12,7 +12,7 @@
    event-case
    run-event-loop
    exit-event-loop
-   define-event-handler
+   add-event-handler
    save-excursion
 
    ;; classes
@@ -54,7 +54,7 @@
    .enable-scrolling
    .scrolling-region
    .insert-enabled
-   .event-handler-alist
+   .event-handlers
    .background
    .input-echoing
    .input-reading

@@ -87,7 +87,7 @@
     :initform      nil
     :type          (or null integer)
     :accessor      .frame-rate
-    :documentation "When input-blocking is nil, sleep for 1/frame-rate seconds between event loop cycles. Has the same effect as setting input-blocking duration, and should thus not be sued simultaneously.xs")
+    :documentation "Set the frame rate in fps (frames per second). When input-blocking is nil, sleep for 1/frame-rate seconds between event loop cycles. Has the same effect as setting input-blocking duration, and should thus not be used simultaneously.")
 
    (enable-fkeys
     :initarg       :enable-fkeys
@@ -117,11 +117,11 @@
     :accessor      .insert-enabled
     :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting (nil) it.")
 
-   (event-handler-alist
+   (event-handlers
     :initform      nil
     :type          (or null cons)
-    :accessor      .event-handler-alist
-    :documentation "Contains the events (characters or keywords) as keys and handlers as values. Used by the run-event-loop function.")
+    :accessor      .event-handlers
+    :documentation "A collection (alist or hash table) containing events (characters, keywords or integers) as keys and handler functions as values. Used by the run-event-loop function.")
    
    (background
     :initarg       :background

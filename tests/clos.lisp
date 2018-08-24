@@ -1676,10 +1676,10 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
            (form   (make-instance 'form :fields (list field1 field2 field3))))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
-      (define-event-handler (scr #\newline)  #'de.anvi.croatoan::debug-print-field-buffer)
+      (add-event-handler (scr #\newline)  'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; pressing ^A (for "accept") exits the edit mode
-      ;; TAB cycles the fields
+      ;; TAB, up and down cycles the fields
       (edit scr form)
       (clear scr)
 
@@ -2345,20 +2345,20 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (get-char scr))))
 
 (defun t27 ()
-  "Use run-event-loop and define-event-handler instead of event-case to handle keyboard events."
+  "Use run-event-loop and add-event-handler instead of event-case to handle keyboard events."
   (with-screen (scr :input-echoing nil :input-blocking t)
 
     ;; q ends the loop.
-    (define-event-handler (scr #\q) #'exit-event-loop)
+    (add-event-handler (scr #\q) #'exit-event-loop)
 
     ;; a and s add a string to the window.
-    (define-event-handler (scr #\a)
+    (add-event-handler (scr #\a)
       (lambda (win event) (format win "Hello there.~%")))
-    (define-event-handler (scr #\s)
+    (add-event-handler (scr #\s)
       (lambda (win event) (format win "Dear John.~%")))
 
     ;; d clears the window.
-    (define-event-handler (scr #\d)
+    (add-event-handler (scr #\d)
       (lambda (win event) (clear win)))
 
     (clear scr)
@@ -2382,13 +2382,15 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
 (defun t28 ()
   "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
   (with-screen (scr :input-echoing nil :input-blocking t)
-    (setf (.event-handler-alist scr) *t28-event-handlers*)
+    (setf (.event-handlers scr) *t28-event-handlers*)
 
-    (define-event-handler (scr #\s)
+    ;; add another event handler
+    (add-event-handler (scr #\s)
       (lambda (win event) (format win "Dear John ~A~%" event)))
 
     ;; Default handler for all events without defined handlers.
-    (define-event-handler (scr :default)
+    ;; The default event handler should not be used to handle the nil event when input-blocking is nil
+    (add-event-handler (scr :default)
       (lambda (win event) (format win "Default event handler ~A~%" event)))
 
     (clear scr)
@@ -2401,21 +2403,22 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
   "Use run-event-loop with non-blocking events."
   (with-screen (scr :input-echoing nil :input-blocking nil)
 
-    (setf (.event-handler-alist scr) *t28-event-handlers*)
+    (setf (.event-handlers scr) *t28-event-handlers*)
 
-    (define-event-handler (scr #\s)
+    (add-event-handler (scr #\s)
       (lambda (win event) (format win "Dear John ~A~%" event)))
 
     ;; The handler function for the nil event will be called
     ;; between keyboard events.
-    (define-event-handler (scr nil)
+    (add-event-handler (scr nil)
         (lambda (win event) (format win "sleep ~A " event)))
 
     (clear scr)
     (add-string scr "Type a, s or d. Type q to quit.")
     (refresh scr)
 
-    ;; For the same effect, you can set :input-blocking to 1000.
+    ;; Set the rate at which the nil event will be handled in fps (frames per second).
+    ;; For the same effect as frame-rate of 1, you can set :input-blocking to 1000 ms.
     (setf (.frame-rate scr) 1)
 
     (run-event-loop scr)))

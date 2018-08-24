@@ -299,8 +299,8 @@
     (setq *width* (.width scr))
     (setq *height* (.height scr))
 
-    (define-event-handler (scr #\q) #'exit-event-loop)
-    (define-event-handler (scr nil) #'update-game-state)
+    (add-event-handler (scr #\q) 'exit-event-loop)
+    (add-event-handler (scr nil) 'update-game-state)
 
     ;; For the same effect, set :input-blocking to 1 milisecond.
     (setf (.frame-rate scr) 1000)

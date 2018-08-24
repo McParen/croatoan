@@ -113,7 +113,7 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
             (case ,event
               ,@body)))))
 
-(defmacro define-event-handler ((window event) handler-function)
+(defmacro add-event-handler ((window event) &body handler-function)
   "Add the event and its handler-function to the window's event handler alist.
 
 The handlers will be called by the run-event-loop when keyboard or mouse events occur.
@@ -132,20 +132,21 @@ Here the main application state can be updated.
 
 Alternatively, to achieve the same effect, input-blocking can be set to a specific
 delay in miliseconds."
-  `(setf (slot-value ,window 'event-handler-alist)
-         (acons ,event ,handler-function (slot-value ,window 'event-handler-alist))))
+  `(setf (slot-value ,window 'event-handlers)
+         ;; we need to make handler-function a &body so it is indented properly by slime.
+         (acons ,event ,@handler-function (slot-value ,window 'event-handlers))))
 
 (defun run-event-loop (win &optional args)
   "Read events from the window, then call predefined event handler functions on the events.
 
-The handlers can be defined by the macro define-event-handler, or by directly setting
-the window's event-handler-alist.
+The handlers can be added by the macro add-event-handler, or by directly setting
+a predefined keymap to the window's event-handlers property.
 
 Args is either a single additional argument passed to the handlers, or a list of arguments."
   ;; provide a non-local exit point so we can exit the loop from an event handler.
   ;; one of the events MUST provide a way to exist the event loop by throw 'event-loop
   ;; example use:
-  ;; (define-event-handler (scr #\q)
+  ;; (add-event-handler (scr #\q)
   ;;   (lambda (win event)
   ;;     (throw 'event-loop :quit)))
   ;; the function exit-event-loop is pre-defined to perform this non-local exit.
@@ -155,7 +156,7 @@ Args is either a single additional argument passed to the handlers, or a list of
          ;; when event is not nil (it is nil only when input-blocking is nil)
          (if event
              ;; event-pair = (event . #'handler)
-             (let ((event-pair (assoc event (slot-value win 'event-handler-alist))))
+             (let ((event-pair (assoc event (slot-value win 'event-handlers))))
                ;; if there is no registered event handler, assoc will return nil
                (if event-pair
                    ;; if the event handler is defined, call it with two arguments, win and event.
@@ -165,11 +166,12 @@ Args is either a single additional argument passed to the handlers, or a list of
                    ;; we only want to have to deal with args if an additional argument is passed to run-event-loop
                    ;; if none are passed, the handlers should only have to take window and event as params.
                    (if args
+                       ;; funcall will call both 'functions by their quoted symbols, and #'function objects.
                        (funcall (cdr event-pair) win event args)
                        (funcall (cdr event-pair) win event))
 
                    ;; if no handler is defined for the event, call the default handler
-                   (let ((event-pair (assoc :default (slot-value win 'event-handler-alist))))
+                   (let ((event-pair (assoc :default (slot-value win 'event-handlers))))
                      (if event-pair
                          ;; if a handler for :default is defined
                          (if args
@@ -181,7 +183,7 @@ Args is either a single additional argument passed to the handlers, or a list of
              ;; what to do between key presses (nil event)
              ;; the user has to define a handler for the nil event
              ;; TODO: ensure that the nil event is only processed when :input-blocking is nil (or a delay)
-             (let ((event-pair (assoc nil (slot-value win 'event-handler-alist))))
+             (let ((event-pair (assoc nil (slot-value win 'event-handlers))))
                (if event-pair
                    ;; call the handler associated with the nil event
                    (if args
