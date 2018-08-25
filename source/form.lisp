@@ -283,40 +283,40 @@ clear = write space combined with the background char."
         (setf inbuf nil inptr 0)
         (draw win form) ))))
 
-;; see example t16f
+(add-keymap :form-default-keymap
+  (make-keymap
+
+    ;; Use C-a ^A #\soh 1 to exit the edit loop.
+    ;; TODO: what should the exit return?
+    #\soh      'exit-event-loop
+   
+    :btab      'select-prev-field
+    :up        'select-prev-field
+    #\tab      'select-next-field
+    :down      'select-next-field
+    :left      'move-prev-char
+    :right     'move-next-char
+    :backspace 'delete-prev-char
+    :dc        'delete-next-char
+
+    :ic        (lambda (win event form)
+                 ;; If an optional argument like form is passed to run-event-loop,
+                 ;; the handler functions have to handle it.  
+                 (setf (.insert-enabled win) (not (.insert-enabled win))))
+
+    ;;#\newline  'debug-print-field-buffer
+    :default   'form-add-char))
+
+;; see t16f
 (defun edit (win form)
   "Allow the used to edit the form elements in-place."
   (draw win form)
 
-  ;; for now, some bindings are predefined here in the library.
-  ;; the user can change them or add new ones before calling edit.
-
-  ;; Use C-a ^A #\soh 1 to exit the edit loop.
-  ;; TODO: what to return?
-  (add-event-handler (win #\soh)      'exit-event-loop)
+  ;; if the user didnt add any event handlers, add the default keymap.
+  (with-accessors ((event-handlers .event-handlers)) win
+    (unless event-handlers
+      (setf event-handlers (get-keymap :form-default-keymap))))
   
-  (add-event-handler (win :btab)      'select-prev-field)
-  (add-event-handler (win :up)        'select-prev-field)
-  (add-event-handler (win #\tab)      'select-next-field)
-  (add-event-handler (win :down)      'select-next-field)
-  (add-event-handler (win :left)      'move-prev-char)
-  (add-event-handler (win :right)     'move-next-char)
-  (add-event-handler (win :backspace) 'delete-prev-char)
-  (add-event-handler (win :dc)        'delete-next-char)
-  
-  ;; TODO: try to print only graphic chars.
-  (add-event-handler (win :default)   'form-add-char)
-
-  ;; for debugging, return prints the content of the buffer and then deletes the buffer
-  ;; defined by the suer in t16f instead of here.
-  ;;(add-event-handler (win #\newline) 'debug-print-field-buffer)
-
-  (add-event-handler (win :ic)
-    ;; If the optional argument is passed to run-event-loop,
-    ;; the handler functions have to handle it.  
-    (lambda (win event form)
-      (setf (.insert-enabled win) (not (.insert-enabled win)))))
-
   ;; the optional arg form will be passed by run-event-loop to the
   ;; event handler functions along with win and event.
   (run-event-loop win form))
