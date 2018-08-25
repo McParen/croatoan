@@ -1667,18 +1667,22 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (get-char scr) )))
 
 (defun t16f ()
-  "Use the improved form editing function EDIT."
+  "Use the improved form editing function."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
-    ;; TODO: give fields individual names
     (let* ((field1 (make-instance 'field :position (list 3 20) :width 20))
            (field2 (make-instance 'field :position (list 5 20) :width 20))
            (field3 (make-instance 'field :position (list 7 20) :width 20))
            (form   (make-instance 'form :fields (list field1 field2 field3))))
 
+      ;; before the form can be edited, a set of predefined event handlers from the default keymap
+      ;; has to be associated with the window.
+      (setf (.event-handlers scr) (get-keymap :form-default-keymap))
+
+      ;; then, additional event handlers can be added.
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
       (add-event-handler (scr #\newline)  'de.anvi.croatoan::debug-print-field-buffer)
 
-      ;; pressing ^A (for "accept") exits the edit mode
+      ;; pressing ^A or C-a (for "accept") exits the edit mode
       ;; TAB, up and down cycles the fields
       (edit scr form)
       (clear scr)
@@ -2349,7 +2353,9 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
   (with-screen (scr :input-echoing nil :input-blocking t)
 
     ;; q ends the loop.
-    (add-event-handler (scr #\q) #'exit-event-loop)
+    (add-event-handler (scr #\q) 'exit-event-loop)
+
+    ;; The event handler function has to take two arguments, the window and the event.
 
     ;; a and s add a string to the window.
     (add-event-handler (scr #\a)
@@ -2375,13 +2381,16 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
   (clear win))
 
 (defparameter *t28-event-handlers*
-  `((#\q . ,#'exit-event-loop)
-    (#\a . ,#'t28-hello)
-    (#\d . ,#'t28-clear)))
+  (make-keymap
+    #\q  'exit-event-loop
+    #\a  't28-hello
+    #\d  't28-clear)
+  "Define a keymap separately and then set it as a window's event handlers before running the event loop.")
 
 (defun t28 ()
   "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
   (with-screen (scr :input-echoing nil :input-blocking t)
+    ;; add the pre-existing event handler alist to the window
     (setf (.event-handlers scr) *t28-event-handlers*)
 
     ;; add another event handler
