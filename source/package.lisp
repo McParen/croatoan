@@ -10,9 +10,13 @@
    with-window
    with-windows
    event-case
+   make-keymap
+   get-keymap
+   add-keymap
    run-event-loop
    exit-event-loop
    add-event-handler
+   remove-event-handler
    save-excursion
 
    ;; classes

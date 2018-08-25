@@ -136,6 +136,30 @@ delay in miliseconds."
          ;; we need to make handler-function a &body so it is indented properly by slime.
          (acons ,event ,@handler-function (slot-value ,window 'event-handlers))))
 
+(defmacro remove-event-handler (window event)
+  "Remove the event and the handler function from a windows event-handlers collection."
+  `(setf (slot-value ,window 'event-handlers)
+         (remove ,event (slot-value ,window 'event-handlers) :key #'car)))
+
+(defparameter *keymaps* nil
+  "An alist of available keymaps that can be read and written by get-keymap and add-keymap.")
+
+(defun make-keymap (&rest args)
+  "Take a list of keys and values, return an event handler keymap.
+
+Currently the keymap is implemented as an alist, but will be converted
+to a hash table in the future."
+  (loop for (i j) on args by #'cddr
+    collect (cons i j)))
+
+(defun get-keymap (keymap-name)
+  "Take a keyword denoting a keymap name, return a keymap object from the global keymap collection."
+  (cdr (assoc keymap-name *keymaps*)))
+
+(defun add-keymap (keymap-name keymap)
+  "Add a keymap by its name to the global keymap collection."
+  (setf *keymaps* (acons keymap-name keymap *keymaps*)))
+
 (defun run-event-loop (win &optional args)
   "Read events from the window, then call predefined event handler functions on the events.
 
