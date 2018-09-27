@@ -5,12 +5,12 @@
 ;; https://invisible-island.net/ncurses/man/form.3x.html
 
 (defun remove-nth (n list)
-  (declare
-    (type (integer 0) n)
-    (type list list))
   "Remove element at nth place from the list, decreasing the length of the list.
 
 Example: (remove-nth 3 '(a b c d e)) => (A B C E)"
+  (declare
+    (type (integer 0) n)
+    (type list list))
   (assert (>= n 0))
   (assert (> (length list) n))
   (if (or (zerop n) (null list))
@@ -18,12 +18,12 @@ Example: (remove-nth 3 '(a b c d e)) => (A B C E)"
     (cons (car list) (remove-nth (1- n) (cdr list)))))
 
 (defun insert-nth (n element list)
-  (declare
-    (type (integer 0) n)
-    (type list list))
   "Insert element into list at nth place, increasing the length of the list.
 
 Example: (insert-nth 3 'x '(a b c d e)) => (A B C X D E)"
+  (declare
+    (type (integer 0) n)
+    (type list list))
   (assert (>= n 0))
   (assert (>= (length list) n))
   (if (or (zerop n) (null list))
@@ -31,12 +31,12 @@ Example: (insert-nth 3 'x '(a b c d e)) => (A B C X D E)"
       (cons (car list) (insert-nth (1- n) element (cdr list)))))
 
 (defun replace-nth (n element list)
-  (declare
-    (type (integer 0) n)
-    (type list list))
   "Replaces element of list at nth place, not increasing the length of the list.
 
 Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
+  (declare
+    (type (integer 0) n)
+    (type list list))
   (assert (>= n 0))
   (assert (>= (length list) n))
   (if (or (zerop n) (null list))
