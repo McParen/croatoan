@@ -33,7 +33,6 @@
    sub-pad
    field
    form
-   form-window
 
    ;; accessors
    .simple-char
@@ -85,9 +84,7 @@
 
    ;; form
    .buffer
-   .fill-pointer
    .fields
-   .current-field-number
    
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add
@@ -141,9 +138,9 @@
    insert-line
 
    ;; form / curses extension for programming forms
-   draw-field
-   draw-form
-   edit-field
+   remove-nth
+   replace-nth
+   insert-nth
    edit
    field-buffer-to-string
    

@@ -1550,45 +1550,6 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (close win)
       (close wout))))
 
-(defun remove-nth (n list)
-  (declare
-    (type (integer 0) n)
-    (type list list))
-  "Remove element at nth place from the list, decreasing the length of the list.
-
-Example: (remove-nth 3 '(a b c d e)) => (A B C E)"
-  (assert (>= n 0))
-  (assert (> (length list) n))
-  (if (or (zerop n) (null list))
-    (cdr list)
-    (cons (car list) (remove-nth (1- n) (cdr list)))))
-
-(defun insert-nth (n element list)
-  (declare
-    (type (integer 0) n)
-    (type list list))
-  "Insert element into list at nth place, increasing the length of the list.
-
-Example: (insert-nth 3 'x '(a b c d e)) => (A B C X D E)"
-  (assert (>= n 0))
-  (assert (>= (length list) n))
-  (if (or (zerop n) (null list))
-      (cons element list)
-      (cons (car list) (insert-nth (1- n) element (cdr list)))))
-
-(defun replace-nth (n element list)
-  (declare
-    (type (integer 0) n)
-    (type list list))
-  "Replaces element of list at nth place, not increasing the length of the list.
-
-Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
-  (assert (>= n 0))
-  (assert (>= (length list) n))
-  (if (or (zerop n) (null list))
-      (cons element (cdr list))
-      (cons (car list) (replace-nth (1- n) element (cdr list)))))
-
 ;; buffer: (3 2 1)
 ;; screen: 123
 ;; in the buffer, elements are added to the left and counted from the left.
@@ -1649,13 +1610,16 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
            (refresh win)))))))
 
 (defun t16e ()
-  "Use the experimental implementation of fields."
+  "Edit a single input field, not part of a form."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
     (let ((*standard-output* scr)
           (field (make-instance 'field :position (list 3 20) :width 20)))
-      
-      ;; pressing ^A (for "accept") exits the edit mode
-      (edit-field scr field)
+
+      (setf (.event-handlers scr) (get-keymap :field-default-keymap))
+      (add-event-handler (scr #\newline)  'de.anvi.croatoan::debug-print-field-buffer)
+
+      ;; pressing ^A (for "accept") exits the edit mode for now
+      (edit scr field)
 
       (clear scr)
       ;; display the contents of the input buffer of the field
@@ -1667,7 +1631,7 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (get-char scr) )))
 
 (defun t16f ()
-  "Use the improved form editing function."
+  "Group several input fields to a form."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
     (let* ((field1 (make-instance 'field :position (list 3 20) :width 20))
            (field2 (make-instance 'field :position (list 5 20) :width 20))
