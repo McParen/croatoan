@@ -43,28 +43,32 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   (declare (special menu))
   (with-accessors ((item .current-item-number) (items .items) (layout .layout) (cyclic-selection .cyclic-selection)
                    (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)) menu
-    (let ((i (car  (rmi2sub layout item)))
-          (j (cadr (rmi2sub layout item))))
+    (let ((i  (car  (rmi2sub layout item)))
+          (j  (cadr (rmi2sub layout item)))
+          (m  (car  layout))
+          (n  (cadr layout))
+          (m0 (car  scrolled-region-start))
+          (n0 (cadr scrolled-region-start))
+          (m1 (car  scrolled-layout))
+          (n1 (cadr scrolled-layout)))
       (if scrolled-layout
           ;; when scrolling is on, the menu is not cycled.
-          (let ((m (car scrolled-layout))
-                (n (cadr scrolled-layout))
-                (m1 (car scrolled-region-start))
-                (n1 (cadr scrolled-region-start)))
+          (progn
             (case event
-              (:up    (if (> i 0) (decf i))
-                      (when (< i m1) (decf m1)))
-              (:down  (if (< i (1- (car layout))) (incf i))
-                      (when (>= i (+ m1 m)) (incf m1)))
-              (:left  (if (> j 0) (decf j))
-                      (when (< j n1) (decf n1)))
-              (:right (if (< j (1- (cadr layout))) (incf j))
-                      (when (>= j (+ n1 n)) (incf n1))))
-            (setf scrolled-region-start (list m1 n1)))
-          ;; scrolling is off
-          (let ((m (car  layout))
-                (n (cadr layout)))
-            (if cyclic-selection
+              (:up    (when (> i 0) (decf i))             ; when not in first row, move one row up
+                      (when (< i m0) (decf m0)))          ; when above region, move region one row up
+              (:down  (when (< i (1- m)) (incf i))        ; when not in last row, move one row down
+                      (when (>= i (+ m0 m1)) (incf m0)))  ; when below region, move region one row down
+              (:left  (when (> j 0) (decf j))             ; when not in first column, move one column left
+                      (when (< j n0) (decf n0)))          ; when left of region, move region one column left
+              (:right (when (< j (1- n)) (incf j))        ; when not in last column, move one column right
+                      (when (>= j (+ n0 n1)) (incf n0)))) ; when right of region, move region one column right
+
+            ;; set new scrolled-region coordinates
+            (setf scrolled-region-start (list m0 n0)))
+
+          ;; when scrolling is off, the menu can be cycled.
+          (if cyclic-selection
                 ;; do cycle through the items
                 (case event
                   (:up    (setf i (mod (1- i) m)))
@@ -76,7 +80,9 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                   (:up    (setf i (max (1- i) 0)))
                   (:down  (setf i (min (1+ i) (1- m))))
                   (:left  (setf j (max (1- j) 0)))
-                  (:right (setf j (min (1+ j) (1- n))))))))
+                  (:right (setf j (min (1+ j) (1- n)))))))
+
+      ;; after updating i,j, update the current-item-number
       (setf item (sub2rmi layout (list i j))))))
 
 (defun format-menu-item (menu item-number)
@@ -112,40 +118,43 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                    (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)
                    (title .title) (border .border) (color-pair .color-pair) (len .max-item-length) (sub-win .sub-window)) menu
     (clear sub-win)
-    (if scrolled-layout
-        ;; when the menu is too big to be displayed at once, only a part
-        ;; is displayed, and the menu can be scrolled
-        ;; draw a menu with a scrolling layout enabled
-        (let ((m (car scrolled-layout))
-              (n (cadr scrolled-layout))
-              (m1 (car scrolled-region-start))
-              (n1 (cadr scrolled-region-start)))
-          (loop for i from 0 to (1- m)
-             do (loop for j from 0 to (1- n)
+    (let ((m  (car  layout))
+          (n  (cadr layout))
+          (m0 (car  scrolled-region-start))
+          (n0 (cadr scrolled-region-start))
+          (m1 (car  scrolled-layout))
+          (n1 (cadr scrolled-layout)))
+      (if scrolled-layout
+          ;; when the menu is too big to be displayed at once, only a part
+          ;; is displayed, and the menu can be scrolled
+          ;; draw a menu with a scrolling layout enabled
+          (loop for i from 0 to (1- m1)
+             do (loop for j from 0 to (1- n1)
                    do
                    ;; the menu is given as a flat list, so we have to access it as a 2d array in row major order
                    ;; TODO: rename to item-number
-                     (let ((item (sub2rmi layout (list (+ m1 i) (+ n1 j)))))
-                       ;;(format menu "~A ~A," j n1)
+                     (let ((item (sub2rmi layout (list (+ m0 i) (+ n0 j)))))
+                       ;;(format menu "~A ~A," j n0)
                        (move sub-win i (* j len))
                        (format-menu-item menu item)
                        ;; change the attributes of the current item
                        (when (= current-item-number item)
                          (move sub-win i (* j len))
-                         (change-attributes sub-win len '(:reverse) ))))))
-        ;; when there is no scrolling, and the whole menu is displayd at once
-        ;; cycling is enabled.
-        (let ((m (car layout))
-              (n (cadr layout)))
+                         (change-attributes sub-win len '(:reverse) )))))
+
+          ;; when there is no scrolling, and the whole menu is displayed at once
+          ;; cycling is enabled.
           (loop for i from 0 to (1- m)
              do (loop for j from 0 to (1- n)
                    do
                      (let ((item (sub2rmi layout (list i j))))
                        (move sub-win i (* j len))
                        (format-menu-item menu item)
+                       ;; change the attributes of the current item
                        (when (= current-item-number item)
                          (move sub-win i (* j len))
                          (change-attributes sub-win len '(:reverse) )))))))
+
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
     ;; draw the title only when we have a border too, because we draw the title on top of the border.
@@ -154,7 +163,7 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
       (flet ((make-title-string (len)
                (concatenate 'string "|~" (write-to-string (+ len 2)) ":@<~A~>|")))
         (add menu (format nil (make-title-string (length title)) title) :y 0 :x 2)))
-    ;; todo: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
+    ;; TODO: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
     ;; make refresh specialize on menu and decorated window in a way to do both.
     (refresh menu)
     (refresh sub-win)))
