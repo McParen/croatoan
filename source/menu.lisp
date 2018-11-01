@@ -86,15 +86,25 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
       (setf item (sub2rmi layout (list i j))))))
 
 (defun format-menu-item (menu item-number)
+  "Take a menu and return item item-number as a properly formatted string.
+
+If the menu is a checklist, return [ ] or [X] at the first position.
+
+If a mark is set for the current item, display the mark at the second position.
+Display the same number of spaces for other items.
+
+At the third position, display the item given by item-number."
   (with-accessors ((items .items)
+                   ;; TODO: remove this and incorporate the checkboxes into the items.
                    (checklist .checklist)
                    (type .type)
                    (current-item-number .current-item-number)
                    (mark .current-item-mark)
                    (sub-window .sub-window)) menu
-    (format sub-window "~A~A~A"
-            ;; two types of menus: :selection :checklist
-            ;; only show the checkbox before the item in checklists
+    ;; return as string
+    (format nil "~A~A~A"
+            ;; two types of menus: :selection or :checklist
+            ;; show the checkbox before the item in checklists
             (if (eq type :checklist)
                 (if (nth item-number checklist) "[X] " "[ ] ")
                 "")
@@ -110,13 +120,29 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                 (string item)
                 (menu-item (.name item)))))))
 
+(defun draw-menu-item (menu item-number i j)
+  "Draw the item given by item-number at item position i,j in the sub-window of the menu."
+  (with-accessors ((current-item-number .current-item-number)
+                   (max-item-length .max-item-length)
+                   (sub-window .sub-window)) menu
+    (move sub-window i (* j max-item-length))
+
+    ;; format the item text
+    (let ((item-text (format-menu-item menu item-number)))
+      ;; display it in the sub-window of the menu
+      (format sub-window item-text))
+
+    ;; if the item is the current item, change its attributes
+    (when (= item-number current-item-number)
+      (move sub-window i (* j max-item-length))
+      (change-attributes sub-window max-item-length '(:reverse) ))))
+
 (defgeneric draw-menu (s)
   (:documentation "Draw a menu."))
 
 (defmethod draw-menu ((menu menu-window))
-  (with-accessors ((current-item-number .current-item-number) (mark .current-item-mark) (items .items) (layout .layout)
-                   (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)
-                   (title .title) (border .border) (color-pair .color-pair) (len .max-item-length) (sub-win .sub-window)) menu
+  (with-accessors ((layout .layout) (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)
+                   (title .title) (border .border) (len .max-item-length) (sub-win .sub-window)) menu
     (clear sub-win)
     (let ((m  (car  layout))
           (n  (cadr layout))
@@ -127,33 +153,17 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
       (if scrolled-layout
           ;; when the menu is too big to be displayed at once, only a part
           ;; is displayed, and the menu can be scrolled
-          ;; draw a menu with a scrolling layout enabled
           (loop for i from 0 to (1- m1)
              do (loop for j from 0 to (1- n1)
-                   do
-                   ;; the menu is given as a flat list, so we have to access it as a 2d array in row major order
-                   ;; TODO: rename to item-number
-                     (let ((item (sub2rmi layout (list (+ m0 i) (+ n0 j)))))
-                       ;;(format menu "~A ~A," j n0)
-                       (move sub-win i (* j len))
-                       (format-menu-item menu item)
-                       ;; change the attributes of the current item
-                       (when (= current-item-number item)
-                         (move sub-win i (* j len))
-                         (change-attributes sub-win len '(:reverse) )))))
+                   do (let ((item-number (sub2rmi layout (list (+ m0 i) (+ n0 j)))))
+                        ;; the menu is given as a flat list, so we have to access it as a 2d array in row major order
+                        (draw-menu-item menu item-number i j))))
 
           ;; when there is no scrolling, and the whole menu is displayed at once
-          ;; cycling is enabled.
           (loop for i from 0 to (1- m)
              do (loop for j from 0 to (1- n)
-                   do
-                     (let ((item (sub2rmi layout (list i j))))
-                       (move sub-win i (* j len))
-                       (format-menu-item menu item)
-                       ;; change the attributes of the current item
-                       (when (= current-item-number item)
-                         (move sub-win i (* j len))
-                         (change-attributes sub-win len '(:reverse) )))))))
+                   do (let ((item-number (sub2rmi layout (list i j))))
+                        (draw-menu-item menu item-number i j)))) ))
 
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
@@ -163,13 +173,15 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
       (flet ((make-title-string (len)
                (concatenate 'string "|~" (write-to-string (+ len 2)) ":@<~A~>|")))
         (add menu (format nil (make-title-string (length title)) title) :y 0 :x 2)))
-    ;; TODO: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
+    ;; todo: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
     ;; make refresh specialize on menu and decorated window in a way to do both.
     (refresh menu)
     (refresh sub-win)))
 
+;; TODO: rename to draw. draw-menu is wrong, since it is a dialog, not really a menu.
 (defmethod draw-menu ((menu dialog-window))
   ;; first draw a menu
+  ;; TODO: describe what exactly is drawn here and what in the parent method.
   (call-next-method)
 
   ;; then draw the message in the reserved space above the menu.
@@ -189,7 +201,9 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   "Return the currently selected item of the given menu."
   (nth (.current-item-number menu) (.items menu)))
 
-;; test submenus, test this in t19c
+;; TODO: test submenus, test this in t19c
+;; TODO: rename select-item to select
+;; TODO: use with-accessors above event-case instead of using individual accessors all over the place.
 (defun select-item (menu)
   "Display a menu, let the user select an item, return the selected item.
 
@@ -198,10 +212,18 @@ If the item is itself a menu, recursively display the sub menu."
   ;; TODO: how to better avoid refresh-stack when we have no submenus?
   (when *window-stack* (refresh-stack))
   (draw-menu menu)
+
+  ;; TODO: use the run-event-loop and a keymap instead of event-case.
+  ;; event-case doesnt allow the user to add his own key bindings.
   (event-case (menu event)
-    ((:up :down :left :right) (update-menu menu event) (draw-menu menu))
+    ;; TODO: how to add one handler to several keys when using the run-event-loop?
+    ;; with event-case it is easy because the case macro already provides this functionality.
+    ((:up :down :left :right)
+     (update-menu menu event)
+     (draw-menu menu))
 
     ;; x toggles whether the item is checked or unchecked (if menu type is a checklist)
+    ;; TODO: dont have a type :checklist, make :checked a slot of every item.
     ((#\x #\space)
      (when (eq (.type menu) :checklist)
        (let ((i (.current-item-number menu)))
@@ -214,11 +236,14 @@ If the item is itself a menu, recursively display the sub menu."
      ;; if the menu type is a checklist
      (if (eq (.type menu) :checklist)
          ;; return all checked items in a list.
+         ;; TODO: once we get rid of the checklist type, always return all checked items.
          (with-accessors ((items .items) (checklist .checklist)) menu
            (return-from select-item (loop for i from 0 below (length items) if (nth i checklist) collect (nth i items))))
 
-         ;; else, if the menu type is selection, act on the current item.
+         ;; else, if the menu type is a selection, act on the current item.
+         ;; TODO: provide a current-item slot, so we dont have to get the current item every time.
          (let ((item (current-item menu)))
+           ;; depending on the type of the item
            (typecase item
              ;; if we have just a normal string or a symbol, just return it.
              (symbol
