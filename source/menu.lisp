@@ -41,10 +41,10 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   "Take a menu and an event, update in-place the current item of the menu."
   ;; we need to make menu special in order to setf i in the passed menu object.
   (declare (special menu))
-  (with-accessors ((item .current-item-number) (items .items) (layout .layout) (cyclic-selection .cyclic-selection)
+  (with-accessors ((current-item-number .current-item-number) (layout .layout) (cyclic-selection .cyclic-selection)
                    (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)) menu
-    (let ((i  (car  (rmi2sub layout item)))
-          (j  (cadr (rmi2sub layout item)))
+    (let ((i  (car  (rmi2sub layout current-item-number)))
+          (j  (cadr (rmi2sub layout current-item-number)))
           (m  (car  layout))
           (n  (cadr layout))
           (m0 (car  scrolled-region-start))
@@ -83,7 +83,7 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                   (:right (setf j (min (1+ j) (1- n)))))))
 
       ;; after updating i,j, update the current-item-number
-      (setf item (sub2rmi layout (list i j))))))
+      (setf current-item-number (sub2rmi layout (list i j))))))
 
 (defun format-menu-item (menu item-number)
   "Take a menu and return item item-number as a properly formatted string.
@@ -99,7 +99,7 @@ At the third position, display the item given by item-number."
                    (checklist .checklist)
                    (type .type)
                    (current-item-number .current-item-number)
-                   (mark .current-item-mark)
+                   (current-item-mark .current-item-mark)
                    (sub-window .sub-window)) menu
     ;; return as string
     (format nil "~A~A~A"
@@ -111,8 +111,8 @@ At the third position, display the item given by item-number."
             ;; for the current item, draw the current-item-mark
             ;; for all other items, draw a space
             (if (= current-item-number item-number)
-                mark
-                (make-string (length mark) :initial-element #\space))
+                current-item-mark
+                (make-string (length current-item-mark) :initial-element #\space))
             ;; then add the item
             (let ((item (nth item-number items)))
               (typecase item
@@ -142,7 +142,7 @@ At the third position, display the item given by item-number."
 
 (defmethod draw-menu ((menu menu-window))
   (with-accessors ((layout .layout) (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)
-                   (title .title) (border .border) (len .max-item-length) (sub-win .sub-window)) menu
+                   (title .title) (border .border) (sub-win .sub-window)) menu
     (clear sub-win)
     (let ((m  (car  layout))
           (n  (cadr layout))
@@ -169,6 +169,7 @@ At the third position, display the item given by item-number."
     (touch menu)
     ;; draw the title only when we have a border too, because we draw the title on top of the border.
     (when (and border title)
+      ;; make a format template depending on the length of the title.
       ;; "|~12:@<~A~>|"
       (flet ((make-title-string (len)
                (concatenate 'string "|~" (write-to-string (+ len 2)) ":@<~A~>|")))
