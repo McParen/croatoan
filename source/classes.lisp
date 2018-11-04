@@ -282,10 +282,10 @@
     :initarg       :value
     :initform      nil
     :reader        .value
-    :type          (or string menu-window function)
+    :type          (or symbol string menu-window function)
     :documentation "If the item is not a string, it can be a sub menu or (not yet implemented) a function."))
   
-  (:documentation  "A menu consists of a list of menut items."))
+  (:documentation  "A menu consists of a list of menu items."))
 
 ;; default size of ncurses menus is 16 rows, 1 col.
 (defclass menu-window (decorated-window)
@@ -315,6 +315,12 @@
     :type          integer
     :documentation "Number of the currently selected item.")
 
+   (current-item
+    :initform      nil
+    :type          (or null string symbol menu-item)
+    :accessor      .current-item
+    :documentation "Pointer to the currently selected item object. The first item is initialized as the current item.")
+   
    (current-item-mark
     :initarg       :current-item-mark
     :initform      ""
@@ -356,7 +362,7 @@
     :type          (or null cons)
     :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region."))
 
-  (:documentation  "A menu is a window providing a list of items to be selected by the user."))
+  (:documentation  "A menu is a list of items that can be selected by the user."))
 
 (defmethod initialize-instance :after ((win menu-window) &key)
   (with-slots (winptr items type checklist height width position sub-window border layout scrolled-layout max-item-length
@@ -366,15 +372,21 @@
     (when (eq type :checklist)
       (setf checklist (make-list (length items) :initial-element nil)))
 
+    ;; Initialize the current item as the first field from the items list.
+    ;; If the items list ist not provided upon initialization.
+    (setf (slot-value win 'current-item) (car (slot-value win 'items)))
+    
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
+
       (let ((padding (if border 1 0)))
         ;; if no layout was given, use a vertical list (n 1)
         (unless layout (setf layout (list (length items) 1)))
         ;; if height and width are not given as initargs, they will be calculated,
         ;; according to no of rows +/- border, and _not_ maximized like normal windows.
         (unless height (setf height (+ (* 2 padding) (car (or scrolled-layout layout)))))
-        (unless width (setf width (+ (* 2 padding) (* (cadr layout) (+ (length current-item-mark) max-item-length)))))
+        (unless width  (setf width  (+ (* 2 padding) (* (cadr (or scrolled-layout layout))
+                                                        (+ (length current-item-mark) max-item-length)))))
         (setf winptr (%newwin height width (car position) (cadr position)))
         (setf sub-window
               (make-instance 'sub-window
@@ -517,7 +529,7 @@
     :initform      nil
     :type          (or null cons)
     :accessor      .fields
-    :documentation "List of fields.")
+    :documentation "List of fields. The first field will be initialized as the current field.")
 
    (current-field-number
     :initform      0
