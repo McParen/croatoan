@@ -41,8 +41,9 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   "Take a menu and an event, update in-place the current item of the menu."
   ;; we need to make menu special in order to setf i in the passed menu object.
   (declare (special menu))
-  (with-accessors ((current-item-number .current-item-number) (layout .layout) (cyclic-selection .cyclic-selection)
-                   (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)) menu
+  (with-accessors ((current-item-number .current-item-number) (current-item .current-item) (items .items)
+                   (cyclic-selection .cyclic-selection) (layout .layout) (scrolled-layout .scrolled-layout)
+                   (scrolled-region-start .scrolled-region-start)) menu
     (let ((i  (car  (rmi2sub layout current-item-number)))
           (j  (cadr (rmi2sub layout current-item-number)))
           (m  (car  layout))
@@ -83,7 +84,9 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                   (:right (setf j (min (1+ j) (1- n)))))))
 
       ;; after updating i,j, update the current-item-number
-      (setf current-item-number (sub2rmi layout (list i j))))))
+      (setf current-item-number (sub2rmi layout (list i j)))
+      ;; after updating the current-item-number, update the pointer to the current-item.
+      (setf current-item (nth current-item-number items)) )))
 
 (defun format-menu-item (menu item-number)
   "Take a menu and return item item-number as a properly formatted string.
@@ -95,7 +98,6 @@ Display the same number of spaces for other items.
 
 At the third position, display the item given by item-number."
   (with-accessors ((items .items)
-                   ;; TODO: remove this and incorporate the checkboxes into the items.
                    (checklist .checklist)
                    (type .type)
                    (current-item-number .current-item-number)
@@ -198,69 +200,57 @@ At the third position, display the item given by item-number."
                (third  coords)     ;screen-max-y
                (fourth coords))))) ;screen-max-x
 
-(defun current-item (menu)
-  "Return the currently selected item of the given menu."
-  (nth (.current-item-number menu) (.items menu)))
-
 ;; TODO: test submenus, test this in t19c
-;; TODO: rename select-item to select
-;; TODO: use with-accessors above event-case instead of using individual accessors all over the place.
 (defun select-item (menu)
   "Display a menu, let the user select an item, return the selected item.
 
 If the item is itself a menu, recursively display the sub menu."
-  (setf (.visible menu) t)
-  ;; TODO: how to better avoid refresh-stack when we have no submenus?
-  (when *window-stack* (refresh-stack))
-  (draw-menu menu)
+  (with-accessors ((items .items) (checklist .checklist)
+                   (current-item-number .current-item-number) (current-item .current-item)) menu
+    (setf (.visible menu) t)
+    ;; TODO: how to better avoid refresh-stack when we have no submenus?
+    (when *window-stack* (refresh-stack))
+    (draw-menu menu)
 
-  ;; TODO: use the run-event-loop and a keymap instead of event-case.
-  ;; event-case doesnt allow the user to add his own key bindings.
-  (event-case (menu event)
-    ;; TODO: how to add one handler to several keys when using the run-event-loop?
-    ;; with event-case it is easy because the case macro already provides this functionality.
-    ((:up :down :left :right)
-     (update-menu menu event)
-     (draw-menu menu))
+    (event-case (menu event)
+      ;; TODO: how to add one handler to several keys when using the run-event-loop?
+      ;; with event-case it is easy because the case macro already provides this functionality.
+      ((:up :down :left :right)
+       (update-menu menu event)
+       (draw-menu menu))
 
-    ;; x toggles whether the item is checked or unchecked (if menu type is a checklist)
-    ;; TODO: dont have a type :checklist, make :checked a slot of every item.
-    ((#\x #\space)
-     (when (eq (.type menu) :checklist)
-       (let ((i (.current-item-number menu)))
-         (setf (nth i (.checklist menu))
-               (not (nth i (.checklist menu))))
-         (draw-menu menu))))
+      ;; x toggles whether the item is checked or unchecked (if menu type is a checklist)
+      ((#\x #\space)
+       (when (eq (.type menu) :checklist)
+         (setf (nth current-item-number checklist)
+               (not (nth current-item-number checklist)))
+         (draw-menu menu)))
 
-    ;; ENTER either enters a submenu or returns a selected item.
-    (#\newline
-     ;; if the menu type is a checklist
-     (if (eq (.type menu) :checklist)
-         ;; return all checked items in a list.
-         ;; TODO: once we get rid of the checklist type, always return all checked items.
-         (with-accessors ((items .items) (checklist .checklist)) menu
-           (return-from select-item (loop for i from 0 below (length items) if (nth i checklist) collect (nth i items))))
-
-         ;; else, if the menu type is a selection, act on the current item.
-         ;; TODO: provide a current-item slot, so we dont have to get the current item every time.
-         (let ((item (current-item menu)))
-           ;; depending on the type of the item
-           (typecase item
+      ;; ENTER either enters a submenu or returns a selected item.
+      (#\newline
+       ;; if the menu type is a checklist
+       (if (eq (.type menu) :checklist)
+           ;; if the menu is a checklist, return all checked items in a list.
+           (return-from select-item
+             (loop for i from 0 below (length items) if (nth i checklist) collect (nth i items)))
+           ;; else, if the menu type is a selection, act on the current item depending on the type of the item.
+           (typecase current-item
              ;; if we have just a normal string or a symbol, just return it.
              (symbol
               (setf (.visible menu) nil)
               (when *window-stack* (refresh-stack))
-              (return-from event-case item))
+              (return-from event-case current-item))
              (string
               ;; when an item is selected, hide the menu or submenu, then return the item
               (setf (.visible menu) nil)
               (when *window-stack* (refresh-stack))
-              (return-from event-case item))
-             ;; a more complex item can be a sub menu, or in future, a function.
+              (return-from event-case current-item))
+
+             ;; a more complex item can be a sub menu (or in future, a function).
              (menu-item
-              (when (eq (.type item) :menu)
+              (when (eq (.type current-item) :menu)
                 ;; if the item is a menu, call select-item recursively on the sub-menu
-                (let ((selected-item (select-item (.value item))))
+                (let ((selected-item (select-item (.value current-item))))
                   ;; if we exit the submenu with q without selecting anything, we go back to the parent menu.
                   ;; we only exit the menu completely if something is selected.
                   ;; for all this to work, we have to put the overlapping menu windows in the stack.
@@ -269,11 +259,11 @@ If the item is itself a menu, recursively display the sub menu."
                     ;; when the submenu is exited with q, it returns nil, and we go back to the parent menu.
                     (setf (.visible menu) nil)
                     (when *window-stack* (refresh-stack))
-                    (return-from event-case selected-item)))))))))
+                    (return-from event-case selected-item))))))))
 
     ;; quitting a menu by pressing q just returns NIL
     (#\q
      ;; when q is hit to exit a menu, hide the menu or submenu, then refresh the whole stack.
      (setf (.visible menu) nil)
      (when *window-stack* (refresh-stack))
-     (return-from event-case nil))))
+     (return-from event-case nil)))))

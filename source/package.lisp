@@ -70,6 +70,7 @@
    .checklist
    .type
    .current-item-number
+   .current-item
    .current-item-mark
    .cyclic-selection
    .max-item-length
@@ -205,7 +206,6 @@
    draw-menu
    update-menu
    select-item
-   current-item
 
    ;; mouse / mouse interface through curses
    set-mouse-event
