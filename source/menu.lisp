@@ -101,26 +101,23 @@ At the third position, display the item given by item-number."
                    (checklist .checklist)
                    (type .type)
                    (current-item-number .current-item-number)
-                   (current-item-mark .current-item-mark)
-                   (sub-window .sub-window)) menu
+                   (current-item-mark .current-item-mark)) menu
     ;; return as string
     (format nil "~A~A~A"
             ;; two types of menus: :selection or :checklist
             ;; show the checkbox before the item in checklists
             (if (eq type :checklist)
-                (if (nth item-number checklist) "[X] " "[ ] ")
+                (if (.checked (nth item-number items)) "[X] " "[ ] ")
                 "")
+            
             ;; for the current item, draw the current-item-mark
             ;; for all other items, draw a space
             (if (= current-item-number item-number)
                 current-item-mark
                 (make-string (length current-item-mark) :initial-element #\space))
-            ;; then add the item
-            (let ((item (nth item-number items)))
-              (typecase item
-                (symbol (symbol-name item))
-                (string item)
-                (menu-item (.name item)))))))
+            
+            ;; then add the item name
+            (.name (nth item-number items)) )))
 
 (defun draw-menu-item (menu item-number i j)
   "Draw the item given by item-number at item position i,j in the sub-window of the menu."
@@ -213,53 +210,37 @@ If the item is itself a menu, recursively display the sub menu."
     (draw-menu menu)
 
     (event-case (menu event)
-      ;; TODO: how to add one handler to several keys when using the run-event-loop?
-      ;; with event-case it is easy because the case macro already provides this functionality.
       ((:up :down :left :right)
        (update-menu menu event)
        (draw-menu menu))
 
       ;; x toggles whether the item is checked or unchecked (if menu type is a checklist)
       ((#\x #\space)
-       (when (eq (.type menu) :checklist)
-         (setf (nth current-item-number checklist)
-               (not (nth current-item-number checklist)))
-         (draw-menu menu)))
+       (setf (.checked current-item) (not (.checked current-item)))
+       (draw-menu menu))
 
-      ;; ENTER either enters a submenu or returns a selected item.
+      ;; ENTER either enters a submenu or returns a selected item, the menu is not redrawn.
       (#\newline
-       ;; if the menu type is a checklist
-       (if (eq (.type menu) :checklist)
-           ;; if the menu is a checklist, return all checked items in a list.
-           (return-from select-item
-             (loop for i from 0 below (length items) if (nth i checklist) collect (nth i items)))
-           ;; else, if the menu type is a selection, act on the current item depending on the type of the item.
-           (typecase current-item
-             ;; if we have just a normal string or a symbol, just return it.
-             (symbol
-              (setf (.visible menu) nil)
-              (when *window-stack* (refresh-stack))
-              (return-from event-case current-item))
-             (string
-              ;; when an item is selected, hide the menu or submenu, then return the item
-              (setf (.visible menu) nil)
-              (when *window-stack* (refresh-stack))
-              (return-from event-case current-item))
+       (case (.type menu)
+         (:checklist
+          ;; all checked items in a list.
+          (return-from select-item (loop for i in items if (.checked i) collect i)))
 
-             ;; a more complex item can be a sub menu (or in future, a function).
-             (menu-item
-              (when (eq (.type current-item) :menu)
-                ;; if the item is a menu, call select-item recursively on the sub-menu
-                (let ((selected-item (select-item (.value current-item))))
-                  ;; if we exit the submenu with q without selecting anything, we go back to the parent menu.
-                  ;; we only exit the menu completely if something is selected.
-                  ;; for all this to work, we have to put the overlapping menu windows in the stack.
-                  (when selected-item
-                    ;; when a submenu returns non-nil, hide the parent menu too.
-                    ;; when the submenu is exited with q, it returns nil, and we go back to the parent menu.
-                    (setf (.visible menu) nil)
-                    (when *window-stack* (refresh-stack))
-                    (return-from event-case selected-item))))))))
+         (:selection
+          ;; if the item is a string or symbol, just return it.
+          (cond ((or (typep (.value current-item) 'string)
+                     (typep (.value current-item) 'symbol))
+                 (setf (.visible menu) nil)
+                 (when *window-stack* (refresh-stack))
+                 (return-from event-case (.value current-item)))
+
+                ;; if the item is a menu, recursively select an item from that submenu
+                ((typep (.value current-item) 'menu)
+                 (let ((selected-item (select-item (.value current-item))))
+                   (when selected-item
+                     (setf (.visible menu) nil)
+                     (when *window-stack* (refresh-stack))
+                     (return-from event-case selected-item))))) )))
 
     ;; quitting a menu by pressing q just returns NIL
     (#\q

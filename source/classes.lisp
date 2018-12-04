@@ -268,15 +268,15 @@
     :initarg       :name
     :initform      nil
     :reader        .name
-    :type          (or null string)
+    :type          (or null string symbol)
     :documentation "Short name of a menu item displayed in the menu.")
-   
-   (type
-    :initarg       :type
+
+   (checked
+    :initarg       :checked
     :initform      nil
-    :reader        .type
-    :type          (or null keyword)
-    :documentation "Keyword describing the type of the item: :string :symbol :menu :function")
+    :accessor      .checked
+    :type          boolean
+    :documentation "t if the item has been checked, nil if it hasn't.")
 
    (value
     :initarg       :value
@@ -288,19 +288,13 @@
   (:documentation  "A menu consists of a list of menu items."))
 
 ;; default size of ncurses menus is 16 rows, 1 col.
-(defclass menu-window (decorated-window)
+(defclass menu ()
   ((items
     :initarg       :items
     :initform      nil
     :accessor      .items
     :type          (or null cons)
     :documentation "List of menu items. Item types can be strings, symbols, other menus or (not yet implemented) functions.")
-
-   (checklist
-    :initform      nil
-    :accessor      .checklist
-    :type          (or null cons)
-    :documentation "List holding information about which items have been checked in a checklist menu or dialog. Is created during object initialization.")
 
    (type
     :initarg       :type
@@ -364,21 +358,35 @@
 
   (:documentation  "A menu is a list of items that can be selected by the user."))
 
-(defmethod initialize-instance :after ((win menu-window) &key)
-  (with-slots (winptr items type checklist height width position sub-window border layout scrolled-layout max-item-length
-                      current-item-mark color-pair) win
+(defclass menu-window (menu decorated-window)
+  ()
+  (:documentation "A menu-window is decorated-window providing a list of items to be selected by the user."))
 
-    ;; allow checklists in menus and all derived classes (dialogs).
-    (when (eq type :checklist)
-      (setf checklist (make-list (length items) :initial-element nil)))
+;; init for menus which aren't menu windows
+(defmethod initialize-instance :after ((menu menu) &key)
+  (with-slots (type items current-item) menu
+    ;; Convert strings and symbols to item objects
+    (setf items (mapcar (lambda (x)
+                          (if (typep x 'menu-item)
+                              x
+                              ;; if we have strings, symbols or menus, convert them to menu-items
+                              (make-instance 'menu-item
+                                             :name (typecase x
+                                                     (string x)
+                                                     (symbol (symbol-name x))
+                                                     (menu-window (.title x)))
+                                             :value x)))
+                        ;; apply the function to the init arg passed to make-instance.
+                        items))
 
     ;; Initialize the current item as the first field from the items list.
-    ;; If the items list ist not provided upon initialization.
-    (setf (slot-value win 'current-item) (car (slot-value win 'items)))
-    
+    (setf current-item (car items)) ))
+
+(defmethod initialize-instance :after ((win menu-window) &key)
+  (with-slots (winptr items type height width position sub-window border layout scrolled-layout max-item-length
+                      current-item-mark color-pair) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
-
       (let ((padding (if border 1 0)))
         ;; if no layout was given, use a vertical list (n 1)
         (unless layout (setf layout (list (length items) 1)))
@@ -393,8 +401,6 @@
                              :parent win :height (car (or scrolled-layout layout))
                              :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
                              :position (list padding padding) :relative t))
-
-        ;; TODO: do this once for all menus and dialogs, at the moment it is duplicated
         (when color-pair
           (setf (.color-pair win) color-pair
                 ;; we need to set the window color pair for the :reverse attribute to work
