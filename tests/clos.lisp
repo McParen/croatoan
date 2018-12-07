@@ -1874,11 +1874,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                (refresh scr)))
         (#\q (return-from event-case)))
       (close menu))))
-    
+
 (defun t19c2 ()
   "Test the menu-item class for submenus."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+    (let* ((choices '("Choice 0" choice11 "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            ;; First, create a menu
            ;; TODO: how to determine the position of the sub-menu depending on the parent menu?
@@ -1889,22 +1889,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                      ;;:color-pair (list :black #x666666)
                                      :title "submenu2" :border t :enable-fkeys t :visible nil))
 
-           ;; then create the menu-item with the sub-menu2 as value
-           (item2     (make-instance 'menu-item :name "sub2" :type :menu :value sub-menu2))
-
            ;; then add that menu-item as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
-                                     :items (cons item2 choices) ;; first item is a submenu
+                                     :items (cons sub-menu2 choices) ;; first item is a submenu
                                      :position (list 1 41) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #x999999)
                                      :title "submenu1" :border t :enable-fkeys t :visible nil))
 
-           ;; then create another item with sub-menu1 as value
-           (item1     (make-instance 'menu-item :name "sub1" :type :menu :value sub-menu1))
-
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
-                                     :items (cons item1 choices)  ;; first item is a submenu
+                                     :items (cons sub-menu1 choices)  ;; first item is a submenu
                                      :position (list 0 25) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #xcccccc)
                                      :title "menu" :border t :enable-fkeys t :visible nil)))
@@ -1930,7 +1924,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                (refresh-stack) ))
         ;; TODO: doesnt repaint the border, because the border already has attributes.
         ;; setting a background doesnt change existing attributes, only existing backgrounds.
-        (#\b (setf (.color-pair menu) (list :white :black)))
+        (#\b (setf (.color-pair menu) (list :red :black)))
         ;; "q" exits the function and all menus and submenus.
         (#\q (return-from event-case)))
       (close menu)
@@ -1940,10 +1934,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t19d ()
   "Use the arrow keys to pick a value from an 2D array menu, given as a layout parameter."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5"))
+    (let* ((items (loop for i below 200 collect (format nil "Item ~A" i)))
            (menu (make-instance 'menu-window
-                                :items items :position (list 0 20) :layout (list 2 3) :cyclic-selection nil
-                                :title "t19d" :border t :enable-fkeys t)))
+                                :items items :position (list 0 0) :layout (list 20 10) :scrolled-layout (list 10 4)
+                                :cyclic-selection nil :max-item-length 9 :title "t19d" :border t :enable-fkeys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select-item menu)))
@@ -2036,9 +2030,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (loop named menu-case
          do
            (let ((result (select-item menu)))
-             ;; TODO: problem: returning an empty list exits the loop, is this ok?
+             ;; TODO: returning an empty list exits the loop.
              (unless result (return-from menu-case))
-             (format scr "You chose ~A~%" result)
+             (format scr "You chose ~A~%"
+                     (mapcar (lambda (x) (if x (.value x)))
+                             result))
              (refresh scr)))
       (close menu))))
 
