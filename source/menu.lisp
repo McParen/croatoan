@@ -197,13 +197,11 @@ At the third position, display the item given by item-number."
                (third  coords)     ;screen-max-y
                (fourth coords))))) ;screen-max-x
 
-;; TODO: test submenus, test this in t19c
 (defun select-item (menu)
   "Display a menu, let the user select an item, return the selected item.
 
 If the item is itself a menu, recursively display the sub menu."
-  (with-accessors ((items .items) (checklist .checklist)
-                   (current-item-number .current-item-number) (current-item .current-item)) menu
+  (with-accessors ((items .items) (current-item .current-item)) menu
     (setf (.visible menu) t)
     ;; TODO: how to better avoid refresh-stack when we have no submenus?
     (when *window-stack* (refresh-stack))
@@ -248,3 +246,79 @@ If the item is itself a menu, recursively display the sub menu."
      (setf (.visible menu) nil)
      (when *window-stack* (refresh-stack))
      (return-from event-case nil)))))
+
+(defun return-from-menu (menu return-value)
+  "Set menu to invisible, refresh the window stack, return the value from select."
+  (setf (.visible menu) nil)
+  (when *window-stack* (refresh-stack))
+  (throw 'event-loop return-value))
+
+(defun exit-menu-event-loop (menu-window event)
+  "Associate this function with an event to exit the menu event loop."
+  (return-from-menu menu-window nil))
+
+;; TODO: for items of other types, return the item object.
+(defun accept-selection (menu event)
+  "Return the value of the currently selected item or all checked items."
+  (declare (ignore event))
+  (case (.type menu)
+    (:checklist
+     ;; return all checked items (not their values) in the item list.
+     (throw 'event-loop (loop for i in (.items menu) if (.checked i) collect i)))
+    (:selection
+     (let ((val (.value (.current-item menu))))
+       (cond
+         ;; if the item is a string or symbol, just return it.
+         ((or (typep val 'string)
+              (typep val 'symbol))
+          (return-from-menu menu val))
+         ;; if the item is a menu, recursively select an item from that submenu
+         ((typep val 'menu)
+          (let ((selected-item (select val)))
+            (when selected-item
+              (return-from-menu menu selected-item)))) )))))
+
+(defun update-redraw-menu (menu event)
+  "Update the menu after an event, the redraw the menu."
+  (update-menu menu event)
+  (draw-menu menu))
+
+(defun toggle-item-checkbox (menu event)
+  (setf (.checked (.current-item menu)) (not (.checked (.current-item menu))))
+  (draw-menu menu))
+
+;; window event &optional args
+(add-keymap :menu-default-keymap
+  (make-keymap
+   ;; q doesnt return a value, just nil, i.e. in the case of a checklist, an empty list.
+   #\q       'exit-menu-event-loop
+
+   #\x       'toggle-item-checkbox
+
+   :up       'update-redraw-menu
+   :down     'update-redraw-menu
+   :left     'update-redraw-menu
+   :right    'update-redraw-menu
+
+   ;; there is no :default action, all other events are ignored for menus.
+
+   ;; return the selected item or all checked items, then exit the menu like q.
+   #\newline 'accept-selection))
+
+(defun select (menu)
+  "Display the menu, let the user select an item, return the selected item.
+
+If the item is a menu object, recursively display the sub menu."
+  (setf (.visible menu) t)
+  (when *window-stack* (refresh-stack))
+  (draw-menu menu)
+
+  ;; if the user didnt add any event handlers, add the default keymap.
+  (unless (.event-handlers menu)
+    (setf (.event-handlers menu) (get-keymap :menu-default-keymap)))
+
+  ;; here we can pass the menu to run-event-loop because it is a menu-window.
+  ;; all handler functions have to accept window and event as arguments.
+  ;; the return value of select is the return value of run-event-loop
+  ;; is the value thrown to the catch tag 'event-loop.
+  (run-event-loop menu))

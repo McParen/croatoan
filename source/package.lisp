@@ -206,6 +206,12 @@
    draw-menu
    update-menu
    select-item
+   select
+   return-from-menu
+   exit-menu-event-loop
+   accept-selection
+   update-redraw-menu
+   toggle-item-checkbox
 
    ;; mouse / mouse interface through curses
    set-mouse-event
