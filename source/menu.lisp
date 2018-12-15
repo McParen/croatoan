@@ -119,30 +119,28 @@ At the third position, display the item given by item-number."
             ;; then add the item name
             (.name (nth item-number items)) )))
 
-(defun draw-menu-item (menu item-number i j)
+(defun draw-menu-item (win menu item-number i j)
   "Draw the item given by item-number at item position i,j in the sub-window of the menu."
   (with-accessors ((current-item-number .current-item-number)
-                   (max-item-length .max-item-length)
-                   (sub-window .sub-window)) menu
-    (move sub-window i (* j max-item-length))
+                   (max-item-length .max-item-length)) menu
+    (move win i (* j max-item-length))
 
     ;; format the item text
     (let ((item-text (format-menu-item menu item-number)))
       ;; display it in the sub-window of the menu
-      (format sub-window item-text))
-
+      (format win item-text))
+    
     ;; if the item is the current item, change its attributes
+    ;; TODO: dont use change-attributes, add the correct attributes with add-string.
     (when (= item-number current-item-number)
-      (move sub-window i (* j max-item-length))
-      (change-attributes sub-window max-item-length '(:reverse) ))))
+      (move win i (* j max-item-length))
+      (change-attributes win max-item-length '(:reverse) ))))
 
-(defgeneric draw-menu (s)
-  (:documentation "Draw a menu."))
-
-(defmethod draw-menu ((menu menu-window))
-  (with-accessors ((layout .layout) (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)
-                   (title .title) (border .border) (sub-win .sub-window)) menu
-    (clear sub-win)
+;; draws to any window, not to a sub-window of a menu-window.
+(defmethod draw (window (menu menu))
+  "Draw the menu to the window."
+  (with-accessors ((layout .layout) (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)) menu
+    (clear window)
     (let ((m  (car  layout))
           (n  (cadr layout))
           (m0 (car  scrolled-region-start))
@@ -156,14 +154,22 @@ At the third position, display the item given by item-number."
              do (loop for j from 0 to (1- n1)
                    do (let ((item-number (sub2rmi layout (list (+ m0 i) (+ n0 j)))))
                         ;; the menu is given as a flat list, so we have to access it as a 2d array in row major order
-                        (draw-menu-item menu item-number i j))))
-
+                        (draw-menu-item window menu item-number i j))))
           ;; when there is no scrolling, and the whole menu is displayed at once
           (loop for i from 0 to (1- m)
              do (loop for j from 0 to (1- n)
                    do (let ((item-number (sub2rmi layout (list i j))))
-                        (draw-menu-item menu item-number i j)))) ))
+                        (draw-menu-item window menu item-number i j)))) ))
+    (refresh window)))
 
+(defgeneric draw-menu (s)
+  (:documentation "Draw a menu."))
+
+(defmethod draw-menu ((menu menu-window))
+  "Draw the menu-window."
+  (with-accessors ((title .title) (border .border) (sub-win .sub-window)) menu
+    ;; draw the menu to the sub-window
+    (draw sub-win menu)
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
     ;; draw the title only when we have a border too, because we draw the title on top of the border.
@@ -175,8 +181,7 @@ At the third position, display the item given by item-number."
         (add menu (format nil (make-title-string (length title)) title) :y 0 :x 2)))
     ;; todo: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
     ;; make refresh specialize on menu and decorated window in a way to do both.
-    (refresh menu)
-    (refresh sub-win)))
+    (refresh menu)))
 
 ;; TODO: rename to draw. draw-menu is wrong, since it is a dialog, not really a menu.
 (defmethod draw-menu ((menu dialog-window))
