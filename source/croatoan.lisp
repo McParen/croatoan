@@ -2,7 +2,7 @@
 
 ;;; Define all macros here centrally.
 
-(defmacro with-screen ((screen &key 
+(defmacro with-screen ((screen &key
                                (input-reading  :unbuffered) 
                                (input-blocking t)
                                (input-echoing  t)
@@ -10,7 +10,9 @@
                                (enable-colors  t)
                                (use-default-colors nil)
                                (cursor-visibility t)
-                               (stacked nil))
+                               (stacked nil)
+                               (color-pair nil)
+                               (background nil))
                        &body body)
   "Create a screen, evaluate the forms in the body, then cleanly close the screen.
 
@@ -28,7 +30,9 @@ library. Do not run more than one screen at the same time."
                                       :enable-colors  ,enable-colors
                                       :use-default-colors ,use-default-colors
                                       :cursor-visibility ,cursor-visibility
-                                      :stacked ,stacked))
+                                      :stacked ,stacked
+                                      :color-pair ,color-pair
+                                      :background ,background))
 
               ;; when an error is signaled and not handled, cleanly end ncurses, print the condition text
               ;; into the repl and get out of the debugger into the repl.
@@ -168,7 +172,7 @@ a predefined keymap to the window's event-handlers property.
 
 Args is either a single additional argument passed to the handlers, or a list of arguments."
   ;; provide a non-local exit point so we can exit the loop from an event handler.
-  ;; one of the events MUST provide a way to exist the event loop by throw 'event-loop
+  ;; one of the events MUST provide a way to exit the event loop by throwing 'event-loop
   ;; example use:
   ;; (add-event-handler (scr #\q)
   ;;   (lambda (win event)

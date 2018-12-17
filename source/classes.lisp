@@ -634,15 +634,19 @@
 ;; We cant do this because _all_ auxiliary methods are always used and combined.
 
 (defmethod initialize-instance :after ((win window) &key)
-  (with-slots (winptr height width position) win
+  (with-slots (winptr height width position color-pair background) win
     ;; just for WINDOW types
     (when (eq (type-of win) 'window)
       (unless width (setf width 0))
       (unless height (setf height 0))
-      (setf winptr (%newwin height width (car position) (cadr position))))))
+      (setf winptr (%newwin height width (car position) (cadr position)))
+
+      (when color-pair (setf (.color-pair win) color-pair))
+      (when background (setf (.background win) background)) )))
 
 (defmethod initialize-instance :after ((scr screen) &key)
-  (with-slots (winptr enable-colors use-default-colors cursor-visibility input-echoing input-reading input-blocking enable-fkeys enable-scrolling) scr
+  (with-slots (winptr enable-colors use-default-colors cursor-visibility input-echoing input-reading input-blocking
+                      enable-fkeys enable-scrolling color-pair background) scr
     ;; just for screen window types.
     (when (eq (type-of scr) 'screen)
       (setf winptr (%initscr))
@@ -652,7 +656,11 @@
               (%start-color)
               ;; if t, set (:default :default), if nil set (:white :black), which is the ncurses default.
               (set-default-color-pair use-default-colors))
-            (error "initialize-instance screen: This terminal does no support colors.")))
+            (error "initialize-instance screen: This terminal does not support colors.")))
+
+      (when color-pair (setf (.color-pair scr) color-pair))
+      (when background (setf (.background scr) background))
+      
       (if input-echoing (%echo) (%noecho))
       (set-input-reading scr input-reading)
       (set-cursor-visibility cursor-visibility))))
