@@ -98,7 +98,6 @@ Display the same number of spaces for other items.
 
 At the third position, display the item given by item-number."
   (with-accessors ((items .items)
-                   (checklist .checklist)
                    (type .type)
                    (current-item-number .current-item-number)
                    (current-item-mark .current-item-mark)) menu
@@ -167,23 +166,26 @@ At the third position, display the item given by item-number."
 
 (defmethod draw-menu ((menu menu-window))
   "Draw the menu-window."
-  (with-accessors ((title .title) (border .border) (sub-win .sub-window)) menu
+  (with-accessors ((title .title) (name .name) (border .border) (sub-win .sub-window)) menu
     ;; draw the menu to the sub-window
     (draw sub-win menu)
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
-    ;; draw the title only when we have a border too, because we draw the title on top of the border.
+    ;; draw the title only when we also have a border, because we draw the title on top of the border.
     (when (and border title)
       ;; make a format template depending on the length of the title.
       ;; "|~12:@<~A~>|"
       (flet ((make-title-string (len)
                (concatenate 'string "|~" (write-to-string (+ len 2)) ":@<~A~>|")))
-        (add menu (format nil (make-title-string (length title)) title) :y 0 :x 2)))
+        ;; If there is a title string, take it, otherwise take the name.
+        ;; The name is displayed only if title is t.
+        (let* ((str (if (typep title 'string) title name))
+               (n (length str)))
+          (add menu (format nil (make-title-string n) str) :y 0 :x 2))))
     ;; todo: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
     ;; make refresh specialize on menu and decorated window in a way to do both.
     (refresh menu)))
 
-;; TODO: rename to draw. draw-menu is wrong, since it is a dialog, not really a menu.
 (defmethod draw-menu ((menu dialog-window))
   ;; first draw a menu
   ;; TODO: describe what exactly is drawn here and what in the parent method.
@@ -269,7 +271,7 @@ If the item is itself a menu, recursively display the sub menu."
   (case (.type menu)
     (:checklist
      ;; return all checked items (not their values) in the item list.
-     (throw 'event-loop (loop for i in (.items menu) if (.checked i) collect i)))
+     (return-from-menu menu (loop for i in (.items menu) if (.checked i) collect i)))
     (:selection
      (let ((val (.value (.current-item menu))))
        (cond
@@ -277,6 +279,12 @@ If the item is itself a menu, recursively display the sub menu."
          ((or (typep val 'string)
               (typep val 'symbol))
           (return-from-menu menu val))
+
+         ;; if the item is a function object, call it.
+         ((typep val 'function)
+          (funcall val)
+          (return-from-menu menu (.name (.current-item menu))))
+
          ;; if the item is a menu, recursively select an item from that submenu
          ((typep val 'menu)
           (let ((selected-item (select val)))

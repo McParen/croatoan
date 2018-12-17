@@ -258,10 +258,10 @@
     :initarg       :title
     :initform      nil
     :accessor      .title
-    :type          (or null string)
-    :documentation "Title of the window displayed over the border."))
+    :type          (or boolean string)
+    :documentation "If t, a title of the window will be displayed over the top border."))
 
-  (:documentation  "A decorated-window is a window consisting of a background window for a border and a content window."))
+  (:documentation  "A decorated-window is a window consisting of a background window for a border, a title and a content sub-window."))
 
 (defclass menu-item ()
   ((name
@@ -289,7 +289,14 @@
 
 ;; default size of ncurses menus is 16 rows, 1 col.
 (defclass menu ()
-  ((items
+  ((name
+    :initarg       :name
+    :initform      nil
+    :reader        .name
+    :type          (or null string symbol)
+    :documentation "Name of the menu. (For example for setting the menu-window title, if title is t.)")
+
+   (items
     :initarg       :items
     :initform      nil
     :accessor      .items
@@ -368,13 +375,14 @@
     ;; Convert strings and symbols to item objects
     (setf items (mapcar (lambda (x)
                           (if (typep x 'menu-item)
+                              ;; if an item object is given
                               x
                               ;; if we have strings, symbols or menus, convert them to menu-items
                               (make-instance 'menu-item
                                              :name (typecase x
                                                      (string x)
                                                      (symbol (symbol-name x))
-                                                     (menu-window (.title x)))
+                                                     (menu-window (.name x)))
                                              :value x)))
                         ;; apply the function to the init arg passed to make-instance.
                         items))
