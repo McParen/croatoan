@@ -299,13 +299,13 @@
 
 ;; the same as t01, but hides the window creation and ncurses ending by utilizing the with-screen macro.
 (defun t02 ()
-  (with-screen (scr)
-    (setf (.color-pair scr) '(:red :yellow))
+  (with-screen (scr :color-pair (list :yellow :red))
     (clear scr)
     (move scr 0 0)
     (add-string scr "hello there!")
     (move scr 3 6)
     (add-string scr "dear john!")
+    (setf (.color-pair scr) '(:red :yellow))
     (move scr 3 3 :relative t)
     (add-string scr "call me maybe!")
     ;; setting the cursor position directly instead of using move
