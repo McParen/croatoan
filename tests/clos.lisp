@@ -1966,6 +1966,34 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (refresh scr)))
       (close menu))))
 
+(defun t19e2 ()
+  "A menu bar and submenus."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((items1 (list "Choice 0" "Choice11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+                          "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
+           (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :scrolled-layout (list 6 1)
+                                     :title nil :name "submenu1" :border t :enable-fkeys t :visible nil :type :selection))
+           (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :scrolled-layout (list 6 1)
+                                     :title nil :name "submenu2" :border t :enable-fkeys t :visible nil :type :checklist))
+           (fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr))))
+           (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
+           (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :layout (list 1 (length items2))
+                                :max-item-length 15 :width (.width scr) :border t :enable-fkeys t)))
+      (setf (.stacked scr) t
+            (.stacked menu) t
+            (.stacked sub-menu1) t
+            (.stacked sub-menu2) t)
+      (move scr 4 0) ;; start the output at line 4, below the menu bar.    
+      (refresh-stack)
+      (loop named menu-case
+         do (let ((result (select menu)))
+              (unless result (return-from menu-case))
+              (format scr "You chose ~A~%" result)
+              (refresh-stack)))
+      (close menu)
+      (close sub-menu1)
+      (close sub-menu2) )))
+
 (defun t19f ()
   "A more fancy version of t19a, a yes-no dialog using the class dialog-window."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
