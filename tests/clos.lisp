@@ -1878,8 +1878,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t19c2 ()
   "Test the menu-item class for submenus."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let* ((choices '("Choice 0" choice11 "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
-                      "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
+    (let* ((fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr))))
+           (choices (list "Choice 0" 'choice11 fun1 "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+                          "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            ;; First, create a menu
            ;; TODO: how to determine the position of the sub-menu depending on the parent menu?
            (sub-menu2 (make-instance 'menu-window
@@ -1887,22 +1888,19 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                      :position (list 2 57) :scrolled-layout (list 6 1)
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
-                                     :title "submenu2" :border t :enable-fkeys t :visible nil))
-
-           ;; then add that menu-item as an item to the next menu, and so on.
+                                     :name "submenu2" :title t :border t :enable-fkeys t :visible nil))
+           ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
                                      :position (list 1 41) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #x999999)
-                                     :title "submenu1" :border t :enable-fkeys t :visible nil))
-
+                                     :name "submenu1" :title nil :border t :enable-fkeys t :visible nil))
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
                                      :position (list 0 25) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #xcccccc)
-                                     :title "menu" :border t :enable-fkeys t :visible nil)))
-      
+                                     :name "menu" :title nil :border nil :enable-fkeys t :visible nil)))
       ;; add the menus and submenus to a window stack
       ;; TODO: what to do when the user adds his own windows to the stack?
       ;; then menu windows have to still be on top, so they have to be stacked last or raised.
@@ -1917,7 +1915,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (refresh-stack)
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop by calling select-item
-        (#\a (let ((result (select-item menu)))
+        (#\a (let ((result (select menu)))
                (format scr "You chose ~A~%" result)
                (format scr "~A~%" (.color-pair menu))
                (format scr "Stack ~A~%" (length de.anvi.croatoan::*window-stack*))
