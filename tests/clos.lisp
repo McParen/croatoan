@@ -246,6 +246,41 @@
                    (refresh scr)
                    (setf (nth column positions) (mod (1+ (nth column positions)) height)))))))))
 
+(defun matrix2 ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visibility nil)
+    (let* ((width (.width scr))
+           (height (.height scr))
+           ;; start at a random height in each column.
+           (positions (loop repeat width collect (random height)))
+           ;; run each column at a random speed.
+           (speeds (loop repeat width collect (random 4))))
+      (flet ((randch () (+ 64 (random 58))))
+        ;; hit the q key to exit the main loop.
+        (add-event-handler (scr #\q) 'exit-event-loop)
+        (add-event-handler (scr nil)
+          (lambda (win event)
+            ;; generate a random ascii char
+            (loop for column from 0 to (1- width) do
+                 (loop repeat (nth column speeds) do
+                      ;; position of the first point in the current column
+                      (let ((pos (nth column positions)))
+                        (setf (.attributes win) '(:bold))
+                        (setf (.color-pair win) '(:white :black))
+                        (add win (randch) :y (mod pos height) :x column)
+                        (setf (.color-pair win) '(:green :black))
+                        (add win (randch) :y (mod (- pos 1) height) :x column)
+                        (add win (randch) :y (mod (- pos 2) height) :x column)
+                        (setf (.attributes win) '())
+                        (add win (randch) :y (mod (- pos 3) height) :x column)
+                        ;; overwrite the last char with a space
+                        (add win #\space  :y (mod (- pos (floor height 3)) height) :x column)
+                        (refresh win)
+                        ;; increment the column positions
+                        (setf (nth column positions) (mod (1+ pos) height)))))))))
+    ;; after the handlers have been defined, run the main event loop at 20 fps.
+    (setf (.frame-rate scr) 20)
+    (run-event-loop scr)))
+
 ;; initialize ncurses, deinitialize ncurses
 ;; tests initialize-instance
 (defun t00 ()

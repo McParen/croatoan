@@ -103,6 +103,7 @@
 
    ;; clos.lisp
    #:matrix
+   #:matrix2
    #:snake
    #:tetris
    #:pipes
