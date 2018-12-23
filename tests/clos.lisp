@@ -1882,16 +1882,33 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
           (#\newline (return-from event-case (cdr (nth i choices)))))))))
 
 (defun t19b ()
-  "Use the menu class, draw-menu and select-item functions."
+  "Use the menu class, draw-menu and select functions."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
            (menu (make-instance 'menu-window :items choices :position (list 0 20) :title "t19b" :border t :enable-fkeys t)))
-      (let ((result (select-item menu)))
+      (let ((result (select menu)))
         (format scr "You chose ~A" result)
         (touch scr)
         (refresh scr)
         (get-char scr))
       (close menu))))
+
+(defun t19b2 ()
+  "Use the select function with independent windows and menus"
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((items1 '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+                     "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
+           (menu1 (make-instance 'menu :items items1 :name "sub-menu 1" :max-item-length 50))
+           (items2 (list "Item 0" menu1 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
+           (menu2 (make-instance 'menu :items items2 :name "sub-menu 2" :max-item-length 50))
+           (items3 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
+           (menu3 (make-instance 'menu :items items3 :name "t19b2b" :max-item-length 50)))
+      ;; associate the same window with all three menus.
+      (setf (.window menu1) scr
+            (.window menu2) scr
+            (.window menu3) scr)
+      ;; select an item and return it.
+      (select menu3))))
 
 (defun t19c ()
   "Improved t19b, the menu can be called repeatedly with the key a."
@@ -1902,7 +1919,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :title "t19c" :border t :enable-fkeys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
-        (#\a (let ((result (select-item menu)))
+        (#\a (let ((result (select menu)))
                (format scr "You chose ~A~%" result)
                ;; we have to touch scr in order to make the menu disappear.
                (touch scr)
@@ -1949,7 +1966,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
       (refresh-stack)
       (event-case (scr event)
-        ;; "a" draws the menu and enters a new menu-only event loop by calling select-item
+        ;; "a" draws the menu and enters a new menu-only event loop by calling select
         (#\a (let ((result (select menu)))
                (format scr "You chose ~A~%" result)
                (format scr "~A~%" (.color-pair menu))
@@ -1973,7 +1990,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :cyclic-selection nil :max-item-length 9 :title "t19d" :border t :enable-fkeys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
-        (#\a (let ((result (select-item menu)))
+        (#\a (let ((result (select menu)))
                (format scr "You chose ~A~%" result)
                ;; we have to touch scr in order to make the menu disappear.
                (touch scr)
@@ -1995,7 +2012,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; exit the infinite loop by exiting the menu with q.
       (loop named menu-case
          do
-           (let ((result (select-item menu)))
+           (let ((result (select menu)))
              (unless result (return-from menu-case))
              (format scr "You chose ~A~%" result)
              (refresh scr)))
@@ -2046,7 +2063,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :width 60
                                 :border t
                                 :enable-fkeys t
-                                :title "this is my selection dialog"
+                                :title "this is a selection dialog"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
 
@@ -2055,7 +2072,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (refresh scr)
       (loop named menu-case
          do
-           (let ((result (select-item menu)))
+           (let ((result (select menu)))
              (unless result (return-from menu-case))
              (format scr "You chose ~A~%" result)
              (refresh scr)))
@@ -2090,7 +2107,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (refresh scr)
       (loop named menu-case
          do
-           (let ((result (select-item menu)))
+           (let ((result (select menu)))
              ;; TODO: returning an empty list exits the loop.
              (unless result (return-from menu-case))
              (format scr "You chose ~A~%"
