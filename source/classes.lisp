@@ -361,7 +361,14 @@
     :initform      (list 0 0)
     :accessor      .scrolled-region-start
     :type          (or null cons)
-    :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region."))
+    :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region.")
+
+   (window
+    :initarg       :window
+    :initform      nil
+    :type          (or null window)
+    :accessor      .window
+    :documentation "Window created separately and then associated with the menu."))
 
   (:documentation  "A menu is a list of items that can be selected by the user."))
 
@@ -371,7 +378,7 @@
 
 ;; init for menus which aren't menu windows
 (defmethod initialize-instance :after ((menu menu) &key)
-  (with-slots (type items current-item) menu
+  (with-slots (type items current-item layout) menu
     ;; Convert strings and symbols to item objects
     (setf items (mapcar (lambda (x)
                           (if (typep x 'menu-item)
@@ -382,13 +389,17 @@
                                              :name (typecase x
                                                      (string x)
                                                      (symbol (symbol-name x))
-                                                     (menu-window (.name x)))
+                                                     (menu-window (.name x))
+                                                     (menu (.name x)))
                                              :value x)))
                         ;; apply the function to the init arg passed to make-instance.
                         items))
 
     ;; Initialize the current item as the first field from the items list.
-    (setf current-item (car items)) ))
+    (setf current-item (car items))
+
+    ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
+    (unless layout (setf layout (list (length items) 1))) ))
 
 (defmethod initialize-instance :after ((win menu-window) &key)
   (with-slots (winptr items type height width position sub-window border layout scrolled-layout max-item-length
