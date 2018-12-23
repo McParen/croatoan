@@ -26,6 +26,7 @@
    screen
    sub-window
    decorated-window
+   menu
    menu-window
    menu-item
    dialog-window
@@ -205,7 +206,6 @@
    ;; menu / curses extension for programming menus
    draw-menu
    update-menu
-   select-item
    select
    return-from-menu
    exit-menu-event-loop
