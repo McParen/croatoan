@@ -34,6 +34,7 @@
    sub-pad
    field
    form
+   shape
 
    ;; accessors
    .simple-char
@@ -88,6 +89,12 @@
    ;; form
    .buffer
    .fields
+
+   ;; shape
+   .x-origin
+   .y-origin
+   .coordinates
+   .plot-char
    
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add
@@ -247,6 +254,20 @@
 
    ;; scroll / scroll a curses window
 
+   ;; shape / shape plotting extension for ncurses
+   draw-shape
+   delete-shape
+   shape-extent
+   merge-shapes
+   fill-shape
+   line
+   angle-line
+   polygon
+   triangle
+   quadrilateral
+   rectangle
+   circle
+	  
    ;; slk / curses soft label routines
 
    ;; termattrs / environment query routines

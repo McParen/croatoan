@@ -111,7 +111,8 @@
 
              ;; Extension libraries
              (:file "form")             ; curses extension for programming forms
-             (:file "menu")))           ; curses extension for programming menus
+             (:file "menu")             ; curses extension for programming menus
+             (:file "shape")))          ; curses extension for plotting shapes
              
    ;; tests for both the CFFI ncurses wrappers and the CLOS API.
    (:module "tests"
