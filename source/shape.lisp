@@ -32,3 +32,39 @@
 				:documentation "The complex character to use for plotting"))
 	 (:documentation "A shape is a list of coordinates, relative to an origin, that can be plotted in a window."))
 		  
+(defmethod draw-shape ((shape shape) (win window) &optional (char complex-char))
+	 ;;TODO
+	 )
+
+(defmethod delete-shape ((shape shape) (win window))
+	 "A utility function to delete a shape by drawing over it in black"
+	 (draw-shape shape window
+		  (make-instance 'complex-char
+				:simple-char #\space :color-pair '(:black :black))))
+
+;;; XXX invert x and y positions? (ncurses tradition)
+
+(defun line (x0 y0 x1 y1 &key char)
+	 "Return a straight line between two points"
+	 ;;TODO
+	 )
+
+(defun polygon (corners &key filled char)
+	 "Return a polygon along a list of corners, keyly filled"
+	 ;;TODO
+	 )
+
+(defun triangle (x0 y0 x1 y1 x2 y2 &key filled char)
+	 "Return a triangle (utility wrapper around `polygon')"
+	 ;;TODO
+	 )
+
+(defun rectangle (x0 y0 x1 y1 x2 y2 x3 y3 &key filled char)
+	 "Return a rectangle (utility wrapper around `polygon')"
+	 ;;TODO
+	 )
+
+(defun circle (x0 y0 radius &key filled char)
+	 "Return a circle with a given radius, optionally filled"
+	 ;;TODO
+	 )
