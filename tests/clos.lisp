@@ -2469,3 +2469,32 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (setf (.frame-rate scr) 1)
 
     (run-event-loop scr)))
+
+(defun t29 (shp &optional squarify)
+	"Open a screen display and draw the shape(s)."
+	(with-screen (scr :input-blocking T :enable-colors t :input-echoing nil
+					 :cursor-visibility nil :input-reading :unbuffered)
+		(clear scr)
+		(unless (listp shp) (setf shp (list shp)))
+		(dolist (s shp)
+			(draw-shape s scr squarify))
+		(event-case (scr event)
+			(otherwise (return-from event-case)))))
+
+(defun t29a ()
+	"Draw an ASCII-art tree to illustrate the use of shapes"
+	(let* ((leaf-char (make-instance 'complex-char :simple-char #\O
+						  :color-pair '(:green :black)))
+			  (trunk-char (make-instance 'complex-char :simple-char #\H
+							  :color-pair '(:white :black)))
+			  (ground-char (make-instance 'complex-char :simple-char #\i
+							   :color-pair '(:green :black)))
+			  (sun-char (make-instance 'complex-char :simple-char #\o
+							:color-pair '(:yellow :black)))
+			  (tree-trunk (rectangle 19 27 10 3 :filled T :char trunk-char))
+			  (upper-crown (triangle 5 29 11 25 11 33 :filled T :char leaf-char))
+			  (lower-crown (triangle 8 29 18 23 18 35 :filled T :char leaf-char))
+			  (tree-crown (merge-shapes upper-crown lower-crown))
+			  (ground (line 23 0 23 80 :char ground-char))
+			  (sun (circle 4 5 2 :char sun-char :filled T)))
+		(t29 (list tree-trunk lower-crown ground sun) T)))

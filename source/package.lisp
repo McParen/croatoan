@@ -259,7 +259,6 @@
    shape-extent
    merge-shapes
    fill-shape
-   rotate-shape
    line
    angle-line
    polygon
