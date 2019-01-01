@@ -153,8 +153,19 @@
 
 (defun circle (y0 x0 radius &key filled char)
 	"Return a circle with a given radius, optionally filled"
-	;;TODO
-	)
+	(do* ((shp (make-instance 'shape)) (coords nil) (deg 0 (1+ deg))
+			 (radians (* pi (/ deg 180.0)) (* pi (/ deg 180.0)))
+			 (y (+ y0 (round (* radius (sin radians))))
+				 (+ y0 (round (* radius (sin radians)))))
+			 (x (+ x0 (round (* radius (cos radians))))
+				 (+ x0 (round (* radius (cos radians)))))
+			 (last-coord nil coord) (coord (list x y) (list x y)))
+		((= deg 360)
+			(setf (.coordinates shp) coords)
+			(when char (setf (.plot-char shp) char))
+			(if filled (fill-shape shp) shp))
+		(unless (equal coord last-coord)
+			(setf coords (append coords (list coord))))))
 
 ;;; Development function - move to test suite later?
 
