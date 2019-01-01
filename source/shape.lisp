@@ -60,7 +60,7 @@
 	;;TODO
 	)
 
-(defmethod merge-shapes (&rest (shapes shape))
+(defun merge-shapes (shapes)
 	"Create a new shape by merging the coordinates of a given list of shapes"
 	;; This keeps the first shapes point of origin and plot-char.
 	;; A completely new object is created and new lists consed up.
@@ -69,10 +69,44 @@
 
 ;;; The following functions return a shape object that can be passed to draw-shape
 
+;;XXX This function is almost indecipherable - convert it to simple trig!
+;; (It's a direct port of the following Python code)
+;;
+;; def diagonal_line(x1, y1, x2, y2):
+;;     if x2 < x1:
+;;         x1,x2 = x2, x1
+;;         y1,y2 = y2, y1
+;;     shape = []
+;;     slope = (x2-x1)/(y2-y1)
+;;     # XXX a bit ugly, but it works
+;;     if abs(slope) < 1: # steep lines
+;;         for y in range(y1, y2+1):
+;;             x = int(round(x2 - ((y2-y)*slope)))
+;;             shape.append((x,y))
+;;     else: # shallow lines
+;;         for x in range(x1, x2+1):
+;;             y = int(round(y2 - ((x2-x)/slope)))
+;;             shape.append((x,y))
+;;     return shape
+
 (defun line (y0 x0 y1 x1 &key char)
 	"Return a straight line between two points"
-	 ;;TODO
-	 )
+	(when (> x0 x1)
+		;;reverse the positions to ensure a positive slope
+		;;XXX is this really necessary?
+		(setf zx x0 zy y0)
+		(setf x1 x0 y1 y0 x0 zx y0 zy))
+	(do* ((l (make-instance 'shape :char char))
+			 (coords nil)
+			 (slope (/ (- y1 y0) (- x1 x0)))
+			 (steep-p (> (abs slope) 1))
+			 (p (if steep-p y0 x0) (1+ p))
+			 (q (round (- (if steep-p x1 y1)
+						   (* slope (- (if steep-p y1 x1) p))))))
+		((= p (1+ (if steep-p y1 x1)))
+			(setf (.coordinates l) coords)
+			l)
+		(setf coords (append coords (if steep-p (list q p) (list p q))))))
 
 (defun polygon (corners &key filled char)
 	"Return a polygon along a list of corners, optionally filled"
