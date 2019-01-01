@@ -68,15 +68,23 @@
 
 (defmethod fill-shape ((shape shape))
 	"Take a shape that only shows the borders and 'color it out'"
+	shape
 	;;TODO
 	)
 
-(defun merge-shapes (shapes)
-	"Create a new shape by merging the coordinates of a given list of shapes"
-	;; This keeps the first shapes point of origin and plot-char.
+(defun merge-shapes (&rest shapes)
+	"Create a new shape object by merging the coordinates of a given list of shapes"
+	;; This keeps the first shape's point of origin and plot-char.
 	;; A completely new object is created and new lists consed up.
-	;;TODO
-	)
+	(let ((shp (make-instance 'shape :char (.plot-char (first shapes))
+				   :y0 (.y-origin (first shapes))
+				   :x0 (.x-origin (first shapes)))))
+		(dolist (s shapes shp)
+			(dolist (c (.coordinates s))
+				(unless (member c (.coordinates shp) :test #'equal)
+					(setf (.coordinates shp)
+						(append (.coordinates shp)
+							(list (list (first c) (second c))))))))))
 
 ;;; The following functions return a shape object that can be passed to draw-shape
 
