@@ -77,6 +77,8 @@
 					(setf (.coordinates shape)
 						(append (.coordinates shape) (list (list y x)))))))))
 
+;;XXX add a rotate-shape function?
+
 (defun merge-shapes (&rest shapes)
 	"Create a new shape object by merging the coordinates of a given list of shapes"
 	;; This keeps the first shape's point of origin and plot-char.
@@ -91,38 +93,46 @@
 						(append (.coordinates shp)
 							(list (list (first c) (second c))))))))))
 
-;;TODO write rotate-shape?
 
 ;;; Create various basic shapes
 
-(defun line (y0 x0 y1 x1 &optional char)
+(defun line (y0 x0 y1 x1 &key char)
 	"Return a straight line between two points"
+	;;make sure we're moving from left to right
 	(when (or (> x0 x1) (and (= x0 x1) (> y0 y1)))
-		;;make sure we're moving from left to right
 		(setf zx x1 zy y1)
 		(setf x1 x0 y1 y0)
 		(setf x0 zx y0 zy))
+	;;increment x from x0 to x1, building a list of coordinates as we go
 	(do* ((l (make-instance 'shape)) (coords nil)
 			 (slope (if (= x0 x1) (abs (- y0 y1)) ;;prevent division-by-zero
 						(/ (- y1 y0) (- x1 x0))))
 			 (x 0 (1+ x)) (y (round (* x slope)) (round (* x slope))))
-		((< x1 (+ x0 x))
+		((< x1 (+ x0 x)) ;;finalise the shape object and return it
 			(setf (.coordinates l) coords)
 			(when char (setf (.plot-char l) char))
 			l)
-		(if (< slope 1) ;;shallow slope
-			(setf coords (append coords (list (list (+ y0 y) (+ x0 x)))))
-			(dotimes (dy (round slope)) ;;steep slope
-				(setf coords (append coords
-								 (list (list (+ y0 y dy) (+ x0 x)))))))))
+		;;for each x value, figure out how many characters we need to print
+		;; in the y direction (depends on the slope gradient)
+		(do* ((next-x (+ x0 x)) (dy 0 (1+ dy))
+				 (next-y (+ y0 y (if (plusp slope) dy (* -1 dy)))
+					 (+ y0 y (if (plusp slope) dy (* -1 dy)))))
+			;;stop when we have stacked sufficient vertical coordinates
+			((or (and (>= 1 (abs slope)) (= dy 1)) ;;shallow slopes
+				 (and (< 1 (abs slope)) (= dy (ceiling (abs slope)))) ;;steep
+				 (if (plusp slope) ;;don't overshoot the end
+					 (or (> next-y y1) (> next-x x1))
+					 (or (< next-y y1) (> next-x x1)))))
+			;;append the next pair of coordinates
+			(setf coords (append coords (list (list next-y next-x)))))))
 
-(defun angle-line (y0 x0 theta length)
+(defun angle-line (y0 x0 theta length &key char)
 	"Draw a line of the given length in the bearing theta from the origin"
 	;; theta = 0 -> vertically up; theta = 90 -> horizontally right
 	(let* ((radians (* pi (/ (- theta 90) 180.0)))
 			  (y1 (+ y0 (* length (sin radians))))
 			  (x1 (+ x0 (* length (cos radians)))))
-		(line y0 x0 (round y1) (round x1))))
+		(line y0 x0 (round y1) (round x1) :char char)))
 
 (defun polygon (corners &key filled char)
 	"Return a polygon along a list of corners, optionally filled"
@@ -134,7 +144,8 @@
 		(when (= j (length corners)) (setf j 0))
 		(setf pol (merge-shapes pol
 					  (line (first (nth i corners)) (second (nth i corners))
-						  (first (nth j corners)) (second (nth j corners)) char)))))
+						  (first (nth j corners)) (second (nth j corners))
+						  :char char)))))
 
 (defun triangle (y0 x0 y1 x1 y2 x2 &key filled char)
 	"Return a triangle (utility wrapper around `polygon')"
@@ -148,8 +159,9 @@
 
 (defun rectangle (y0 x0 height width &key filled char)
 	"Return a rectangle (utility wrapper around `polygon')"
-	(polygon (list (list y0 x0) (list y0 (+ x0 width))
-				 (list (+ y0 height) (+ x0 width)) (list (+ y0 height) x0))
+	(polygon (list (list y0 x0) (list y0 (+ x0 (1- width)))
+				 (list (+ y0 (1- height)) (+ x0 (1- width)))
+				 (list (+ y0 (1- height)) x0))
 		:filled filled :char char))
 
 (defun circle (y0 x0 radius &key filled char)
@@ -160,7 +172,7 @@
 				 (+ y0 (round (* radius (sin radians)))))
 			 (x (+ x0 (round (* radius (cos radians))))
 				 (+ x0 (round (* radius (cos radians)))))
-			 (last-coord nil coord) (coord (list x y) (list x y)))
+			 (last-coord nil coord) (coord (list y x) (list y x)))
 		((= deg 360)
 			(setf (.coordinates shp) coords)
 			(when char (setf (.plot-char shp) char))
@@ -191,14 +203,3 @@
 	 (draw-shape shape window
 		  (make-instance 'complex-char
 				:simple-char #\space :color-pair (list bg-col bg-col))))
-
-;;; Development function - move to test suite later?
-
-(defun display-shape (shp &optional squarify)
-	"Open a screen display and draw the shape."
-	(with-screen (scr :input-blocking T :enable-colors t :input-echoing nil
-					 :cursor-visibility nil :input-reading :unbuffered)
-		(clear scr)
-		(draw-shape shp scr squarify)
-		(event-case (scr event)
-			(otherwise (return-from event-case)))))

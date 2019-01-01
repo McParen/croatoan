@@ -2483,6 +2483,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t29a ()
 	"Draw an ASCII-art tree to illustrate the use of shapes"
+	;; Assumes an 80x24 terminal
 	(let* ((leaf-char (make-instance 'complex-char :simple-char #\O
 						  :color-pair '(:green :black)))
 			  (trunk-char (make-instance 'complex-char :simple-char #\H
@@ -2491,10 +2492,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 							   :color-pair '(:green :black)))
 			  (sun-char (make-instance 'complex-char :simple-char #\o
 							:color-pair '(:yellow :black)))
-			  (tree-trunk (rectangle 19 27 10 3 :filled T :char trunk-char))
-			  (upper-crown (triangle 5 29 11 25 11 33 :filled T :char leaf-char))
-			  (lower-crown (triangle 8 29 18 23 18 35 :filled T :char leaf-char))
+			  (tree-trunk (rectangle 19 27 10 4 :filled T :char trunk-char))
+			  (upper-crown (triangle 4 29 12 22 12 35 :filled T :char leaf-char))
+			  (lower-crown (triangle 8 29 18 20 18 37 :filled T :char leaf-char))
 			  (tree-crown (merge-shapes upper-crown lower-crown))
 			  (ground (line 23 0 23 80 :char ground-char))
-			  (sun (circle 4 5 2 :char sun-char :filled T)))
-		(t29 (list tree-trunk lower-crown ground sun) T)))
+			  (sun (circle 5 6 2 :char sun-char :filled T)))
+		(t29 (list tree-trunk tree-crown ground sun) T)))
