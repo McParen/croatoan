@@ -254,8 +254,11 @@
    ;; scroll / scroll a curses window
 
    ;; shape / shape plotting extension for ncurses
+   shape-extent
+   merge-shapes
    draw-shape
    delete-shape
+   fill-shape
    line
    polygon
    triangle
