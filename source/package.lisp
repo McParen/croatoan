@@ -260,8 +260,10 @@
    delete-shape
    fill-shape
    line
+   angle-line
    polygon
    triangle
+   quadrilateral
    rectangle
    circle
 	  

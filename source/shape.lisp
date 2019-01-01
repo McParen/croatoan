@@ -115,6 +115,14 @@
 				(setf coords (append coords
 								 (list (list (+ y0 y dy) (+ x0 x)))))))))
 
+(defun angle-line (y0 x0 theta length)
+	"Draw a line of the given length in the bearing theta from the origin"
+	;; theta = 0 -> vertically up; theta = 90 -> horizontally right
+	(let* ((radians (* pi (/ (- theta 90) 180.0)))
+			  (y1 (+ y0 (* length (sin radians))))
+			  (x1 (+ x0 (* length (cos radians)))))
+		(line y0 x0 (round y1) (round x1))))
+
 (defun polygon (corners &key filled char)
 	"Return a polygon along a list of corners, optionally filled"
 	(do* ((pol (make-instance 'shape))
