@@ -11,7 +11,7 @@ Ncurses is old and huge and it will take a while to cover completely.
 
 The API is not yet stable.
 
-It is developed and tested on Ubuntu 16.04 x86_64 and SBCL 1.4.10.
+It is developed and tested on Ubuntu 16.04 x86_64 and SBCL 1.4.15.
 
 The only supported ncurses version is 6.x --with-abi-version=6.
 Version 5.9 mostly works, but I will focus new efforts on 6.x.
