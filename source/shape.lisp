@@ -36,6 +36,14 @@
 			:documentation "The complex character to use for plotting"))
 	(:documentation "A shape is a list of coordinates, relative to an origin, that can be plotted in a window."))
 
+
+(defmethod shape-extent ((shape shape))
+	"Return min-y, min-x, max-y, and max-x of a shape's coordinates"
+	(let ((y-vals (mapcar #'first (.coordinates shape)))
+			 (x-vals (mapcar #'second (.coordinates shape))))
+		(values (apply #'min y-vals) (apply #'min x-vals)
+			(apply #'max y-vals) (apply #'max x-vals))))
+
 (defun inbounds-p (coordinate win)
 	"Test whether the given coordinate is within the given window"
 	(not (or (minusp (first coordinate))
@@ -43,6 +51,7 @@
 			 (>= (first coordinate) (.height win))
 			 (>= (second coordinate) (.width win)))))
 
+;;TODO add `squarify` option to print extra blank space between chars
 (defmethod draw-shape ((shape shape) (win window))
 	(with-accessors ((y0 .y-origin) (x0 .x-origin) (c .plot-char)) shape
 		(dolist (coord (.coordinates shape))
@@ -71,49 +80,26 @@
 
 ;;; The following functions return a shape object that can be passed to draw-shape
 
-;;XXX This function is almost indecipherable - convert it to simple trig!
-;; (It's a direct port of the following Python code)
-;;
-;; def diagonal_line(x1, y1, x2, y2):
-;;     if x2 < x1:
-;;         x1,x2 = x2, x1
-;;         y1,y2 = y2, y1
-;;     shape = []
-;;     slope = (x2-x1)/(y2-y1)
-;;     # XXX a bit ugly, but it works
-;;     if abs(slope) < 1: # steep lines
-;;         for y in range(y1, y2+1):
-;;             x = int(round(x2 - ((y2-y)*slope)))
-;;             shape.append((x,y))
-;;     else: # shallow lines
-;;         for x in range(x1, x2+1):
-;;             y = int(round(y2 - ((x2-x)/slope)))
-;;             shape.append((x,y))
-;;     return shape
-
-(defun line2 (y0 x0 y1 x1 &key char)
+(defun line (y0 x0 y1 x1 &optional char)
 	"Return a straight line between two points"
-	(when (> x0 x1)
-		;;reverse the positions to ensure a positive slope
-		;;XXX is this really necessary?
-		(setf zx x0 zy y0)
-		(setf x1 x0 y1 y0 x0 zx y0 zy))
-	(do* ((l (make-instance 'shape))
-			 (coords nil)
-			 (slope (/ (- y1 y0) (- x1 x0)))
-			 (steep-p (> (abs slope) 1))
-			 (p (if steep-p y0 x0) (1+ p))
-			 (q (round (- (if steep-p x1 y1)
-						   (* slope (- (if steep-p y1 x1) p))))
-				 (round (- (if steep-p x1 y1)
-						   (* slope (- (if steep-p y1 x1) p))))))
-		((= p (1+ (if steep-p y1 x1)))
+	(when (or (> x0 x1) (and (= x0 x1) (> y0 y1)))
+		;;make sure we're moving from left to right
+		(setf zx x1 zy y1)
+		(setf x1 x0 y1 y0)
+		(setf x0 zx y0 zy))
+	(do* ((l (make-instance 'shape)) (coords nil)
+			 (slope (if (= x0 x1) (abs (- y0 y1)) ;;prevent division-by-zero
+						(/ (- y1 y0) (- x1 x0))))
+			 (x 0 (1+ x)) (y (round (* x slope)) (round (* x slope))))
+		((< x1 (+ x0 x))
 			(setf (.coordinates l) coords)
 			(when char (setf (.plot-char l) char))
 			l)
-		(setf coords (append coords (list (if steep-p (list q p) (list p q)))))))
-
-;;FIXME rewrite `line'
+		(if (< slope 1) ;;shallow slope
+			(setf coords (append coords (list (list (+ y0 y) (+ x0 x)))))
+			(dotimes (dy (round slope)) ;;steep slope
+				(setf coords (append coords
+								 (list (list (+ y0 y dy) (+ x0 x)))))))))
 
 (defun polygon (corners &key filled char)
 	"Return a polygon along a list of corners, optionally filled"
@@ -138,3 +124,14 @@
 	"Return a circle with a given radius, optionally filled"
 	;;TODO
 	)
+
+;;; Development function - move to test suite later?
+
+(defun display-shape (shp)
+	"Open a screen display and draw the shape."
+	(with-screen (scr :input-blocking T :enable-colors t :input-echoing nil
+					 :cursor-visibility nil :input-reading :unbuffered)
+		(clear scr)
+		(draw-shape shp scr)
+		(event-case (scr event)
+			(otherwise (return-from event-case)))))
