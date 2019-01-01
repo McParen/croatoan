@@ -542,6 +542,30 @@
            (format t "~A ~A" ch ch2)
            (refresh scr) ))))
 
+;;           | cooked | cbreak | raw
+;; ----------+--------+--------+-----
+;; buffering | t      | nil    | nil
+;; ----------+--------+--------+-----
+;; control   | t      | t      | nil 
+;;
+(defun t03e ()
+  "Test switching between input modes and control char processing."
+  (with-screen (scr :input-echoing nil :input-blocking t :input-buffering nil :process-control-chars nil)
+    (with-accessors ((input-buffering .input-buffering) (process-control-chars .process-control-chars)) scr
+      (clear scr)
+      (format scr "buffering ~A process-control-chars ~A (raw)~%" input-buffering process-control-chars)
+      (format scr "ch1: ~A~%" (get-char scr))
+      (setf (.process-control-chars scr) t)
+      (format scr "buffering ~A process-control-chars ~A (cbreak)~%" input-buffering process-control-chars)
+      (format scr "ch2: ~A~%" (get-char scr))
+      (setf (.input-buffering scr) t)
+      (format scr "buffering ~A process-control-chars ~A (cooked)~%" input-buffering process-control-chars)
+      (format scr "ch3: ~A~%" (get-char scr))
+      ;; ignore the typed enter key
+      (get-char scr)
+      ;; wait for one keypress before exiting.
+      (get-char scr))))
+
 ;; take a function given as symbol name and display its docstring. press q to exit.
 ;; Example: (a:t04 'cdr)
 (defun t04 (&optional (name 'car))
