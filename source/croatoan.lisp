@@ -3,7 +3,8 @@
 ;;; Define all macros here centrally.
 
 (defmacro with-screen ((screen &key
-                               (input-reading  :unbuffered) 
+                               (input-buffering nil)
+                               (process-control-chars t)
                                (input-blocking t)
                                (input-echoing  t)
                                (enable-fkeys   t) 
@@ -23,7 +24,8 @@ This macro is the main entry point for writing ncurses programs with the croatoa
 library. Do not run more than one screen at the same time."
   `(unwind-protect
         (let ((,screen (make-instance 'screen
-                                      :input-reading  ,input-reading
+                                      :input-buffering ,input-buffering
+                                      :process-control-chars ,process-control-chars
                                       :input-blocking ,input-blocking
                                       :input-echoing  ,input-echoing
                                       :enable-fkeys   ,enable-fkeys
@@ -90,7 +92,9 @@ Example:
 For now, it is limited to events generated in a single window. So events
 from multiple windows have to be handled separately.
 
-In order for event-handling to work, input-reading has to be unbuffered.
+In order for event-handling to work, input-buffering has to be nil.
+Several control character events can only be handled when 
+process-control-chars is also nil.
 
 If input-blocking is nil, we can handle the (nil) event, i.e. what
 happens between key presses.

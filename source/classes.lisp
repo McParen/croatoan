@@ -215,11 +215,22 @@
     :type          boolean
     :documentation "Enable (t) or disable (nil) echoing of chars during keyboard input.")
 
-   (input-reading
-    :initarg       :input-reading
-    :initform      :unbuffered
-    :type          keyword
-    :documentation "Set whether typed characters will be line :buffered or directly passed as :unbuffered or :unbuffered-raw.")
+   (input-buffering
+    :initarg       :input-buffering
+    :initform      nil
+    :type          boolean
+    :documentation
+    "Set whether typed characters will be returned immediately when they are typed (nil, default) 
+    or buffered until Return is typed (t).")
+
+   (process-control-chars
+    :initarg       :process-control-chars
+    :initform      t
+    :type          boolean
+    :documentation
+    "If input-buffering is nil, set whether some control characters like ^C, ^S, ^Q, ^D will be processed (t, default) 
+    or passed directly to the program (nil).
+    When input-buffering is t, control chars are always processed and this option has no effect.")
 
    (closed-p
     :type          boolean
@@ -664,8 +675,8 @@
       (when background (setf (.background win) background)) )))
 
 (defmethod initialize-instance :after ((scr screen) &key)
-  (with-slots (winptr enable-colors use-default-colors cursor-visibility input-echoing input-reading input-blocking
-                      enable-fkeys enable-scrolling color-pair background) scr
+  (with-slots (winptr enable-colors use-default-colors cursor-visibility input-echoing input-blocking enable-fkeys
+                      enable-scrolling color-pair background input-buffering process-control-chars) scr
     ;; just for screen window types.
     (when (eq (type-of scr) 'screen)
       (setf winptr (%initscr))
@@ -681,7 +692,7 @@
       (when background (setf (.background scr) background))
       
       (if input-echoing (%echo) (%noecho))
-      (set-input-reading scr input-reading)
+      (set-input-mode input-buffering process-control-chars)
       (set-cursor-visibility cursor-visibility))))
 
 ;; sub-window has to be contained within a parent window
@@ -882,13 +893,31 @@
   ;;(set-input-echoing status))
   (if status (%echo) (%noecho)))
 
-(defgeneric .input-reading (screen))
-(defmethod .input-reading ((screen screen))
-  (slot-value screen 'input-reading))
-(defgeneric (setf .input-reading) (status screen))
-(defmethod (setf .input-reading) (status (screen screen))
-  (set-input-reading screen status)
-  (setf (slot-value screen 'input-reading) status))
+(defgeneric .input-buffering (screen))
+(defmethod .input-buffering ((screen screen))
+  (slot-value screen 'input-buffering))
+(defgeneric (setf .input-buffering) (status screen))
+(defmethod (setf .input-buffering) (status (screen screen))
+  (setf (slot-value screen 'input-buffering) status)
+  (set-input-mode (slot-value screen 'input-buffering)
+                  (slot-value screen 'process-control-chars)))
+
+(defgeneric .process-control-chars (screen))
+(defmethod .process-control-chars ((screen screen))
+  (slot-value screen 'process-control-chars))
+(defgeneric (setf .process-control-chars) (status screen))
+(defmethod (setf .process-control-chars) (status (screen screen))
+  (with-slots (input-buffering process-control-chars) screen
+    ;; only make a change when the status changed.
+    (when (not (eq process-control-chars status))
+      ;; only call ncurses when buffering is nil.
+      (unless input-buffering
+        ;; before we switch the unbuffered mode, we switch to the default cooked mode.
+        (if process-control-chars (%nocbreak) (%noraw))
+        ;; then make a "clean" switch back to the new unbuffered mode.
+        (set-input-mode input-buffering status))
+      ;; then save the new status.
+      (setf process-control-chars status) )))
 
 ;; TODO: change this to use wide chars, so we can use unicode chars additionally to the limited small set of ACS chars
 ;; (setf (.background window nil) xchar)

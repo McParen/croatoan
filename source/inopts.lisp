@@ -13,20 +13,22 @@
 ;;                  ctrl chars processed  ^C,^S,^Q,^D processed  no ctrl chars processed
 ;;                  cooked                cbreak                 raw
 ;; 
-;; :buffered        x
-;; :unbuffered                            x
-;; :unbuffered-raw                                               x
+;; buffering        t                     nil                    nil
+;; control          t                     t                      nil
 
-;; Ported to clos, used in clos.
-;; The combination echo+getch should not be used during buffered 
-(defun set-input-reading (screen status)
-  "Set whether input will be passed to the program line buffered, directly or raw."
-  (with-slots (input-reading) screen
-    (case status
-      (:buffered       (if (eq input-reading :unbuffered-raw) (%noraw) (%nocbreak)))
-      (:unbuffered     (%cbreak))
-      (:unbuffered-raw (%raw))
-      (otherwise (error "Valid input modes: :buffered, :unbuffered, :unbuffered-raw")))))
+;;           | cooked | cbreak | raw
+;; ----------+--------+--------+-----
+;; buffering | t      | nil    | nil
+;; ----------+--------+--------+-----
+;; control   | t      | t      | nil 
+
+;; The combination echo+getch should not be used during buffered input
+(defun set-input-mode (input-buffering process-control-chars)
+  (if input-buffering
+      ;; to turn on buffering, turn off cbreak or raw
+      (if process-control-chars (%nocbreak) (%noraw))
+      ;; to turn off buffering, turn on cbreak or raw
+      (if process-control-chars (%cbreak) (%raw))))
 
 ;; Ported to clos, used in clos.
 (defun set-input-blocking (window status)

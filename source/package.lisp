@@ -61,7 +61,8 @@
    .event-handlers
    .background
    .input-echoing
-   .input-reading
+   .input-buffering
+   .process-control-chars
    .cursor-visibility
    .source
    .closed-p
