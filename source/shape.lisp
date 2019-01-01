@@ -44,21 +44,24 @@
 		(values (apply #'min y-vals) (apply #'min x-vals)
 			(apply #'max y-vals) (apply #'max x-vals))))
 
-(defun inbounds-p (coordinate win)
+(defun inbounds-p (y x win)
 	"Test whether the given coordinate is within the given window"
-	(not (or (minusp (first coordinate))
-			 (minusp (second coordinate))
-			 (>= (first coordinate) (.height win))
-			 (>= (second coordinate) (.width win)))))
+	(not (or (minusp y) (minusp x) (>= y (.height win)) (>= y (.width win)))))
 
-;;TODO add `squarify` option to print extra blank space between chars
-(defmethod draw-shape ((shape shape) (win window))
-	(with-accessors ((y0 .y-origin) (x0 .x-origin) (c .plot-char)) shape
-		(dolist (coord (.coordinates shape))
-			(when (inbounds-p coord win) ;;xxx needs adjusted coordinates!
-				(add-char win (.simple-char c)
-					:y (+ y0 (first coord)) :x (+ x0 (second coord))
-					:attributes (.attributes c) :color-pair (.color-pair c))))))
+(defmethod draw-shape ((shape shape) (win window) &optional squarify)
+	"Draw a shape in the given window"
+	;; If squarify is on, draw-shape doubles the width of the shape to compensate
+	;; for the fact that terminal fonts are higher than they are wide
+	(do* ((y0 (.y-origin shape)) (x0 (.x-origin shape)) (c (.plot-char shape))
+			 (coords (.coordinates shape) (cdr coords))
+			 (y (first (car coords)) (first (car coords)))
+			 (x (second (car coords)) (second (car coords))))
+		((null coords))
+		(setf y (+ y0 y) x (+ x0 x))
+		(when squarify (setf x (* 2 x)))
+		(when (inbounds-p y x win)
+			(add-char win (.simple-char c) :y y :x x
+				:attributes (.attributes c) :color-pair (.color-pair c)))))
 
 (defmethod delete-shape ((shape shape) (win window) &optional (bg-col :black))
 	 "A utility function to delete a shape by drawing over it in black"
@@ -85,6 +88,8 @@
 					(setf (.coordinates shp)
 						(append (.coordinates shp)
 							(list (list (first c) (second c))))))))))
+
+;;TODO write rotate-shape?
 
 ;;; The following functions return a shape object that can be passed to draw-shape
 
@@ -135,11 +140,11 @@
 
 ;;; Development function - move to test suite later?
 
-(defun display-shape (shp)
+(defun display-shape (shp &optional squarify)
 	"Open a screen display and draw the shape."
 	(with-screen (scr :input-blocking T :enable-colors t :input-echoing nil
 					 :cursor-visibility nil :input-reading :unbuffered)
 		(clear scr)
-		(draw-shape shp scr)
+		(draw-shape shp scr squarify)
 		(event-case (scr event)
 			(otherwise (return-from event-case)))))
