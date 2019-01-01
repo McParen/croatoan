@@ -38,37 +38,14 @@
 	(:documentation "A shape is a list of coordinates, relative to an origin, that can be plotted in a window."))
 
 
+;;; General shape methods
+
 (defmethod shape-extent ((shape shape))
 	"Return min-y, min-x, max-y, and max-x of a shape's coordinates"
 	(let ((y-vals (mapcar #'first (.coordinates shape)))
 			 (x-vals (mapcar #'second (.coordinates shape))))
 		(values (apply #'min y-vals) (apply #'min x-vals)
 			(apply #'max y-vals) (apply #'max x-vals))))
-
-(defun inbounds-p (y x win)
-	"Test whether the given coordinate is within the given window"
-	(not (or (minusp y) (minusp x) (>= y (.height win)) (>= y (.width win)))))
-
-(defmethod draw-shape ((shape shape) (win window) &optional squarify)
-	"Draw a shape in the given window"
-	;; If squarify is on, draw-shape doubles the width of the shape to compensate
-	;; for the fact that terminal fonts are higher than they are wide
-	(do* ((y0 (.y-origin shape)) (x0 (.x-origin shape)) (c (.plot-char shape))
-			 (coords (.coordinates shape) (cdr coords))
-			 (y (first (car coords)) (first (car coords)))
-			 (x (second (car coords)) (second (car coords))))
-		((null coords))
-		(setf y (+ y0 y) x (+ x0 x))
-		(when squarify (setf x (* 2 x)))
-		(when (inbounds-p y x win)
-			(add-char win (.simple-char c) :y y :x x
-				:attributes (.attributes c) :color-pair (.color-pair c)))))
-
-(defmethod delete-shape ((shape shape) (win window) &optional (bg-col :black))
-	 "A utility function to delete a shape by drawing over it in black"
-	 (draw-shape shape window
-		  (make-instance 'complex-char
-				:simple-char #\space :color-pair (list bg-col bg-col))))
 
 (defmethod fill-shape ((shape shape))
 	"Take a shape that only shows the borders and 'color it out'"
@@ -116,7 +93,7 @@
 
 ;;TODO write rotate-shape?
 
-;;; The following functions return a shape object that can be passed to draw-shape
+;;; Create various basic shapes
 
 (defun line (y0 x0 y1 x1 &optional char)
 	"Return a straight line between two points"
@@ -190,6 +167,30 @@
 			(if filled (fill-shape shp) shp))
 		(unless (equal coord last-coord)
 			(setf coords (append coords (list coord))))))
+
+
+;;; Integrate shapes with the rest of croatoan
+
+(defmethod draw-shape ((shape shape) (win window) &optional squarify)
+	"Draw a shape in the given window"
+	;; If squarify is on, draw-shape doubles the width of the shape to compensate
+	;; for the fact that terminal fonts are higher than they are wide
+	(do* ((y0 (.y-origin shape)) (x0 (.x-origin shape)) (c (.plot-char shape))
+			 (coords (.coordinates shape) (cdr coords))
+			 (y (first (car coords)) (first (car coords)))
+			 (x (second (car coords)) (second (car coords))))
+		((null coords))
+		(setf y (+ y0 y) x (+ x0 x))
+		(when squarify (setf x (* 2 x)))
+		(unless (or (minusp y) (minusp x) (>= y (.height win)) (>= y (.width win)))
+			(add-char win (.simple-char c) :y y :x x
+				:attributes (.attributes c) :color-pair (.color-pair c)))))
+
+(defmethod delete-shape ((shape shape) (win window) &optional (bg-col :black))
+	 "A utility function to delete a shape by drawing over it in black"
+	 (draw-shape shape window
+		  (make-instance 'complex-char
+				:simple-char #\space :color-pair (list bg-col bg-col))))
 
 ;;; Development function - move to test suite later?
 
