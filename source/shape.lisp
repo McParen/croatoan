@@ -72,9 +72,33 @@
 
 (defmethod fill-shape ((shape shape))
 	"Take a shape that only shows the borders and 'color it out'"
-	shape
-	;;TODO
-	)
+	;; Every point inside a shape has, on the same axis, a point larger
+	;; and one smaller than itself
+	(flet ((inside-p (pt shape)
+			   (and (member pt (.coordinates shape)
+						:test #'(lambda (p c) (and (= (first p) (first c))
+												  (> (second p) (second c)))))
+				   (member pt (.coordinates shape)
+						:test #'(lambda (p c) (and (= (first p) (first c))
+												  (< (second p) (second c)))))
+				   (member pt (.coordinates shape)
+						:test #'(lambda (p c) (and (= (second p) (second c))
+												  (> (first p) (first c)))))
+				   (member pt (.coordinates shape)
+						:test #'(lambda (p c) (and (= (second p) (second c))
+												  (< (first p) (first c))))))))
+		;; Iterate over the rectangle that encloses the shape, adding any
+		;; points inside the shape's borders to its coordinates
+		(do* ((extent (multiple-value-list (shape-extent shape)))
+				 (min-y (first extent)) (min-x (second extent))
+				 (max-y (third extent)) (max-x (fourth extent))
+				 (y min-y (1+ y)))
+			((> y max-y) shape)
+			(do ((x min-x (1+ x)))
+				((> x max-x))
+				(when (inside-p (list y x) shape)
+					(setf (.coordinates shape)
+						(append (.coordinates shape) (list (list y x)))))))))
 
 (defun merge-shapes (&rest shapes)
 	"Create a new shape object by merging the coordinates of a given list of shapes"
