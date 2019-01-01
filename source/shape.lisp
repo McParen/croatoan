@@ -2,6 +2,7 @@
 
 ;; shapes
 ;; curses extension for plotting shapes
+;; author: Daniel Vedder <daniel@terranostra.one>
 
 (defclass shape ()
 	((x-origin
@@ -122,16 +123,25 @@
 			(when char (setf (.plot-char pol) char))
 			(if filled (fill-shape pol) pol))
 		(when (= j (length corners)) (setf j 0))
-		(merge-shapes pol (line (first (nth i corners)) (second (nth i corners))
-							  (first (nth j corners)) (second (nth j corners)) char))))
+		(setf pol (merge-shapes pol
+					  (line (first (nth i corners)) (second (nth i corners))
+						  (first (nth j corners)) (second (nth j corners)) char)))))
 
 (defun triangle (y0 x0 y1 x1 y2 x2 &key filled char)
 	"Return a triangle (utility wrapper around `polygon')"
-	(polygon (list y0 x0 y1 x1 y2 x2) :filled filled :char char))
+	(polygon (list (list y0 x0) (list y1 x1) (list y2 x2))
+		:filled filled :char char))
 
-(defun rectangle (y0 x0 y1 x1 y2 x2 y3 x3 &key filled char)
+(defun quadrilateral (y0 x0 y1 x1 y2 x2 y3 x3 &key filled char)
+	"Return a quadrilateral (utility wrapper around `polygon')"
+	(polygon (list (list y0 x0) (list y1 x1) (list y2 x2) (list y3 x3))
+		:filled filled :char char))
+
+(defun rectangle (y0 x0 height width &key filled char)
 	"Return a rectangle (utility wrapper around `polygon')"
-	(polygon (list y0 x0 y1 x1 y2 x2 y3 x3) :filled filled :char char))
+	(polygon (list (list y0 x0) (list y0 (+ x0 width))
+				 (list (+ y0 height) (+ x0 width)) (list (+ y0 height) x0))
+		:filled filled :char char))
 
 (defun circle (y0 x0 radius &key filled char)
 	"Return a circle with a given radius, optionally filled"
