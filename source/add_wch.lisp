@@ -109,7 +109,7 @@ as will fit on the line."
   (funcall-make-cchar_t #'%wadd-wch window char attributes color-pair n))
 
 (defun echo-wide-char (window char &key attributes color-pair y x)
-  "Add one rendered character to the window, then refresh the window.
+  "Add one wide (multi-byte) character to the window, then refresh the window.
 
 If the destination coordinates Y and X are given, move to the
 destination first and then echo the character. 
@@ -127,7 +127,7 @@ character."
 
 ;; wide-char equivalents of the ACS chars.
 ;; since reading _nc_wacs doesnt work like it worked with acs_map,
-;; plan B is a direct translation from ACS names to unocide code points.
+;; plan B is a direct translation from ACS names to unicode code points.
 ;; source for the codes is ncurses/widechar/lib_wacs.c
 (defparameter wide-acs-alist
   ;; VT100 symbols

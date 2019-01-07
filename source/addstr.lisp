@@ -25,7 +25,7 @@ and then add the string."
            (loop
               repeat count
               for ch across string
-              do (add-char window ch :attributes attributes :color-pair color-pair))
+              do (add-wide-char window ch :attributes attributes :color-pair color-pair))
            ;; simple lisp string, no attributes or colors
            (if n
                (%waddnstr (.winptr window) string n)
@@ -34,4 +34,4 @@ and then add the string."
        (loop
           repeat count
           for ch across (.complex-char-array string)
-          do (add-char window ch))))))
+          do (add-wide-char window ch))))))

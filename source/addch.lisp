@@ -20,7 +20,7 @@ n is -1, as many chars will be added as will fit on the line."
     ((or string complex-string)
      (add-string window object :attributes attributes :color-pair color-pair :y y :x x :n n))
     ((or integer keyword character complex-char)
-     (add-char   window object :attributes attributes :color-pair color-pair :y y :x x :n n))))
+     (add-wide-char window object :attributes attributes :color-pair color-pair :y y :x x :n n))))
 
 (defun distance-to-eol (window)
   "Return the number of columns from the cursor position to the end of the line in the window."
@@ -31,7 +31,7 @@ n is -1, as many chars will be added as will fit on the line."
   (- (.height window) (car (.cursor-position window))))
 
 (defun add-char (window char &key attributes color-pair y x n)
-  "Add the char to the window, then advance the cursor.
+  "Add the narrow (single-byte) char to the window, then advance the cursor.
 
 If the destination coordinates y and x are given, move the cursor to the
 destination first and then add the character.
@@ -53,7 +53,7 @@ Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
        do (%waddch winptr chtype))))
 
 (defun echo (window char &key attributes color-pair y x)
-  "Add one rendered character to the window, then refresh the window.
+  "Add one narrow (single-byte) character to the window, then refresh the window.
 
 If the destination coordinates Y and X are given, move to the
 destination first and then echo the character. 
