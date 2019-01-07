@@ -256,7 +256,6 @@
 
    ;; shape / shape plotting extension for ncurses
    draw-shape
-   delete-shape
    shape-extent
    merge-shapes
    fill-shape
