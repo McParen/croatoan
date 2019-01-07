@@ -194,12 +194,6 @@
 		((null coords))
 		(setf y (+ y0 y) x (+ x0 x))
 		(when squarify (setf x (* 2 x)))
-		(unless (or (minusp y) (minusp x) (>= y (.height win)) (>= y (.width win)))
+		(unless (or (minusp y) (minusp x) (>= y (.height win)) (>= x (.width win)))
 			(add-char win (.simple-char c) :y y :x x
 				:attributes (.attributes c) :color-pair (.color-pair c)))))
-
-(defmethod delete-shape ((shape shape) (win window) &optional (bg-col :black))
-	 "A utility function to delete a shape by drawing over it in black"
-	 (draw-shape shape window
-		  (make-instance 'complex-char
-				:simple-char #\space :color-pair (list bg-col bg-col))))
