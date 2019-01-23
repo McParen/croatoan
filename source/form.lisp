@@ -191,7 +191,7 @@ clear = write space combined with the background char."
                   ;; just add another char to the inbuf
                   (setf inbuf (cons char inbuf))
                   ;; if we're in the middle of the field, either insert or replace
-                  (if (.insert-enabled win)
+                  (if (.insert-mode win)
                       (setf inbuf (insert-nth  (- len inptr)      char inbuf))
                       (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf))))
               ;; both replacing and inserting advance the cursor
@@ -245,7 +245,7 @@ clear = write space combined with the background char."
     :ic        (lambda (win event form)
                  ;; If an optional argument like form is passed to run-event-loop,
                  ;; the handler functions have to handle it.  
-                 (setf (.insert-enabled win) (not (.insert-enabled win))))
+                 (setf (.insert-mode win) (not (.insert-mode win))))
 
     ;;#\newline  'debug-print-field-buffer
     :default   'form-add-char))
@@ -266,7 +266,7 @@ clear = write space combined with the background char."
     :ic        (lambda (win event form)
                  ;; If an optional argument like form is passed to run-event-loop,
                  ;; the handler functions have to handle it.  
-                 (setf (.insert-enabled win) (not (.insert-enabled win))))
+                 (setf (.insert-mode win) (not (.insert-mode win))))
 
     ;;#\newline  'debug-print-field-buffer
     :default   'field-add-char))

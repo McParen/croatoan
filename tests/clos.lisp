@@ -1582,9 +1582,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (decf n)
            (delete-char win)))
         (:ic ; INS / Einfg key
-         (format t "(.insert-enabled win) => ~A~%" (.insert-enabled win))
-         (setf (.insert-enabled win) (not (.insert-enabled win)))
-         (format t "(.insert-enabled win) => ~A~%" (.insert-enabled win))
+         (format t "(.insert-mode win) => ~A~%" (.insert-mode win))
+         (setf (.insert-mode win) (not (.insert-mode win)))
+         (format t "(.insert-mode win) => ~A~%" (.insert-mode win))
          (refresh wout))
         (:backspace ; BS key
          (when (> (cadr (.cursor-position win)) 0)
@@ -1602,7 +1602,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (when (and (characterp event)
                     (< (cadr (.cursor-position win)) (1- (.width win))))
            (incf n)
-           ;; .insert-enabled does not insert if we do not use gray stream functions
+           ;; .insert-mode does not insert if we do not use gray stream functions
            ;;(add-wide-char win event))))
            (write-char event win)))) ; calls stream-write-char
            ;; (princ event win) ; calls print-object
@@ -1652,14 +1652,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (move win 0 inptr)
              (refresh win)))
           (:ic
-           (format t "(.insert-enabled win) => ~A~%" (.insert-enabled win))
-           (setf (.insert-enabled win) (not (.insert-enabled win)))
-           (format t "(.insert-enabled win) => ~A~%" (.insert-enabled win))
+           (format t "(.insert-mode win) => ~A~%" (.insert-mode win))
+           (setf (.insert-mode win) (not (.insert-mode win)))
+           (format t "(.insert-mode win) => ~A~%" (.insert-mode win))
            (refresh wout))
           (otherwise
            (if (= inptr (length inbuf))
                (setf inbuf (cons event inbuf))
-               (if (.insert-enabled win)
+               (if (.insert-mode win)
                    (setf inbuf (insert-nth (- (length inbuf) inptr) event inbuf))
                    (setf inbuf (replace-nth (- (length inbuf) (1+ inptr)) event inbuf))))
            (incf inptr)

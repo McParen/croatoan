@@ -6,8 +6,10 @@
                                (input-buffering nil)
                                (process-control-chars t)
                                (input-blocking t)
-                               (input-echoing  t)
-                               (enable-fkeys   t) 
+                               (input-echoing t)
+                               (enable-fkeys t)
+                               (enable-scrolling nil)
+                               (insert-mode nil)
                                (enable-colors  t)
                                (use-default-colors nil)
                                (cursor-visibility t)
@@ -29,6 +31,8 @@ library. Do not run more than one screen at the same time."
                                       :input-blocking ,input-blocking
                                       :input-echoing  ,input-echoing
                                       :enable-fkeys   ,enable-fkeys
+                                      :enable-scrolling ,enable-scrolling
+                                      :insert-mode ,insert-mode
                                       :enable-colors  ,enable-colors
                                       :use-default-colors ,use-default-colors
                                       :cursor-visibility ,cursor-visibility

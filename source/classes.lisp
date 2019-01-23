@@ -110,12 +110,12 @@
    ;; IC / INS / Insert / Einfg key
    ;; this will only apply to lisps standard output functions.
    ;; ncurses functions add-char and insert-char can be used explicitely.
-   (insert-enabled
-    :initarg       :insert-enabled
+   (insert-mode
+    :initarg       :insert-mode
     :initform      nil
     :type          boolean
-    :accessor      .insert-enabled
-    :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting (nil) it.")
+    :accessor      .insert-mode
+    :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting it (nil, default).")
 
    (event-handlers
     :initform      nil
@@ -983,11 +983,11 @@
 ;;; print, prin1, princ, format ~A, ~S
 
 ;; print a wide but simple lisp character to a window
-;; TODO: add check for .insert-enabled
+;; TODO: add check for .insert-mode
 (defmethod print-object ((ch character) (stream window))
   (add-wide-char stream ch))
 
-;; TODO: add check for .insert-enabled
+;; TODO: add check for .insert-mode
 (defmethod print-object ((ch complex-char) (stream window))
   (add-wide-char stream ch))
 

@@ -58,7 +58,7 @@
    .enable-fkeys
    .enable-scrolling
    .scrolling-region
-   .insert-enabled
+   .insert-mode
    .event-handlers
    .background
    .input-echoing
