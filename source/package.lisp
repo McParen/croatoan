@@ -89,6 +89,7 @@
    ;; form
    .buffer
    .fields
+   .max-buffer-length
 
    ;; shape
    .x-origin

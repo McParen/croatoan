@@ -543,13 +543,29 @@
     :accessor      .width
     :documentation "The width of the field.")
 
-   ;; TODO: max-height and max-width, to limit the number of lines and cols when scrolling is enabled.
-   
    (buffer
     :initform      nil
     :type          (or null list)
     :accessor      .buffer
     :documentation "List containing the characters in the field.")
+
+   (max-buffer-length
+    :initarg       :max-buffer-length
+    :initform      nil
+    :type          (or null integer)
+    :accessor      .max-buffer-length
+    :documentation
+    "Max length of the field buffer. If nil, it will be initialized to field width. 
+    Horizontal scrolling is then disabled.")
+
+   (display-pointer
+    :initform      0
+    :type          (or null integer)
+    :accessor      .display-pointer
+    :documentation
+    "Position in the input buffer from which n=width characters are displayed.
+    When max-buffer-length is greater than width, display-pointer can be greater than zero.
+    Horizontal scrolling is then enabled.")
 
    (fill-pointer
     :initform      0
@@ -558,6 +574,12 @@
     :documentation "The current position in the input buffer to which the next character will be written."))
 
   (:documentation "A field is an editable part of the screen for user input."))
+
+(defmethod initialize-instance :after ((field field) &key)
+  ;; If unspecified, max-buffer-length should be equal to the field length.
+  (with-slots (max-buffer-length width) field
+    (unless max-buffer-length
+      (setf max-buffer-length width))))
 
 (defclass form ()
   ((fields

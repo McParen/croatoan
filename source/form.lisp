@@ -62,10 +62,12 @@ clear = write space combined with the background char."
 
 (defmethod update-cursor-position (win (field field))
   "Update the cursor position of a field."
-  (with-accessors ((pos .position) (inptr .fill-pointer)) field
+  (with-accessors ((pos .position) (inptr .fill-pointer) (dptr .display-pointer)) field
     (move win
+          ;; TODO: assumes a single-line field.
           (car pos)
-          (+ (cadr pos) inptr))))
+          (+ (cadr pos)           ; beginning of the field
+             (- inptr dptr) ))))  ; position in the field starting with dptr
 
 (defmethod update-cursor-position (win (form form))
   "Update the cursor position of the current field of the form."
@@ -76,9 +78,22 @@ clear = write space combined with the background char."
 
 (defmethod draw (window (field field))
   "Clear and redraw the field and its contents and background."
-  (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer)) field
+  (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)) field
     (clear-field window field)
-    (add-string window (coerce (reverse inbuf) 'string) :attributes '(:underline))
+    (let ((len (length inbuf))
+          (str (coerce (reverse inbuf) 'string)))
+      (add-string window
+                  ;; display only max width chars starting from dptr
+                  (if (< len width)
+                      ;; if the buffer is shorter than the field, just display it.
+                      str
+                      ;; otherwise display a substring starting with dptr.
+                      (subseq str dptr (if (< width (- len dptr))
+                                           ;; if the remaining substring is longer than width, display just width chars.
+                                           (+ dptr width)
+                                           ;; if the remaining substring is shorter than width, just display it.
+                                           len) ))
+                  :attributes '(:underline)))
     (update-cursor-position window field)))
 
 ;; we have to make window a parameter because fields do not have a window slot
@@ -120,10 +135,14 @@ clear = write space combined with the background char."
 
 (defmethod move-prev-char (win event (field field))
   "Move the cursor to the previous char in the field."
-  (with-accessors ((inptr .fill-pointer)) field
+  (with-accessors ((inptr .fill-pointer) (dptr .display-pointer)) field
     (when (> inptr 0)
-      (decf inptr)))
+      (decf inptr))
+    ;; when the inptr moves left past the dptr, simultaneously decf the dptr.
+    (when (< inptr dptr)
+      (decf dptr)))
   (update-cursor-position win field)
+  (draw win field) ;; we have to redraw in the case of horizontal scrolling
   (refresh win))
 
 (defmethod move-prev-char (win event (form form))
@@ -135,10 +154,14 @@ clear = write space combined with the background char."
 
 (defmethod move-next-char (win event (field field))
   "Move the cursor to the next char in the field."
-  (with-accessors ((inbuf .buffer) (inptr .fill-pointer)) field
+  (with-accessors ((width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)) field
       (when (< inptr (length inbuf))
-        (incf inptr)))
+        (incf inptr))
+      ;; when the inptr moves right past the width, simultaneously incf the dptr.
+      (when (> inptr (+ dptr width))
+        (incf dptr)))
   (update-cursor-position win field)
+  (draw win field) ;; we have to redraw in the case of horizontal scrolling
   (refresh win))
 
 (defmethod move-next-char (win event (form form))
@@ -150,9 +173,11 @@ clear = write space combined with the background char."
 
 (defmethod delete-prev-char (win event (field field))
   "Delete the previous char in the field, moving the cursor to the left."
-  (with-accessors ((inbuf .buffer) (inptr .fill-pointer)) field
+  (with-accessors ((inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)) field
     (when (> inptr 0)
       (decf inptr)
+      (when (> dptr 0)
+        (decf dptr))
       (setf inbuf (remove-nth (- (length inbuf) 1 inptr) inbuf))))
   ;; we dont have to redraw the complete form, just the changed field.
   (draw win field))
@@ -166,9 +191,12 @@ clear = write space combined with the background char."
 
 (defmethod delete-next-char (win event (field field))
   "Delete the next char (char under the cursor) in the field, not moving the cursor."
-  (with-accessors ((inbuf .buffer) (inptr .fill-pointer)) field
+  (with-accessors ((inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)) field
     ;; we can only delete to the right if the inptr is not at the end of the inbuf.
     (when (> (length inbuf) inptr)
+      (when (> dptr 0)
+        ;; when a part of the string is hidden on the left side, shift it to the right.
+        (decf dptr))
       (setf inbuf (remove-nth (- (length inbuf) (1+ inptr)) inbuf))))
   (draw win field))
 
@@ -177,29 +205,36 @@ clear = write space combined with the background char."
   (delete-next-char win event (.current-field form)))
 
 (defun field-add-char (win char field)
-  "Add char to the current cursor position in the field."
+  "Add char to the current cursor position in the field.
+
+The buffer can be longer than the displayed field width, horizontal scrolling is enabled."
   (if (and (characterp char)
            (graphic-char-p char))
       (progn
-        (with-accessors ((width .width) (inbuf .buffer) (inptr .fill-pointer)) field
+        (with-accessors ((width .width) (inbuf .buffer) (mlen .max-buffer-length)
+                         (inptr .fill-pointer) (dptr .display-pointer)) field
           (let ((len (length inbuf)))
-            ;; only add chars until we have reached the max width of the field
-            ;; longer buffers and scrolling are not supported yet.
-            (unless (>= len width)
+            ;; only add new chars until we've reached the max-buffer-length
+            (unless (>= len mlen)
+
               ;; if we're at the end of the inbuf
               (if (= inptr len)
                   ;; just add another char to the inbuf
                   (setf inbuf (cons char inbuf))
-                  ;; if we're in the middle of the field, either insert or replace
+                  ;; if we're in the middle of the buffer, either insert or replace
                   (if (.insert-mode win)
                       (setf inbuf (insert-nth  (- len inptr)      char inbuf))
                       (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf))))
+
               ;; both replacing and inserting advance the cursor
-              (incf inptr))))
-        ;; after were done with editing, redraw the field.
-        ;; TODO: redraw the entire field or echo one single char?
-        (draw win field))
-      ;; if char is not graphic, simply return nil.
+              (incf inptr)
+
+              ;; after updating the fill-pointer, update the display-pointer
+              (if (< inptr dptr) (decf dptr))
+              (if (> inptr (+ dptr width)) (incf dptr)) )))
+        (draw win field)) ;progn
+      
+      ;; if the char isnt graphic, do nothing.
       nil))
 
 (defun form-add-char (win char form)
@@ -214,11 +249,11 @@ clear = write space combined with the background char."
   (declare (ignore event))
   (typecase object
     (field
-     (with-accessors ((inbuf .buffer) (inptr .fill-pointer)) object
+     (with-accessors ((inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)) object
        (when (> (length inbuf) 0)
          (clear win)
          (format win "~A ~%" (coerce (reverse inbuf) 'string))
-         (setf inbuf nil inptr 0))))
+         (setf inbuf nil inptr 0 dptr 0))))
     (form
      (with-accessors ((current-field .current-field)) object
        (debug-print-field-buffer win event current-field))))
@@ -280,10 +315,9 @@ clear = write space combined with the background char."
                           (form  :form-default-keymap))))
   
     ;; if the user didnt add any event handlers, add the default keymap.
-    (with-accessors ((event-handlers .event-handlers)) window
-      (unless event-handlers
-        (setf event-handlers (get-keymap default-keymap)))))
-
+    (unless (.event-handlers window)
+      (setf (.event-handlers window) (get-keymap default-keymap))))
+  
   ;; the optional arg form will be passed by run-event-loop to the
   ;; event handler functions along with win and event.
   (run-event-loop window object))
