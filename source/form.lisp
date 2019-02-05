@@ -154,12 +154,15 @@ clear = write space combined with the background char."
 
 (defmethod move-next-char (win event (field field))
   "Move the cursor to the next char in the field."
-  (with-accessors ((width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)) field
-      (when (< inptr (length inbuf))
-        (incf inptr))
-      ;; when the inptr moves right past the width, simultaneously incf the dptr.
-      (when (> inptr (+ dptr width))
-        (incf dptr)))
+  (with-accessors ((width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (mlen .max-buffer-length)) field
+    (when (and (< inptr (length inbuf))
+               (not (= (1+ inptr) mlen width)))
+      (incf inptr))
+    ;; when the inptr moves past the width, simultaneously incf the dptr.
+    (when (and (>= inptr (+ dptr width))
+               ;; do not incf the dptr when we're at the end of a fixed width field.
+               (not (= inptr mlen width)))
+      (incf dptr)))
   (update-cursor-position win field)
   (draw win field) ;; we have to redraw in the case of horizontal scrolling
   (refresh win))
@@ -208,33 +211,64 @@ clear = write space combined with the background char."
   "Add char to the current cursor position in the field.
 
 The buffer can be longer than the displayed field width, horizontal scrolling is enabled."
-  (if (and (characterp char)
-           (graphic-char-p char))
+  (if (and (characterp char) (graphic-char-p char))
       (progn
-        (with-accessors ((width .width) (inbuf .buffer) (mlen .max-buffer-length)
-                         (inptr .fill-pointer) (dptr .display-pointer)) field
+        (with-accessors ((width .width) (inbuf .buffer) (mlen .max-buffer-length) (inptr .fill-pointer) (dptr .display-pointer)) field
           (let ((len (length inbuf)))
-            ;; only add new chars until we've reached the max-buffer-length
-            (unless (>= len mlen)
-
-              ;; if we're at the end of the inbuf
-              (if (= inptr len)
-                  ;; just add another char to the inbuf
-                  (setf inbuf (cons char inbuf))
-                  ;; if we're in the middle of the buffer, either insert or replace
-                  (if (.insert-mode win)
-                      (setf inbuf (insert-nth  (- len inptr)      char inbuf))
-                      (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf))))
-
-              ;; both replacing and inserting advance the cursor
-              (incf inptr)
-
-              ;; after updating the fill-pointer, update the display-pointer
-              (if (< inptr dptr) (decf dptr))
-              (if (> inptr (+ dptr width)) (incf dptr)) )))
-        (draw win field)) ;progn
-      
+            (if (.insert-mode win)
+                (progn
+                  ;; only add new chars until we've reached the max-buffer-length
+                  (unless (>= len mlen)
+                    ;; if we're at the end of the inbuf
+                    (if (= inptr len)
+                        ;; just add another char to the inbuf
+                        (setf inbuf (cons char inbuf))
+                        ;; if we're in the middle of the buffer, either insert or replace
+                        (setf inbuf (insert-nth (- len inptr) char inbuf)) )
+                    ;; we need special cases when mlen is exactly equal to width.
+                    (if (= mlen width)
+                        ;; advance the cursor if it is not already at the end
+                        ;; if scrolling is disabled, do not move past the last char in the field.
+                        (unless (>= inptr (- mlen 1))
+                          (incf inptr))
+                        (unless (> inptr (- mlen 1))
+                          (incf inptr))))
+                  ;; after updating the fill-pointer, update the display-pointer
+                  (if (< inptr dptr) (decf dptr))
+                  (if (> inptr (+ dptr (1- width))) (incf dptr)))
+                ;; default overwrite mode
+                (progn
+                  ;; only add new chars until we've reached the max-buffer-length then only overwrite.
+                  (if (>= len mlen)
+                      (if (< inptr mlen)
+                          ;; even when the inbuf is full, when inptr is not at the end, overwrite.
+                          (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf))
+                          nil)
+                      ;; if we're at the end of the inbuf
+                      (if (= inptr len)
+                          ;; just add another char to the inbuf
+                          (setf inbuf (cons char inbuf))
+                          ;; if we're in the middle of the buffer, either insert or replace
+                          (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf))))
+                  ;; we need special cases when mlen is exactly equal to width.
+                  (if (= mlen width)
+                      ;; advance the cursor if it is not already at the end
+                      ;; if scrolling is disabled, do not move past the last char in the field.
+                      (unless (>= inptr (- mlen 1))
+                        (incf inptr))
+                      (unless (> inptr (- mlen 1))
+                        (incf inptr)))
+                  ;; after updating the fill-pointer, update the display-pointer
+                  (when (< inptr dptr) (decf dptr))
+                  (if (<= mlen width)
+                      ;; if scrolling is disabled, do not move past the last char in the field.
+                      (when (> inptr (+ dptr width))
+                        (incf dptr))
+                      (when (> inptr (+ dptr (1- width)))
+                        (incf dptr))) ))))
+        (draw win field))
       ;; if the char isnt graphic, do nothing.
+      ;; TODO: this doesnt work with acs chars, which are keywords.
       nil))
 
 (defun form-add-char (win char form)
