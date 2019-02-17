@@ -520,28 +520,37 @@
                 (.background win)        (make-instance 'complex-char :color-pair color-pair)
                 (.background sub-window) (make-instance 'complex-char :color-pair color-pair ))) ))))
 
-(defclass field ()
+(defclass element ()
   ((position
     :initarg       :position
     :initform      nil
     :type          (or null cons)
     :accessor      .position
-    :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the field.")
+    :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element.")
 
-   ;; multiline fields not yet supported
-   (height
-    :initarg       :height
-    :initform      1
-    :type          (or null integer)
-    :accessor      .height
-    :documentation "The height (number of lines) of the field. The default is 1, a single-line field.")
+   (selected
+    :initform      nil
+    :type          boolean
+    :accessor      .selected
+    :documentation "Flag denoting whether the field is currently selected in a form."))
 
-   (width
+  (:documentation "An element of a form."))
+
+(defclass field (element)
+  ((width
     :initarg       :width
     :initform      nil
     :type          (or null integer)
     :accessor      .width
     :documentation "The width of the field.")
+
+   (style
+    :initarg       :style
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .style
+    :documentation
+    "A style is a list of four complex-chars (or nil): field foreground, background, selected field foreground, background.")
 
    (buffer
     :initform      nil
@@ -571,15 +580,18 @@
     :initform      0
     :type          integer
     :accessor      .fill-pointer
-    :documentation "The current position in the input buffer to which the next character will be written."))
+    :documentation "The position in the input buffer to which the next character will be written."))
 
-  (:documentation "A field is an editable part of the screen for user input."))
+  (:documentation "A field is an editable part of the screen for user input. Can be part of a form."))
 
 (defmethod initialize-instance :after ((field field) &key)
   ;; If unspecified, max-buffer-length should be equal to the field length.
   (with-slots (max-buffer-length width) field
     (unless max-buffer-length
       (setf max-buffer-length width))))
+
+(defmethod .value ((field field))
+  (coerce (reverse (slot-value field 'buffer)) 'string))
 
 (defclass form ()
   ((fields
@@ -613,7 +625,9 @@
 
 (defmethod initialize-instance :after ((form form) &key)
   ;; Initialize the current field as the first field from the fields list.
-  (setf (slot-value form 'current-field) (car (slot-value form 'fields))))
+  (setf (slot-value form 'current-field) (car (slot-value form 'fields)))
+  ;; set the selected option of the current field.
+  (setf (slot-value (slot-value form 'current-field) 'selected) t))
 
 (defclass form-window (form decorated-window)
   ()

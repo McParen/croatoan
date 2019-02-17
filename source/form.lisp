@@ -49,13 +49,16 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
   "Do what (clear win) does, but for a single field.
 
 clear = write space combined with the background char."
-  (with-accessors ((pos .position) (width .width)) field
-    (setf (.cursor-position win) pos)
-    ;; TODO: overwrite the field with the background char, not just with a space.
-    (add-char win #\space :n width)
-    (setf (.cursor-position win) pos)
-    ;; this is the only place we set the attribute for the whole field
-    (change-attributes win width '(:underline))))
+  (with-accessors ((pos .position) (width .width) (style .style) (selected .selected)) field
+    (let ((bg (nth 1 style))
+          (sbg (nth 3 style)))
+      (setf (.cursor-position win) pos)
+      ;; this is the only place we set the background style for the field
+      (let ((bgchar (if selected
+                        (if sbg sbg #\space)
+                        (if bg bg #\space))))
+        (add win bgchar :n width))
+      (setf (.cursor-position win) pos))))
 
 (defgeneric update-cursor-position (window object)
   (:documentation "Update the cursor position of a form or a field."))
@@ -78,9 +81,12 @@ clear = write space combined with the background char."
 
 (defmethod draw (window (field field))
   "Clear and redraw the field and its contents and background."
-  (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)) field
+  (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (style .style) (selected .selected)) field
+    ;; TODO: rewrite clear-field in terms of draw field. simply draw an empty string.
     (clear-field window field)
-    (let ((len (length inbuf))
+    (let ((fg (nth 0 style))
+          (sfg (nth 2 style))
+          (len (length inbuf))
           (str (coerce (reverse inbuf) 'string)))
       (add-string window
                   ;; display only max width chars starting from dptr
@@ -93,7 +99,8 @@ clear = write space combined with the background char."
                                            (+ dptr width)
                                            ;; if the remaining substring is shorter than width, just display it.
                                            len) ))
-                  :attributes '(:underline)))
+                  :attributes (if selected (if sfg (.attributes sfg) nil) (if fg (.attributes fg) nil))
+                  :color-pair (if selected (if sfg (.color-pair sfg) nil) (if fg (.color-pair fg) nil))))
     (update-cursor-position window field)))
 
 ;; we have to make window a parameter because fields do not have a window slot
@@ -112,22 +119,28 @@ clear = write space combined with the background char."
   "Select the previous field in a form's field list."
   ;;(declare (special form))
   (with-accessors ((fields .fields) (current-field-number .current-field-number) (current-field .current-field)) form
+    (setf (.selected current-field) nil)
     ;; use mod to cycle the field list.
     (setf current-field-number (mod (- current-field-number 1) (length fields)))
-    (setf current-field (nth current-field-number fields)))
+    (setf current-field (nth current-field-number fields))
+    (setf (.selected current-field) t))
   ;; after we switched the field number, we also have to move the cursor.
   (update-cursor-position win form)
+  (draw win form)
   (refresh win))
 
 (defun select-next-field (win event form)
   "Select the next field in a form's field list."
   ;;(declare (special form))
   (with-accessors ((fields .fields) (current-field-number .current-field-number) (current-field .current-field)) form
+    (setf (.selected current-field) nil)
     ;; use mod to cycle the field list.
     (setf current-field-number (mod (+ current-field-number 1) (length fields)))
-    (setf current-field (nth current-field-number fields)))
+    (setf current-field (nth current-field-number fields))
+    (setf (.selected current-field) t))
   ;; after we switched the field number, we also have to move the cursor.
   (update-cursor-position win form)
+  (draw win form)
   (refresh win))
 
 (defgeneric move-prev-char (window event object)

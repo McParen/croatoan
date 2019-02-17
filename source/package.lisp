@@ -89,6 +89,7 @@
    ;; form
    .buffer
    .fields
+   .style
    .max-buffer-length
 
    ;; shape
