@@ -1672,8 +1672,13 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   "Edit a single input field, not part of a form."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
     (let ((*standard-output* scr)
-          (field (make-instance 'field :position (list 3 20) :width 20)))
+          (field (make-instance 'field :position (list 3 20) :width 10)))
 
+      ;; style = (fg bg selected-fg selected-bg)
+      (setf (.style field)
+            (list (make-instance 'complex-char :simple-char #\space :attributes '(:underline))
+                  (make-instance 'complex-char :simple-char #\.)))
+      
       (setf (.event-handlers scr) (get-keymap :field-default-keymap))
       (add-event-handler (scr #\newline)  'de.anvi.croatoan::debug-print-field-buffer)
 
@@ -1683,7 +1688,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (clear scr)
       ;; display the contents of the input buffer of the field
       (format t "buffer: ~A~%" (.buffer field))
-      (format t "string: ~A" (coerce (reverse (.buffer field)) 'string))
+      (format t "string: ~A" (.value field))
       (refresh scr)
 
       ;; wait for keypress, then exit
@@ -1692,11 +1697,19 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16f ()
   "Group several input fields to a form."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
-    (let* ((field1 (make-instance 'field :position (list 3 20) :width 20))
-           (field2 (make-instance 'field :position (list 5 20) :width 20))
-           (field3 (make-instance 'field :position (list 7 20) :width 20))
-           (form   (make-instance 'form :fields (list field1 field2 field3))))
+    (let* ((sfg  (make-instance 'complex-char :simple-char #\space :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
+           (fg (make-instance 'complex-char :simple-char #\space :color-pair '() :attributes '()))
+           (sbg  (make-instance 'complex-char :simple-char #\space :color-pair '(:blue :white) :attributes '()))
+           (bg (make-instance 'complex-char :simple-char #\_))
+           ;; style = (fg bg selected-fg selected-bg)
+           (style (list fg bg sfg sbg))
+           (field1 (make-instance 'field :position (list 3 20) :width 10 :style style :max-buffer-length 5))
+           (field2 (make-instance 'field :position (list 5 20) :width 10 :style style))
+           (field3 (make-instance 'field :position (list 7 20) :width 10 :style style :max-buffer-length 15))
+           (form (make-instance 'form :fields (list field1 field2 field3))))
 
+      (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
+      
       ;; before the form can be edited, a set of predefined event handlers from the default keymap
       ;; has to be associated with the window.
       (setf (.event-handlers scr) (get-keymap :form-default-keymap))
@@ -1713,7 +1726,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; display the contents of the input buffer of all fields of the form
       ;; use field-buffer-to-string to get the contents of the field buffer as a string instead of a list of chars.
       (loop for i in (.fields form) do
-        (format scr "~A ~A ~%" (.buffer i) (field-buffer-to-string i)))
+        (format scr "~A ~A ~%" (.buffer i) (.value i)))
 
       (refresh scr)
       ;; wait for keypress, then exit
