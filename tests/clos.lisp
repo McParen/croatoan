@@ -2018,6 +2018,26 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (close sub-menu1)
       (close sub-menu2))))
 
+(defun t19c3 ()
+  "Menu with checkbox items."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+    (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+                      "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
+           (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
+                                :title "t19c" :border t :enable-fkeys t
+                                :type :checklist
+                                :max-item-length 20
+                                :color-pair (list :yellow :red) )))
+      (event-case (scr event)
+        ;; "a" draws the menu and enters a new menu-only event loop
+        (#\a (let ((result (select menu)))
+               (format scr "You chose ~A~%" (mapcar #'.value result))
+               ;; we have to touch scr in order to make the menu disappear.
+               (touch scr)
+               (refresh scr)))
+        (#\q (return-from event-case)))
+      (close menu))))
+
 (defun t19d ()
   "Use the arrow keys to pick a value from an 2D array menu, given as a layout parameter."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
