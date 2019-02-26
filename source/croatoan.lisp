@@ -143,7 +143,13 @@ can be defined, which will be called at a specified frame-rate between keypresse
 Here the main application state can be updated.
 
 Alternatively, to achieve the same effect, input-blocking can be set to a specific
-delay in miliseconds."
+delay in miliseconds.
+
+Example use:
+
+(add-event-handler (scr #\q)
+  (lambda (win event)
+    (throw 'event-loop :quit)))"
   `(setf (slot-value ,window 'event-handlers)
          ;; we need to make handler-function a &body so it is indented properly by slime.
          (acons ,event ,@handler-function (slot-value ,window 'event-handlers))))
@@ -172,65 +178,56 @@ to a hash table in the future."
   "Add a keymap by its name to the global keymap collection."
   (setf *keymaps* (acons keymap-name keymap *keymaps*)))
 
-(defun run-event-loop (win &optional args)
+(defun get-event-handler (win event)
+  "Take a window and an event read from that window, return the handler for that event.
+
+The keybindings alist is stored in the event-handlers slot of a window object.
+
+If no handler is defined for the event, the :default event handler is tried.
+If not even the default handler is defined, the event is ignored.
+
+If input-blocking is nil, we receive nil events in case no real events occur.
+In that case, the handler for the nil event is returned, if defined.
+
+The event pairs can be added by add-event-handler as conses: (event . #'handler).
+
+An event should be bound to access the pre-defined function exit-event-loop."
+  (flet ((ev (event)
+           (assoc event (slot-value win 'event-handlers))))
+    (cond
+      ;; Event occured and event handler is defined.
+      ((and event (ev event)) (cdr (ev event)))
+      ;; Event occured and a default event handler is defined.
+      ;; If not even the default handler is defined, the event is ignored.
+      ((and event (ev :default)) (cdr (ev :default)))
+      ;; If no event occured and the idle handler is defined.
+      ;; The event is only nil when input input-blocking is nil.
+      ((and (null event) (ev nil)) (cdr (ev nil)))
+      ;; If no event occured and the idle handler is not defined.
+      (t nil))))
+
+(defun run-event-loop (win &rest args)
   "Read events from the window, then call predefined event handler functions on the events.
 
 The handlers can be added by the macro add-event-handler, or by directly setting
 a predefined keymap to the window's event-handlers property.
 
-Args is either a single additional argument passed to the handlers, or a list of arguments."
-  ;; provide a non-local exit point so we can exit the loop from an event handler.
-  ;; one of the events MUST provide a way to exit the event loop by throwing 'event-loop
-  ;; example use:
-  ;; (add-event-handler (scr #\q)
-  ;;   (lambda (win event)
-  ;;     (throw 'event-loop :quit)))
-  ;; the function exit-event-loop is pre-defined to perform this non-local exit.
+Args is either a single additional argument passed to the handlers, or a list of arguments.
+
+Provide a non-local exit point so we can exit the loop from an event handler. 
+
+One of the events must provide a way to exit the event loop by throwing 'event-loop.
+
+The function exit-event-loop is pre-defined to perform this non-local exit."
   (catch 'event-loop
     (loop
-       (let ((event (get-wide-event win)))
-         ;; when event is not nil (it is nil only when input-blocking is nil)
-         (if event
-             ;; event-pair = (event . #'handler)
-             (let ((event-pair (assoc event (slot-value win 'event-handlers))))
-               ;; if there is no registered event handler, assoc will return nil
-               (if event-pair
-                   ;; if the event handler is defined, call it with two arguments, win and event.
-                   ;;(funcall (cdr event-pair) win event)
-                   ;; pass args as a LIST to the handler, not as separate parameters as apply would do.
-
-                   ;; we only want to have to deal with args if an additional argument is passed to run-event-loop
-                   ;; if none are passed, the handlers should only have to take window and event as params.
-                   (if args
-                       ;; funcall will call both 'functions by their quoted symbols, and #'function objects.
-                       (funcall (cdr event-pair) win event args)
-                       (funcall (cdr event-pair) win event))
-
-                   ;; if no handler is defined for the event, call the default handler
-                   (let ((event-pair (assoc :default (slot-value win 'event-handlers))))
-                     (if event-pair
-                         ;; if a handler for :default is defined
-                         (if args
-                             (funcall (cdr event-pair) win event args)
-                             (funcall (cdr event-pair) win event))
-                         
-                         ;; if a handler for :default is not defined, the event is ignored.
-                         nil)) ))
-             ;; what to do between key presses (nil event)
-             ;; the user has to define a handler for the nil event
-             ;; TODO: ensure that the nil event is only processed when :input-blocking is nil (or a delay)
-             (let ((event-pair (assoc nil (slot-value win 'event-handlers))))
-               (if event-pair
-                   ;; call the handler associated with the nil event
-                   (if args
-                       (funcall (cdr event-pair) win event args)
-                       (funcall (cdr event-pair) win event))
-                   
-                   ;; default action for the nil event when input-blocking is nil
-                   nil)
-               ;; sleep between the nil events to reduce the CPU load
-               (when (.frame-rate win)
-                 (sleep (/ 1.0 (.frame-rate win))))) )))))
+      (let* ((event (get-wide-event win))
+             (handler (get-event-handler win event)))
+        (when handler
+          (apply handler win event args))
+        ;; sleep between the nil events to reduce the CPU load
+        (when (and (null event) (.frame-rate win))
+          (sleep (/ 1.0 (.frame-rate win)))) ))))
 
 (defun exit-event-loop (win event &optional args)
   "Associate this function with an event to exit the event loop."
