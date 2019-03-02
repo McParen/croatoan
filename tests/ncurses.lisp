@@ -109,3 +109,29 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (%refresh)
     (%getch)
     (%endwin)))
+
+;; 190302
+(defun nctest5 ()
+  (let ((scr (%initscr)))
+    (%addstr (format nil "~A~%" "no background "))
+    (%wgetch scr)
+
+    (%wbkgd scr (char-code #\-))
+    (%addstr (format nil "~A~%" "background minus "))
+    (%wgetch scr)
+
+    (%wbkgd scr (char-code #\*))
+    (%addstr (format nil "~A~%" "background star "))
+    (%wgetch scr)
+
+    (%wbkgd scr (char-code #\-))
+    (%addstr (format nil "~A~%" "background minus "))
+    (%wgetch scr)
+
+    (%wbkgd scr (char-code #\+))
+    (%addstr (format nil "~A~%" "background plus "))
+    (%wgetch scr)
+    
+    (%wrefresh scr)
+    (%wgetch scr)
+    (%endwin)))

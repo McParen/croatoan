@@ -966,9 +966,9 @@
 (defmethod (setf .background) (char (window window) &optional (apply t))
   (setf (slot-value window 'background) char)
   (if char
-      (set-background-cchar_t object char apply)
+      (set-background-cchar_t window char apply)
       ;; if the background char is nil, set a space without attributes or colors.
-      (set-background-cchar_t object
+      (set-background-cchar_t window
                               (make-instance 'complex-char :simple-char #\space)
                               apply)))
 

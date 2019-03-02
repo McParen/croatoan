@@ -381,6 +381,37 @@
     (refresh scr)
     (get-char scr)))
 
+(defun t02b ()
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :use-default-colors t)
+    ;; simple chars added to a window without a rendered style.
+    (add-string scr "Hello there!")
+    (fresh-line scr) (refresh scr) (get-char scr)
+
+    ;; color-pair applies to newly added text.
+    (setf (.color-pair scr) '(:red :yellow))
+    (add-string scr "Dear John!")
+    (fresh-line scr) (refresh scr) (get-char scr)
+
+    ;; removing the color pair puts back the outut into the default state.
+    (setf (.color-pair scr) '())
+    (add-string scr "Open the pod bay door.")
+    (fresh-line scr) (refresh scr) (get-char scr)
+    
+    ;; the background style renders simple text, but it doesnt change the text with a set color pair
+    (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:black :magenta)))
+    (add-string scr "I can feel it.")
+    (fresh-line scr) (refresh scr) (get-char scr)
+    
+    ;; remove the background char, set back to the default state.
+    (setf (.background scr) nil)
+    (add-string scr "My mind is going.")
+    (fresh-line scr) (refresh scr) (get-char scr)
+
+    ;; the empty cells of the last foreground will be overwritten by the next background call.
+    (setf (.background scr) (make-instance 'complex-char :simple-char #\_ :color-pair '(:black :yellow)))
+    (format scr "I'm sorry, Dave.")
+    (fresh-line scr) (refresh scr) (get-char scr)))
+
 ;; read and display chars until a q is pressed, blocking version.
 (defun t03 ()
   (with-screen (scr :input-echoing nil :input-blocking t)
