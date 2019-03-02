@@ -16,6 +16,7 @@
   (if (eq color-name :default)
       ;; the terminal default colors are only available when
       ;; the screen is initialized with :use-default-colors t
+      ;; the :default color number is -1.
       -1
       ;; depending on whether we use 8 or 256 colors, we have different names for the same colors.
       (let* ((color-list (if (<= %colors 8) *ansi-color-list* *xterm-color-name-list*))
@@ -95,6 +96,8 @@
 
 The colors can be keywords or numbers -1:255.
 
+-1 is the terminal :default color when use-default-colors is t.
+
 If it is a new color pair, add it to ncurses, then return the new pair number.
 
 If the pair already exists, return its pair number.
@@ -165,7 +168,10 @@ from the given point without moving the cursor position."
 ;; (set-color window '(:black :white))
 (defun set-color-pair (winptr color-pair)
   "Sets the color attribute only."
-  (%wcolor-set winptr (pair->number color-pair) (null-pointer)))
+  (if color-pair
+      (%wcolor-set winptr (pair->number color-pair) (null-pointer))
+      ;; if color-pair is nil, set the color pair 0 (white black) or (default default).
+      (%wcolor-set winptr 0 (null-pointer))))
 
 (defparameter *bitmask-alist*
   ;; the first four are not attributes, but bitmasks used to extract parts of the chtype.

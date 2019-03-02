@@ -127,7 +127,9 @@
     :initarg       :background
     :initform      nil
     :type          (or null complex-char)
-    :documentation "Sets a complex char as the background of the window. It does not change the colors or attributes of existing complex chars. A newline sets the background till the end of the line.")
+    :documentation
+    "Sets a complex char with its attributes and colors as the default style of unrendered text and empty cells of the window. 
+    Complex chars with pre-existing attributes and colors are not changed.")
 
    (attributes
     :initarg       :attributes
@@ -293,7 +295,7 @@
     :initarg       :value
     :initform      nil
     :reader        .value
-    :type          (or symbol string menu-window function)
+    :type          (or symbol string menu menu-window function)
     :documentation "If the item is not a string, it can be a sub menu or (not yet implemented) a function."))
   
   (:documentation  "A menu consists of a list of menu items."))
@@ -542,7 +544,7 @@
     :initform      nil
     :type          (or null integer)
     :accessor      .width
-    :documentation "The width of the field.")
+    :documentation "The width of the field. The default buffer length is equal the width.")
 
    (style
     :initarg       :style
@@ -550,7 +552,8 @@
     :type          (or null cons)
     :accessor      .style
     :documentation
-    "A style is a list of four complex-chars (or nil): field foreground, background, selected field foreground, background.")
+    "A style is a list of four complex-chars (or nil): field foreground, background, selected field foreground, background. 
+    Each style consists of a simple char, attributes and a color pair.")
 
    (buffer
     :initform      nil
@@ -955,23 +958,19 @@
       ;; then save the new status.
       (setf process-control-chars status) )))
 
-;; TODO: change this to use wide chars, so we can use unicode chars additionally to the limited small set of ACS chars
-;; (setf (.background window nil) xchar)
-;; (setf (.background window t) xchar) = (setf (.background window) xchar)
 (defgeneric .background (window))
 (defmethod .background ((win window))
-  ;; TODO: compare whether slot and ncurses return equal xchars
-  ;; this isnt the case if we set a ACS char, which gets translated to a code.
-  ;;(let ((slot (slot-value win 'background))
-  ;;  (ncurses (get-background-cchar_t win)))
   (slot-value win 'background))
 
 (defgeneric (setf .background) (char window &optional apply))
 (defmethod (setf .background) (char (window window) &optional (apply t))
   (setf (slot-value window 'background) char)
-  ;;(set-background-char (slot-value window 'winptr) char apply))
-  ;; TODO: writing a normal string waddstr on a wide cchar background causes an SB-KERNEL::CONTROL-STACK-EXHAUSTED-ERROR
-  (set-background-cchar_t window char apply))
+  (if char
+      (set-background-cchar_t object char apply)
+      ;; if the background char is nil, set a space without attributes or colors.
+      (set-background-cchar_t object
+                              (make-instance 'complex-char :simple-char #\space)
+                              apply)))
 
 ;(defgeneric .attributes (window))
 (defmethod .attributes ((window window))
