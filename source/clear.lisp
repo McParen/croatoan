@@ -6,7 +6,9 @@
 ;; (clear scr :target :end-of-line)
 ;; (clear scr :target :bottom)
 
-(defun clear (window &key redraw (target :whole-window))
+(defgeneric clear (object &key))
+
+(defmethod clear ((window window) &key redraw (target :whole-window))
   "Clear the window by overwriting it with blanks.
 
 If the keyword redraw is t, first copy blanks to every position in the

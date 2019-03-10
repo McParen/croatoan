@@ -43,51 +43,54 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (cons element (cdr list))
       (cons (car list) (replace-nth (1- n) element (cdr list)))))
 
-;; TODO: rename to clear, make clear a method specialized on fields, forms and windows.
-;; TODO: (defmethod clear (win (field field)))
-(defun clear-field (win field)
-  "Do what (clear win) does, but for a single field.
+;; this is the only place we set the background style for the field
+;; TODO: how to access the default fg and bg of a form,
+;; if the field is not part of a form? by having a form slot in the field.
+(defmethod clear ((field field) &key)
+  "Clear the field by overwriting it with the background char.
 
-clear = write space combined with the background char."
-  (with-accessors ((pos .position) (width .width) (style .style) (selected .selected)) field
-    (let ((bg (nth 1 style))
-          (sbg (nth 3 style)))
-      (setf (.cursor-position win) pos)
-      ;; this is the only place we set the background style for the field
-      (let ((bgchar (if selected
-                        (if sbg sbg #\space)
-                        (if bg bg #\space))))
-        (add win bgchar :n width))
-      (setf (.cursor-position win) pos))))
+The default background char is #\space."
+  (with-accessors ((pos .position) (width .width) (style .style) (selected .selected) (win .window) (form .form)) field
+    (let* ((window (if win win (.window form)))
+           (bg (nth 1 style))
+           (sbg (nth 3 style))
+           (bgchar (if selected
+                       (if sbg sbg #\space)
+                       (if bg bg #\space))))
+      (setf (.cursor-position window) pos)
+      (add window bgchar :n width)
+      (setf (.cursor-position window) pos))))
 
-(defgeneric update-cursor-position (window object)
+(defgeneric update-cursor-position (object)
   (:documentation "Update the cursor position of a form or a field."))
 
-(defmethod update-cursor-position (win (field field))
+(defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
-  (with-accessors ((pos .position) (inptr .fill-pointer) (dptr .display-pointer)) field
-    (move win
+  (with-accessors ((pos .position) (inptr .fill-pointer) (dptr .display-pointer) (win .window) (form .form)) field
+    (move (if win win (.window form))
           ;; TODO: assumes a single-line field.
           (car pos)
           (+ (cadr pos)           ; beginning of the field
              (- inptr dptr) ))))  ; position in the field starting with dptr
 
-(defmethod update-cursor-position (win (form form))
+(defmethod update-cursor-position ((form form))
   "Update the cursor position of the current field of the form."
-  (update-cursor-position win (.current-field form)))
+  (update-cursor-position (.current-field form)))
 
-(defgeneric draw (window object)
-  (:documentation "Draw forms and their elements like fields and buttons."))
+(defgeneric draw (object)
+  (:documentation "Draw objects (form, field, menu) to their associated window."))
 
-(defmethod draw (window (field field))
+(defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
-  (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (style .style) (selected .selected)) field
-    ;; TODO: rewrite clear-field in terms of draw field. simply draw an empty string.
-    (clear-field window field)
-    (let ((fg (nth 0 style))
+  (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)
+                   (style .style) (selected .selected) (form .form)) field
+    (let ((window (if (.window field) (.window field) (.window form)))
+          (fg (nth 0 style))
           (sfg (nth 2 style))
           (len (length inbuf))
           (str (coerce (reverse inbuf) 'string)))
+          ;; value
+      (clear field)
       (add-string window
                   ;; display only max width chars starting from dptr
                   (if (< len width)
@@ -99,19 +102,19 @@ clear = write space combined with the background char."
                                            (+ dptr width)
                                            ;; if the remaining substring is shorter than width, just display it.
                                            len) ))
+                  ;; TODO: find a more elegant way to do this.
                   :attributes (if selected (if sfg (.attributes sfg) nil) (if fg (.attributes fg) nil))
-                  :color-pair (if selected (if sfg (.color-pair sfg) nil) (if fg (.color-pair fg) nil))))
-    (update-cursor-position window field)))
+                  :color-pair (if selected (if sfg (.color-pair sfg) nil) (if fg (.color-pair fg) nil)))
+      (update-cursor-position field))))
 
-;; we have to make window a parameter because fields do not have a window slot
-(defmethod draw (win (form form))
+(defmethod draw ((form form))
   "Draw the form by drawing the fields, then moving the cursor to the current field."
-  (with-accessors ((fields .fields) (current-field .current-field)) form
+  (with-accessors ((fields .fields) (window .window)) form
     (loop for field in fields do
-      (draw win field))
+      (draw field))
     ;; after drawing the fields, reposition the cursor to the current field
-    (update-cursor-position win form)
-    (refresh win)))
+    (update-cursor-position form)
+    (refresh window)))
 
 ;; prev-field and next-field are the only two elements where the current-field-number is changed.
 ;; here also current-field has to be set.
@@ -125,8 +128,8 @@ clear = write space combined with the background char."
     (setf current-field (nth current-field-number fields))
     (setf (.selected current-field) t))
   ;; after we switched the field number, we also have to move the cursor.
-  (update-cursor-position win form)
-  (draw win form)
+  (update-cursor-position form)
+  (draw form)
   (refresh win))
 
 (defun select-next-field (win event form)
@@ -139,8 +142,8 @@ clear = write space combined with the background char."
     (setf current-field (nth current-field-number fields))
     (setf (.selected current-field) t))
   ;; after we switched the field number, we also have to move the cursor.
-  (update-cursor-position win form)
-  (draw win form)
+  (update-cursor-position form)
+  (draw form)
   (refresh win))
 
 (defgeneric move-prev-char (window event object)
@@ -154,8 +157,8 @@ clear = write space combined with the background char."
     ;; when the inptr moves left past the dptr, simultaneously decf the dptr.
     (when (< inptr dptr)
       (decf dptr)))
-  (update-cursor-position win field)
-  (draw win field) ;; we have to redraw in the case of horizontal scrolling
+  (update-cursor-position field)
+  (draw field) ;; we have to redraw in the case of horizontal scrolling
   (refresh win))
 
 (defmethod move-prev-char (win event (form form))
@@ -176,8 +179,8 @@ clear = write space combined with the background char."
                ;; do not incf the dptr when we're at the end of a fixed width field.
                (not (= inptr mlen width)))
       (incf dptr)))
-  (update-cursor-position win field)
-  (draw win field) ;; we have to redraw in the case of horizontal scrolling
+  (update-cursor-position field)
+  (draw field) ;; we have to redraw in the case of horizontal scrolling
   (refresh win))
 
 (defmethod move-next-char (win event (form form))
@@ -196,7 +199,7 @@ clear = write space combined with the background char."
         (decf dptr))
       (setf inbuf (remove-nth (- (length inbuf) 1 inptr) inbuf))))
   ;; we dont have to redraw the complete form, just the changed field.
-  (draw win field))
+  (draw field))
 
 (defmethod delete-prev-char (win event (form form))
   "Delete the previous char in the field, moving the cursor to the left."
@@ -214,7 +217,7 @@ clear = write space combined with the background char."
         ;; when a part of the string is hidden on the left side, shift it to the right.
         (decf dptr))
       (setf inbuf (remove-nth (- (length inbuf) (1+ inptr)) inbuf))))
-  (draw win field))
+  (draw field))
 
 (defmethod delete-next-char (win event (form form))
   "Delete the next char (char under the cursor) in the current field of form, not moving the cursor."
@@ -279,7 +282,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
                         (incf dptr))
                       (when (> inptr (+ dptr (1- width)))
                         (incf dptr))) ))))
-        (draw win field))
+        (draw field))
       ;; if the char isnt graphic, do nothing.
       ;; TODO: this doesnt work with acs chars, which are keywords.
       nil))
@@ -304,7 +307,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
     (form
      (with-accessors ((current-field .current-field)) object
        (debug-print-field-buffer win event current-field))))
-  (draw win object))
+  (draw object))
 
 ;; TODO: compare to how emacs handles keymaps, add sub-keymaps
 ;; keymap for editing forms comprised of single fields.
@@ -355,7 +358,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
 
 (defun edit (window object)
   "Allow the used to edit fields or forms."
-  (draw window object)
+  (draw object)
 
   (let ((default-keymap (typecase object
                           (field :field-default-keymap)

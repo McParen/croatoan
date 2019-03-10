@@ -135,8 +135,8 @@ At the third position, display the item given by item-number."
       (move win i (* j max-item-length))
       (change-attributes win max-item-length '(:reverse) ))))
 
-;; draws to any window, not to a sub-window of a menu-window.
-(defmethod draw (window (menu menu))
+;; draws to any window, not just to a sub-window of a menu-window.
+(defmethod draw-menu (window menu)
   "Draw the menu to the window."
   (with-accessors ((layout .layout) (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)) menu
     (clear window)
@@ -161,18 +161,15 @@ At the third position, display the item given by item-number."
                         (draw-menu-item window menu item-number i j)))) ))
     (refresh window)))
 
-(defgeneric draw-menu (s)
-  (:documentation "Draw a menu."))
-
-(defmethod draw-menu ((menu menu))
+(defmethod draw ((menu menu))
   "Draw the menu to its associated window."
-  (draw (.window menu) menu))
+  (draw-menu (.window menu) menu))
 
-(defmethod draw-menu ((menu menu-window))
+(defmethod draw ((menu menu-window))
   "Draw the menu-window."
   (with-accessors ((title .title) (name .name) (border .border) (sub-win .sub-window)) menu
     ;; draw the menu to the sub-window
-    (draw sub-win menu)
+    (draw-menu sub-win menu)
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
     ;; draw the title only when we also have a border, because we draw the title on top of the border.
@@ -190,7 +187,7 @@ At the third position, display the item given by item-number."
     ;; make refresh specialize on menu and decorated window in a way to do both.
     (refresh menu)))
 
-(defmethod draw-menu ((menu dialog-window))
+(defmethod draw ((menu dialog-window))
   ;; first draw a menu
   ;; TODO: describe what exactly is drawn here and what in the parent method.
   (call-next-method)
@@ -211,6 +208,7 @@ At the third position, display the item given by item-number."
 (defun return-from-menu (window return-value)
   "Set menu window to invisible, refresh the window stack, return the value from select."
   (when *window-stack*
+    ;; change visibility only when there is an active stack.
     (setf (.visible window) nil)
     (refresh-stack))
   (throw 'event-loop return-value))
@@ -254,7 +252,7 @@ At the third position, display the item given by item-number."
 
               ;; when we have more than menu in one window, redraw the parent menu when we return from the submenu.
               (when (eq (type-of val) 'menu)
-                (draw window menu))
+                (draw menu))
                
               (when selected-item
                 (return-from-menu window selected-item)))) ))))))
@@ -263,14 +261,14 @@ At the third position, display the item given by item-number."
   "Update the menu after an event, the redraw the menu."
   (let ((menu (typecase window (menu-window window) (window menu-))))
     (update-menu menu event)
-    (draw-menu menu)))
+    (draw menu)))
 
 (defun toggle-item-checkbox (window event &optional menu-)
   "Toggle the checked state of the item, used in checkbox menus."
   (declare (ignore event))
   (let ((menu (typecase window (menu-window window) (window menu-))))
     (setf (.checked (.current-item menu)) (not (.checked (.current-item menu))))
-    (draw-menu menu)))
+    (draw menu)))
 
 (add-keymap :menu-default-keymap
   (make-keymap
@@ -298,7 +296,7 @@ If the item is a menu object, recursively display the sub menu."
      (when *window-stack*
        (setf (.visible menu) t)
        (refresh-stack))
-     (draw-menu menu)
+     (draw menu)
      ;; if the user didnt add any event handlers, add the default keymap.
      (unless (.event-handlers menu)
        (setf (.event-handlers menu) (get-keymap :menu-default-keymap)))
@@ -311,7 +309,7 @@ If the item is a menu object, recursively display the sub menu."
 
     (menu
      (let ((window (.window menu)))
-       (draw-menu menu)
+       (draw menu)
        (unless (.event-handlers window)
          (setf (.event-handlers window) (get-keymap :menu-default-keymap)))
        (run-event-loop window menu)))))

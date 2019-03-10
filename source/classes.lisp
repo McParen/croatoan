@@ -523,7 +523,14 @@
                 (.background sub-window) (make-instance 'complex-char :color-pair color-pair ))) ))))
 
 (defclass element ()
-  ((position
+  ((name
+    :initarg       :name
+    :initform      nil
+    :reader        .name
+    :type          (or null symbol keyword string)
+    :documentation "Optional unique name by which the element can be identified and accessed. NOT USED YET.")
+
+   (position
     :initarg       :position
     :initform      nil
     :type          (or null cons)
@@ -534,9 +541,22 @@
     :initform      nil
     :type          boolean
     :accessor      .selected
-    :documentation "Flag denoting whether the field is currently selected in a form."))
+    :documentation "Flag denoting whether the field is currently selected in a form.")
 
-  (:documentation "An element of a form."))
+   (form
+    :initform      nil
+    :type          (or null form)
+    :accessor      .form
+    :documentation "Parent form of the element. Added to every element upon the initialization of the form.")
+
+   (window
+    :initarg       :window
+    :initform      nil
+    :type          (or null window)
+    :accessor      .window
+    :documentation "If the field is not associated with a form, a window can also be associated with the stand-alone field."))
+
+  (:documentation "An element of a form, like a field."))
 
 (defclass field (element)
   ((width
@@ -628,9 +648,13 @@
 
 (defmethod initialize-instance :after ((form form) &key)
   ;; Initialize the current field as the first field from the fields list.
+  ;; we have to set the current field before we can change it with select-prev-field and select-next-field
   (setf (slot-value form 'current-field) (car (slot-value form 'fields)))
-  ;; set the selected option of the current field.
-  (setf (slot-value (slot-value form 'current-field) 'selected) t))
+  ;; set the selected option of the initial current field.
+  (setf (slot-value (slot-value form 'current-field) 'selected) t)
+  ;; set the parent form slot of every field.
+  (loop for field in (slot-value form 'fields)
+     do (setf (slot-value field 'form) form)))
 
 (defclass form-window (form decorated-window)
   ()
