@@ -1703,7 +1703,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   "Edit a single input field, not part of a form."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
     (let ((*standard-output* scr)
-          (field (make-instance 'field :position (list 3 20) :width 10)))
+          (field (make-instance 'field :position (list 3 20) :width 10 :window scr)))
 
       ;; style = (fg bg selected-fg selected-bg)
       (setf (.style field)
@@ -1737,7 +1737,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (field1 (make-instance 'field :position (list 3 20) :width 10 :style style :max-buffer-length 5))
            (field2 (make-instance 'field :position (list 5 20) :width 10 :style style))
            (field3 (make-instance 'field :position (list 7 20) :width 10 :style style :max-buffer-length 15))
-           (form (make-instance 'form :fields (list field1 field2 field3))))
+           ;; a window is associated with the parent form, and during initialization of the form, it is associated with every field.
+           (form (make-instance 'form :fields (list field1 field2 field3) :window scr)))
 
       (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
       
@@ -1964,7 +1965,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t19b2 ()
   "Use the select function with independent windows and menus"
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let* ((items1 '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+    (let* ((items1 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555"
                      "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (menu1 (make-instance 'menu :items items1 :name "sub-menu 1" :max-item-length 50))
            (items2 (list "Item 0" menu1 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
@@ -2022,8 +2023,6 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                      ;;:color-pair (list :black #xcccccc)
                                      :name "menu" :title nil :border nil :enable-fkeys t :visible nil)))
       ;; add the menus and submenus to a window stack
-      ;; TODO: what to do when the user adds his own windows to the stack?
-      ;; then menu windows have to still be on top, so they have to be stacked last or raised.
       ;; scr has to be stacked too so we can make the menus disappear.
       (setf (.stacked scr) t
             (.stacked menu) t
@@ -2151,7 +2150,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :width 60
                                 :border t
                                 :enable-fkeys t
-                                :title "this is a selection dialog"
+                                :name "t19f"
+                                :title t
+                                ;; if the title is given as a string, it overrides the default title = name
+                                ;; :title "this is a selection dialog"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
 
@@ -2159,11 +2161,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       
       (refresh scr)
       (loop named menu-case
-         do
-           (let ((result (select menu)))
-             (unless result (return-from menu-case))
-             (format scr "You chose ~A~%" result)
-             (refresh scr)))
+         do (let ((result (select menu)))
+              (unless result (return-from menu-case))
+              (format scr "You chose ~A~%" result)
+              (refresh scr)))
       (close menu))))
 
 (defun t19g ()
@@ -2185,7 +2186,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 ;; we do not need an item mark in a checklist
                                 :current-item-mark ""
                                 :width 60 :border t :enable-fkeys t
-                                :title "this is my checkbox dialog"
+                                :title "this is a checkbox dialog"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
 
@@ -2194,14 +2195,13 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       
       (refresh scr)
       (loop named menu-case
-         do
-           (let ((result (select menu)))
-             ;; TODO: returning an empty list exits the loop.
-             (unless result (return-from menu-case))
-             (format scr "You chose ~A~%"
-                     (mapcar (lambda (x) (if x (.value x)))
-                             result))
-             (refresh scr)))
+         do (let ((result (select menu)))
+              ;; TODO: returning an empty list exits the loop.
+              (unless result (return-from menu-case))
+              (format scr "You chose ~A~%"
+                      (mapcar (lambda (x) (if x (.value x)))
+                              result))
+              (refresh scr)))
       (close menu))))
 
 ;; Passing the color attribute directly to a character.
