@@ -206,13 +206,13 @@ An event should be bound to access the pre-defined function exit-event-loop."
       ;; If no event occured and the idle handler is not defined.
       (t nil))))
 
-(defun run-event-loop (win &rest args)
+(defun run-event-loop (object &rest args)
   "Read events from the window, then call predefined event handler functions on the events.
 
 The handlers can be added by the macro add-event-handler, or by directly setting
-a predefined keymap to the window's event-handlers property.
+a predefined keymap to the window's event-handlers slot.
 
-Args is either a single additional argument passed to the handlers, or a list of arguments.
+Args is one or more additional argument passed to the handlers.
 
 Provide a non-local exit point so we can exit the loop from an event handler. 
 
@@ -221,15 +221,28 @@ One of the events must provide a way to exit the event loop by throwing 'event-l
 The function exit-event-loop is pre-defined to perform this non-local exit."
   (catch 'event-loop
     (loop
-      (let* ((event (get-wide-event win))
-             (handler (get-event-handler win event)))
-        (when handler
-          (apply handler win event args))
-        ;; sleep between the nil events to reduce the CPU load
-        (when (and (null event) (.frame-rate win))
-          (sleep (/ 1.0 (.frame-rate win)))) ))))
+       (let* ((window (typecase object (window object) (otherwise (.window object))))
+              (event (get-wide-event window)))
+         (handle-event object event args)
+         ;; should a frame rate be a property of the window or of the object?
+         (when (and (null event) (.frame-rate window))
+           (sleep (/ 1.0 (.frame-rate window)))) ))))
 
-(defun exit-event-loop (win event &optional args)
+(defgeneric handle-event (object event args)
+  ;; the default method applies to window, field, button (for now).
+  (:method (object event args)
+    "Default method for all objects without a specialized method."
+    (let ((handler (get-event-handler object event)))
+      (when handler
+        (apply handler object event args)))))
+
+(defmethod handle-event ((form form) event args)
+  (let ((handler (get-event-handler form event)))
+    (if handler
+        (apply handler form event args)
+        (handle-event (.current-element form) event args))))
+
+(defun exit-event-loop (&optional win event args)
   "Associate this function with an event to exit the event loop."
   (declare (ignore win event args))
   (throw 'event-loop :exit-event-loop))

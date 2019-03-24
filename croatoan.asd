@@ -70,8 +70,8 @@
             :depends-on ("ncurses")
             :components
             ((:file "package")
-             (:file "croatoan")
              (:file "classes")
+             (:file "croatoan")
              (:file "gray_streams")
              (:file "utf8")
 

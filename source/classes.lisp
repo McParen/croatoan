@@ -121,7 +121,9 @@
     :initform      nil
     :type          (or null cons)
     :accessor      .event-handlers
-    :documentation "A collection (alist or hash table) containing events (characters, keywords or integers) as keys and handler functions as values. Used by the run-event-loop function.")
+    :documentation
+    "An alist (for now) containing events (characters, keywords or integers) as keys and handler functions as values.
+    Used by the run-event-loop function.")
    
    (background
     :initarg       :background
@@ -537,11 +539,21 @@
     :accessor      .position
     :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element.")
 
+   (event-handlers
+    :initarg       :event-handlers
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .event-handlers
+    :allocation    :instance
+    :documentation
+    "An alist (for now) containing events (characters, keywords or integers) as keys and handler functions as values.
+    Used by the run-event-loop. The slot in subclasses is class allocated, all elements of a subclass share the same bindings.")
+
    (selected
     :initform      nil
     :type          boolean
     :accessor      .selected
-    :documentation "Flag denoting whether the field is currently selected in a form.")
+    :documentation "Flag denoting whether the element is currently selected in a form.")
 
    (form
     :initform      nil
@@ -553,10 +565,42 @@
     :initarg       :window
     :initform      nil
     :type          (or null window)
-    :accessor      .window
-    :documentation "If the field is not associated with a form, a window can also be associated with the stand-alone field."))
+    :documentation "If the element is not part of a form, a window can also be associated with the stand-alone element."))
 
-  (:documentation "An element of a form, like a field."))
+  (:documentation "An element of a form, like a field or button."))
+
+(defmethod .window ((element element))
+  "Return the window associated with an element, which can optionally be part of a form.
+
+If there is no window asociated with the element, return the window associated with the parent form."
+  (with-slots (window form) element
+    (if window
+        window
+        (if form
+            (if (slot-value form 'window)
+                (slot-value form 'window)
+                (error "(.window element) ERROR: No window is associated with the parent form."))
+            (error "(.window element) ERROR: Neither a window nor a parent form are associated with the element.")))))
+
+(defmethod (setf .window) (window (element element))
+  (setf (slot-value element 'window) window))
+
+(defclass button (element)
+  ((function
+    :initarg       :function
+    :initform      nil
+    :accessor      .function
+    :type          (or null function)
+    :documentation "Function performed when the button is activated.")
+
+   (event-handlers
+    :allocation    :class))
+
+  (:documentation "An element that can call a function by pressing enter (or in future, with a mouse click)."))
+
+(defmethod initialize-instance :after ((button button) &key)
+  ;; set the default keymap for all buttons, shared class allocation
+  (setf (slot-value button 'event-handlers) (get-keymap :button-default-keymap)))
 
 (defclass field (element)
   ((width
@@ -574,6 +618,9 @@
     :documentation
     "A style is a list of four complex-chars (or nil): field foreground, background, selected field foreground, background. 
     Each style consists of a simple char, attributes and a color pair.")
+
+   (event-handlers
+    :allocation    :class)
 
    (buffer
     :initform      nil
@@ -608,35 +655,50 @@
   (:documentation "A field is an editable part of the screen for user input. Can be part of a form."))
 
 (defmethod initialize-instance :after ((field field) &key)
-  ;; If unspecified, max-buffer-length should be equal to the field length.
-  (with-slots (max-buffer-length width) field
+  (with-slots (max-buffer-length width event-handlers) field
+    ;; If unspecified, the default max-buffer-length should be equal to the visible field width.
     (unless max-buffer-length
-      (setf max-buffer-length width))))
+      (setf max-buffer-length width))
+    ;; set the default keymap for all fields, shared class allocation
+    (setf event-handlers (get-keymap :field-default-keymap)) ))
 
-(defmethod .value ((field field))
+(defmethod value ((field field))
   (coerce (reverse (slot-value field 'buffer)) 'string))
 
+(defmethod (setf value) (new-value (field field))
+  (setf (slot-value field 'buffer) (reverse (coerce new-value 'list))))
+
 (defclass form ()
-  ((fields
-    :initarg       :fields
+  ((elements
+    :initarg       :elements
+    ;; Make sure we already have fields when we initialize a form.
     :initform      nil
     :type          (or null cons)
-    :accessor      .fields
-    :documentation "List of fields. The first field will be initialized as the current field.")
+    :accessor      .elements
+    :documentation "List of elements. The first element will be initialized as the current element.")
 
-   (current-field-number
+   ;; if init is 0, what if we have no fields yet?
+   (current-element-number
     :initform      0
     :type          integer
-    :accessor      .current-field-number
-    :documentation "Number of the currently selected field.")
+    :accessor      .current-element-number
+    :documentation "Number of the currently selected element.")
 
-   ;; has to be updated every time the current field number is updated.
-   (current-field
+   ;; has to be updated every time the current element number is updated.
+   (current-element
     :initform      nil
-    :type          (or null field)
-    :accessor      .current-field
-    :documentation "Currently selected field object.")
-   
+    :type          (or null field button)
+    :accessor      .current-element
+    :documentation "Currently selected element object.")
+
+   (event-handlers
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .event-handlers
+    :documentation
+    "An alist (for now) containing events (characters, keywords or integers) as keys and handler functions as values.
+    Used by the run-event-loop function.")
+
    (window
     :initarg       :window
     :initform      nil
@@ -647,14 +709,20 @@
   (:documentation "A form is a list of fields."))
 
 (defmethod initialize-instance :after ((form form) &key)
-  ;; Initialize the current field as the first field from the fields list.
-  ;; we have to set the current field before we can change it with select-prev-field and select-next-field
-  (setf (slot-value form 'current-field) (car (slot-value form 'fields)))
-  ;; set the selected option of the initial current field.
-  (setf (slot-value (slot-value form 'current-field) 'selected) t)
-  ;; set the parent form slot of every field.
-  (loop for field in (slot-value form 'fields)
-     do (setf (slot-value field 'form) form)))
+  (with-slots (current-element elements event-handlers) form
+    ;; Initialize the current element as the first element from the passed elements list.
+    ;; we have to set the current element before we can change it with select-previous-element and select-next-element
+    (setf current-element (car elements))
+    ;; set the selected option of the initial current element.
+    (setf (slot-value current-element 'selected) t)
+    ;; initialize default key bindings for forms.
+    (setf event-handlers (get-keymap :form-default-keymap))
+    ;; set the parent form slot of every field.
+    (if elements
+        (loop for element in elements
+           do (setf (slot-value element 'form) form))
+        ;; if a list of elements was not passed, signal an error.
+        (error "A list of elements is required to initialize a form."))))
 
 (defclass form-window (form decorated-window)
   ()

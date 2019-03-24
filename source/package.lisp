@@ -1,6 +1,8 @@
 (defpackage #:de.anvi.croatoan
   (:documentation "High-level Lisp interface to the basic CFFI Ncurses API.")
   ;;(:use #:common-lisp #:cffi #:de.anvi.ncurses #:sb-gray)
+
+  ;; TODO: do not :use the complete package, import-from individual functions.
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:trivial-gray-streams)
   (:nicknames #:croatoan)
   (:export
@@ -34,6 +36,7 @@
    sub-pad
    field
    form
+   button
    shape
 
    ;; accessors
@@ -67,7 +70,7 @@
    .cursor-visibility
    .source
    .closed-p
-
+   
    ;; menu
    .items
    .checklist
@@ -78,7 +81,8 @@
    .cyclic-selection
    .max-item-length
    .name
-   .value
+   .value ;menu
+   value ;field
    .window
    .sub-window
    .message-pad
@@ -88,9 +92,10 @@
 
    ;; form
    .buffer
-   .fields
+   .elements
    .style
    .max-buffer-length
+   .function
 
    ;; shape
    .x-origin
