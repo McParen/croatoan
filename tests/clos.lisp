@@ -1710,23 +1710,23 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
             (list (make-instance 'complex-char :simple-char #\space :attributes '(:underline))
                   (make-instance 'complex-char :simple-char #\.)))
       
-      (setf (.event-handlers scr) (get-keymap :field-default-keymap))
-      (add-event-handler (scr #\newline)  'de.anvi.croatoan::debug-print-field-buffer)
+      (setf (.event-handlers field) (get-keymap :field-default-keymap))
+      (add-event-handler (field :f4)  'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; pressing ^A (for "accept") exits the edit mode for now
-      (edit scr field)
+      (edit field)
 
       (clear scr)
       ;; display the contents of the input buffer of the field
       (format t "buffer: ~A~%" (.buffer field))
-      (format t "string: ~A" (.value field))
+      (format t "string: ~A" (value field))
       (refresh scr)
 
       ;; wait for keypress, then exit
       (get-char scr) )))
 
 (defun t16f ()
-  "Group several input fields to a form."
+  "Group several input fields and buttons to a form."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
     (let* ((sfg  (make-instance 'complex-char :simple-char #\space :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
            (fg (make-instance 'complex-char :simple-char #\space :color-pair '() :attributes '()))
@@ -1737,28 +1737,38 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (field1 (make-instance 'field :position (list 3 20) :width 10 :style style :max-buffer-length 5))
            (field2 (make-instance 'field :position (list 5 20) :width 10 :style style))
            (field3 (make-instance 'field :position (list 7 20) :width 10 :style style :max-buffer-length 15))
-           ;; a window is associated with the parent form, and during initialization of the form, it is associated with every field.
-           (form (make-instance 'form :fields (list field1 field2 field3) :window scr)))
+           (button1 (make-instance 'button :position (list 10 20) :name "Hello"))
+           (button2 (make-instance 'button :position (list 10 30) :name "Accept"))
+           ;; a window is associated with the parent form, and can be accessed by the elements.
+           (form (make-instance 'form :elements (list field1 field2 field3 button1 button2) :window scr)))
 
       (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
-      
+
       ;; before the form can be edited, a set of predefined event handlers from the default keymap
-      ;; has to be associated with the window.
-      (setf (.event-handlers scr) (get-keymap :form-default-keymap))
+      ;; is initialized in initialize-instance, but can be overwritten by the user.
+      ;;(setf (.event-handlers form) (get-keymap :form-default-keymap))
+      ;;(setf (.event-handlers field1) (get-keymap :field-default-keymap))
 
       ;; then, additional event handlers can be added.
+      ;; since the allocation of the slot is shared, we only have to add a new handler once.
+
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
-      (add-event-handler (scr #\newline)  'de.anvi.croatoan::debug-print-field-buffer)
+      (add-event-handler (form :f4) 'de.anvi.croatoan::debug-print-field-buffer)
+
+      ;; Functions to be called when the button is activated by #\newline or #\space.
+      (setf (.function button1) (lambda () (move scr 0 0) (format scr "Hello there")))
+      (setf (.function button2) 'exit-event-loop)
 
       ;; pressing ^A or C-a (for "accept") exits the edit mode
-      ;; TAB, up and down cycles the fields
-      (edit scr form)
+      ;; TAB, up and down cycles the fields and buttons
+      (edit form)
       (clear scr)
 
       ;; display the contents of the input buffer of all fields of the form
       ;; use field-buffer-to-string to get the contents of the field buffer as a string instead of a list of chars.
-      (loop for i in (.fields form) do
-        (format scr "~A ~A ~%" (.buffer i) (.value i)))
+      (loop for i in (.elements form) do
+        (when (typep i 'field)
+          (format scr "~A ~A ~%" (.buffer i) (value i))))
 
       (refresh scr)
       ;; wait for keypress, then exit
