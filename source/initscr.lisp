@@ -8,8 +8,11 @@
   "Clean shutdown of the curses display."
   (%endwin))
 
-(defun end-refreshed-p ()
-  "Checks whether a refresh has been called after end-screen."
+(defgeneric closed-p (s)
+  (:documentation "Check whether the screen has been closed without a subsequent call to refresh to reactivate it."))
+
+(defmethod closed-p ((s screen))
+  (declare (ignore s))
   (%isendwin))
 
 (defun new-terminal (type out-fd in-fd)

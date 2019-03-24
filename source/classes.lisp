@@ -1180,10 +1180,3 @@ If there is no window asociated with the element, return the window associated w
 ;;    Generic function CLOSE clobbers an earlier FTYPE proclamation
 ;;    (FUNCTION (STREAM &KEY (:ABORT T)) (VALUES (MEMBER T) &OPTIONAL)) for the
 ;; same name with (FUNCTION (T &KEY (:ABORT T)) *).
-
-(defgeneric .closed-p (s)
-  (:documentation "Check whether the screen has been closed, without a subsequent call to refresh to reactivate it."))
-
-(defmethod .closed-p ((s screen))
-  (declare (ignore s))
-  (%isendwin))

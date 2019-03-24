@@ -2338,30 +2338,30 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (get-char scr)))
 
 ;; temporarily end the main screen, write something to the repl, and then return to the screen.
-;; the reader .closed-p can be used to check whether the screen has been temporarily closed.
+;; the predicate closed-p can be used to check whether the screen has been temporarily closed.
 (defun t22 ()
   (let ((scr (make-instance 'screen :input-blocking t :input-echoing nil)))
     (unwind-protect
          (progn
            (clear scr)
            ;; should yield NIL, since we didnt endwin yet
-           (format scr "1. screen before ending: ~A~%" (.closed-p scr))
+           (format scr "1. screen before ending: ~A~%" (closed-p scr))
            (get-char scr)
 
            (close scr)
 
            ;; this shouldnt be visible, but it is visible after the later refresh
            ;; obviously ncurses doesnt destroy the screen window after it is closed
-           (format scr "2. screen after ending, we dont see it till after the refresh: ~A~%" (.closed-p scr))
+           (format scr "2. screen after ending, we dont see it till after the refresh: ~A~%" (closed-p scr))
 
            ;; should yield T, because we closed the screen
-           (format t "3. in the repl, after ending the screen: ~A~%" (.closed-p scr))
+           (format t "3. in the repl, after ending the screen: ~A~%" (closed-p scr))
            (force-output *standard-output*)
            (sleep 5)
 
            (refresh scr)
            ;; should yield NIL, since we refreshed
-           (format scr "4. screen after refreshing: ~A~%" (.closed-p scr))
+           (format scr "4. screen after refreshing: ~A~%" (closed-p scr))
            
            (get-char scr))
       (close scr))))

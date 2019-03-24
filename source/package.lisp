@@ -69,7 +69,9 @@
    .process-control-chars
    .cursor-visibility
    .source
-   .closed-p
+
+   ;; Predicates
+   closed-p
    
    ;; menu
    .items
