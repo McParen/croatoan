@@ -1705,13 +1705,12 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (let ((*standard-output* scr)
           (field (make-instance 'field :position (list 3 20) :width 10 :window scr)))
 
-      ;; style = (fg bg selected-fg selected-bg)
       (setf (.style field)
-            (list (make-instance 'complex-char :simple-char #\space :attributes '(:underline))
-                  (make-instance 'complex-char :simple-char #\.)))
+            (list :foreground (make-instance 'complex-char :simple-char #\space :attributes '(:underline))
+                  :background (make-instance 'complex-char :simple-char #\.)))
       
       (setf (.event-handlers field) (get-keymap :field-default-keymap))
-      (add-event-handler (field :f4)  'de.anvi.croatoan::debug-print-field-buffer)
+      (add-event-handler (field #\newline)  'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; pressing ^A (for "accept") exits the edit mode for now
       (edit field)
@@ -1728,18 +1727,27 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16f ()
   "Group several input fields and buttons to a form."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
-    (let* ((sfg  (make-instance 'complex-char :simple-char #\space :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
-           (fg (make-instance 'complex-char :simple-char #\space :color-pair '() :attributes '()))
-           (sbg  (make-instance 'complex-char :simple-char #\space :color-pair '(:blue :white) :attributes '()))
-           (bg (make-instance 'complex-char :simple-char #\_))
-           ;; style = (fg bg selected-fg selected-bg)
-           (style (list fg bg sfg sbg))
-           (field1 (make-instance 'field :position (list 3 20) :width 10 :style style :max-buffer-length 5))
-           (field2 (make-instance 'field :position (list 5 20) :width 10 :style style))
-           (field3 (make-instance 'field :position (list 7 20) :width 10 :style style :max-buffer-length 15))
-           (button1 (make-instance 'button :position (list 10 20) :name "Hello"))
-           (button2 (make-instance 'button :position (list 10 30) :name "Accept"))
-           ;; a window is associated with the parent form, and can be accessed by the elements.
+    (let* ((ch1 (make-instance 'complex-char :simple-char #\space :color-pair '() :attributes '()))
+           (ch2 (make-instance 'complex-char :simple-char #\_))
+           (ch3 (make-instance 'complex-char :simple-char #\space :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
+           (ch4 (make-instance 'complex-char :simple-char #\space :color-pair '(:blue :white) :attributes '()))
+
+           ;; style is a plist interpreted by the field and button drawing functions.
+           (style1 (list :foreground ch1
+                         :background ch2
+                         :selected-foreground ch3
+                         :selected-background ch4))
+           
+           (field1 (make-instance 'field :position (list 3 20) :width 10 :style style1 :max-buffer-length 5))
+           (field2 (make-instance 'field :position (list 5 20) :width 10 :style style1))
+           (field3 (make-instance 'field :position (list 7 20) :width 10 :style style1 :max-buffer-length 15))
+
+           (style2 (list :foreground ch1 :selected-foreground ch4))
+           
+           (button1 (make-instance 'button :position (list 10 20) :name "Hello"  :style style2))
+           (button2 (make-instance 'button :position (list 10 30) :name "Accept" :style style2))
+
+           ;; a window is associated with the parent form, and can be accessed by the elements.           
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2) :window scr)))
 
       (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
@@ -1756,7 +1764,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (add-event-handler (form :f4) 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
-      (setf (.function button1) (lambda () (move scr 0 0) (format scr "Hello there")))
+      (setf (.function button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
       (setf (.function button2) 'exit-event-loop)
 
       ;; pressing ^A or C-a (for "accept") exits the edit mode
