@@ -51,8 +51,8 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
 
 The default background char is #\space."
   (with-accessors ((pos .position) (width .width) (style .style) (selected .selected) (win .window)) field
-    (let* ((bg (nth 1 style))
-           (sbg (nth 3 style))
+    (let* ((bg  (getf style :background))
+           (sbg (getf style :selected-background))
            (bgchar (if selected
                        (if sbg sbg #\space)
                        (if bg bg #\space))))
@@ -83,31 +83,36 @@ The default background char is #\space."
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
 (defmethod draw ((button button))
-  (with-accessors ((pos .position) (name .name) (win .window) (selected .selected)) button
+  (with-accessors ((pos .position) (name .name) (win .window) (selected .selected) (style .style)) button
     (move win (car pos) (cadr pos))
-    (add-string win name)))
+    (let ((fg  (getf style :foreground))
+          (sfg (getf style :selected-foreground)))
+      (add-string win
+                  (format nil "<~A>" name)
+                  :attributes (if selected (if sfg (.attributes sfg) nil) (if fg (.attributes fg) nil))
+                  :color-pair (if selected (if sfg (.color-pair sfg) nil) (if fg (.color-pair fg) nil))))))
 
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
   (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)
                    (style .style) (selected .selected) (win .window)) field
-    (let ((fg (nth 0 style))
-          (sfg (nth 2 style))
-          (len (length inbuf))
-          (str (value field)))
+    (let* ((fg  (getf style :foreground))
+           (sfg (getf style :selected-foreground))
+           (len (length inbuf))
+           (val (value field))
+           (str (if (< len width)
+                    ;; if the buffer is shorter than the field, just display it.
+                    val
+                    ;; otherwise display a substring starting with dptr.
+                    ;; display only max width chars starting from dptr
+                    (subseq val dptr (if (< width (- len dptr))
+                                         ;; if the remaining substring is longer than width, display just width chars.
+                                         (+ dptr width)
+                                         ;; if the remaining substring is shorter than width, just display it.
+                                         len) ))))
       (clear field)
-      (add-string win
-                  ;; display only max width chars starting from dptr
-                  (if (< len width)
-                      ;; if the buffer is shorter than the field, just display it.
-                      str
-                      ;; otherwise display a substring starting with dptr.
-                      (subseq str dptr (if (< width (- len dptr))
-                                           ;; if the remaining substring is longer than width, display just width chars.
-                                           (+ dptr width)
-                                           ;; if the remaining substring is shorter than width, just display it.
-                                           len) ))
-                  ;; TODO: find a more elegant way to do this.
+      (add-string win str
+                  ;; TODO: find a more elegant way to highlight the selected field.
                   :attributes (if selected (if sfg (.attributes sfg) nil) (if fg (.attributes fg) nil))
                   :color-pair (if selected (if sfg (.color-pair sfg) nil) (if fg (.color-pair fg) nil)))
       (update-cursor-position field))))

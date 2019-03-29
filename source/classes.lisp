@@ -248,11 +248,13 @@
     :initform      nil
     :type          (or null window)
     :documentation "The parent window which will contain the sub-window.")
+
    (relative
     :initarg       :relative
     :initform      nil
     :type          boolean
     :documentation "The position of the sub-window is relative to the parent window (t) or to the screen (nil, default).")
+
    (source
     :initarg       :source
     :initform      nil
@@ -410,7 +412,7 @@
                         ;; apply the function to the init arg passed to make-instance.
                         items))
 
-    ;; Initialize the current item as the first field from the items list.
+    ;; Initialize the current item as the first item from the items list.
     (setf current-item (car items))
 
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
@@ -549,6 +551,8 @@
     "An alist (for now) containing events (characters, keywords or integers) as keys and handler functions as values.
     Used by the run-event-loop. The slot in subclasses is class allocated, all elements of a subclass share the same bindings.")
 
+   ;; we need this to draw selected and other elements with different styles.
+   ;; this has to be toggled at the same time as current-element of a form
    (selected
     :initform      nil
     :type          boolean
@@ -561,6 +565,7 @@
     :accessor      .form
     :documentation "Parent form of the element. Added to every element upon the initialization of the form.")
 
+   ;; elements do not necessarily have to have an associated window, only when they are used stand-alone.
    (window
     :initarg       :window
     :initform      nil
@@ -569,6 +574,7 @@
 
   (:documentation "An element of a form, like a field or button."))
 
+;; (window (if (.window field) (.window field) (.window (.form field))))
 (defmethod .window ((element element))
   "Return the window associated with an element, which can optionally be part of a form.
 
@@ -590,8 +596,15 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :function
     :initform      nil
     :accessor      .function
-    :type          (or null function)
-    :documentation "Function performed when the button is activated.")
+    :type          (or null symbol function)
+    :documentation "Function called when the button is activated.")
+
+   (style
+    :initarg       :style
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .style
+    :documentation "A plist of two complex-chars (or nil): :foreground and :selected-foreground.")
 
    (event-handlers
     :allocation    :class))
@@ -615,9 +628,7 @@ If there is no window asociated with the element, return the window associated w
     :initform      nil
     :type          (or null cons)
     :accessor      .style
-    :documentation
-    "A style is a list of four complex-chars (or nil): field foreground, background, selected field foreground, background. 
-    Each style consists of a simple char, attributes and a color pair.")
+    :documentation "A plist of four complex-chars (or nil): :foreground, :background, :selected-foreground, :selected-background.")
 
    (event-handlers
     :allocation    :class)
