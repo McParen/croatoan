@@ -2595,7 +2595,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
     ;; Default handler for all events without defined handlers.
     ;; The default event handler should not be used to handle the nil event when input-blocking is nil
-    (add-event-handler (scr :default)
+    (add-event-handler (scr t)
       (lambda (win event) (format win "Default event handler ~A~%" event)))
 
     (clear scr)

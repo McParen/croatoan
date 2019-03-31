@@ -178,28 +178,28 @@ to a hash table in the future."
   "Add a keymap by its name to the global keymap collection."
   (setf *keymaps* (acons keymap-name keymap *keymaps*)))
 
-(defun get-event-handler (win event)
-  "Take a window and an event read from that window, return the handler for that event.
+(defun get-event-handler (object event)
+  "Take an object and an event, return the handler for that event.
 
-The keybindings alist is stored in the event-handlers slot of a window object.
+The keybindings alist is stored in the event-handlers slot of the object.
 
-If no handler is defined for the event, the :default event handler is tried.
-If not even the default handler is defined, the event is ignored.
+If no handler is defined for the event, the default event handler t is tried.
+If not even a default handler is defined, the event is ignored.
 
 If input-blocking is nil, we receive nil events in case no real events occur.
 In that case, the handler for the nil event is returned, if defined.
 
 The event pairs can be added by add-event-handler as conses: (event . #'handler).
 
-An event should be bound to access the pre-defined function exit-event-loop."
+An event should be bound to the pre-defined function exit-event-loop."
   (flet ((ev (event)
-           (assoc event (slot-value win 'event-handlers))))
+           (assoc event (slot-value object 'event-handlers))))
     (cond
       ;; Event occured and event handler is defined.
       ((and event (ev event)) (cdr (ev event)))
       ;; Event occured and a default event handler is defined.
       ;; If not even the default handler is defined, the event is ignored.
-      ((and event (ev :default)) (cdr (ev :default)))
+      ((and event (ev t)) (cdr (ev t)))
       ;; If no event occured and the idle handler is defined.
       ;; The event is only nil when input input-blocking is nil.
       ((and (null event) (ev nil)) (cdr (ev nil)))

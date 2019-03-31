@@ -339,7 +339,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
     :dc        'delete-next-char
     :ic        (lambda (field event)
                  (setf (.insert-mode (.window field)) (not (.insert-mode (.window field)))))
-    :default   'field-add-char))
+    t          'field-add-char))
 
 ;; TODO: should we pass the event to the button function?
 (defun call-button-function (button event)
