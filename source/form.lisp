@@ -43,6 +43,21 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (cons element (cdr list))
       (cons (car list) (replace-nth (1- n) element (cdr list)))))
 
+(defun get-style (element)
+  "If the element's style slot is empty, check whether a default style has been defined in the form."
+  (if (.style element)
+      (.style element)
+      (if (.style (.form element))
+          ;; get the default element style from the form style slot.
+          (getf (.style (.form element)) (type-of element))
+          nil)))
+
+(defun get-element (form element-name)
+  "Return from the given form the element given by its name.
+
+The name should be a string, keyword, symbol or integer, tested with equal."
+  (find element-name (.elements form) :test #'equal :key #'.name))
+
 ;; this is the only place we set the background style for the field
 ;; TODO: how to access the default fg and bg of a form,
 ;; if the field is not part of a form? by having a form slot in the field.
@@ -50,8 +65,9 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
   "Clear the field by overwriting it with the background char.
 
 The default background char is #\space."
-  (with-accessors ((pos .position) (width .width) (style .style) (selected .selected) (win .window)) field
-    (let* ((bg  (getf style :background))
+  (with-accessors ((pos .position) (width .width) (selected .selected) (win .window)) field
+    (let* ((style (get-style field))
+           (bg  (getf style :background))
            (sbg (getf style :selected-background))
            (bgchar (if selected
                        (if sbg sbg #\space)
@@ -83,10 +99,11 @@ The default background char is #\space."
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
 (defmethod draw ((button button))
-  (with-accessors ((pos .position) (name .name) (win .window) (selected .selected) (style .style)) button
-    (move win (car pos) (cadr pos))
-    (let ((fg  (getf style :foreground))
-          (sfg (getf style :selected-foreground)))
+  (with-accessors ((pos .position) (name .name) (win .window) (selected .selected)) button
+    (apply #'move win pos)
+    (let* ((style (get-style button))
+           (fg  (getf style :foreground))
+           (sfg (getf style :selected-foreground)))
       (add-string win
                   (format nil "<~A>" name)
                   :attributes (if selected (if sfg (.attributes sfg) nil) (if fg (.attributes fg) nil))
@@ -95,8 +112,9 @@ The default background char is #\space."
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
   (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)
-                   (style .style) (selected .selected) (win .window)) field
-    (let* ((fg  (getf style :foreground))
+                   (selected .selected) (win .window)) field
+    (let* ((style (get-style field))
+           (fg  (getf style :foreground))
            (sfg (getf style :selected-foreground))
            (len (length inbuf))
            (val (value field))

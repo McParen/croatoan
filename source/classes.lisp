@@ -702,6 +702,13 @@ If there is no window asociated with the element, return the window associated w
     :accessor      .current-element
     :documentation "Currently selected element object.")
 
+   (style
+    :initarg       :style
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .style
+    :documentation "A plist of default styles for each form element type.")
+
    (event-handlers
     :initform      nil
     :type          (or null cons)

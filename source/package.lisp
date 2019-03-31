@@ -84,7 +84,6 @@
    .max-item-length
    .name
    .value ;menu
-   value ;field
    .window
    .sub-window
    .message-pad
@@ -98,7 +97,9 @@
    .style
    .max-buffer-length
    .function
-
+   value ;field
+   get-element
+   
    ;; shape
    .x-origin
    .y-origin
