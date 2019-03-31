@@ -1782,6 +1782,58 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; wait for keypress, then exit
       (get-char scr) )))
 
+(defun t16g ()
+  "Use the element default style."
+  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
+    (let* ((ch1 (make-instance 'complex-char :simple-char #\space :color-pair '() :attributes '()))
+           (ch2 (make-instance 'complex-char :simple-char #\_))
+           (ch3 (make-instance 'complex-char :simple-char #\space :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
+           (ch4 (make-instance 'complex-char :simple-char #\space :color-pair '(:blue :white) :attributes '()))
+
+           (style1 (list :foreground ch1
+                         :background ch2
+                         :selected-foreground ch3
+                         :selected-background ch4))
+
+           (style2 (list :foreground ch1
+                         :selected-foreground ch4))
+
+           (style3 (list 'field  style1
+                         'button style1))
+           
+           (field1 (make-instance 'field :name "field 1" :position (list 3 20) :width 10 :max-buffer-length 5))
+           (field2 (make-instance 'field :name :field2   :position (list 5 20) :width 10))
+           (field3 (make-instance 'field :name "name"  :position (list 7 20) :width 10 :max-buffer-length 15))
+
+           (button1 (make-instance 'button :name "Hello"  :position (list 10 20)))
+           (button2 (make-instance 'button :name "Accept" :position (list 10 30)))
+           
+           (form (make-instance 'form :elements (list field1 field2 field3 button1 button2) :style style3 :window scr)))
+
+      (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
+
+      ;; for debugging, return prints the content of the buffer and then deletes the buffer
+      (add-event-handler (form :f4) 'de.anvi.croatoan::debug-print-field-buffer)
+
+      ;; Functions to be called when the button is activated by #\newline or #\space.
+      (setf (.function button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
+      (setf (.function button2) 'exit-event-loop)
+
+      ;; The set value shouldnt be longer than the max-buffer-length
+      (setf (value field2) "hello"
+            (value field3) "dear john")
+      
+      (edit form)
+      (clear scr)
+
+      ;; Access fields by their name instead of looping through the elements list.
+      (mapc #'(lambda (i) (format scr "~A: ~A~%" i (value (get-element form i))))
+            (list "field 1" :field2 "name"))
+      
+      (refresh scr)
+      ;; wait for keypress, then exit
+      (get-char scr) )))
+
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
