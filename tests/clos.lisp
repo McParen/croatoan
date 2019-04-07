@@ -2131,7 +2131,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select menu)))
-               (format scr "You chose ~A~%" (mapcar #'.value result))
+               (format scr "You chose ~A~%" (mapcar #'value result))
                ;; we have to touch scr in order to make the menu disappear.
                (touch scr)
                (refresh scr)))
@@ -2259,7 +2259,6 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :title "this is a checkbox dialog"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
-
       ;; #x2592 = :board
       (setf (.background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
       
@@ -2268,9 +2267,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          do (let ((result (select menu)))
               ;; TODO: returning an empty list exits the loop.
               (unless result (return-from menu-case))
-              (format scr "You chose ~A~%"
-                      (mapcar (lambda (x) (if x (.value x)))
-                              result))
+              (format scr "You chose ~A~%" (mapcar #'value result))
               (refresh scr)))
       (close menu))))
 

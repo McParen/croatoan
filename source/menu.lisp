@@ -231,7 +231,7 @@ At the third position, display the item given by item-number."
        (return-from-menu window (loop for i in (.items menu) if (.checked i) collect i)))
 
       (:selection
-       (let ((val (.value (.current-item menu))))
+       (let ((val (value (.current-item menu))))
          (cond
            ;; if the item is a string or symbol, just return it.
            ((or (typep val 'string)
@@ -264,7 +264,7 @@ At the third position, display the item given by item-number."
     (draw menu)))
 
 (defun toggle-item-checkbox (window event &optional menu-)
-  "Toggle the checked state of the item, used in checkbox menus."
+  "Toggle the checked state of the current item, used in checkbox menus."
   (declare (ignore event))
   (let ((menu (typecase window (menu-window window) (window menu-))))
     (setf (.checked (.current-item menu)) (not (.checked (.current-item menu))))

@@ -83,7 +83,7 @@
    .cyclic-selection
    .max-item-length
    .name
-   .value ;menu
+   value
    .window
    .sub-window
    .message-pad
@@ -98,7 +98,7 @@
    .max-buffer-length
    .function
    .title
-   value ;field
+   ;; value ; the value accessor converts the field buffer to a string
    get-element
    
    ;; shape

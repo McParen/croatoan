@@ -298,9 +298,9 @@
    (value
     :initarg       :value
     :initform      nil
-    :reader        .value
+    :reader        value
     :type          (or symbol string menu menu-window function)
-    :documentation "If the item is not a string, it can be a sub menu or (not yet implemented) a function."))
+    :documentation "Object associated with and returned upon selection of the item."))
   
   (:documentation  "A menu consists of a list of menu items."))
 
