@@ -44,7 +44,7 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (cons (car list) (replace-nth (1- n) element (cdr list)))))
 
 (defun get-style (element)
-  "If the element's style slot is empty, check whether a default style has been defined in the form."
+  "If the element's style slot is empty, check whether a default style has been defined in the parent form."
   (if (.style element)
       (.style element)
       (if (.style (.form element))
@@ -52,11 +52,15 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
           (getf (.style (.form element)) (type-of element))
           nil)))
 
-(defun get-element (form element-name)
+(defun get-element (form element-name &key (test #'eql) (key #'.name))
   "Return from the given form the element given by its name.
 
-The name should be a string, keyword, symbol or integer, tested with equal."
-  (find element-name (.elements form) :test #'equal :key #'.name))
+The name should be a keyword, symbol or integer, the default test is eql.
+
+If the name is a string, equal should be used as the test.
+
+Instead of the name, another key can be provided to identify the element."
+  (find element-name (.elements form) :test test :key key))
 
 ;; this is the only place we set the background style for the field
 ;; TODO: how to access the default fg and bg of a form,
@@ -99,20 +103,20 @@ The default background char is #\space."
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
 (defmethod draw ((button button))
-  (with-accessors ((pos .position) (name .name) (win .window) (selected .selected)) button
+  (with-accessors ((pos .position) (name .name) (title .title) (win .window) (selected .selected)) button
     (apply #'move win pos)
     (let* ((style (get-style button))
            (fg  (getf style :foreground))
            (sfg (getf style :selected-foreground)))
       (add-string win
-                  (format nil "<~A>" name)
+                  (format nil "<~A>" (if title title name))
                   :attributes (if selected (if sfg (.attributes sfg) nil) (if fg (.attributes fg) nil))
                   :color-pair (if selected (if sfg (.color-pair sfg) nil) (if fg (.color-pair fg) nil))))))
 
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
   (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)
-                   (selected .selected) (win .window)) field
+                   (selected .selected) (win .window) (title .title)) field
     (let* ((style (get-style field))
            (fg  (getf style :foreground))
            (sfg (getf style :selected-foreground))
@@ -129,6 +133,15 @@ The default background char is #\space."
                                          ;; if the remaining substring is shorter than width, just display it.
                                          len) ))))
       (clear field)
+
+      ;; if a title is given, add it on the same line before the field.
+      ;; the place for the title has to be available in the window.
+      ;; we need a layout manager to automatically position the elements.
+      (when title
+        (move win (car pos) 1)
+        (add-string win title))
+
+      (move win (car pos) (cadr pos))
       (add-string win str
                   ;; TODO: find a more elegant way to highlight the selected field.
                   :attributes (if selected (if sfg (.attributes sfg) nil) (if fg (.attributes fg) nil))

@@ -532,7 +532,14 @@
     :initform      nil
     :reader        .name
     :type          (or null symbol keyword string)
-    :documentation "Optional unique name by which the element can be identified and accessed. NOT USED YET.")
+    :documentation "Optional unique name by which the element can be identified and accessed.")
+
+   (title
+    :initarg       :title
+    :initform      nil
+    :reader        .title
+    :type          (or null string)
+    :documentation "Title of the element to be displayed at an position depending on the element type.")
 
    (position
     :initarg       :position

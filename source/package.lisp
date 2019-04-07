@@ -97,6 +97,7 @@
    .style
    .max-buffer-length
    .function
+   .title
    value ;field
    get-element
    

@@ -1785,32 +1785,30 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16g ()
   "Use the element default style."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
-    (let* ((ch1 (make-instance 'complex-char :simple-char #\space :color-pair '() :attributes '()))
+    (let* ((ch1 (make-instance 'complex-char :color-pair '(:blue :black)))
            (ch2 (make-instance 'complex-char :simple-char #\_))
-           (ch3 (make-instance 'complex-char :simple-char #\space :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
-           (ch4 (make-instance 'complex-char :simple-char #\space :color-pair '(:blue :white) :attributes '()))
+           (ch3 (make-instance 'complex-char :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
+           (ch4 (make-instance 'complex-char :simple-char #\_ :color-pair '(:white :blue)))
 
            (style1 (list :foreground ch1
                          :background ch2
                          :selected-foreground ch3
                          :selected-background ch4))
 
-           (style2 (list :foreground ch1
-                         :selected-foreground ch4))
-
-           (style3 (list 'field  style1
-                         'button style1))
+           (style2 (list :foreground ch4
+                         :selected-foreground ch3))
            
-           (field1 (make-instance 'field :name "field 1" :position (list 3 20) :width 10 :max-buffer-length 5))
-           (field2 (make-instance 'field :name :field2   :position (list 5 20) :width 10))
-           (field3 (make-instance 'field :name "name"  :position (list 7 20) :width 10 :max-buffer-length 15))
+           (style3 (list 'field  style1
+                         'button style2))
+           
+           (field1 (make-instance 'field :name :f1 :title "Forename" :position (list 3 20) :width 15 :max-buffer-length 5))
+           (field2 (make-instance 'field :name :f2 :title "Surname"  :position (list 5 20) :width 15))
+           (field3 (make-instance 'field :name :f3                   :position (list 7 20) :width 15 :max-buffer-length 20))
 
-           (button1 (make-instance 'button :name "Hello"  :position (list 10 20)))
-           (button2 (make-instance 'button :name "Accept" :position (list 10 30)))
+           (button1 (make-instance 'button :name :b1 :title "Hello"  :position (list 10 20)))
+           (button2 (make-instance 'button :name :b2 :title "Accept" :position (list 10 30)))
            
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2) :style style3 :window scr)))
-
-      (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
       (add-event-handler (form :f4) 'de.anvi.croatoan::debug-print-field-buffer)
@@ -1827,8 +1825,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (clear scr)
 
       ;; Access fields by their name instead of looping through the elements list.
-      (mapc #'(lambda (i) (format scr "~A: ~A~%" i (value (get-element form i))))
-            (list "field 1" :field2 "name"))
+      (mapc #'(lambda (name)
+                (let ((field (get-element form name)))
+                  (format scr "~5A ~10A ~20A~%" name (.title field) (value field))))
+            (list :f1 :f2 :f3))
       
       (refresh scr)
       ;; wait for keypress, then exit
