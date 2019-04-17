@@ -256,8 +256,8 @@
            (speeds (loop repeat width collect (random 4))))
       (flet ((randch () (+ 64 (random 58))))
         ;; hit the q key to exit the main loop.
-        (add-event-handler (scr #\q) 'exit-event-loop)
-        (add-event-handler (scr nil)
+        (bind scr #\q 'exit-event-loop)
+        (bind scr nil
           (lambda (win event)
             ;; generate a random ascii char
             (loop for column from 0 to (1- width) do
@@ -1708,9 +1708,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (setf (.style field)
             (list :foreground (make-instance 'complex-char :simple-char #\space :attributes '(:underline))
                   :background (make-instance 'complex-char :simple-char #\.)))
-      
-      (setf (.event-handlers field) (get-keymap :field-default-keymap))
-      (add-event-handler (field #\newline)  'de.anvi.croatoan::debug-print-field-buffer)
+
+      (bind field #\newline 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; pressing ^A (for "accept") exits the edit mode for now
       (edit field)
@@ -1752,16 +1751,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
       (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
 
-      ;; before the form can be edited, a set of predefined event handlers from the default keymap
-      ;; is initialized in initialize-instance, but can be overwritten by the user.
-      ;;(setf (.event-handlers form) (get-keymap :form-default-keymap))
-      ;;(setf (.event-handlers field1) (get-keymap :field-default-keymap))
-
-      ;; then, additional event handlers can be added.
-      ;; since the allocation of the slot is shared, we only have to add a new handler once.
-
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
-      (add-event-handler (form :f4) 'de.anvi.croatoan::debug-print-field-buffer)
+      (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
+      (bind (keymap 'field-map) :f3 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (.function button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
@@ -1811,7 +1803,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2) :style style3 :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
-      (add-event-handler (form :f4) 'de.anvi.croatoan::debug-print-field-buffer)
+      (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (.function button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
@@ -2542,23 +2534,20 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (get-char scr))))
 
 (defun t27 ()
-  "Use run-event-loop and add-event-handler instead of event-case to handle keyboard events."
+  "Use run-event-loop and bind instead of event-case to handle keyboard events."
   (with-screen (scr :input-echoing nil :input-blocking t)
 
     ;; q ends the loop.
-    (add-event-handler (scr #\q) 'exit-event-loop)
+    (bind scr #\q 'exit-event-loop)
 
     ;; The event handler function has to take two arguments, the window and the event.
 
     ;; a and s add a string to the window.
-    (add-event-handler (scr #\a)
-      (lambda (win event) (format win "Hello there.~%")))
-    (add-event-handler (scr #\s)
-      (lambda (win event) (format win "Dear John.~%")))
+    (bind scr #\a (lambda (win event) (format win "Hello there.~%")))
+    (bind scr #\s (lambda (win event) (format win "Dear John.~%")))
 
     ;; d clears the window.
-    (add-event-handler (scr #\d)
-      (lambda (win event) (clear win)))
+    (bind scr #\d (lambda (win event) (clear win)))
 
     (clear scr)
     (add-string scr "Type a, s or d. Type q to quit.")
@@ -2573,27 +2562,26 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (declare (ignore event))
   (clear win))
 
-(defparameter *t28-event-handlers*
-  (make-keymap
-    #\q  'exit-event-loop
-    #\a  't28-hello
-    #\d  't28-clear)
+(defparameter *t28-map*
+  (make-instance 'keymap :bindings-plist
+    (list
+     #\q  'exit-event-loop
+     #\a  't28-hello
+     #\d  't28-clear))
   "Define a keymap separately and then set it as a window's event handlers before running the event loop.")
 
 (defun t28 ()
   "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
   (with-screen (scr :input-echoing nil :input-blocking t)
-    ;; add the pre-existing event handler alist to the window
-    (setf (.event-handlers scr) *t28-event-handlers*)
+    ;; add the separately defined keymap to the window object.
+    (setf (.keymap scr) *t28-map*)
 
     ;; add another event handler
-    (add-event-handler (scr #\s)
-      (lambda (win event) (format win "Dear John ~A~%" event)))
+    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
 
-    ;; Default handler for all events without defined handlers.
+    ;; t is the default handler for all events without defined handlers.
     ;; The default event handler should not be used to handle the nil event when input-blocking is nil
-    (add-event-handler (scr t)
-      (lambda (win event) (format win "Default event handler ~A~%" event)))
+    (bind *t28-map* t (lambda (win event) (format win "Default event handler ~A~%" event)))
 
     (clear scr)
     (add-string scr "Type a, s or d. Type q to quit.")
@@ -2602,18 +2590,15 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (run-event-loop scr)))
 
 (defun t28a ()
-  "Use run-event-loop with non-blocking events."
+  "Test the use of the run-event-loop with non-blocking events."
   (with-screen (scr :input-echoing nil :input-blocking nil)
 
-    (setf (.event-handlers scr) *t28-event-handlers*)
+    (setf (.keymap scr) *t28-map*)
 
-    (add-event-handler (scr #\s)
-      (lambda (win event) (format win "Dear John ~A~%" event)))
+    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
 
-    ;; The handler function for the nil event will be called
-    ;; between keyboard events.
-    (add-event-handler (scr nil)
-        (lambda (win event) (format win "sleep ~A " event)))
+    ;; The handler function for the nil event will be called between keyboard events.
+    (bind scr nil (lambda (win event) (format win "sleep ~A " event)))
 
     (clear scr)
     (add-string scr "Type a, s or d. Type q to quit.")
