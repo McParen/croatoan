@@ -96,7 +96,7 @@ Example:
 For now, it is limited to events generated in a single window. So events
 from multiple windows have to be handled separately.
 
-In order for event-handling to work, input-buffering has to be nil.
+In order for event handling to work, input-buffering has to be nil.
 Several control character events can only be handled when 
 process-control-chars is also nil.
 
@@ -125,8 +125,8 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
             (case ,event
               ,@body)))))
 
-(defmacro add-event-handler ((window event) &body handler-function)
-  "Add the event and its handler-function to the window's event handler alist.
+(defun bind (object event handler)
+  "Bind the handler function to the event in the bindings alist of the object.
 
 The handlers will be called by the run-event-loop when keyboard or mouse events occur.
 
@@ -145,43 +145,37 @@ Here the main application state can be updated.
 Alternatively, to achieve the same effect, input-blocking can be set to a specific
 delay in miliseconds.
 
-Example use:
-
-(add-event-handler (scr #\q)
-  (lambda (win event)
-    (throw 'event-loop :quit)))"
-  `(setf (slot-value ,window 'event-handlers)
-         ;; we need to make handler-function a &body so it is indented properly by slime.
-         (acons ,event ,@handler-function (slot-value ,window 'event-handlers))))
+Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
+  (setf (.bindings object)
+        (acons event handler (.bindings object))))
 
 (defmacro remove-event-handler (window event)
-  "Remove the event and the handler function from a windows event-handlers collection."
-  `(setf (slot-value ,window 'event-handlers)
-         (remove ,event (slot-value ,window 'event-handlers) :key #'car)))
+  "Remove the event and the handler function from a windows bindings alist."
+  `(setf (slot-value ,window 'bindings)
+         (remove ,event (slot-value ,window 'bindings) :key #'car)))
 
-(defparameter *keymaps* nil
-  "An alist of available keymaps that can be read and written by get-keymap and add-keymap.")
+(defparameter *keymaps* nil "An alist of available keymaps.")
 
-(defun make-keymap (&rest args)
-  "Take a list of keys and values, return an event handler keymap.
+(defun define-keymap (name plist)
+  "Register a keymap given by a name and a plist of keys and functions."
+  (let ((keymap (make-instance 'keymap :bindings-plist plist)))
+    (setf *keymaps* (acons name keymap *keymaps*))))
 
-Currently the keymap is implemented as an alist, but will be converted
-to a hash table in the future."
-  (loop for (i j) on args by #'cddr
-    collect (cons i j)))
-
-(defun get-keymap (keymap-name)
-  "Take a keyword denoting a keymap name, return a keymap object from the global keymap collection."
+(defun keymap (keymap-name)
   (cdr (assoc keymap-name *keymaps*)))
 
-(defun add-keymap (keymap-name keymap)
-  "Add a keymap by its name to the global keymap collection."
-  (setf *keymaps* (acons keymap-name keymap *keymaps*)))
+;; source: alexandria
+(defun plist2alist (plist)
+  "Take a plist in the form (k1 v1 k2 v2 ...), return an alist ((k1 . v1) (k2 . v2) ...)"
+  (let (alist)
+    (do ((lst plist (cddr lst)))
+        ((endp lst) (nreverse alist))
+      (push (cons (car lst) (cadr lst)) alist))))
 
 (defun get-event-handler (object event)
   "Take an object and an event, return the handler for that event.
 
-The keybindings alist is stored in the event-handlers slot of the object.
+The key bindings alist is stored in the bindings slot of the object.
 
 If no handler is defined for the event, the default event handler t is tried.
 If not even a default handler is defined, the event is ignored.
@@ -189,11 +183,24 @@ If not even a default handler is defined, the event is ignored.
 If input-blocking is nil, we receive nil events in case no real events occur.
 In that case, the handler for the nil event is returned, if defined.
 
-The event pairs can be added by add-event-handler as conses: (event . #'handler).
+The event pairs are added by the bind function as conses: (event . #'handler).
 
 An event should be bound to the pre-defined function exit-event-loop."
   (flet ((ev (event)
-           (assoc event (slot-value object 'event-handlers))))
+           (let ((keymap (typecase (.keymap object)
+                           (keymap (.keymap object))
+                           (symbol (keymap (.keymap object))))))
+             ;; object-local bindings override the external keymap
+             ;; an event is checked in the bindings first, then in the external keymap.
+             (if (.bindings object)
+                 (if (assoc event (.bindings object))
+                     (assoc event (.bindings object))
+                     (if (and keymap (.bindings keymap))
+                         (assoc event (.bindings keymap))
+                         nil))
+                 (if (and keymap (.bindings keymap))
+                     (assoc event (.bindings keymap))
+                     nil)))))
     (cond
       ;; Event occured and event handler is defined.
       ((and event (ev event)) (cdr (ev event)))
@@ -209,8 +216,8 @@ An event should be bound to the pre-defined function exit-event-loop."
 (defun run-event-loop (object &rest args)
   "Read events from the window, then call predefined event handler functions on the events.
 
-The handlers can be added by the macro add-event-handler, or by directly setting
-a predefined keymap to the window's event-handlers slot.
+The handlers can be added by the bind function, or by directly setting a predefined keymap
+to the window's bindings slot.
 
 Args is one or more additional argument passed to the handlers.
 
@@ -229,7 +236,7 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
            (sleep (/ 1.0 (.frame-rate window)))) ))))
 
 (defgeneric handle-event (object event args)
-  ;; the default method applies to window, field, button (for now).
+  ;; the default method applies to window, field, button, menu.
   (:method (object event args)
     "Default method for all objects without a specialized method."
     (let ((handler (get-event-handler object event)))
@@ -237,6 +244,7 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
         (apply handler object event args)))))
 
 (defmethod handle-event ((form form) event args)
+  "If a form cant handle an event, let the current form element try to handle it."
   (let ((handler (get-event-handler form event)))
     (if handler
         (apply handler form event args)

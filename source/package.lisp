@@ -12,12 +12,10 @@
    with-window
    with-windows
    event-case
-   make-keymap
-   get-keymap
-   add-keymap
+   keymap
    run-event-loop
    exit-event-loop
-   add-event-handler
+   bind
    remove-event-handler
    save-excursion
 
@@ -62,7 +60,8 @@
    .enable-scrolling
    .scrolling-region
    .insert-mode
-   .event-handlers
+   .bindings
+   .keymap
    .background
    .input-echoing
    .input-buffering
@@ -90,6 +89,7 @@
    .message-text
    .message-height
    .message-pad-coordinates
+   menu-map
 
    ;; form
    .buffer
@@ -100,6 +100,9 @@
    .title
    ;; value ; the value accessor converts the field buffer to a string
    get-element
+   field-map
+   form-map
+   button-map
    
    ;; shape
    .x-origin

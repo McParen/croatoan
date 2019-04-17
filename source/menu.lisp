@@ -205,73 +205,69 @@ At the third position, display the item given by item-number."
                (third  coords)     ;screen-max-y
                (fourth coords))))) ;screen-max-x
 
-(defun return-from-menu (window return-value)
+(defun return-from-menu (menu return-value)
   "Set menu window to invisible, refresh the window stack, return the value from select."
   (when *window-stack*
     ;; change visibility only when there is an active stack.
-    (setf (.visible window) nil)
+    (typecase menu
+      (menu-window (setf (.visible menu) nil))
+      (menu (setf (.visible (.window menu)) nil)))
     (refresh-stack))
   (throw 'event-loop return-value))
 
-(defun exit-menu-event-loop (window event &optional menu)
+(defun exit-menu-event-loop (menu event)
   "Associate this function with an event to exit the menu event loop."
-  (declare (ignore event menu))
-  (return-from-menu window nil))
+  (declare (ignore event))
+  (return-from-menu menu nil))
 
-(defun accept-selection (window event &optional menu-)
+(defun accept-selection (menu event)
   "Return the value of the currently selected item or all checked items."
   (declare (ignore event))
 
-  ;; if menu- is passed, then this is the menu object, otherwise window- is a menu-window object.
-  (let ((menu (typecase window (menu-window window) (window menu-))))
+  (case (.type menu)
+    (:checklist
+     ;; return all checked items (not their values) in the item list.
+     (return-from-menu menu (loop for i in (.items menu) if (.checked i) collect i)))
 
-    (case (.type menu)
-      (:checklist
-       ;; return all checked items (not their values) in the item list.
-       (return-from-menu window (loop for i in (.items menu) if (.checked i) collect i)))
+    (:selection
+     (let ((val (value (.current-item menu))))
+       (cond
+         ;; if the item is a string or symbol, just return it.
+         ((or (typep val 'string)
+              (typep val 'symbol))
+          (return-from-menu menu val))
 
-      (:selection
-       (let ((val (value (.current-item menu))))
-         (cond
-           ;; if the item is a string or symbol, just return it.
-           ((or (typep val 'string)
-                (typep val 'symbol))
-            (return-from-menu window val))
+         ;; if the item is a function object, call it.
+         ((typep val 'function)
+          (funcall val)
+          (return-from-menu menu (.name (.current-item menu))))
 
-           ;; if the item is a function object, call it.
-           ((typep val 'function)
-            (funcall val)
-            ;; TODO: return the name of the function or the function object??
-            (return-from-menu window (.name (.current-item menu))))
+         ;; if the item is a menu (and thus also a menu-window), recursively select an item from that submenu
+         ((or (typep val 'menu)
+              (typep val 'menu-window))
+          (let ((selected-item (select val)))
 
-           ;; if the item is a menu (and thus also a menu-window), recursively select an item from that submenu
-           ((or (typep val 'menu)
-                (typep val 'menu-window))
-                
-            (let ((selected-item (select val)))
-
-              ;; when we have more than menu in one window, redraw the parent menu when we return from the submenu.
-              (when (eq (type-of val) 'menu)
-                (draw menu))
+            ;; when we have more than menu in one window, redraw the parent menu when we return from the submenu.
+            (when (eq (type-of val) 'menu)
+              (draw menu))
                
-              (when selected-item
-                (return-from-menu window selected-item)))) ))))))
+            (when selected-item
+              (return-from-menu menu selected-item)))) )))))
 
-(defun update-redraw-menu (window event &optional menu-)
+(defun update-redraw-menu (menu event)
   "Update the menu after an event, the redraw the menu."
-  (let ((menu (typecase window (menu-window window) (window menu-))))
-    (update-menu menu event)
-    (draw menu)))
+  (update-menu menu event)
+  (draw menu))
 
-(defun toggle-item-checkbox (window event &optional menu-)
+(defun toggle-item-checkbox (menu event)
   "Toggle the checked state of the current item, used in checkbox menus."
   (declare (ignore event))
-  (let ((menu (typecase window (menu-window window) (window menu-))))
-    (setf (.checked (.current-item menu)) (not (.checked (.current-item menu))))
-    (draw menu)))
+  (setf (.checked (.current-item menu)) (not (.checked (.current-item menu))))
+  (draw menu))
 
-(add-keymap :menu-default-keymap
-  (make-keymap
+;; all of these take two arguments: menu event
+(define-keymap 'menu-map
+  (list
    ;; q doesnt return a value, just nil, i.e. in the case of a checklist, an empty list.
    #\q       'exit-menu-event-loop
    #\x       'toggle-item-checkbox
@@ -297,9 +293,6 @@ If the item is a menu object, recursively display the sub menu."
        (setf (.visible menu) t)
        (refresh-stack))
      (draw menu)
-     ;; if the user didnt add any event handlers, add the default keymap.
-     (unless (.event-handlers menu)
-       (setf (.event-handlers menu) (get-keymap :menu-default-keymap)))
 
      ;; here we can pass the menu to run-event-loop because it is a menu-window.
      ;; all handler functions have to accept window and event as arguments.
@@ -308,8 +301,5 @@ If the item is a menu object, recursively display the sub menu."
      (run-event-loop menu))
 
     (menu
-     (let ((window (.window menu)))
-       (draw menu)
-       (unless (.event-handlers window)
-         (setf (.event-handlers window) (get-keymap :menu-default-keymap)))
-       (run-event-loop window menu)))))
+     (draw menu)
+     (run-event-loop menu))))

@@ -333,26 +333,27 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
      (debug-print-field-buffer (.current-element object) event)))
   (draw object))
 
-(add-keymap :form-default-keymap
-  (make-keymap
-    ;; Use C-a ^A #\soh 1 to exit the edit loop.
-    ;; TODO: what should the exit return?
-    #\soh      'exit-event-loop
-    :btab      'select-previous-element
-    :up        'select-previous-element
-    #\tab      'select-next-element
-    :down      'select-next-element))
+(define-keymap 'form-map
+  (list
+   ;; Use C-a ^A #\soh 1 to exit the edit loop.
+   ;; TODO: what should the exit return?
+   #\soh      'exit-event-loop
+   :btab      'select-previous-element
+   :up        'select-previous-element
+   #\tab      'select-next-element
+   :down      'select-next-element))
 
-(add-keymap :field-default-keymap
-  (make-keymap
-    #\soh      'exit-event-loop  ; we need this in case a field is used alone outside of a form.
-    :left      'move-previous-char
-    :right     'move-next-char
-    :backspace 'delete-previous-char
-    :dc        'delete-next-char
-    :ic        (lambda (field event)
-                 (setf (.insert-mode (.window field)) (not (.insert-mode (.window field)))))
-    t          'field-add-char))
+(define-keymap 'field-map
+  (list
+   #\soh      'exit-event-loop  ; we need this in case a field is used alone outside of a form.
+   ;;#\soh      'move-start-of-line
+   :left      'move-previous-char
+   :right     'move-next-char
+   :backspace 'delete-previous-char
+   :dc        'delete-next-char
+   :ic        (lambda (field event)
+                (setf (.insert-mode (.window field)) (not (.insert-mode (.window field)))))
+   t          'field-add-char))
 
 ;; TODO: should we pass the event to the button function?
 (defun call-button-function (button event)
@@ -362,8 +363,8 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
 ;; How to automatically bind a hotkey to every button?
 ;; that hotkey would have to be added to the form keymap, not to that of a button.
 ;; that would be like a global keymap, in contrast to an elements local keymap.
-(add-keymap :button-default-keymap
-  (make-keymap
+(define-keymap 'button-map
+  (list
    #\space     'call-button-function
    #\newline   'call-button-function))
 

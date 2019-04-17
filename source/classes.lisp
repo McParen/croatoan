@@ -51,6 +51,22 @@
              (make-instance 'complex-char :simple-char char :attributes attributes :color-pair color-pair)
              complex-char-array)))))
 
+(defclass keymap ()
+  ((bindings
+    :initarg       :bindings
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .bindings
+    :documentation "Alist of events and handler functions."))
+
+  (:documentation  "A keymap contains an alist of events as keys and event handlers or chained keymaps as values."))
+
+;; initialize instance takes a plist initarg and converts it to an alist.
+(defmethod initialize-instance :after ((keymap keymap) &key bindings-plist)
+  (with-slots (bindings) keymap
+    (when (and (null bindings) bindings-plist)
+      (setf bindings (plist2alist bindings-plist)))))
+
 (defclass window (fundamental-character-input-stream fundamental-character-output-stream)
   ((position
     ;; has to be a 2el-list so we can use 1 arg with setf.
@@ -117,14 +133,24 @@
     :accessor      .insert-mode
     :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting it (nil, default).")
 
-   (event-handlers
+   ;; we need instance-local bindings so we dont have to create a keymap for every window and every program
+   (bindings
+    :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .event-handlers
+    :accessor      .bindings
     :documentation
-    "An alist (for now) containing events (characters, keywords or integers) as keys and handler functions as values.
+    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
     Used by the run-event-loop function.")
-   
+
+   ;; if using an instance-local binding isnt sufficient, we can create a keymap and reference it in the object.
+   (keymap
+    :initarg       :keymap
+    :initform      nil
+    :type          (or null symbol keyword keymap)
+    :accessor      .keymap
+    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
+
    (background
     :initarg       :background
     :initform      nil
@@ -380,6 +406,24 @@
     :type          (or null cons)
     :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region.")
 
+   ;; we need instance-local bindings so we dont have to create a keymap for every window and every program
+   (bindings
+    :initarg       :bindings
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .bindings
+    :documentation
+    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
+    Used by the run-event-loop function.")
+
+   ;; if using an instance-local binding isnt sufficient, we can create a keymap and reference it in the object.
+   (keymap
+    :initarg       :keymap
+    :initform      'menu-map
+    :type          (or null symbol keyword keymap)
+    :accessor      .keymap
+    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
+
    (window
     :initarg       :window
     :initform      nil
@@ -548,16 +592,22 @@
     :accessor      .position
     :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element.")
 
-   (event-handlers
-    :initarg       :event-handlers
+   (bindings
+    :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .event-handlers
-    :allocation    :instance
+    :accessor      .bindings
     :documentation
-    "An alist (for now) containing events (characters, keywords or integers) as keys and handler functions as values.
-    Used by the run-event-loop. The slot in subclasses is class allocated, all elements of a subclass share the same bindings.")
+    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
+    Used by the run-event-loop function.")
 
+   (keymap
+    :initarg       :keymap
+    :initform      nil
+    :type          (or null symbol keyword keymap)
+    :accessor      .keymap
+    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
+   
    ;; we need this to draw selected and other elements with different styles.
    ;; this has to be toggled at the same time as current-element of a form
    (selected
@@ -573,6 +623,7 @@
     :documentation "Parent form of the element. Added to every element upon the initialization of the form.")
 
    ;; elements do not necessarily have to have an associated window, only when they are used stand-alone.
+   ;; when they are part of a form, we can reference the window associated with the form.
    (window
     :initarg       :window
     :initform      nil
@@ -613,14 +664,23 @@ If there is no window asociated with the element, return the window associated w
     :accessor      .style
     :documentation "A plist of two complex-chars (or nil): :foreground and :selected-foreground.")
 
-   (event-handlers
-    :allocation    :class))
+   (bindings
+    :initarg       :bindings
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .bindings
+    :documentation
+    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
+    Used by the run-event-loop function.")
+
+   (keymap
+    :initarg       :keymap
+    :initform      'button-map
+    :type          (or null symbol keyword keymap)
+    :accessor      .keymap
+    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings."))
 
   (:documentation "An element that can call a function by pressing enter (or in future, with a mouse click)."))
-
-(defmethod initialize-instance :after ((button button) &key)
-  ;; set the default keymap for all buttons, shared class allocation
-  (setf (slot-value button 'event-handlers) (get-keymap :button-default-keymap)))
 
 (defclass field (element)
   ((width
@@ -637,8 +697,21 @@ If there is no window asociated with the element, return the window associated w
     :accessor      .style
     :documentation "A plist of four complex-chars (or nil): :foreground, :background, :selected-foreground, :selected-background.")
 
-   (event-handlers
-    :allocation    :class)
+   (bindings
+    :initarg       :bindings
+    :initform      nil
+    :type          (or null cons)
+    :accessor      .bindings
+    :documentation
+    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
+    Used by the run-event-loop function.")
+
+   (keymap
+    :initarg       :keymap
+    :initform      'field-map
+    :type          (or null symbol keyword keymap)
+    :accessor      .keymap
+    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
 
    (buffer
     :initform      nil
@@ -673,12 +746,10 @@ If there is no window asociated with the element, return the window associated w
   (:documentation "A field is an editable part of the screen for user input. Can be part of a form."))
 
 (defmethod initialize-instance :after ((field field) &key)
-  (with-slots (max-buffer-length width event-handlers) field
+  (with-slots (max-buffer-length width bindings keymap) field
     ;; If unspecified, the default max-buffer-length should be equal to the visible field width.
     (unless max-buffer-length
-      (setf max-buffer-length width))
-    ;; set the default keymap for all fields, shared class allocation
-    (setf event-handlers (get-keymap :field-default-keymap)) ))
+      (setf max-buffer-length width))))
 
 (defmethod value ((field field))
   (coerce (reverse (slot-value field 'buffer)) 'string))
@@ -716,13 +787,21 @@ If there is no window asociated with the element, return the window associated w
     :accessor      .style
     :documentation "A plist of default styles for each form element type.")
 
-   (event-handlers
+   (bindings
+    :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .event-handlers
+    :accessor      .bindings
     :documentation
-    "An alist (for now) containing events (characters, keywords or integers) as keys and handler functions as values.
+    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
     Used by the run-event-loop function.")
+
+   (keymap
+    :initarg       :keymap
+    :initform      'form-map
+    :type          (or null symbol keyword keymap)
+    :accessor      .keymap
+    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
 
    (window
     :initarg       :window
@@ -734,14 +813,12 @@ If there is no window asociated with the element, return the window associated w
   (:documentation "A form is a list of fields."))
 
 (defmethod initialize-instance :after ((form form) &key)
-  (with-slots (current-element elements event-handlers) form
+  (with-slots (current-element elements bindings keymap) form
     ;; Initialize the current element as the first element from the passed elements list.
     ;; we have to set the current element before we can change it with select-previous-element and select-next-element
     (setf current-element (car elements))
     ;; set the selected option of the initial current element.
     (setf (slot-value current-element 'selected) t)
-    ;; initialize default key bindings for forms.
-    (setf event-handlers (get-keymap :form-default-keymap))
     ;; set the parent form slot of every field.
     (if elements
         (loop for element in elements
