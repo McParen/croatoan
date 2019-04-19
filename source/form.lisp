@@ -74,7 +74,8 @@ The default background char is #\space."
   (:documentation "Update the cursor position of the element of a form.")
   (:method (object)
     "The default method puts the cursor at the start position of the element."
-    (setf (.cursor-position (.window object)) (.position object))))
+    (setf (.cursor-position (.window object)) (.position object))
+    (refresh (.window object))))
 
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
@@ -83,7 +84,8 @@ The default background char is #\space."
           ;; TODO: assumes a single-line field.
           (car pos)
           (+ (cadr pos)           ; beginning of the field
-             (- inptr dptr) ))))  ; position in the field starting with dptr
+             (- inptr dptr) ))    ; position in the field starting with dptr
+    (refresh win)))
 
 (defmethod update-cursor-position ((form form))
   "Move the cursor to the correct position in current element of the form."
@@ -142,8 +144,7 @@ The default background char is #\space."
     (loop for element in elements do
       (draw element))
     ;; after drawing the elements, reposition the cursor to the current element
-    (update-cursor-position form)
-    (refresh window)))
+    (update-cursor-position form)))
 
 ;; previous-element and next-element are the only two elements where the current-element-number is changed.
 ;; here also current-element and selected has to be set.
@@ -156,11 +157,8 @@ The default background char is #\space."
     (setf current-element-number (mod (- current-element-number 1) (length elements)))
     (setf current-element (nth current-element-number elements))
     (setf (.selected current-element) t)
-    ;; after we switched the element number, we also have to move the cursor.
-    (update-cursor-position form)
-    (draw form)
-    ;; TODO: why do we need to refresh here, draw form already refreshes.
-    (refresh win)))
+    ;; after we switched the element number, we have to redraw the form.
+    (draw form)))
 
 (defun select-next-element (form event)
   "Select the next element in a form's element list."
@@ -171,16 +169,10 @@ The default background char is #\space."
     (setf current-element-number (mod (+ current-element-number 1) (length elements)))
     (setf current-element (nth current-element-number elements))
     (setf (.selected current-element) t)
-    ;; after we switched the element number, we also have to move the cursor.
-    (update-cursor-position form)
-    ;; TODO: if the selected and unselected styles are different, we have to redraw all elements on every selection change
-    (draw form)
-    (refresh win)))
+    ;; after we switched the element number, we also have to redraw the form.
+    (draw form)))
 
-(defgeneric move-previous-char (object event)
-  (:documentation "Move to the previous char in a field or a form."))
-
-(defmethod move-previous-char ((field field) event)
+(defun move-previous-char (field event)
   "Move the cursor to the previous char in the field."
   (with-accessors ((inptr .fill-pointer) (dptr .display-pointer) (win .window)) field
     (when (> inptr 0)
@@ -188,14 +180,9 @@ The default background char is #\space."
     ;; when the inptr moves left past the dptr, simultaneously decf the dptr.
     (when (< inptr dptr)
       (decf dptr))
-    (update-cursor-position field)
-    (draw field) ;; we have to redraw in the case of horizontal scrolling
-    (refresh win)))
+    (draw field)))
 
-(defgeneric move-next-char (object event)
-  (:documentation "Move to the next char in a field or a form."))
-
-(defmethod move-next-char ((field field) event)
+(defun move-next-char (field event)
   "Move the cursor to the next char in the field."
   (with-accessors ((width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (mlen .max-buffer-length)
                    (win .window)) field
@@ -206,14 +193,9 @@ The default background char is #\space."
     (when (and (>= inptr (+ dptr width))
                (not (= inptr mlen width)))
       (incf dptr))
-    (update-cursor-position field)
-    (draw field) ;; we have to redraw in the case of horizontal scrolling
-    (refresh win)))
+    (draw field)))
 
-(defgeneric delete-previous-char (object event)
-  (:documentation "Delete the previous char in the field or form, moving the cursor to the left."))
-
-(defmethod delete-previous-char ((field field) event)
+(defun delete-previous-char (field event)
   "Delete the previous char in the field, moving the cursor to the left."
   (with-accessors ((inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (win .window)) field
     (when (> inptr 0)
@@ -222,13 +204,9 @@ The default background char is #\space."
         (decf dptr))
       (setf inbuf (remove-nth (- (length inbuf) 1 inptr) inbuf)))
     ;; we dont have to redraw the complete form, just the changed field.
-    (draw field)
-    (refresh win)))
+    (draw field)))
 
-(defgeneric delete-next-char (object event)
-  (:documentation "Delete the next char (character under the cursor) in the field or form, not moving the cursor."))
-
-(defmethod delete-next-char ((field field) event)
+(defun delete-next-char (field event)
   "Delete the next char (char under the cursor) in the field, not moving the cursor."
   (with-accessors ((inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (win .window)) field
     ;; we can only delete to the right if the inptr is not at the end of the inbuf.
@@ -237,8 +215,7 @@ The default background char is #\space."
         ;; when a part of the string is hidden on the left side, shift it to the right.
         (decf dptr))
       (setf inbuf (remove-nth (- (length inbuf) (1+ inptr)) inbuf)))
-    (draw field)
-    (refresh win)))
+    (draw field)))
 
 (defun field-add-char (field char)
   "Add char to the current cursor position in the field.
