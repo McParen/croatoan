@@ -649,6 +649,19 @@ If there is no window asociated with the element, return the window associated w
 (defmethod (setf .window) (window (element element))
   (setf (slot-value element 'window) window))
 
+(defmethod .style ((element element))
+  "If the element's style slot is empty, check whether a default style has been defined in the parent form."
+  (with-slots (style form) element
+    (if style
+        style
+        (if (slot-value form 'style)
+            ;; get the default element style from the form style slot.
+            (getf (slot-value form 'style) (type-of element))
+            nil))))
+
+(defmethod (setf .style) (style (element element))
+  (setf (slot-value element 'style) style))
+
 (defclass button (element)
   ((function
     :initarg       :function
@@ -661,7 +674,6 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :style
     :initform      nil
     :type          (or null cons)
-    :accessor      .style
     :documentation "A plist of two complex-chars (or nil): :foreground and :selected-foreground.")
 
    (bindings
@@ -694,7 +706,6 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :style
     :initform      nil
     :type          (or null cons)
-    :accessor      .style
     :documentation "A plist of four complex-chars (or nil): :foreground, :background, :selected-foreground, :selected-background.")
 
    (bindings
