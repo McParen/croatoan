@@ -149,10 +149,10 @@ Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
   (setf (.bindings object)
         (acons event handler (.bindings object))))
 
-(defmacro remove-event-handler (window event)
-  "Remove the event and the handler function from a windows bindings alist."
-  `(setf (slot-value ,window 'bindings)
-         (remove ,event (slot-value ,window 'bindings) :key #'car)))
+(defun unbind (object event)
+  "Remove the event and the handler function from object's bindings alist."
+  (setf (slot-value object 'bindings)
+        (remove event (slot-value object 'bindings) :key #'car)))
 
 (defparameter *keymaps* nil "An alist of available keymaps.")
 

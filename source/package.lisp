@@ -16,7 +16,7 @@
    run-event-loop
    exit-event-loop
    bind
-   remove-event-handler
+   unbind
    save-excursion
 
    ;; classes

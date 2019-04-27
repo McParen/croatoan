@@ -2549,6 +2549,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     ;; d clears the window.
     (bind scr #\d (lambda (win event) (clear win)))
 
+    ;; u unbinds a
+    (bind scr #\u (lambda (win event) (unbind scr #\a)))
+
     (clear scr)
     (add-string scr "Type a, s or d. Type q to quit.")
     (refresh scr)
