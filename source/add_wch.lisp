@@ -1,14 +1,17 @@
 (in-package :de.anvi.croatoan)
 
-(defun add-wide-char-utf-8 (window char &key attributes color-pair y x n)
+(defun add-wide-char-utf-8 (window char &key attributes color-pair y x position n)
   "Add the wide (multi-byte) char to the window, then advance the cursor.
 
-If the destination coordinates y and x are given, move the cursor to the
-destination first and then add the character.
+If the position coordinates y (row) and x (column) are given, move the
+cursor to the position first and then add the character.
+
+The position can also be passed in form of a two-element list.
 
 If n is given, write n chars. If n is -1, as many chars will be added
 as will fit on the line."
   (when (and y x) (move window y x))
+  (when position (apply #'move window position))
   (let ((count  (if n
                    (if (= n -1)
                        (distance-to-eol window)
@@ -97,27 +100,33 @@ If char is a complex char, attributes and color-pair are ignored."
     ;; uses %setcchar to create a cchar_t pointer and passes it to fn.
     (funcall-make-cchar_t-ptr fn winptr ch attr_t color-pair-number count)))
 
-(defun add-wide-char (window char &key attributes color-pair y x n)
+(defun add-wide-char (window char &key attributes color-pair y x position n)
   "Add the wide (multi-byte) char to the window, then advance the cursor.
 
-If the destination coordinates y and x are given, move the cursor to the
-destination first and then add the character.
+If the position coordinates y (row) and x (column) are given, move the
+cursor to the position first and then add the character.
 
-If n is given, write n chars. If n is -1, as many chars will be added
+The position can also be passed in form of a two-element list.
+
+If n is given for a char, write n chars. If n is -1, add as many chars
 as will fit on the line."
   (when (and y x) (move window y x))
+  (when position (apply #'move window position))
   (funcall-make-cchar_t #'%wadd-wch window char attributes color-pair n))
 
-(defun echo-wide-char (window char &key attributes color-pair y x)
+(defun echo-wide-char (window char &key attributes color-pair y x position)
   "Add one wide (multi-byte) character to the window, then refresh the window.
 
-If the destination coordinates Y and X are given, move to the
-destination first and then echo the character. 
+If the position coordinates y (row) and x (column) are given, move the
+cursor to the position first and then add the character.
+
+The position can also be passed in form of a two-element list.
 
 The only difference to add-wide-char and a subsequent refresh is a
 performance gain if we know that we only need to output a single
 character."
   (when (and y x) (move window y x))
+  (when position (apply #'move window position))
   (let ((count 1)
         ;; for some reason, there is a special echo function for pads.
         (fn (typecase window

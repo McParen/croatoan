@@ -1,17 +1,20 @@
 (in-package :de.anvi.croatoan)
 
-(defun extract-string (window &key y x n)
+(defun extract-string (window &key y x position n)
   "Extract and return a string from window.
 
-Any attributes are stripped from the characters before the string is
-returned.
+Any attributes are stripped from the characters before the string is returned.
 
-Start at the current cursor position and end at the right margin of
-window. If n is given, read at most n chars. 
+Start at the current cursor position and end at the right margin of window. 
 
-If the destination coordinates y and x are given, move the cursor to
-the destination first."
+If the position coordinates y (row) and x (column) are given, move the
+cursor to the position first and then add the character.
+
+The position can also be passed in form of a two-element list.
+
+If n is given, read at most n chars."
   (when (and y x) (move window y x))
+  (when position (apply #'move window position))
   (let ((len (if n n (distance-to-eol window))))
     (with-foreign-pointer (string len)
       ;; zero the allocated foreign string first.

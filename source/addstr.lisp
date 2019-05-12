@@ -1,14 +1,18 @@
 (in-package :de.anvi.croatoan)
 
-(defun add-string (window string &key attributes color-pair y x n)
+(defun add-string (window string &key attributes color-pair y x position n)
   "Add the unrendered string to the window.
 
 If n is given, write at most n chars from the string. If n is -1, as
 many chars will be added that will fit on the line.
 
-If the coordinates y and x are given, move to the destination first
-and then add the string."
+If the position coordinates y (row) and x (column) are given, move the
+cursor to the position first and then add the object.
+
+The position can also be passed in form of a two-element list.
+"
   (when (and y x) (move window y x))
+  (when position (apply #'move window position))
   (let ((count (if n
                    (if (= n -1)
                        (- (.width window) (cadr (.cursor-position window)))

@@ -4,23 +4,31 @@
 ;; (add scr "b" :y 11 :x 10)
 ;; (add scr #\a   :y 10 :x 10 :attributes '(:underline) :color-pair '(:yellow :red))
 ;; (add scr "bat" :y 11 :x 10 :attributes '(:underline :bold) :color-pair '(:black :green))
-(defun add (window object &key attributes color-pair y x n)
-  "Add the object (char or string) to the window, then advance the cursor.
+;; (add scr #\a :position (list 10 10))
 
-If the destination coordinates y (row) and x (column) are given, move
-the cursor to the destination first and then add the object (char or
-string).
+(defun add (window object &rest keys &key &allow-other-keys)
+  "Add the text object to the window, then advance the cursor.
 
-If n is given for a char, write n chars. If n is -1, as many chars
-will be added as will fit on the line.
+Currently supported text objects are characters (simple and complex),
+characters given by integer codes or keywords, and strings 
+(simple and complex).
 
-If n is given for a string, write at most n chars from the string. If
-n is -1, as many chars will be added as will fit on the line."
-  (typecase object
-    ((or string complex-string)
-     (add-string window object :attributes attributes :color-pair color-pair :y y :x x :n n))
-    ((or integer keyword character complex-char)
-     (add-wide-char window object :attributes attributes :color-pair color-pair :y y :x x :n n))))
+If the position coordinates y (row) and x (column) are given, move the
+cursor to the position first and then add the object.
+
+The position can also be passed in form of a two-element list.
+
+If n is given for a char, write n chars. If n is -1, add as many chars
+as will fit on the line.
+
+If n is given for a string, add at most n chars from the string.
+If n is -1, add as many chars from the string as will fit on the line."
+  (let ((fn (typecase object
+              ((or string complex-string)
+               #'add-string)
+              ((or integer keyword character complex-char)
+               #'add-wide-char))))   
+     (apply fn window object keys)))
 
 (defun distance-to-eol (window)
   "Return the number of columns from the cursor position to the end of the line in the window."
@@ -30,17 +38,22 @@ n is -1, as many chars will be added as will fit on the line."
   "Return the number of lines from the cursor position to the bottom of the window."
   (- (.height window) (car (.cursor-position window))))
 
-(defun add-char (window char &key attributes color-pair y x n)
+(defun add-char (window char &key attributes color-pair y x position n)
   "Add the narrow (single-byte) char to the window, then advance the cursor.
 
-If the destination coordinates y and x are given, move the cursor to the
-destination first and then add the character.
+If the position coordinates y (row) and x (column) are given, move the
+cursor to the position first and then add the character.
 
-If n is given, write n chars. If n is -1, as many chars will be added
+The position can also be passed in form of a two-element list.
+
+If n is given for a char, write n chars. If n is -1, add as many chars
 as will fit on the line.
 
-Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
+Example: 
+
+(add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
   (when (and y x) (move window y x))
+  (when position (apply #'move window position))
   (let ((winptr (.winptr window))
         (count (if n
                    (if (= n -1)
@@ -52,16 +65,19 @@ Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
        repeat count
        do (%waddch winptr chtype))))
 
-(defun echo (window char &key attributes color-pair y x)
+(defun echo (window char &key attributes color-pair y x position)
   "Add one narrow (single-byte) character to the window, then refresh the window.
 
-If the destination coordinates Y and X are given, move to the
-destination first and then echo the character. 
+If the position coordinates y (row) and x (column) are given, move the
+cursor to the position first and then echo the character.
+
+The position can also be passed in form of a two-element list.
 
 The only difference to add-char and a subsequent refresh is a
 performance gain if we know that we only need to output a single
 character."
   (when (and y x) (move window y x))
+  (when position (apply #'move window position))
   (let ((winptr (.winptr window))
         (chtype (make-chtype char attributes color-pair)))
     (typecase window
