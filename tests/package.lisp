@@ -2,9 +2,6 @@
   (:documentation "Tests and examples demonstrating the use of the Croatoan API.")
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:de.anvi.croatoan)
 
-  ;; Test functions from the REPL: (a:matrix)
-  ;;(:nicknames #:a)
-
   (:export
 
    ;; ncurses.lisp
@@ -106,11 +103,13 @@
    #:t27
    #:t28
    #:t28a
+   #:t29
 
    ;; clos.lisp
    #:matrix
    #:matrix2
    #:snake
+   #:snake2
    #:tetris
    #:pipes
 

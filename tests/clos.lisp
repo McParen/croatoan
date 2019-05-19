@@ -178,6 +178,31 @@
                     (display-snake scr body)
                     (refresh scr)))))))))
 
+(defun snake2 ()
+  "Use bind and run-event-loop for event handling. Use lists instead of complex numbers for directions."
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
+    (let* ((body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
+           (head (car body))
+           (tail (car (last body)))
+           (dir '(0 1)))        ; initial direction = right
+      (flet ((draw-snake (win body)
+               (mapc (lambda (pos) (add win #\* :position pos)) body)))
+        (bind scr #\q    'exit-event-loop)
+        (bind scr :right (lambda (w e) (setf dir '( 0  1))))
+        (bind scr :left  (lambda (w e) (setf dir '( 0 -1))))
+        (bind scr :down  (lambda (w e) (setf dir '( 1  0))))
+        (bind scr :up    (lambda (w e) (setf dir '(-1  0))))
+        (bind scr nil    (lambda (w e)
+                           (add scr #\space :position tail)  ; snake moves = erase last body pair
+                           (setq body (cons (mapcar #'+ head dir) (butlast body)))
+                           (setq head (car body))
+                           (setq tail (car (last body)))
+                           (draw-snake scr body)
+                           (refresh scr)))
+        (clear scr)
+        (setf (.frame-rate scr) 20)
+        (run-event-loop scr)))))
+
 ;; https://github.com/skydrome/random/blob/master/shell/screensaver.sh
 ;; https://github.com/pipeseroni/pipes.sh/blob/master/pipes.sh
 ;; https://www.youtube.com/watch?v=T4n87IIa--U
