@@ -6,7 +6,7 @@
   :depends-on (:cffi :trivial-gray-streams)
   :components 
 
-  ;; Basic CFFI wrapper for libncurses.
+  ;; Basic CFFI wrapper for libncursesw and libncurses
   ((:module "ncurses"
             :components
             ((:file "package")
@@ -112,54 +112,4 @@
              ;; Extension libraries
              (:file "form")             ; curses extension for programming forms
              (:file "menu")             ; curses extension for programming menus
-             (:file "shape")))          ; curses extension for plotting shapes
-             
-   ;; tests for both the CFFI ncurses wrappers and the CLOS API.
-   (:module "tests"
-            :depends-on ("source")
-            :components
-            ((:file "package")
-
-             ;; all base %ncurses tests belong in this file.
-             ;; all other files should stay croatoan only.
-             (:file "ncurses")   
-             (:file "unicode")
-
-             (:file "clos")
-             (:file "evolution") ))))
-
-;;; Useless, no need to implement.
-
-;; (:file "print")
-;; ship binary data to printer
-;; http://invisible-island.net/ncurses/man/curs_print.3x.html
-
-;; (:file "printw")
-;; (:file "scanw")
-
-;; (:file "scr_dump")
-;; (:file "termcap")
-
-;; (:file "threads")
-;; http://invisible-island.net/ncurses/man/curs_threads.3x.html
-
-;; http://invisible-island.net/ncurses/man/curs_sp_funcs.3x.html
-
-;; http://invisible-island.net/ncurses/man/terminfo.5.html
-
-;;; Wide character equivalents:
-
-;; (:file "border_set") 
-;; http://invisible-island.net/ncurses/man/curs_border_set.3x.html
-
-;; getcchar
-;; (:file "add_wch")
-;; (:file "get_wch")
-;; (:file "addwstr")
-;; (:file "get_wstr")
-;; (:file "add_wchstr")
-;; (:file "in_wch")
-;; (:file "in_wchstr")
-;; (:file "inwstr")
-;; (:file "ins_wch")
-;; (:file "ins_wstr")
+             (:file "shape")))))        ; curses extension for plotting shapes
