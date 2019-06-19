@@ -20,7 +20,7 @@ of the current line.
 
 If target is :bottom, clear the window from the cursor to the end of
 the current line and all lines below."
-  (let ((winptr (.winptr window)))
+  (let ((winptr (winptr window)))
     (case target
       (:whole-window (if redraw (%wclear winptr) (%werase winptr)))
       (:end-of-line (%wclrtoeol winptr))

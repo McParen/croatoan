@@ -7,24 +7,24 @@
 ;; will be abbreviated as "xchar" or "xch" in function parameters.
 (defclass complex-char ()
   ((simple-char
-    :initarg :simple-char
-    :initform nil
-    :type (or null integer character keyword)
-    :accessor .simple-char
+    :initarg       :simple-char
+    :initform      nil
+    :type          (or null integer character keyword)
+    :accessor      simple-char
     :documentation "Lisp primitive character type, like #\a.")
 
    (attributes
-    :initarg :attributes
-    :initform '()
-    :type (or null cons)
-    :accessor .attributes
+    :initarg       :attributes
+    :initform      '()
+    :type          (or null cons)
+    :accessor      attributes
     :documentation "List of keywords denoting attributes.")
 
    (color-pair
-    :initarg :color-pair
-    :initform nil
-    :type (or null cons)
-    :accessor .color-pair
+    :initarg       :color-pair
+    :initform      nil
+    :type          (or null cons)
+    :accessor      color-pair
     :documentation "Two element list of keywords denoting a foreground and background color of the char."))
 
   (:documentation
@@ -32,10 +32,10 @@
 
 (defclass complex-string ()
   ((complex-char-array
-    :initarg :complex-char-array
-    :initform (make-array 0 :element-type 'complex-char :fill-pointer 0 :adjustable t)
-    :type vector
-    :accessor .complex-char-array
+    :initarg       :complex-char-array
+    :initform      (make-array 0 :element-type 'complex-char :fill-pointer 0 :adjustable t)
+    :type          vector
+    :accessor      complex-char-array
     :documentation "Lisp primitive string type."))
 
   (:documentation
@@ -56,7 +56,7 @@
     :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .bindings
+    :accessor      bindings
     :documentation "Alist of events and handler functions."))
 
   (:documentation  "A keymap contains an alist of events as keys and event handlers or chained keymaps as values."))
@@ -102,7 +102,7 @@
     :initarg       :frame-rate
     :initform      nil
     :type          (or null integer)
-    :accessor      .frame-rate
+    :accessor      frame-rate
     :documentation "Set the frame rate in fps (frames per second). When input-blocking is nil, sleep for 1/frame-rate seconds between event loop cycles. Has the same effect as setting input-blocking duration, and should thus not be used simultaneously.")
 
    (enable-fkeys
@@ -130,7 +130,7 @@
     :initarg       :insert-mode
     :initform      nil
     :type          boolean
-    :accessor      .insert-mode
+    :accessor      insert-mode
     :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting it (nil, default).")
 
    ;; we need instance-local bindings so we dont have to create a keymap for every window and every program
@@ -138,7 +138,7 @@
     :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .bindings
+    :accessor      bindings
     :documentation
     "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
     Used by the run-event-loop function.")
@@ -148,7 +148,7 @@
     :initarg       :keymap
     :initform      nil
     :type          (or null symbol keyword keymap)
-    :accessor      .keymap
+    :accessor      keymap
     :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
 
    (background
@@ -175,7 +175,7 @@
     :initarg       :border
     :initform      nil
     :type          boolean
-    :reader        .border
+    :reader        border
     :documentation "Enable (t) or disable (nil, default) an initial border around a window.")
 
    (stacked
@@ -188,12 +188,12 @@
     :initarg       :visible
     :initform      t
     :type          boolean
-    :accessor      .visible
+    :accessor      visible
     :documentation "If visible is nil, do not refresh the window when refreshing the window stack.")
 
    (winptr
     :initform      nil
-    :reader        .winptr
+    :reader        winptr
     :documentation "Pointer to a C/ncurses WINDOW structure after the window is created."))
 
   (:documentation "A curses window object as returned by newwin."))
@@ -201,11 +201,11 @@
 ;; also see source/panel.lisp
 (defparameter *window-stack* nil)
 
-;; ":stacked t" or "(setf (.stacked win) t)" adds a new window to the stack
+;; ":stacked t" or "(setf (stacked win) t)" adds a new window to the stack
 ;; "(setf (.hidden win) t)" prevents the window from being refreshed.
-(defmethod .stacked ((win window))
+(defmethod stacked ((win window))
   (slot-value win 'stacked))
-(defmethod (setf .stacked) (stacked (win window))
+(defmethod (setf stacked) (stacked (win window))
   (if stacked
       ;; t:   check if in stack, if not, add to stack, if yes, error
       (if (member win *window-stack* :test #'eq)
@@ -294,13 +294,13 @@
     :initarg       :sub-window
     :initform      nil
     :type          (or null sub-window)
-    :reader        .sub-window
+    :reader        sub-window
     :documentation "Active content window, for example for menu items.")
 
    (title
     :initarg       :title
     :initform      nil
-    :accessor      .title
+    :accessor      title
     :type          (or boolean string)
     :documentation "If t, a title of the window will be displayed over the top border."))
 
@@ -310,7 +310,7 @@
   ((name
     :initarg       :name
     :initform      nil
-    :reader        .name
+    :reader        name
     :type          (or null string symbol)
     :documentation "Short name of a menu item displayed in the menu.")
 
@@ -335,54 +335,54 @@
   ((name
     :initarg       :name
     :initform      nil
-    :reader        .name
+    :reader        name
     :type          (or null string symbol)
     :documentation "Name of the menu. (For example for setting the menu-window title, if title is t.)")
 
    (items
     :initarg       :items
     :initform      nil
-    :accessor      .items
+    :accessor      items
     :type          (or null cons)
-    :documentation "List of menu items. Item types can be strings, symbols, other menus or (not yet implemented) functions.")
+    :documentation "List of menu items. Item types can be strings, symbols, other menus or callback functions.")
 
-   (type
-    :initarg       :type
+   (menu-type
+    :initarg       :menu-type
     :initform      :selection
-    :accessor      .type
+    :accessor      menu-type
     :type          keyword
     :documentation "Types of menus: :selection (default, can contain strings, symbols, menus) or :checklist.")
 
    (current-item-number
     :initform      0
-    :accessor      .current-item-number
+    :accessor      current-item-number
     :type          integer
     :documentation "Number of the currently selected item.")
 
    (current-item
     :initform      nil
     :type          (or null string symbol menu-item)
-    :accessor      .current-item
+    :accessor      current-item
     :documentation "Pointer to the currently selected item object. The first item is initialized as the current item.")
    
    (current-item-mark
     :initarg       :current-item-mark
     :initform      ""
-    :reader        .current-item-mark
+    :reader        current-item-mark
     :type          string
     :documentation "A string prefixed to the current item in the menu.")
 
    (cyclic-selection
     :initarg       :cyclic-selection
     :initform      nil
-    :reader        .cyclic-selection
+    :accessor      cyclic-selection
     :type          boolean
     :documentation "Wrap around when the end of a non-scrolled menu is reached.")
 
    (max-item-length
     :initarg       :max-item-length
     :initform      15
-    :reader        .max-item-length
+    :accessor      max-item-length
     :type          integer
     :documentation "Max number of characters displayed for a single item.")
 
@@ -411,7 +411,7 @@
     :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .bindings
+    :accessor      bindings
     :documentation
     "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
     Used by the run-event-loop function.")
@@ -421,14 +421,14 @@
     :initarg       :keymap
     :initform      'menu-map
     :type          (or null symbol keyword keymap)
-    :accessor      .keymap
+    :accessor      keymap
     :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
 
    (window
     :initarg       :window
     :initform      nil
     :type          (or null window)
-    :accessor      .window
+    :accessor      window
     :documentation "Window created separately and then associated with the menu."))
 
   (:documentation  "A menu is a list of items that can be selected by the user."))
@@ -450,8 +450,8 @@
                                              :name (typecase x
                                                      (string x)
                                                      (symbol (symbol-name x))
-                                                     (menu-window (.name x))
-                                                     (menu (.name x)))
+                                                     (menu-window (name x))
+                                                     (menu (name x)))
                                              :value x)))
                         ;; apply the function to the init arg passed to make-instance.
                         items))
@@ -482,12 +482,12 @@
                              :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
                              :position (list padding padding) :relative t))
         (when color-pair
-          (setf (.color-pair win) color-pair
+          (setf (color-pair win) color-pair
                 ;; we need to set the window color pair for the :reverse attribute to work
-                (.color-pair sub-window) color-pair
+                (color-pair sub-window) color-pair
                 ;; we also need the background to have the whole item width colored
-                (.background win)        (make-instance 'complex-char :color-pair color-pair)
-                (.background sub-window) (make-instance 'complex-char :color-pair color-pair))) ))))
+                (background win)        (make-instance 'complex-char :color-pair color-pair)
+                (background sub-window) (make-instance 'complex-char :color-pair color-pair))) ))))
 
 (defclass dialog-window (menu-window)
   ;; this has to be a pad, so we can scroll it if the message is large.
@@ -495,27 +495,27 @@
   ((message-pad
     :initform      nil
     :type          (or null pad)
-    :reader        .message-pad
+    :reader        message-pad
     :documentation "Passive content window, for example for menu descriptions.")
 
    ;; check how message is called in the dialog program.
    (message-text
     :initarg       :message-text
     :initform      nil
-    :accessor      .message-text
+    :accessor      message-text
     :type          (or null string)
     :documentation "Optional message text to describe the choices in the menu below.")
    ;; make shorter slot names
    (message-height
     :initarg       :message-height
     :initform      0
-    :reader        .message-height
+    :reader        message-height
     :type          integer
     :documentation "Max number of lines reserved for the optional message text.")
 
    (message-pad-coordinates
     :initform      nil
-    :reader        .message-pad-coordinates
+    :reader        message-pad-coordinates
     :type          (or null cons)
     :documentation "List of four coordinates where to refresh/display the message pad: min-y min-x max-y max-x."))
 
@@ -558,30 +558,30 @@
                       (+ (+ 2 (car position)) message-height) ;screen-max-y
                       (+ (+ 2 (cadr position) (- width 4))))) ;screen-max-x
           (when color-pair
-            (setf (.background message-pad) (make-instance 'complex-char :color-pair color-pair)))
+            (setf (background message-pad) (make-instance 'complex-char :color-pair color-pair)))
           (format message-pad message-text))
 
         ;; TODO: do this once for all menus and dialogs, at the moment it is duplicated
         (when color-pair
-          (setf (.color-pair win) color-pair
+          (setf (color-pair win) color-pair
                 ;; we need to set the window color pair for the :reverse attribute to work
-                (.color-pair sub-window) color-pair
+                (color-pair sub-window) color-pair
                 ;; we also need the background to have the whole item width colored
-                (.background win)        (make-instance 'complex-char :color-pair color-pair)
-                (.background sub-window) (make-instance 'complex-char :color-pair color-pair ))) ))))
+                (background win)        (make-instance 'complex-char :color-pair color-pair)
+                (background sub-window) (make-instance 'complex-char :color-pair color-pair ))) ))))
 
 (defclass element ()
   ((name
     :initarg       :name
     :initform      nil
-    :reader        .name
+    :reader        name
     :type          (or null symbol keyword string)
     :documentation "Optional unique name by which the element can be identified and accessed.")
 
    (title
     :initarg       :title
     :initform      nil
-    :reader        .title
+    :accessor      title
     :type          (or null string)
     :documentation "Title of the element to be displayed at an position depending on the element type.")
 
@@ -589,14 +589,14 @@
     :initarg       :position
     :initform      nil
     :type          (or null cons)
-    :accessor      .position
+    :accessor      position
     :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element.")
 
    (bindings
     :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .bindings
+    :accessor      bindings
     :documentation
     "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
     Used by the run-event-loop function.")
@@ -605,7 +605,7 @@
     :initarg       :keymap
     :initform      nil
     :type          (or null symbol keyword keymap)
-    :accessor      .keymap
+    :accessor      keymap
     :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
    
    ;; we need this to draw selected and other elements with different styles.
@@ -632,8 +632,8 @@
 
   (:documentation "An element of a form, like a field or button."))
 
-;; (window (if (.window field) (.window field) (.window (.form field))))
-(defmethod .window ((element element))
+;; (window (if (window field) (window field) (window (.form field))))
+(defmethod window ((element element))
   "Return the window associated with an element, which can optionally be part of a form.
 
 If there is no window asociated with the element, return the window associated with the parent form."
@@ -643,13 +643,13 @@ If there is no window asociated with the element, return the window associated w
         (if form
             (if (slot-value form 'window)
                 (slot-value form 'window)
-                (error "(.window element) ERROR: No window is associated with the parent form."))
-            (error "(.window element) ERROR: Neither a window nor a parent form are associated with the element.")))))
+                (error "(window element) ERROR: No window is associated with the parent form."))
+            (error "(window element) ERROR: Neither a window nor a parent form are associated with the element.")))))
 
-(defmethod (setf .window) (window (element element))
+(defmethod (setf window) (window (element element))
   (setf (slot-value element 'window) window))
 
-(defmethod .style ((element element))
+(defmethod style ((element element))
   "If the element's style slot is empty, check whether a default style has been defined in the parent form."
   (with-slots (style form) element
     (if style
@@ -659,16 +659,16 @@ If there is no window asociated with the element, return the window associated w
             (getf (slot-value form 'style) (type-of element))
             nil))))
 
-(defmethod (setf .style) (style (element element))
+(defmethod (setf style) (style (element element))
   (setf (slot-value element 'style) style))
 
 (defclass button (element)
-  ((function
-    :initarg       :function
+  ((callback
+    :initarg       :callback
     :initform      nil
-    :accessor      .function
+    :accessor      callback
     :type          (or null symbol function)
-    :documentation "Function called when the button is activated.")
+    :documentation "Callback function called when the button is activated.")
 
    (style
     :initarg       :style
@@ -680,7 +680,7 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .bindings
+    :accessor      bindings
     :documentation
     "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
     Used by the run-event-loop function.")
@@ -689,7 +689,7 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :keymap
     :initform      'button-map
     :type          (or null symbol keyword keymap)
-    :accessor      .keymap
+    :accessor      keymap
     :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings."))
 
   (:documentation "An element that can call a function by pressing enter (or in future, with a mouse click)."))
@@ -699,7 +699,7 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :width
     :initform      nil
     :type          (or null integer)
-    :accessor      .width
+    :accessor      width
     :documentation "The width of the field. The default buffer length is equal the width.")
 
    (style
@@ -712,7 +712,7 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .bindings
+    :accessor      bindings
     :documentation
     "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
     Used by the run-event-loop function.")
@@ -721,20 +721,20 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :keymap
     :initform      'field-map
     :type          (or null symbol keyword keymap)
-    :accessor      .keymap
+    :accessor      keymap
     :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
 
    (buffer
     :initform      nil
     :type          (or null list)
-    :accessor      .buffer
+    :accessor      buffer
     :documentation "List containing the characters in the field.")
 
    (max-buffer-length
     :initarg       :max-buffer-length
     :initform      nil
     :type          (or null integer)
-    :accessor      .max-buffer-length
+    :accessor      max-buffer-length
     :documentation
     "Max length of the field buffer. If nil, it will be initialized to field width. 
     Horizontal scrolling is then disabled.")
@@ -774,7 +774,7 @@ If there is no window asociated with the element, return the window associated w
     ;; Make sure we already have fields when we initialize a form.
     :initform      nil
     :type          (or null cons)
-    :accessor      .elements
+    :accessor      elements
     :documentation "List of elements. The first element will be initialized as the current element.")
 
    ;; if init is 0, what if we have no fields yet?
@@ -795,14 +795,14 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :style
     :initform      nil
     :type          (or null cons)
-    :accessor      .style
+    :accessor      style
     :documentation "A plist of default styles for each form element type.")
 
    (bindings
     :initarg       :bindings
     :initform      nil
     :type          (or null cons)
-    :accessor      .bindings
+    :accessor      bindings
     :documentation
     "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
     Used by the run-event-loop function.")
@@ -811,14 +811,14 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :keymap
     :initform      'form-map
     :type          (or null symbol keyword keymap)
-    :accessor      .keymap
+    :accessor      keymap
     :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
 
    (window
     :initarg       :window
     :initform      nil
     :type          (or null window)
-    :accessor      .window
+    :accessor      window
     :documentation "Window created separately and then associated with the form."))
 
   (:documentation "A form is a list of fields."))
@@ -915,8 +915,8 @@ If there is no window asociated with the element, return the window associated w
       (unless height (setf height 0))
       (setf winptr (%newwin height width (car position) (cadr position)))
 
-      (when color-pair (setf (.color-pair win) color-pair))
-      (when background (setf (.background win) background)) )))
+      (when color-pair (setf (color-pair win) color-pair))
+      (when background (setf (background win) background)) )))
 
 (defmethod initialize-instance :after ((scr screen) &key)
   (with-slots (winptr enable-colors use-default-colors cursor-visibility input-echoing input-blocking enable-fkeys
@@ -932,8 +932,8 @@ If there is no window asociated with the element, return the window associated w
               (set-default-color-pair use-default-colors))
             (error "initialize-instance screen: This terminal does not support colors.")))
 
-      (when color-pair (setf (.color-pair scr) color-pair))
-      (when background (setf (.background scr) background))
+      (when color-pair (setf (color-pair scr) color-pair))
+      (when background (setf (background scr) background))
       
       (if input-echoing (%echo) (%noecho))
       (set-input-mode input-buffering process-control-chars)
@@ -985,48 +985,47 @@ If there is no window asociated with the element, return the window associated w
 
 ;; Accessors
 
-(defgeneric .position (window))
-(defmethod .position ((window window))
+(defgeneric position (window))
+(defmethod position ((window window))
   (list (%getbegy (slot-value window 'winptr)) (%getbegx (slot-value window 'winptr))))
-(defmethod .position ((win sub-window))
+(defmethod position ((win sub-window))
   (with-slots (winptr relative) win
     (if relative
         (list (%getpary winptr) (%getparx winptr))
         (list (%getbegy winptr) (%getbegx winptr)))))
-(defgeneric (setf .position) (coordinates window))
-(defmethod (setf .position) (coordinates (w window))
+(defgeneric (setf position) (coordinates window))
+(defmethod (setf position) (coordinates (w window))
   (setf (slot-value w 'position) coordinates)
   (%mvwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
-;; The slots position-y and position-x dont exist, but the pseudo accessors
-;; exist for convenience.
+;; The slots position-y and position-x dont exist, these accessors exist for convenience.
 
-(defgeneric .position-y (window))
-(defmethod .position-y ((win window))
+(defgeneric position-y (window))
+(defmethod position-y ((win window))
   (%getbegy (slot-value win 'winptr)))
-(defmethod .position-y ((win sub-window))
+(defmethod position-y ((win sub-window))
   (with-slots (winptr relative) win
     (if relative
         (%getpary winptr)
         (%getbegy winptr))))
 
-(defgeneric .position-x (window))
-(defmethod .position-x ((win window))
+(defgeneric position-x (window))
+(defmethod position-x ((win window))
   (%getbegx (slot-value win 'winptr)))
-(defmethod .position-x ((win sub-window))
+(defmethod position-x ((win sub-window))
   (with-slots (winptr relative) win
     (if relative
         (%getparx winptr)
         (%getbegx winptr))))
 
-(defgeneric (setf .position-y) (y window))
-(defmethod (setf .position-y) (y (win window))
+(defgeneric (setf position-y) (y window))
+(defmethod (setf position-y) (y (win window))
   (let ((x (cadr (slot-value win 'position))))
     (setf (slot-value win 'position) (list y x))
     (%mvwin (slot-value win 'winptr) y x)))
 
-(defgeneric (setf .position-x) (x window))
-(defmethod (setf .position-x) (x (win window))
+(defgeneric (setf position-x) (x window))
+(defmethod (setf position-x) (x (win window))
   (let ((y (car (slot-value win 'position))))
     (setf (slot-value win 'position) (list y x))
     (%mvwin (slot-value win 'winptr) y x)))
@@ -1037,120 +1036,122 @@ If there is no window asociated with the element, return the window associated w
 ;;
 ;; "The mvderwin() function specifies a mapping of characters.
 ;; The function identifies a mapped area of the parent of the specified window"
-(defgeneric (setf .source) (coordinates sub-window))
-(defmethod (setf .source) (coordinates (w sub-window))
+
+;; TODO: rename to source-location
+(defgeneric (setf source) (coordinates sub-window))
+(defmethod (setf source) (coordinates (w sub-window))
   (setf (slot-value w 'source) coordinates)
   (%mvderwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
-(defgeneric .width (window))
-(defmethod .width ((window window))
+(defgeneric width (window))
+(defmethod width ((window window))
   (%getmaxx (slot-value window 'winptr)))
 
-(defgeneric .height (window))
-(defmethod .height ((window window))
+(defgeneric height (window))
+(defmethod height ((window window))
   (%getmaxy (slot-value window 'winptr)))
 
-(defgeneric .cursor-position (window))
-(defmethod .cursor-position ((window window))
+(defgeneric cursor-position (window))
+(defmethod cursor-position ((window window))
   (list (%getcury (slot-value window 'winptr)) (%getcurx (slot-value window 'winptr))))
 
 ;; we can move the cursor by doing this, or by calling "move". 
 ;; both will use %wmove in the background.
 ;; note that incd and decf dont work.
-(defgeneric (setf .cursor-position) (coordinates window))
-(defmethod (setf .cursor-position) (coordinates (w window))
+(defgeneric (setf cursor-position) (coordinates window))
+(defmethod (setf cursor-position) (coordinates (w window))
   (setf (slot-value w 'cursor-position) coordinates)
   (%wmove (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
 ;; The slots position-y and position-x dont exist, but the pseudo accessors
 ;; exist for convenience.
 
-(defgeneric .cursor-position-y (window))
-(defmethod .cursor-position-y ((win window))
+(defgeneric cursor-position-y (window))
+(defmethod cursor-position-y ((win window))
   (%getcury (slot-value win 'winptr)))
 
-(defgeneric .cursor-position-x (window))
-(defmethod .cursor-position-x ((win window))
+(defgeneric cursor-position-x (window))
+(defmethod cursor-position-x ((win window))
   (%getcurx (slot-value win 'winptr)))
 
-(defgeneric (setf .cursor-position-y) (y window))
-(defmethod (setf .cursor-position-y) (y (win window))
+(defgeneric (setf cursor-position-y) (y window))
+(defmethod (setf cursor-position-y) (y (win window))
   (let ((x (cadr (slot-value win 'cursor-position))))
     (setf (slot-value win 'cursor-position) (list y x))
     (%wmove (slot-value win 'winptr) y x)))
 
-(defgeneric (setf .cursor-position-x) (x window))
-(defmethod (setf .cursor-position-x) (x (win window))
+(defgeneric (setf cursor-position-x) (x window))
+(defmethod (setf cursor-position-x) (x (win window))
   (let ((y (car (slot-value win 'cursor-position))))
     (setf (slot-value win 'cursor-position) (list y x))
     (%wmove (slot-value win 'winptr) y x)))
 
-(defgeneric .cursor-visibility (window))
-(defmethod .cursor-visibility ((screen screen))
+(defgeneric cursor-visibility (window))
+(defmethod cursor-visibility ((screen screen))
   (slot-value screen 'cursor-visibility))
-(defgeneric (setf .cursor-visibility) (status screen))
-(defmethod (setf .cursor-visibility) (status (screen screen))
+(defgeneric (setf cursor-visibility) (status screen))
+(defmethod (setf cursor-visibility) (status (screen screen))
   (setf (slot-value screen 'cursor-visibility) status)
   (set-cursor-visibility status))
 
-(defgeneric .input-blocking (window))
-(defmethod .input-blocking ((window window))
+(defgeneric input-blocking (window))
+(defmethod input-blocking ((window window))
   (slot-value window 'input-blocking))
-(defgeneric (setf .input-blocking) (status window))
-(defmethod (setf .input-blocking) (status (window window))
+(defgeneric (setf input-blocking) (status window))
+(defmethod (setf input-blocking) (status (window window))
   (setf (slot-value window 'input-blocking) status)
   (set-input-blocking (slot-value window 'winptr) status))
 
-(defgeneric .enable-fkeys (window))
-(defmethod .enable-fkeys ((window window))
+(defgeneric enable-fkeys (window))
+(defmethod enable-fkeys ((window window))
   (slot-value window 'enable-fkeys))
-(defgeneric (setf .enable-fkeys) (status window))
-(defmethod (setf .enable-fkeys) (status (window window))
+(defgeneric (setf enable-fkeys) (status window))
+(defmethod (setf enable-fkeys) (status (window window))
   (setf (slot-value window 'enable-fkeys) status)
   (%keypad (slot-value window 'winptr) status))
 
-(defgeneric .enable-scrolling (window))
-(defmethod .enable-scrolling ((window window))
+(defgeneric enable-scrolling (window))
+(defmethod enable-scrolling ((window window))
   (slot-value window 'enable-scrolling))
-(defgeneric (setf .enable-scrolling) (status window))
-(defmethod (setf .enable-scrolling) (status (window window))
+(defgeneric (setf enable-scrolling) (status window))
+(defmethod (setf enable-scrolling) (status (window window))
   (setf (slot-value window 'enable-scrolling) status)
   (%scrollok (slot-value window 'winptr) status))
 
-(defgeneric .scrolling-region (window))
-(defmethod .scrolling-region ((window window))
+(defgeneric scrolling-region (window))
+(defmethod scrolling-region ((window window))
   (slot-value window 'scrolling-region))
-(defgeneric (setf .scrolling-region) (list window))
-(defmethod (setf .scrolling-region) (list (window window))
+(defgeneric (setf scrolling-region) (list window))
+(defmethod (setf scrolling-region) (list (window window))
   (setf (slot-value window 'scrolling-region) list)
   (%wsetscrreg (slot-value window 'winptr)
                (first  (slot-value window 'scrolling-region))
                (second (slot-value window 'scrolling-region))))
 ;; TODO: setf only when scrolling is enabled.
 
-(defgeneric .input-echoing (screen))
-(defmethod .input-echoing ((screen screen))
+(defgeneric input-echoing (screen))
+(defmethod input-echoing ((screen screen))
   (slot-value screen 'input-echoing))
-(defgeneric (setf .input-echoing) (status screen))
-(defmethod (setf .input-echoing) (status (screen screen))
+(defgeneric (setf input-echoing) (status screen))
+(defmethod (setf input-echoing) (status (screen screen))
   (setf (slot-value screen 'input-echoing) status)
   ;;(set-input-echoing status))
   (if status (%echo) (%noecho)))
 
-(defgeneric .input-buffering (screen))
-(defmethod .input-buffering ((screen screen))
+(defgeneric input-buffering (screen))
+(defmethod input-buffering ((screen screen))
   (slot-value screen 'input-buffering))
-(defgeneric (setf .input-buffering) (status screen))
-(defmethod (setf .input-buffering) (status (screen screen))
+(defgeneric (setf input-buffering) (status screen))
+(defmethod (setf input-buffering) (status (screen screen))
   (setf (slot-value screen 'input-buffering) status)
   (set-input-mode (slot-value screen 'input-buffering)
                   (slot-value screen 'process-control-chars)))
 
-(defgeneric .process-control-chars (screen))
-(defmethod .process-control-chars ((screen screen))
+(defgeneric process-control-chars (screen))
+(defmethod process-control-chars ((screen screen))
   (slot-value screen 'process-control-chars))
-(defgeneric (setf .process-control-chars) (status screen))
-(defmethod (setf .process-control-chars) (status (screen screen))
+(defgeneric (setf process-control-chars) (status screen))
+(defmethod (setf process-control-chars) (status (screen screen))
   (with-slots (input-buffering process-control-chars) screen
     ;; only make a change when the status changed.
     (when (not (eq process-control-chars status))
@@ -1163,12 +1164,12 @@ If there is no window asociated with the element, return the window associated w
       ;; then save the new status.
       (setf process-control-chars status) )))
 
-(defgeneric .background (window))
-(defmethod .background ((win window))
+(defgeneric background (window))
+(defmethod background ((win window))
   (slot-value win 'background))
 
-(defgeneric (setf .background) (char window &optional apply))
-(defmethod (setf .background) (char (window window) &optional (apply t))
+(defgeneric (setf background) (char window &optional apply))
+(defmethod (setf background) (char (window window) &optional (apply t))
   (setf (slot-value window 'background) char)
   (if char
       (set-background-cchar_t window char apply)
@@ -1177,13 +1178,13 @@ If there is no window asociated with the element, return the window associated w
                               (make-instance 'complex-char :simple-char #\space)
                               apply)))
 
-;(defgeneric .attributes (window))
-(defmethod .attributes ((window window))
+;(defgeneric attributes (window))
+(defmethod attributes ((window window))
   (slot-value window 'attributes))
 
-;;(defgeneric (setf .attributes) (attributes window))
+;;(defgeneric (setf attributes) (attributes window))
 #|
-(defmethod (setf .attributes) (attributes (window window))
+(defmethod (setf attributes) (attributes (window window))
   (let ((added (set-difference attributes (slot-value window 'attributes)))
         (removed (set-difference (slot-value window 'attributes) attributes)))
     (setf (slot-value window 'attributes) attributes)
@@ -1192,7 +1193,7 @@ If there is no window asociated with the element, return the window associated w
 |#
 ;; TODO use %wattron and %wattroff here.
 
-(defmethod (setf .attributes) (attributes (win window))
+(defmethod (setf attributes) (attributes (win window))
   (with-slots ((win-attributes attributes)) win
     (let ((added   (set-difference     attributes win-attributes))
           (removed (set-difference win-attributes     attributes)))
@@ -1206,48 +1207,48 @@ If there is no window asociated with the element, return the window associated w
 ;; we want the attributes function to just handle attributes and leave the color alone.
 ;; to do that, we have to treat the attributes as a set and ignore set-attributes.
 
-;; (defmethod (setf .attributes) (attributes (window window))
+;; (defmethod (setf attributes) (attributes (window window))
 ;;   (setf (slot-value window 'attributes) attributes)
 ;;   (set-attributes window attributes))
 
 ;; the generic functions are already implicitly generated above in defclass.
-;;(defgeneric .color-pair (window))
-;;(defgeneric (setf .color-pair) (color-pair window))
+;;(defgeneric color-pair (window))
+;;(defgeneric (setf color-pair) (color-pair window))
 
-(defmethod .color-pair ((window window))
+(defmethod color-pair ((window window))
   (slot-value window 'color-pair))
-(defmethod (setf .color-pair) (color-pair (window window))
+(defmethod (setf color-pair) (color-pair (window window))
   (setf (slot-value window 'color-pair) color-pair)
   (set-color-pair (slot-value window 'winptr) color-pair))
 
 ;;; print, prin1, princ, format ~A, ~S
 
 ;; print a wide but simple lisp character to a window
-;; TODO: add check for .insert-mode
+;; TODO: add check for insert-mode
 (defmethod print-object ((ch character) (stream window))
   (add-wide-char stream ch))
 
-;; TODO: add check for .insert-mode
+;; TODO: add check for insert-mode
 (defmethod print-object ((ch complex-char) (stream window))
   (add-wide-char stream ch))
 
 ;; print only simple chars to the lisp repl.
 (defmethod print-object ((ch complex-char) stream)
-  (princ (.simple-char ch) stream))
+  (princ (simple-char ch) stream))
 
 ;; print simple strings to a ncurses widow.
 (defmethod print-object ((str string) (stream window))
-  (%waddstr (.winptr stream) str))
+  (%waddstr (winptr stream) str))
 
 ;; print complex strings to a ncurses window.
 (defmethod print-object ((cstr complex-string) (stream window))
-  (loop for ch across (.complex-char-array cstr)
+  (loop for ch across (complex-char-array cstr)
      do (add-wide-char stream ch)))
 
 ;; print only simple chars to the lisp repl.
 (defmethod print-object ((cstr complex-string) stream)
-  (loop for ch across (.complex-char-array cstr)
-     do (princ (.simple-char ch) stream)))
+  (loop for ch across (complex-char-array cstr)
+     do (princ (simple-char ch) stream)))
 
 ;; methods to close streams, and thus screen _and_ windows, since they are now gray streams.
 ;; end-screen = %endwin
@@ -1261,11 +1262,11 @@ If there is no window asociated with the element, return the window associated w
   ;; if by time of closing, the window is still on the stack, remove it first.
   (if (member stream *window-stack* :test #'eq)
       (setf *window-stack* (remove stream *window-stack* :test #'eq)))
-  (%delwin (.winptr stream)))
+  (%delwin (winptr stream)))
 
 (defmethod close ((stream sub-window) &key abort)
   (declare (ignore abort))
-  (%delwin (.winptr stream)))
+  (%delwin (winptr stream)))
 
 (defmethod close ((stream screen) &key abort)
   (declare (ignore abort))
@@ -1273,20 +1274,20 @@ If there is no window asociated with the element, return the window associated w
 
 (defmethod close ((stream decorated-window) &key abort)
   (declare (ignore abort))
-  (%delwin (.winptr (.sub-window stream)))
-  (%delwin (.winptr stream)))
+  (%delwin (winptr (sub-window stream)))
+  (%delwin (winptr stream)))
 
 ;; although it is not a stream, we will abuse close to close a menu's window and subwindow, which _are_ streams.
 (defmethod close ((stream menu-window) &key abort)
   (declare (ignore abort))
-  (%delwin (.winptr (.sub-window stream)))
-  (%delwin (.winptr stream)))
+  (%delwin (winptr (sub-window stream)))
+  (%delwin (winptr stream)))
 
 (defmethod close ((stream dialog-window) &key abort)
   (declare (ignore abort))
-  (%delwin (.winptr (.message-pad stream)))
-  (%delwin (.winptr (.sub-window stream)))
-  (%delwin (.winptr stream)))
+  (%delwin (winptr (message-pad stream)))
+  (%delwin (winptr (sub-window stream)))
+  (%delwin (winptr stream)))
 
 ;; SBCL bug when specializing close on gray streams:
 ;; STYLE-WARNING:

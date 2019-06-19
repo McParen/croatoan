@@ -20,7 +20,7 @@
       -1
       ;; depending on whether we use 8 or 256 colors, we have different names for the same colors.
       (let* ((color-list (if (<= %colors 8) *ansi-color-list* *xterm-color-name-list*))
-             (position (position color-name color-list)))
+             (position (cl:position color-name color-list)))
         (if position
             position
             (error "color name does not exist.")))))
@@ -128,14 +128,14 @@ Example: (pair->number '(:white :black)) => 0"
 (defun add-attributes (win attributes)
   "Takes a list of keywords and turns the appropriate attributes on."
   (dolist (i attributes)
-    (setf (.attributes win) (adjoin i (.attributes win)))
-    (%wattron (.winptr win) (get-bitmask i))))
+    (setf (attributes win) (adjoin i (attributes win)))
+    (%wattron (winptr win) (get-bitmask i))))
 
 (defun remove-attributes (win attributes)
   "Takes a list of keywords and turns the appropriate attributes off."
   (dolist (i attributes)
-    (setf (.attributes win) (remove i (.attributes win)))
-    (%wattroff (.winptr win) (get-bitmask i))))
+    (setf (attributes win) (remove i (attributes win)))
+    (%wattroff (winptr win) (get-bitmask i))))
 
 ;; (set-attributes scr '(:bold :underline))
 ;; set-attributes overwrites color settings because it treats color as an attribute.
@@ -147,7 +147,7 @@ Overwrites any previous attribute settings including the color."
   (%wattrset winptr
              (apply #'logior (loop for i in attributes collect (get-bitmask i)))))
 
-;; (%wchgat (.winptr win) 9 #x00040000 0 (null-pointer))
+;; (%wchgat (winptr win) 9 #x00040000 0 (null-pointer))
 (defun change-attributes (win n attributes &key color-pair y x position)
   "Change the attributes of n chars starting at the current cursor position.
 
@@ -160,10 +160,10 @@ from the given point without moving the cursor position."
   (let ((attrs (attrs2chtype attributes))
         (pairno (if color-pair
                     (pair->number color-pair)
-                    (if (.color-pair win)
-                        (pair->number (.color-pair win))
+                    (if (color-pair win)
+                        (pair->number (color-pair win))
                         0))))
-    (%wchgat (.winptr win) n attrs pairno (null-pointer))))
+    (%wchgat (winptr win) n attrs pairno (null-pointer))))
 
 ;; (set-color window '(:black :white))
 (defun set-color-pair (winptr color-pair)
@@ -301,7 +301,7 @@ they override the attributes and the color-of the complex char."
 
 chtype is a 32-bit integer representing a non-wide complex-char in ncurses."
   (let ((chtype (make-chtype char attributes color-pair))
-        (winptr (.winptr window)))
+        (winptr (winptr window)))
     (if (= count 1)
         (funcall fn winptr chtype)
         (dotimes (i count) (funcall fn winptr chtype)))))
@@ -310,9 +310,9 @@ chtype is a 32-bit integer representing a non-wide complex-char in ncurses."
 
 (defun xchar2chtype (ch)
   "Convert a croatoan complex char to an integral ncurses chtype."
-  (make-chtype (.simple-char ch)
-               (.attributes ch)
-               (.color-pair ch)))
+  (make-chtype (simple-char ch)
+               (attributes ch)
+               (color-pair ch)))
 
 (defun chtype2xchar (ch)
   "Converts a ncurses chtype to croatoan complex-char."
@@ -331,7 +331,7 @@ chtype is a 32-bit integer representing a non-wide complex-char in ncurses."
 ;; The lisp class representing chtype is complex-char.
 (defmethod convert-char ((char complex-char) result-type)
   (case result-type
-    (:simple-char (.simple-char char))
+    (:simple-char (simple-char char))
     (:chtype (xchar2chtype char))))
 
 ;; Lisps character object is here called "simple-char".

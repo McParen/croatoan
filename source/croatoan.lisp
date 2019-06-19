@@ -146,8 +146,8 @@ Alternatively, to achieve the same effect, input-blocking can be set to a specif
 delay in miliseconds.
 
 Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
-  (setf (.bindings object)
-        (acons event handler (.bindings object))))
+  (setf (bindings object)
+        (acons event handler (bindings object))))
 
 (defun unbind (object event)
   "Remove the event and the handler function from object's bindings alist."
@@ -161,7 +161,7 @@ Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
   (let ((keymap (make-instance 'keymap :bindings-plist plist)))
     (setf *keymaps* (acons name keymap *keymaps*))))
 
-(defun keymap (keymap-name)
+(defun find-keymap (keymap-name)
   (cdr (assoc keymap-name *keymaps*)))
 
 ;; source: alexandria
@@ -187,19 +187,19 @@ The event pairs are added by the bind function as conses: (event . #'handler).
 
 An event should be bound to the pre-defined function exit-event-loop."
   (flet ((ev (event)
-           (let ((keymap (typecase (.keymap object)
-                           (keymap (.keymap object))
-                           (symbol (keymap (.keymap object))))))
+           (let ((keymap (typecase (keymap object)
+                           (keymap (keymap object))
+                           (symbol (find-keymap (keymap object))))))
              ;; object-local bindings override the external keymap
              ;; an event is checked in the bindings first, then in the external keymap.
-             (if (.bindings object)
-                 (if (assoc event (.bindings object))
-                     (assoc event (.bindings object))
-                     (if (and keymap (.bindings keymap))
-                         (assoc event (.bindings keymap))
+             (if (bindings object)
+                 (if (assoc event (bindings object))
+                     (assoc event (bindings object))
+                     (if (and keymap (bindings keymap))
+                         (assoc event (bindings keymap))
                          nil))
-                 (if (and keymap (.bindings keymap))
-                     (assoc event (.bindings keymap))
+                 (if (and keymap (bindings keymap))
+                     (assoc event (bindings keymap))
                      nil)))))
     (cond
       ;; Event occured and event handler is defined.
@@ -228,12 +228,12 @@ One of the events must provide a way to exit the event loop by throwing 'event-l
 The function exit-event-loop is pre-defined to perform this non-local exit."
   (catch 'event-loop
     (loop
-       (let* ((window (typecase object (window object) (otherwise (.window object))))
+       (let* ((window (typecase object (window object) (otherwise (window object))))
               (event (get-wide-event window)))
          (handle-event object event args)
          ;; should a frame rate be a property of the window or of the object?
-         (when (and (null event) (.frame-rate window))
-           (sleep (/ 1.0 (.frame-rate window)))) ))))
+         (when (and (null event) (frame-rate window))
+           (sleep (/ 1.0 (frame-rate window)))) ))))
 
 (defgeneric handle-event (object event args)
   ;; the default method applies to window, field, button, menu.
@@ -257,6 +257,6 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
 
 (defmacro save-excursion (window &body body)
   "After executing body, return the cursor in window to its initial position."
-  `(let ((pos (.cursor-position ,window)))
+  `(let ((pos (cursor-position ,window)))
      ,@body
      (move ,window (car pos) (cadr pos))))

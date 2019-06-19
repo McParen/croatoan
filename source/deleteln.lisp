@@ -6,7 +6,7 @@
 The remaining lines are moved up. The bottom n lines are cleared.
 
 The current cursor position does not change."
-  (%winsdelln (.winptr window) (- n)))
+  (%winsdelln (winptr window) (- n)))
 
 (defun insert-line (window &key (n 1))
   "Insert n lines above the current line. 
@@ -15,4 +15,4 @@ The current line and the lines below are moved down. The n bottom
 lines are lost. 
 
 The current cursor position does not change."
-  (%winsdelln (.winptr window) n))
+  (%winsdelln (winptr window) n))

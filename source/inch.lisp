@@ -9,6 +9,6 @@ cursor to the position first and then add the character.
 The position can also be passed in form of a two-element list."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
-  (let* ((winptr (.winptr window))
+  (let* ((winptr (winptr window))
          (chtype (%winch winptr)))
     (chtype2xchar chtype)))

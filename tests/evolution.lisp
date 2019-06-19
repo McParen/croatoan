@@ -178,10 +178,10 @@
 (defun evolve ()
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
-    (setf (.background scr) (make-instance 'complex-char :color-pair '(:green :white)))
+    (setf (background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
-    (setq *width* (.width scr))
-    (setq *height* (.height scr))
+    (setq *width* (width scr))
+    (setq *height* (height scr))
 
     (loop 
        initially 
@@ -199,10 +199,10 @@
 (defun evolve2 ()
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
-    (setf (.background scr) (make-instance 'complex-char :color-pair '(:green :white)))
+    (setf (background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
-    (setq *width* (.width scr))
-    (setq *height* (.height scr))
+    (setq *width* (width scr))
+    (setq *height* (height scr))
 
     (draw-world-croatoan scr)
     (refresh scr)
@@ -231,10 +231,10 @@
 (defun evolve3 ()
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
-    ;(setf (.background scr) (make-instance 'complex-char :color-pair '(:green :white)))
+    ;(setf (background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
-    (setq *width* (.width scr))
-    (setq *height* (.height scr))
+    (setq *width* (width scr))
+    (setq *height* (height scr))
 
     (draw-world-croatoan scr)
 
@@ -251,10 +251,10 @@
   "Uses get-event to separate between events and the body, instead of key-pressed-p."
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
-    ;(setf (.background scr) (make-instance 'complex-char :color-pair '(:green :white)))
+    ;(setf (background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
-    (setq *width* (.width scr))
-    (setq *height* (.height scr))
+    (setq *width* (width scr))
+    (setq *height* (height scr))
 
     (draw-world-croatoan scr)
 
@@ -273,8 +273,8 @@
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
 
-    (setq *width* (.width scr))
-    (setq *height* (.height scr))
+    (setq *width* (width scr))
+    (setq *height* (height scr))
 
     (draw-world-croatoan scr)
 
@@ -296,14 +296,14 @@
   (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
     (clear scr)
 
-    (setq *width* (.width scr))
-    (setq *height* (.height scr))
+    (setq *width* (width scr))
+    (setq *height* (height scr))
 
     (bind scr #\q 'exit-event-loop)
     (bind scr nil 'update-game-state)
 
     ;; For the same effect, set :input-blocking to 1 milisecond.
-    (setf (.frame-rate scr) 1000)
+    (setf (frame-rate scr) 1000)
 
     ;; Draw the world once before entering the main loop.
     (draw-world-croatoan scr)

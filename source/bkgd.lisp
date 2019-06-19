@@ -27,6 +27,6 @@ Otherwise, it is applied only to newly added simple characters."
 
 (defun get-background-char (window)
   "Return the complex char that is the background character of the window."
-  (let* ((winptr (.winptr window))
+  (let* ((winptr (winptr window))
          (chtype (%getbkgd winptr)))
     (chtype2xchar chtype)))

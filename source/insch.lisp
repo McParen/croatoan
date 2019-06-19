@@ -15,7 +15,7 @@ The position can also be passed in form of a two-element list.
 If n is given, insert n chars."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
-  (let ((winptr (.winptr window))
+  (let ((winptr (winptr window))
         (chtype (make-chtype char attributes color-pair))
         (count (if n n 1)))
     (loop repeat count do (%winsch winptr chtype))))

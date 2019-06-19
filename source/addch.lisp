@@ -32,11 +32,11 @@ If n is -1, add as many chars from the string as will fit on the line."
 
 (defun distance-to-eol (window)
   "Return the number of columns from the cursor position to the end of the line in the window."
-  (- (.width window) (cadr (.cursor-position window))))
+  (- (width window) (cadr (cursor-position window))))
 
 (defun distance-to-bottom (window)
   "Return the number of lines from the cursor position to the bottom of the window."
-  (- (.height window) (car (.cursor-position window))))
+  (- (height window) (car (cursor-position window))))
 
 (defun add-char (window char &key attributes color-pair y x position n)
   "Add the narrow (single-byte) char to the window, then advance the cursor.
@@ -54,7 +54,7 @@ Example:
 (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
-  (let ((winptr (.winptr window))
+  (let ((winptr (winptr window))
         (count (if n
                    (if (= n -1)
                        (distance-to-eol window)
@@ -78,7 +78,7 @@ performance gain if we know that we only need to output a single
 character."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
-  (let ((winptr (.winptr window))
+  (let ((winptr (winptr window))
         (chtype (make-chtype char attributes color-pair)))
     (typecase window
       ;; a pad is a subclass of window, therefore we have to check pad first.

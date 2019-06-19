@@ -7,7 +7,7 @@ All characters to the right of the cursor on the same line are moved
 to the left one position and the last character on the line is filled
 with a blank. The cursor position does not change after moving
 to (y,x), if specified."
-  (let ((winptr (.winptr window)))
+  (let ((winptr (winptr window)))
     (cond ((and y x)
            (%mvwdelch winptr y x))
           (t

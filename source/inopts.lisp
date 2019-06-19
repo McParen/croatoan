@@ -53,7 +53,7 @@ Possible values are t, nil and a blocking duration in (positive integer) milisec
   "If flag is t, bind function keys to known codes when returned by get-char.
 
 If flag is nil, F keys will be system-dependent multi-character escape codes."
-  (%keypad (.winptr window) flag))
+  (%keypad (winptr window) flag))
 
 ;; Obscure functions I never used before:
 

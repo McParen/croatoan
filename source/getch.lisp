@@ -7,7 +7,7 @@ If the destination coordinates y (row) and x (column) are given, move
 the cursor to the destination first and then read a single byte.
 
 The window from which the char is read is automatically refreshed."
-  (let ((winptr (.winptr window)))
+  (let ((winptr (winptr window)))
     (cond ((and y x)
            (%mvwgetch winptr y x))
           (t

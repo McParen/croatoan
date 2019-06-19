@@ -4,10 +4,10 @@
   "Move cursor to row y and column x.
 
 If relative is t, move the cursor by y rows and x columns."
-  (let ((winptr (.winptr window)))
+  (let ((winptr (winptr window)))
     (if relative
-        (let ((pos-y (car  (.cursor-position window)))
-              (pos-x (cadr (.cursor-position window))))
+        (let ((pos-y (car  (cursor-position window)))
+              (pos-x (cadr (cursor-position window))))
           (%wmove winptr (+ pos-y y) (+ pos-x x)))
         (%wmove winptr y x))))
 
@@ -24,10 +24,10 @@ If relative is t, move the cursor by y rows and x columns."
   "Move top left corner of the window to row y and column x.
 
 If relative is t, move the window by y rows and x columns."
-  (let ((winptr (.winptr window)))
+  (let ((winptr (winptr window)))
     (if relative
-        (let ((pos-y (car  (.position window)))
-              (pos-x (cadr (.position window))))
+        (let ((pos-y (car  (position window)))
+              (pos-x (cadr (position window))))
           (%mvwin winptr (+ pos-y y) (+ pos-x x)))
         (%mvwin winptr y x))))
 

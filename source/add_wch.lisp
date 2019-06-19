@@ -24,8 +24,8 @@ as will fit on the line."
       (complex-char
        ;; if we have a complex char, use its own attributes and colors.
        (loop repeat count do
-            (mapc #'(lambda (ch) (add-char window ch :attributes (.attributes char) :color-pair (.color-pair char)))
-                  (unicode-to-utf-8 (char-code (.simple-char char))))))
+            (mapc #'(lambda (ch) (add-char window ch :attributes (attributes char) :color-pair (color-pair char)))
+                  (unicode-to-utf-8 (char-code (simple-char char))))))
       ;; if we have a lisp char or an integer, use the attributes and colors passed as arguments.
       (t
        (loop repeat count do
@@ -61,7 +61,7 @@ color-pair should be a list of a foreground and background color keyword.
 attributes and color-pair can be nil.
 
 If char is a complex char, attributes and color-pair are ignored."
-  (let ((winptr (.winptr window))
+  (let ((winptr (winptr window))
         (ch
          (typecase char
            ;; if we have a lisp char or an integer, use the attributes and colors passed as arguments.
@@ -69,8 +69,8 @@ If char is a complex char, attributes and color-pair are ignored."
            (character (char-code char))
            (keyword (wacs char))
            ;; if we have a complex char, use its own attributes and colors.
-           (complex-char (if (.simple-char char)
-                             (let ((sch (.simple-char char)))
+           (complex-char (if (simple-char char)
+                             (let ((sch (simple-char char)))
                                (typecase sch
                                  (integer sch)
                                  (character (char-code sch))
@@ -83,14 +83,14 @@ If char is a complex char, attributes and color-pair are ignored."
            (otherwise (error "unknown character type"))))
         (attr_t
          (typecase char
-           (complex-char (attrs2chtype (.attributes char)))
+           (complex-char (attrs2chtype (attributes char)))
            (otherwise    (attrs2chtype attributes))))
         ;; we just need the pair number here, NOT the bit-shifted color attribute.
         ;; we need the color attribute for chtypes.
         (color-pair-number
          (typecase char
-           (complex-char (if (.color-pair char) (pair->number (.color-pair char)) 0))
-           (otherwise    (if color-pair         (pair->number color-pair)         0))))
+           (complex-char (if (color-pair char) (pair->number (color-pair char)) 0))
+           (otherwise    (if color-pair        (pair->number color-pair)        0))))
         (count (if n
                    (if (= n -1)
                        (distance-to-eol window)

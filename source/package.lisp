@@ -1,9 +1,13 @@
 (defpackage #:de.anvi.croatoan
   (:documentation "High-level Lisp interface to the basic CFFI Ncurses API.")
-  ;;(:use #:common-lisp #:cffi #:de.anvi.ncurses #:sb-gray)
 
   ;; TODO: do not :use the complete package, import-from individual functions.
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:trivial-gray-streams)
+
+  ;; TODO: dont use position, use location.
+  ;; TODO: dont :use cffi, qualify the symbols explicitely, so no need to shadow callback.
+  (:shadow position callback)
+
   (:nicknames #:croatoan)
   (:export
 
@@ -13,6 +17,7 @@
    with-windows
    event-case
    keymap
+   find-keymap
    run-event-loop
    exit-event-loop
    bind
@@ -38,66 +43,62 @@
    shape
 
    ;; accessors
-   .simple-char
-   .attributes
-   .color-pair
-   .complex-char-array
-   .width
-   .height
-   .position
-   .position-y
-   .position-x
-   .cursor-position
-   .cursor-position-y
-   .cursor-position-x
-   .border
-   .stacked
-   .visible
-   .winptr
-   .input-blocking
-   .frame-rate
-   .enable-fkeys
-   .enable-scrolling
-   .scrolling-region
-   .insert-mode
-   .bindings
-   .keymap
-   .background
-   .input-echoing
-   .input-buffering
-   .process-control-chars
-   .cursor-visibility
-   .source
+   simple-char
+   attributes
+   color-pair
+   complex-char-array
+   width
+   height
+   position
+   position-y
+   position-x
+   cursor-position
+   cursor-position-y
+   cursor-position-x
+   border
+   stacked
+   visible
+   winptr
+   input-blocking
+   frame-rate
+   enable-fkeys
+   enable-scrolling
+   scrolling-region
+   insert-mode
+   bindings
+   background
+   input-echoing
+   input-buffering
+   process-control-chars
+   cursor-visibility
+   source
 
    ;; Predicates
    closed-p
    
    ;; menu
-   .items
-   .checklist
-   .type
-   .current-item-number
-   .current-item
-   .current-item-mark
-   .cyclic-selection
-   .max-item-length
-   .name
+   items
+   menu-type
+   current-item-number
+   current-item
+   current-item-mark
+   cyclic-selection
+   max-item-length
+   name
    value
-   .window
-   .sub-window
-   .message-pad
-   .message-text
-   .message-height
-   .message-pad-coordinates
+   message-pad
+   message-text
+   message-height
+   message-pad-coordinates
    menu-map
 
    ;; form
-   .buffer
-   .elements
-   .style
-   .max-buffer-length
-   .function
-   .title
+   buffer
+   elements
+   style
+   max-buffer-length
+   callback
+   title
    ;; value ; the value accessor converts the field buffer to a string
    get-element
    field-map
@@ -105,10 +106,10 @@
    button-map
    
    ;; shape
-   .x-origin
-   .y-origin
-   .coordinates
-   .plot-char
+   origin-x
+   origin-y
+   coordinates
+   plot-char
    
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add

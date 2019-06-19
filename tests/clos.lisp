@@ -200,7 +200,7 @@
                            (draw-snake scr body)
                            (refresh scr)))
         (clear scr)
-        (setf (.frame-rate scr) 20)
+        (setf (frame-rate scr) 20)
         (run-event-loop scr)))))
 
 ;; https://github.com/skydrome/random/blob/master/shell/screensaver.sh
@@ -208,7 +208,7 @@
 ;; https://www.youtube.com/watch?v=T4n87IIa--U
 (defun pipes ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
-    (let* ((pos (list (round (/ (.height scr) 2)) (round (/ (.width scr) 2))))
+    (let* ((pos (list (round (/ (height scr) 2)) (round (/ (width scr) 2))))
            (dirs '((1 0) (-1 0) (0 -1) (0 1)))
            (dir (nth (random 4) dirs))
            (dir-prev dir)
@@ -235,9 +235,9 @@
          (let ((pos-trial (list (+ (car pos) (car dir)) (+ (cadr pos) (cadr dir)))))
            (if (or (= (car pos-trial)  0)
                    (= (cadr pos-trial) 0)
-                   (= (car pos-trial)  (1- (.height scr)))
-                   (= (cadr pos-trial) (1- (.width scr))))
-               (setf pos (list (round (/ (.height scr) 2)) (round (/ (.width scr) 2))))
+                   (= (car pos-trial)  (1- (height scr)))
+                   (= (cadr pos-trial) (1- (width scr))))
+               (setf pos (list (round (/ (height scr) 2)) (round (/ (width scr) 2))))
                (setf pos pos-trial)))
          (if (> i (random 5))
              (progn (setf i 0)
@@ -249,8 +249,8 @@
 
 (defun matrix ()
   (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visibility nil)
-    (let* ((width (.width scr))
-           (height (.height scr))
+    (let* ((width (width scr))
+           (height (height scr))
            (positions (loop repeat width collect (random height)))
            (speeds (loop repeat width collect (random 4))))
       (event-case (scr event)
@@ -259,13 +259,13 @@
          (sleep 0.05)
          (loop for column from 0 to (1- width) do
               (loop repeat (nth column speeds) do
-                   (setf (.attributes scr) '(:bold))
-                   (setf (.color-pair scr) '(:white :black))
+                   (setf (attributes scr) '(:bold))
+                   (setf (color-pair scr) '(:white :black))
                    (add-char scr (+ 64 (random 58)) :y (mod (nth column positions) height) :x column)
-                   (setf (.color-pair scr) '(:green :black))
+                   (setf (color-pair scr) '(:green :black))
                    (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 1) height) :x column)
                    (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 2) height) :x column)
-                   (setf (.attributes scr) '())
+                   (setf (attributes scr) '())
                    (add-char scr (+ 64 (random 58)) :y (mod (- (nth column positions) 3) height) :x column)
                    (add-char scr (char-code #\space) :y (mod (- (nth column positions) (floor height 2)) height) :x column)
                    (refresh scr)
@@ -273,8 +273,8 @@
 
 (defun matrix2 ()
   (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visibility nil)
-    (let* ((width (.width scr))
-           (height (.height scr))
+    (let* ((width (width scr))
+           (height (height scr))
            ;; start at a random height in each column.
            (positions (loop repeat width collect (random height)))
            ;; run each column at a random speed.
@@ -289,13 +289,13 @@
                  (loop repeat (nth column speeds) do
                       ;; position of the first point in the current column
                       (let ((pos (nth column positions)))
-                        (setf (.attributes win) '(:bold))
-                        (setf (.color-pair win) '(:white :black))
+                        (setf (attributes win) '(:bold))
+                        (setf (color-pair win) '(:white :black))
                         (add win (randch) :y (mod pos height) :x column)
-                        (setf (.color-pair win) '(:green :black))
+                        (setf (color-pair win) '(:green :black))
                         (add win (randch) :y (mod (- pos 1) height) :x column)
                         (add win (randch) :y (mod (- pos 2) height) :x column)
-                        (setf (.attributes win) '())
+                        (setf (attributes win) '())
                         (add win (randch) :y (mod (- pos 3) height) :x column)
                         ;; overwrite the last char with a space
                         (add win #\space  :y (mod (- pos (floor height 3)) height) :x column)
@@ -303,7 +303,7 @@
                         ;; increment the column positions
                         (setf (nth column positions) (mod (1+ pos) height)))))))))
     ;; after the handlers have been defined, run the main event loop at 20 fps.
-    (setf (.frame-rate scr) 20)
+    (setf (frame-rate scr) 20)
     (run-event-loop scr)))
 
 ;; initialize ncurses, deinitialize ncurses
@@ -325,7 +325,7 @@
 
          ;; the text will be red on yellow.
          ;; this affects only new characters, not the whole window.
-         (setf (.color-pair scr) '(:red :yellow))
+         (setf (color-pair scr) '(:red :yellow))
 
          (move scr 5 5)
          (add-string scr "dear john!")
@@ -337,7 +337,7 @@
          ;; set the background character for new characters
          ;; the optional argument nil prevents it from being applied to every window cell.
          ;; a newline sets the background till the end of the line.
-         (setf (.background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:white :green)))
+         (setf (background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:white :green)))
          (format scr "~%Hello again!~%")
          (refresh scr)
          (get-char scr)
@@ -345,10 +345,10 @@
          ;; finally, set the background for the whole window.
          ;; the change is applied only to empty cells and to
          ;; characters that have no already set attributes or colors.
-         (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
+         (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
          (refresh scr)
          (get-char scr)
-         (setf (.background scr) (make-instance 'complex-char :simple-char #\- :color-pair '(:red :white)))
+         (setf (background scr) (make-instance 'complex-char :simple-char #\- :color-pair '(:red :white)))
          (refresh scr)
 
          ;; wait for the next keypress, then end.
@@ -365,42 +365,42 @@
     (add-string scr "hello there!")
     (move scr 3 6)
     (add-string scr "dear john!")
-    (setf (.color-pair scr) '(:red :yellow))
+    (setf (color-pair scr) '(:red :yellow))
     (move scr 3 3 :relative t)
     (add-string scr "call me maybe!")
     ;; setting the cursor position directly instead of using move
-    (setf (.cursor-position scr) (list 9 12))
+    (setf (cursor-position scr) (list 9 12))
     (add-string scr "welcome to tijuana")
     (refresh scr)
     (get-char scr)
     
-    (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
+    (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (refresh scr)
     (get-char scr)))
 
 (defun t02a ()
   "Set and get a wide character background."
   (with-screen (scr)
-    ;;(de.anvi.croatoan::funcall-make-cchar_t-ptr #'%wbkgrnd (.winptr scr) 0 0 0 1)
+    ;;(de.anvi.croatoan::funcall-make-cchar_t-ptr #'%wbkgrnd (winptr scr) 0 0 0 1)
 
     ;; if we set char 0 as background, ncurses sets char 32 (space), which is obviously the default char.
     ;; also setting 0 leads to the color pair not being accepted.
     ;; TODO: check that only graphic chars are set.
-    (setf (.background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair '(:yellow :red)))
+    (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair '(:yellow :red)))
     (get-char scr)
 
     (move scr 0 0)
     ;; the low-level function returns the code.
     (let ((ch (de.anvi.croatoan::get-background-cchar_t scr)))
       (format scr "ch: ~A~%" ch)
-      (format scr "~A ~A ~A" (char-code (.simple-char ch)) (.attributes ch) (.color-pair ch)))
+      (format scr "~A ~A ~A" (char-code (simple-char ch)) (attributes ch) (color-pair ch)))
 
     (move scr 2 0)
     ;; the high level interface returns what was set by the high-level setf.
-    ;; TODO: when we set .background to :board, should it return :board or the numeric code point?
-    (let ((ch (.background scr)))
+    ;; TODO: when we set background to :board, should it return :board or the numeric code point?
+    (let ((ch (background scr)))
       (if ch
-          (format scr "~A ~A ~A" (.simple-char ch) (.attributes ch) (.color-pair ch))
+          (format scr "~A ~A ~A" (simple-char ch) (attributes ch) (color-pair ch))
           (format scr "ch: ~A" ch)))
 
     (refresh scr)
@@ -413,27 +413,27 @@
     (fresh-line scr) (refresh scr) (get-char scr)
 
     ;; color-pair applies to newly added text.
-    (setf (.color-pair scr) '(:red :yellow))
+    (setf (color-pair scr) '(:red :yellow))
     (add-string scr "Dear John!")
     (fresh-line scr) (refresh scr) (get-char scr)
 
     ;; removing the color pair puts back the outut into the default state.
-    (setf (.color-pair scr) '())
+    (setf (color-pair scr) '())
     (add-string scr "Open the pod bay door.")
     (fresh-line scr) (refresh scr) (get-char scr)
     
     ;; the background style renders simple text, but it doesnt change the text with a set color pair
-    (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:black :magenta)))
+    (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:black :magenta)))
     (add-string scr "I can feel it.")
     (fresh-line scr) (refresh scr) (get-char scr)
     
     ;; remove the background char, set back to the default state.
-    (setf (.background scr) nil)
+    (setf (background scr) nil)
     (add-string scr "My mind is going.")
     (fresh-line scr) (refresh scr) (get-char scr)
 
     ;; the empty cells of the last foreground will be overwritten by the next background call.
-    (setf (.background scr) (make-instance 'complex-char :simple-char #\_ :color-pair '(:black :yellow)))
+    (setf (background scr) (make-instance 'complex-char :simple-char #\_ :color-pair '(:black :yellow)))
     (format scr "I'm sorry, Dave.")
     (fresh-line scr) (refresh scr) (get-char scr)))
 
@@ -510,8 +510,8 @@
     (move scr 2 0)
     (format scr "Type chars. Type q to quit.~%~%")
     (refresh scr)
-    (setf (.color-pair scr) '(:yellow :red)
-          (.attributes scr) '(:bold))
+    (setf (color-pair scr) '(:yellow :red)
+          (attributes scr) '(:bold))
     (event-case (scr event)
       (#\q (return-from event-case))
       (otherwise (princ event scr)
@@ -551,10 +551,10 @@
            (move scr 1 0)
            ;; TODO: prin1, print and ~S should print unreadable #<..>
            ;; only princ and ~A should render complex chars
-           (prin1 (.simple-char ch2) scr)
+           (prin1 (simple-char ch2) scr)
            ;; print the slots of the extracted complex wide char
-           (princ (.attributes ch2) scr)
-           (princ (.color-pair ch2) scr)
+           (princ (attributes ch2) scr)
+           (princ (color-pair ch2) scr)
            (add-wide-char scr ch2 :y 3 :x 0) ))))
 
 ;; gray stream version of t03d
@@ -607,14 +607,14 @@
 (defun t03e ()
   "Test switching between input modes and control char processing."
   (with-screen (scr :input-echoing nil :input-blocking t :input-buffering nil :process-control-chars nil)
-    (with-accessors ((input-buffering .input-buffering) (process-control-chars .process-control-chars)) scr
+    (with-accessors ((input-buffering input-buffering) (process-control-chars process-control-chars)) scr
       (clear scr)
       (format scr "buffering ~A process-control-chars ~A (raw)~%" input-buffering process-control-chars)
       (format scr "ch1: ~A~%" (get-char scr))
-      (setf (.process-control-chars scr) t)
+      (setf (process-control-chars scr) t)
       (format scr "buffering ~A process-control-chars ~A (cbreak)~%" input-buffering process-control-chars)
       (format scr "ch2: ~A~%" (get-char scr))
-      (setf (.input-buffering scr) t)
+      (setf (input-buffering scr) t)
       (format scr "buffering ~A process-control-chars ~A (cooked)~%" input-buffering process-control-chars)
       (format scr "ch3: ~A~%" (get-char scr))
       ;; ignore the typed enter key
@@ -630,16 +630,16 @@
          (clear scr)
          (refresh scr)
 
-         (setf (.attributes scr) '(:bold :reverse))
+         (setf (attributes scr) '(:bold :reverse))
          (add-string scr "Docstring")
 
-         (setf (.attributes scr) '())
+         (setf (attributes scr) '())
          (add-string scr " --> ")
 
-         (setf (.attributes scr) '(:bold :underline))
+         (setf (attributes scr) '(:bold :underline))
          (add-string scr (format nil "~A~%~%" name))
 
-         (setf (.attributes scr) '())
+         (setf (attributes scr) '())
          (add-string scr (documentation name 'function))
 
          (refresh scr)
@@ -653,31 +653,31 @@
          (clear scr)
          (refresh scr)
 
-         (add-string scr (write-to-string (.attributes scr)))
+         (add-string scr (write-to-string (attributes scr)))
          (add-char scr (char-code #\newline))
 
-         (pushnew :bold (.attributes scr))
-         (add-string scr (write-to-string (.attributes scr)))
+         (pushnew :bold (attributes scr))
+         (add-string scr (write-to-string (attributes scr)))
          (add-char scr (char-code #\newline))
 
-         (pushnew :underline (.attributes scr))
-         (add-string scr (write-to-string (.attributes scr)))
+         (pushnew :underline (attributes scr))
+         (add-string scr (write-to-string (attributes scr)))
          (add-char scr (char-code #\newline))
 
-         (pushnew :reverse (.attributes scr))
-         (add-string scr (write-to-string (.attributes scr)))
+         (pushnew :reverse (attributes scr))
+         (add-string scr (write-to-string (attributes scr)))
          (add-char scr (char-code #\newline))
 
-         (setf (.attributes scr) (remove :reverse (.attributes scr)))
-         (add-string scr (write-to-string (.attributes scr)))
+         (setf (attributes scr) (remove :reverse (attributes scr)))
+         (add-string scr (write-to-string (attributes scr)))
          (add-char scr (char-code #\newline))
 
-         (setf (.attributes scr) (remove :underline (.attributes scr)))
-         (add-string scr (write-to-string (.attributes scr)))
+         (setf (attributes scr) (remove :underline (attributes scr)))
+         (add-string scr (write-to-string (attributes scr)))
          (add-char scr (char-code #\newline))
 
-         (setf (.attributes scr) (remove :bold (.attributes scr)))
-         (add-string scr (write-to-string (.attributes scr)))
+         (setf (attributes scr) (remove :bold (attributes scr)))
+         (add-string scr (write-to-string (attributes scr)))
          (add-char scr (char-code #\newline))
 
          (refresh scr)
@@ -689,25 +689,25 @@
   (with-screen (scr :enable-colors t :cursor-visibility nil)
     (clear scr)
 
-    (print (.attributes scr) scr)
+    (print (attributes scr) scr)
 
     (add-attributes scr '(:bold))
-    (print (.attributes scr) scr)
+    (print (attributes scr) scr)
 
     (add-attributes scr '(:underline))
-    (print (.attributes scr) scr)
+    (print (attributes scr) scr)
 
     (add-attributes scr '(:reverse))
-    (print (.attributes scr) scr)
+    (print (attributes scr) scr)
 
     (remove-attributes scr '(:bold :underline :reverse))
-    (print (.attributes scr) scr)
+    (print (attributes scr) scr)
 
     (add-attributes scr '(:bold :underline :reverse))
-    (print (.attributes scr) scr)
+    (print (attributes scr) scr)
     
-    (setf (.attributes scr) nil)
-    (print (.attributes scr) scr)
+    (setf (attributes scr) nil)
+    (print (attributes scr) scr)
     (print "test" scr)
 
     (move scr 6 10)
@@ -760,7 +760,7 @@
          (get-char scr)
 
          (let ((win (make-instance 'window :height 15 :width 50 :position '(5 5))))
-           (setf (.background win) (make-instance 'complex-char :color-pair '(:red :blue)))
+           (setf (background win) (make-instance 'complex-char :color-pair '(:red :blue)))
            (add-string win "Window 1")
            (refresh win)
            (get-char win)))
@@ -784,7 +784,7 @@
            (get-char scr)
 
            (let ((win (make-instance 'window :height 15 :width 50 :position '(5 5) :border t)))
-             (setf (.background win) (make-instance 'complex-char :color-pair '(:red :blue)))
+             (setf (background win) (make-instance 'complex-char :color-pair '(:red :blue)))
              (add-string win "Window 1")
              (refresh win)
              (get-char win)
@@ -872,7 +872,7 @@
          (progn
            (clear scr)
 
-           (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
+           (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (format t "~r" 1984)
 
            (refresh scr)
@@ -881,14 +881,14 @@
            ;; temporarily bind *standard-output* to a window.
            (let* ((win (make-instance 'window :height 15 :width 50 :position '(5 5)))
                   (*standard-output* win))
-             (setf (.background win) (make-instance 'complex-char :color-pair '(:white :black)))
+             (setf (background win) (make-instance 'complex-char :color-pair '(:white :black)))
              (format t "~r" 1985)
              (refresh win)
              (get-char win)
              (close win))
 
            ;; *standard-output*is now again scr.
-           (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
+           (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (terpri)
            (format t "~r" 1984)
 
@@ -925,7 +925,7 @@
          (progn
            (clear scr)
 
-           (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
+           (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (box scr)
            (move scr 1 1)
            (princ 0 scr)
@@ -936,9 +936,9 @@
                  (w2 (make-instance 'window :height 10 :width 30 :position '(6 10)))
                  (w3 (make-instance 'window :height 10 :width 30 :position '(9 15))))
 
-             (setf (.background w1) (make-instance 'complex-char :color-pair '(:white :black)))
-             (setf (.background w2) (make-instance 'complex-char :color-pair '(:black :white)))
-             (setf (.background w3) (make-instance 'complex-char :color-pair '(:white :black)))
+             (setf (background w1) (make-instance 'complex-char :color-pair '(:white :black)))
+             (setf (background w2) (make-instance 'complex-char :color-pair '(:black :white)))
+             (setf (background w3) (make-instance 'complex-char :color-pair '(:white :black)))
 
              (box w1)
              (box w2)
@@ -966,7 +966,7 @@
 
              ;; move the whole window 3. note that this doesnt refresh the windows below,
              ;; they have to be refreshed separately.
-             (setf (.position w3) '(9 20))
+             (setf (position w3) '(9 20))
              (refresh w3)
              (get-char w3)
 
@@ -974,7 +974,7 @@
              (close w2)
              (close w3))
 
-           (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
+           (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
 
            (refresh scr)
            (get-char scr))
@@ -1000,9 +1000,9 @@
              (box w2)
              (box w3)
 
-             (setf (.background w1) (make-instance 'complex-char :color-pair '(:white :black)))
+             (setf (background w1) (make-instance 'complex-char :color-pair '(:white :black)))
              ;; window w2 uses the :default fg and bg color of the terminal, because use-default-colors is t.
-             (setf (.background w3) (make-instance 'complex-char :color-pair '(:white :black)))
+             (setf (background w3) (make-instance 'complex-char :color-pair '(:white :black)))
 
              ;; print currently active color pairs to w3
              (format w3 "~A" de.anvi.croatoan::*color-pair-alist*)
@@ -1038,8 +1038,8 @@
           (w2 (make-instance 'window            :width 30 :position '(6 10) :border t))
           (w3 (make-instance 'window :height 10           :position '(9 15) :border t)))
 
-      (setf (.background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black))
-            (.background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
+      (setf (background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black))
+            (background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
 
       (mapc #'refresh (list w1 w2 w3))
 
@@ -1061,10 +1061,10 @@
   "Use a window stack to manage overlapping windows."
   (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :enable-fkeys t :cursor-visibility nil :stacked t)
     (box scr)
-    (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
+    (setf (background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
     ;; we have to stack scr because the event loop runs on scr, and this refreshes scr implicitely every time
     ;; and overlaps the other windows
-    ;;(setf (.stacked scr) t)
+    ;;(setf (stacked scr) t)
 
     (let ((winlst nil)
           (n 0))
@@ -1075,11 +1075,11 @@
                  winlst))
       ;; number them and set the background colors
       (loop for i from 0 to 7 do
-           (setf (.attributes (nth i winlst)) (list :reverse))
+           (setf (attributes (nth i winlst)) (list :reverse))
            (format (nth i winlst) "~A" i)
-           (setf (.background (nth i winlst))
+           (setf (background (nth i winlst))
                  (make-instance 'complex-char :simple-char #\space :color-pair (list :black (nth i *ansi-color-list*)))))
-           ;;(setf (.stacked (nth i winlst)) t)
+           ;;(setf (stacked (nth i winlst)) t)
       (refresh-stack)
 
       (event-case (scr event)
@@ -1104,7 +1104,7 @@
         ;; type v to toggle window visibility         
         (#\v
          ;; toggle visibility for window n
-         (setf (.visible (nth n winlst)) (not (.visible (nth n winlst))))
+         (setf (visible (nth n winlst)) (not (visible (nth n winlst))))
          (refresh-stack))
         (#\q (return-from event-case))
         (otherwise nil))
@@ -1128,7 +1128,7 @@
          (progn
            (clear scr)
            
-           (format scr "~A lines high, ~A columns wide.~%~%" (.height scr) (.width scr))
+           (format scr "~A lines high, ~A columns wide.~%~%" (height scr) (width scr))
            (refresh scr)
 
            (loop
@@ -1144,7 +1144,7 @@
 ;; prints key names instead of numeric char codes.
 (defun t10a ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t)
-    (format scr "~A lines high, ~A columns wide.~%~%" (.height scr) (.width scr))
+    (format scr "~A lines high, ~A columns wide.~%~%" (height scr) (width scr))
     ;; TODO: get-event explicitely gets single-byte events, not wide events.
     (loop (let ((event (get-event scr)))
             (when event
@@ -1183,20 +1183,20 @@
            (refresh scr)
 
            ;; (move scr 5 5)
-           (setf (.cursor-position scr) '(5 5))
+           (setf (cursor-position scr) '(5 5))
 
            ;; see inopts.
            (setf 
 
             ;; this is sufficient to make the whole window scroll.
             ;;(enable-scrolling scr t)
-            ;;(%scrollok (.winptr scr) t)
-            (.enable-scrolling scr) t 
+            ;;(%scrollok (winptr scr) t)
+            (enable-scrolling scr) t 
 
             ;; to make only a few lines (5 to 10) scroll, we have to set a line-based region.
             ;;(set-scrolling-region scr 5 10)
-            ;;(%wsetscrreg (.winptr scr) 5 10)
-            (.scrolling-region scr) '(5 10))
+            ;;(%wsetscrreg (winptr scr) 5 10)
+            (scrolling-region scr) '(5 10))
 
            (loop for i from 0 to 30 do
                 (format scr "~A~%" i)
@@ -1484,7 +1484,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (if event
              (case event
                (:resize (move scr 1 0)
-                        (format scr "~A Y lines x ~A X columns." (.height scr) (.width scr))
+                        (format scr "~A Y lines x ~A X columns." (height scr) (width scr))
                         ;; the environment variables get updated on a resize event too.
                         (format scr "~%~A Y lines x ~A X cols." %LINES %COLS)
                         (refresh scr))
@@ -1496,20 +1496,20 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t15a ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil :enable-colors t)
     (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
-    (setf (.background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
+    (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (let ((time 0)
           ;; place a window in the center of the screen.
-          (win (make-instance 'window :height 5 :width 10 :position (list (round (/ (.height scr) 2))
-                                                                          (round (/ (.width scr) 2))))))
+          (win (make-instance 'window :height 5 :width 10 :position (list (round (/ (height scr) 2))
+                                                                          (round (/ (width scr) 2))))))
       (loop
          (let ((event (get-event scr)))
            (if event
                (case event
                  (:resize ;; if the scren is resized, relocate the window to the new center.
-                          (move-window win (round (/ (.height scr) 2)) (round (/ (.width scr) 2))) 
+                          (move-window win (round (/ (height scr) 2)) (round (/ (width scr) 2))) 
                           ;; better differentiation of types with methods.
                           (move win 0 0)
-                          (format win "Y:~A X:~A" (.height scr) (.width scr))
+                          (format win "Y:~A X:~A" (height scr) (width scr))
                           ;; repaint all windows completely by touching them before refreshing.
                           ;; overlapping windows have to be refreshed in reverse stacking order.
                           (mapc #'(lambda (w) (touch w) (refresh w)) 
@@ -1528,18 +1528,18 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t15b ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil :enable-colors t)
     (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
-    (setf (.background scr) (make-instance 'complex-char :color-pair '(:black :white)))
+    (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
     (let ((time 0)
           ;; make the window slightly smaller than the standard screen.
-          (win (make-instance 'window :height (- (.height scr) 4) :width (- (.width scr) 6) :position '(2 3))))
+          (win (make-instance 'window :height (- (height scr) 4) :width (- (width scr) 6) :position '(2 3))))
       (loop
          (let ((event (get-event scr)))
            (if event
                (case event
                  (:resize ;; resize the window on every termina resize.
-                          (resize win (- (.height scr) 4) (- (.width scr) 6))
+                          (resize win (- (height scr) 4) (- (width scr) 6))
                           (move win 0 0)
-                          (format win "Y:~A X:~A" (.height scr) (.width scr))
+                          (format win "Y:~A X:~A" (height scr) (width scr))
                           ;; when updating several overlapping windows, using mark-for-refresh and 
                           ;; batch-refresh instead of several calls to refresh prevents flickering.
                           (mapc #'(lambda (w) (touch w) (mark-for-refresh w)) (list scr win))
@@ -1574,8 +1574,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; evaluate it and print the result to the output window above.
 (defun t16a ()
   (with-screen (scr :input-echoing t :input-blocking t :enable-fkeys t :cursor-visibility t :enable-colors nil)
-    (let ((out (make-instance 'window :height (1- (.height scr)) :width (.width scr) :position '(0 0)))
-          (in (make-instance 'window :height 1 :width (.width scr) :position (list (1- (.height scr)) 0))))
+    (let ((out (make-instance 'window :height (1- (height scr)) :width (width scr) :position '(0 0)))
+          (in (make-instance 'window :height 1 :width (width scr) :position (list (1- (height scr)) 0))))
 
       (print (eval (read-from-string (get-string in 30))) out)
       (refresh out)
@@ -1590,8 +1590,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; add a loop to the input, making it a simple repl.
 (defun t16b ()
   (with-screen (scr :input-echoing t :input-blocking t :enable-fkeys t :cursor-visibility t :enable-colors nil)
-    (let ((out (make-instance 'window :height (1- (.height scr)) :width (.width scr) :position '(0 0)))
-          (in (make-instance 'window :height 1 :width (.width scr) :position (list (1- (.height scr)) 0))))
+    (let ((out (make-instance 'window :height (1- (height scr)) :width (width scr) :position '(0 0)))
+          (in (make-instance 'window :height 1 :width (width scr) :position (list (1- (height scr)) 0))))
       (loop
          (let ((str (get-string in 30)))
            ;; if the input line is empty (length = 0), do nothing.
@@ -1609,18 +1609,18 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; extend the functionality of the input line of the simple repl.
 (defun t16c ()
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t)
-    (let* ((wout (make-instance 'window :height (1- (.height scr)) :width (.width scr) :position '(0 0) :enable-scrolling t))
+    (let* ((wout (make-instance 'window :height (1- (height scr)) :width (width scr) :position '(0 0) :enable-scrolling t))
            ;; input blocking is a property of every single window, not just of the global screen.
-           (win (make-instance 'window :height 1 :width (.width scr) :position (list (1- (.height scr)) 0)
+           (win (make-instance 'window :height 1 :width (width scr) :position (list (1- (height scr)) 0)
                                :enable-fkeys t :input-blocking t))
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
       (event-case (win event)
         (:left 
-         (when (> (cadr (.cursor-position win)) 0)
+         (when (> (cadr (cursor-position win)) 0)
            (move win 0 -1 :relative t)))
         (:right 
-         (when (< (cadr (.cursor-position win)) n)
+         (when (< (cadr (cursor-position win)) n)
            (move win 0 1 :relative t)))
         (#\newline ; RET key, C-j, C-m
            (when (> n 0) ; only print when the line is not empty.
@@ -1634,16 +1634,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (clear win) ; empty the input line after evaluation.
              (refresh wout)))
         (:dc ; DEL key
-         (when (> n (cadr (.cursor-position win)))
+         (when (> n (cadr (cursor-position win)))
            (decf n)
            (delete-char win)))
         (:ic ; INS / Einfg key
-         (format t "(.insert-mode win) => ~A~%" (.insert-mode win))
-         (setf (.insert-mode win) (not (.insert-mode win)))
-         (format t "(.insert-mode win) => ~A~%" (.insert-mode win))
+         (format t "(insert-mode win) => ~A~%" (insert-mode win))
+         (setf (insert-mode win) (not (insert-mode win)))
+         (format t "(insert-mode win) => ~A~%" (insert-mode win))
          (refresh wout))
         (:backspace ; BS key
-         (when (> (cadr (.cursor-position win)) 0)
+         (when (> (cadr (cursor-position win)) 0)
            (decf n)
            (move win 0 -1 :relative t)
            (delete-char win)))
@@ -1656,9 +1656,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
         ;; non-function keys, i.e. normal character keys
         (otherwise
          (when (and (characterp event)
-                    (< (cadr (.cursor-position win)) (1- (.width win))))
+                    (< (cadr (cursor-position win)) (1- (width win))))
            (incf n)
-           ;; .insert-mode does not insert if we do not use gray stream functions
+           ;; insert-mode does not insert if we do not use gray stream functions
            ;;(add-wide-char win event))))
            (write-char event win)))) ; calls stream-write-char
            ;; (princ event win) ; calls print-object
@@ -1672,8 +1672,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16d ()
   "Use an input buffer instead of extracting the string from the window. Create windows using the with-windows macro."
   (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t)
-    (with-windows ((wout :height (1- (.height scr)) :width (.width scr) :position '(0 0) :enable-scrolling t)
-                   (win  :height 1                  :width (.width scr) :position (list (1- (.height scr)) 0) :enable-fkeys t :input-blocking t))
+    (with-windows ((wout :height (1- (height scr)) :width (width scr) :position '(0 0) :enable-scrolling t)
+                   (win  :height 1                  :width (width scr) :position (list (1- (height scr)) 0) :enable-fkeys t :input-blocking t))
       (let ((*standard-output* wout)
             (inbuf nil) ; input buffer character list
             (inptr 0))  ; position of the next character in the buffer
@@ -1708,14 +1708,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (move win 0 inptr)
              (refresh win)))
           (:ic
-           (format t "(.insert-mode win) => ~A~%" (.insert-mode win))
-           (setf (.insert-mode win) (not (.insert-mode win)))
-           (format t "(.insert-mode win) => ~A~%" (.insert-mode win))
+           (format t "(insert-mode win) => ~A~%" (insert-mode win))
+           (setf (insert-mode win) (not (insert-mode win)))
+           (format t "(insert-mode win) => ~A~%" (insert-mode win))
            (refresh wout))
           (otherwise
            (if (= inptr (length inbuf))
                (setf inbuf (cons event inbuf))
-               (if (.insert-mode win)
+               (if (insert-mode win)
                    (setf inbuf (insert-nth (- (length inbuf) inptr) event inbuf))
                    (setf inbuf (replace-nth (- (length inbuf) (1+ inptr)) event inbuf))))
            (incf inptr)
@@ -1730,7 +1730,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (let ((*standard-output* scr)
           (field (make-instance 'field :position (list 3 20) :width 10 :window scr)))
 
-      (setf (.style field)
+      (setf (style field)
             (list :foreground (make-instance 'complex-char :simple-char #\space :attributes '(:underline))
                   :background (make-instance 'complex-char :simple-char #\.)))
 
@@ -1741,7 +1741,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
       (clear scr)
       ;; display the contents of the input buffer of the field
-      (format t "buffer: ~A~%" (.buffer field))
+      (format t "buffer: ~A~%" (buffer field))
       (format t "string: ~A" (value field))
       (refresh scr)
 
@@ -1774,15 +1774,15 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            ;; a window is associated with the parent form, and can be accessed by the elements.           
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2) :window scr)))
 
-      (setf (.background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
+      (setf (background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
       (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
-      (bind (keymap 'field-map) :f3 'de.anvi.croatoan::debug-print-field-buffer)
+      (bind (find-keymap 'field-map) :f3 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
-      (setf (.function button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
-      (setf (.function button2) 'exit-event-loop)
+      (setf (callback button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
+      (setf (callback button2) 'exit-event-loop)
 
       ;; pressing ^A or C-a (for "accept") exits the edit mode
       ;; TAB, up and down cycles the fields and buttons
@@ -1791,9 +1791,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
       ;; display the contents of the input buffer of all fields of the form
       ;; use field-buffer-to-string to get the contents of the field buffer as a string instead of a list of chars.
-      (loop for i in (.elements form) do
+      (loop for i in (elements form) do
         (when (typep i 'field)
-          (format scr "~A ~A ~%" (.buffer i) (value i))))
+          (format scr "~A ~A ~%" (buffer i) (value i))))
 
       (refresh scr)
       ;; wait for keypress, then exit
@@ -1831,8 +1831,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
-      (setf (.function button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
-      (setf (.function button2) 'exit-event-loop)
+      (setf (callback button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
+      (setf (callback button2) 'exit-event-loop)
 
       ;; The set value shouldnt be longer than the max-buffer-length
       (setf (value field2) "hello"
@@ -1844,7 +1844,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; Access fields by their name instead of looping through the elements list.
       (mapc #'(lambda (name)
                 (let ((field (get-element form name)))
-                  (format scr "~5A ~10A ~20A~%" name (.title field) (value field))))
+                  (format scr "~5A ~10A ~20A~%" name (title field) (value field))))
             (list :f1 :f2 :f3))
       
       (refresh scr)
@@ -1897,12 +1897,12 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; map area1 to subwin position
       ;; the mapping only _displays_ the content from the source area.
       ;; the mapping it doesnt _write_ it onto the displayed area of scr.
-      (setf (.source win) '(2 25)) ; (%mvderwin (.winptr win) 2 25)
+      (setf (source win) '(2 25)) ; (%mvderwin (winptr win) 2 25)
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
       ;; map area2 to subwin position
-      (setf (.source win) '(2 50))
+      (setf (source win) '(2 50))
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
@@ -1910,12 +1910,12 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; it still maps area2, but now to the new position.
       ;; the original content written to the subwin (and thus to scr because they share memory)
       ;; is now visible in scr, since the subwin overlay has moved.
-      (setf (.position win) '(10 2))
+      (setf (position win) '(10 2))
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
       ;; map area1 again, but now to the new position.
-      (setf (.source win) '(2 25))
+      (setf (source win) '(2 25))
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
@@ -2060,9 +2060,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (items3 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
            (menu3 (make-instance 'menu :items items3 :name "t19b2b" :max-item-length 50)))
       ;; associate the same window with all three menus.
-      (setf (.window menu1) scr
-            (.window menu2) scr
-            (.window menu3) scr)
+      (setf (window menu1) scr
+            (window menu2) scr
+            (window menu3) scr)
       ;; select an item and return it.
       (select menu3))))
 
@@ -2111,24 +2111,24 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                      :name "menu" :title nil :border nil :enable-fkeys t :visible nil)))
       ;; add the menus and submenus to a window stack
       ;; scr has to be stacked too so we can make the menus disappear.
-      (setf (.stacked scr) t
-            (.stacked menu) t
-            (.stacked sub-menu1) t
-            (.stacked sub-menu2) t)
+      (setf (stacked scr) t
+            (stacked menu) t
+            (stacked sub-menu1) t
+            (stacked sub-menu2) t)
 
-      (setf (.background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
+      (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
 
       (refresh-stack)
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop by calling select
         (#\a (let ((result (select menu)))
                (format scr "You chose ~A~%" result)
-               (format scr "~A~%" (.color-pair menu))
+               (format scr "~A~%" (color-pair menu))
                (format scr "Stack ~A~%" (length de.anvi.croatoan::*window-stack*))
                (refresh-stack) ))
         ;; TODO: doesnt repaint the border, because the border already has attributes.
         ;; setting a background doesnt change existing attributes, only existing backgrounds.
-        (#\b (setf (.color-pair menu) (list :red :black)))
+        (#\b (setf (color-pair menu) (list :red :black)))
         ;; "q" exits the function and all menus and submenus.
         (#\q (return-from event-case)))
       (close menu)
@@ -2142,7 +2142,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
                                 :title "t19c" :border t :enable-fkeys t
-                                :type :checklist
+                                :menu-type :checklist
                                 :max-item-length 20
                                 :color-pair (list :yellow :red) )))
       (event-case (scr event)
@@ -2180,7 +2180,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :layout (list 1 (length items))
                                 :scrolled-layout (list 1 6)
                                 ;;:color-pair (list :black :yellow)
-                                :max-item-length 10 :width (.width scr) :border t :enable-fkeys t)))
+                                :max-item-length 10 :width (width scr) :border t :enable-fkeys t)))
       ;; start the output below the menu
       (move scr 4 0)
       ;; exit the infinite loop by exiting the menu with q.
@@ -2198,17 +2198,17 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (let* ((items1 (list "Choice 0" "Choice11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                           "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :scrolled-layout (list 6 1)
-                                     :title nil :name "submenu1" :border t :enable-fkeys t :visible nil :type :selection))
+                                     :title nil :name "submenu1" :border t :enable-fkeys t :visible nil :menu-type :selection))
            (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :scrolled-layout (list 6 1)
-                                     :title nil :name "submenu2" :border t :enable-fkeys t :visible nil :type :checklist))
+                                     :title nil :name "submenu2" :border t :enable-fkeys t :visible nil :menu-type :checklist))
            (fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
            (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :layout (list 1 (length items2))
-                                :max-item-length 15 :width (.width scr) :border t :enable-fkeys t)))
-      (setf (.stacked scr) t
-            (.stacked menu) t
-            (.stacked sub-menu1) t
-            (.stacked sub-menu2) t)
+                                :max-item-length 15 :width (width scr) :border t :enable-fkeys t)))
+      (setf (stacked scr) t
+            (stacked menu) t
+            (stacked sub-menu1) t
+            (stacked sub-menu2) t)
       (move scr 4 0) ;; start the output at line 4, below the menu bar.    
       (refresh-stack)
       (loop named menu-case
@@ -2244,7 +2244,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
 
-      (setf (.background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
+      (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
       
       (refresh scr)
       (loop named menu-case
@@ -2262,7 +2262,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :input-blocking t
                                 :items items
                                 ;; when a menu or dialog type is a checklist, items can be checked and unchecked with x/space.
-                                :type :checklist
+                                :menu-type :checklist
                                 ;; a dialog window can be automatically centered in the terminal window.
                                 :center t
                                 :layout (list 5 1)
@@ -2277,7 +2277,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
       ;; #x2592 = :board
-      (setf (.background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
+      (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
       
       (refresh scr)
       (loop named menu-case
@@ -2292,8 +2292,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t20 ()
   "Display a randomly created carpet of the seven default colors, except for black."
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-colors t :cursor-visibility nil)
-    (let ((width  (.width scr))
-          (height (.height scr))
+    (let ((width  (width scr))
+          (height (height scr))
           (colors '(:red :green :yellow :blue :magenta :cyan :white)))
       (event-case (scr event)
         (#\q (return-from event-case))
@@ -2383,10 +2383,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (let ((e (extract-char scr)))
       (move scr 1 0)
       ;; format uses print-object specialized on complex-chars
-      (format scr "~S~%~S ~S ~S" e (.simple-char e) (.attributes e) (.color-pair e))
+      (format scr "~S~%~S ~S ~S" e (simple-char e) (attributes e) (color-pair e))
       ;; print back the extracted char
       (move scr 3 0)
-      (add-char scr (.simple-char e) :attributes (.attributes e) :color-pair (.color-pair e))
+      (add-char scr (simple-char e) :attributes (attributes e) :color-pair (color-pair e))
       ;; directly print the complex char
       (add-char scr e :y 5 :x 10 :n -1)
       ;; print strings with attributes and colors
@@ -2454,7 +2454,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t24 ()
   "Test usage of insert-line and delete-line."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility t :enable-colors t)
-    (loop for i from 0 to (- (.height scr) 1)
+    (loop for i from 0 to (- (height scr) 1)
        do
          (move scr i 0)
          (format scr "~A" i))
@@ -2489,8 +2489,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
       ;; we have to modify the sub-window attributes first because apparently once
       ;; chars have attributes, they can not be changed by subsequent background changes.
-      (setf (.background sp) (make-instance 'complex-char :color-pair '(:white :red))
-            (.background p)  (make-instance 'complex-char :color-pair '(:green :white)))
+      (setf (background sp) (make-instance 'complex-char :color-pair '(:white :red))
+            (background p)  (make-instance 'complex-char :color-pair '(:green :white)))
 
       (let ((pad-min-y     0)
             (pad-min-x     0)
@@ -2525,35 +2525,35 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility t :enable-colors t :stacked t)
     (let ((win (make-instance 'window :height 5 :width 20 :position (list 0 0) :stacked t)))
 
-      (setf (.background scr) (make-instance 'complex-char :color-pair '(:white :red))
-            (.background win) (make-instance 'complex-char :color-pair '(:black :yellow)))
+      (setf (background scr) (make-instance 'complex-char :color-pair '(:white :red))
+            (background win) (make-instance 'complex-char :color-pair '(:black :yellow)))
 
       (refresh-stack)
       (get-char scr)
       
-      (setf (.position win) (list 2 4))
+      (setf (position win) (list 2 4))
       (refresh-stack)
       (get-char scr)
 
-      (setf (.position-y win) 4)
+      (setf (position-y win) 4)
       (refresh-stack)
       (get-char scr)
 
-      (setf (.position-x win) 8)
+      (setf (position-x win) 8)
       (refresh-stack)
       (get-char scr)
 
-      (setf (.cursor-position win) (list 0 0))
+      (setf (cursor-position win) (list 0 0))
       (princ "a" win)
       (refresh-stack)
       (get-char scr)
       
-      (setf (.cursor-position-y win) 2)
+      (setf (cursor-position-y win) 2)
       (princ "b" win)
       (refresh-stack)
       (get-char scr)
 
-      (setf (.cursor-position-x win) 4)
+      (setf (cursor-position-x win) 4)
       (princ "c" win)
       (refresh-stack)
       (get-char scr))))
@@ -2602,7 +2602,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
   (with-screen (scr :input-echoing nil :input-blocking t)
     ;; add the separately defined keymap to the window object.
-    (setf (.keymap scr) *t28-map*)
+    (setf (keymap scr) *t28-map*)
 
     ;; add another event handler
     (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
@@ -2621,7 +2621,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   "Test the use of the run-event-loop with non-blocking events."
   (with-screen (scr :input-echoing nil :input-blocking nil)
 
-    (setf (.keymap scr) *t28-map*)
+    (setf (keymap scr) *t28-map*)
 
     (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
 
@@ -2634,7 +2634,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
     ;; Set the rate at which the nil event will be handled in fps (frames per second).
     ;; For the same effect as frame-rate of 1, you can set :input-blocking to 1000 ms.
-    (setf (.frame-rate scr) 1)
+    (setf (frame-rate scr) 1)
 
     (run-event-loop scr)))
 

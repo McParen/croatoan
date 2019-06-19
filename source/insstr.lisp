@@ -10,7 +10,7 @@ If n is given, insert n chars. If (<= n 0) insert the whole string.
 
 If the destination coordinates y and x are given, move the cursor
 there first."
-  (let ((winptr (.winptr window)))
+  (let ((winptr (winptr window)))
     (cond ((and y x n)
            (%mvwinsnstr winptr y x string n))
           ((and y x)

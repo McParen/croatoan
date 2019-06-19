@@ -41,8 +41,8 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   "Take a menu and an event, update in-place the current item of the menu."
   ;; we need to make menu special in order to setf i in the passed menu object.
   (declare (special menu))
-  (with-accessors ((current-item-number .current-item-number) (current-item .current-item) (items .items)
-                   (cyclic-selection .cyclic-selection) (layout .layout) (scrolled-layout .scrolled-layout)
+  (with-accessors ((current-item-number current-item-number) (current-item current-item) (items items)
+                   (cyclic-selection cyclic-selection) (layout .layout) (scrolled-layout .scrolled-layout)
                    (scrolled-region-start .scrolled-region-start)) menu
     (let ((i  (car  (rmi2sub layout current-item-number)))
           (j  (cadr (rmi2sub layout current-item-number)))
@@ -97,10 +97,10 @@ If a mark is set for the current item, display the mark at the second position.
 Display the same number of spaces for other items.
 
 At the third position, display the item given by item-number."
-  (with-accessors ((items .items)
-                   (type .type)
-                   (current-item-number .current-item-number)
-                   (current-item-mark .current-item-mark)) menu
+  (with-accessors ((items items)
+                   (type menu-type)
+                   (current-item-number current-item-number)
+                   (current-item-mark current-item-mark)) menu
     ;; return as string
     (format nil "~A~A~A"
             ;; two types of menus: :selection or :checklist
@@ -116,12 +116,12 @@ At the third position, display the item given by item-number."
                 (make-string (length current-item-mark) :initial-element #\space))
             
             ;; then add the item name
-            (.name (nth item-number items)) )))
+            (name (nth item-number items)) )))
 
 (defun draw-menu-item (win menu item-number i j)
   "Draw the item given by item-number at item position i,j in the window."
-  (with-accessors ((current-item-number .current-item-number)
-                   (max-item-length .max-item-length)) menu
+  (with-accessors ((current-item-number current-item-number)
+                   (max-item-length max-item-length)) menu
     (move win i (* j max-item-length))
 
     ;; format the item text
@@ -163,11 +163,11 @@ At the third position, display the item given by item-number."
 
 (defmethod draw ((menu menu))
   "Draw the menu to its associated window."
-  (draw-menu (.window menu) menu))
+  (draw-menu (window menu) menu))
 
 (defmethod draw ((menu menu-window))
   "Draw the menu-window."
-  (with-accessors ((title .title) (name .name) (border .border) (sub-win .sub-window)) menu
+  (with-accessors ((title title) (name name) (border border) (sub-win sub-window)) menu
     ;; draw the menu to the sub-window
     (draw-menu sub-win menu)
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
@@ -193,8 +193,8 @@ At the third position, display the item given by item-number."
   (call-next-method)
 
   ;; then draw the message in the reserved space above the menu.
-  (with-accessors ((message-text .message-text) (message-height .message-height)
-                   (message-pad .message-pad) (coords .message-pad-coordinates)) menu
+  (with-accessors ((message-text message-text) (message-height message-height)
+                   (message-pad message-pad) (coords message-pad-coordinates)) menu
     ;; if there is text, and there is space reserved for the text, draw the text
     (when (and message-text (> message-height 0))
       (refresh message-pad
@@ -210,8 +210,8 @@ At the third position, display the item given by item-number."
   (when *window-stack*
     ;; change visibility only when there is an active stack.
     (typecase menu
-      (menu-window (setf (.visible menu) nil))
-      (menu (setf (.visible (.window menu)) nil)))
+      (menu-window (setf (visible menu) nil))
+      (menu (setf (visible (window menu)) nil)))
     (refresh-stack))
   (throw 'event-loop return-value))
 
@@ -224,13 +224,13 @@ At the third position, display the item given by item-number."
   "Return the value of the currently selected item or all checked items."
   (declare (ignore event))
 
-  (case (.type menu)
+  (case (menu-type menu)
     (:checklist
      ;; return all checked items (not their values) in the item list.
-     (return-from-menu menu (loop for i in (.items menu) if (.checked i) collect i)))
+     (return-from-menu menu (loop for i in (items menu) if (.checked i) collect i)))
 
     (:selection
-     (let ((val (value (.current-item menu))))
+     (let ((val (value (current-item menu))))
        (cond
          ;; if the item is a string or symbol, just return it.
          ((or (typep val 'string)
@@ -240,7 +240,7 @@ At the third position, display the item given by item-number."
          ;; if the item is a function object, call it.
          ((typep val 'function)
           (funcall val)
-          (return-from-menu menu (.name (.current-item menu))))
+          (return-from-menu menu (name (current-item menu))))
 
          ;; if the item is a menu (and thus also a menu-window), recursively select an item from that submenu
          ((or (typep val 'menu)
@@ -262,7 +262,7 @@ At the third position, display the item given by item-number."
 (defun toggle-item-checkbox (menu event)
   "Toggle the checked state of the current item, used in checkbox menus."
   (declare (ignore event))
-  (setf (.checked (.current-item menu)) (not (.checked (.current-item menu))))
+  (setf (.checked (current-item menu)) (not (.checked (current-item menu))))
   (draw menu))
 
 ;; all of these take two arguments: menu event
@@ -290,7 +290,7 @@ If the item is a menu object, recursively display the sub menu."
 
     (menu-window
      (when *window-stack*
-       (setf (.visible menu) t)
+       (setf (visible menu) t)
        (refresh-stack))
      (draw menu)
 

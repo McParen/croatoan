@@ -193,7 +193,7 @@ else."
 ;; it also returns KEY_CODE_YES to designate that a >255 char is a keycode.
 (defun get-char- (window &key y x)
   ""
-  (let* ((winptr (.winptr window))
+  (let* ((winptr (winptr window))
          (byte-list nil)
          ;; get the first byte
          (b1 (%wgetch winptr)))

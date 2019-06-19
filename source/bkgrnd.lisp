@@ -27,7 +27,7 @@ Otherwise, it is applied only to newly added simple characters."
   "Call function fn to read a cchar_t from window and return it as a wide complex char."
   (with-foreign-object (ptr '(:struct cchar_t))
     ;; read a struct cchar_t into the space allocated with ptr
-    (funcall fn (.winptr window) ptr)
+    (funcall fn (winptr window) ptr)
     ;; the slot cchar-chars is a a pointer to the wchar_t array.
     (let* ((char (mem-aref (foreign-slot-pointer ptr '(:struct cchar_t) 'cchar-chars) 'wchar_t 0))
            ;; ABI6

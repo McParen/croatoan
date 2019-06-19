@@ -43,7 +43,7 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (cons element (cdr list))
       (cons (car list) (replace-nth (1- n) element (cdr list)))))
 
-(defun get-element (form element-name &key (test #'eql) (key #'.name))
+(defun get-element (form element-name &key (test #'eql) (key #'name))
   "Return from the given form the element given by its name.
 
 The name should be a keyword, symbol or integer, the default test is eql.
@@ -51,7 +51,7 @@ The name should be a keyword, symbol or integer, the default test is eql.
 If the name is a string, equal should be used as the test.
 
 Instead of the name, another key can be provided to identify the element."
-  (find element-name (.elements form) :test test :key key))
+  (find element-name (elements form) :test test :key key))
 
 ;; this is the only place we set the background style for the field
 ;; TODO: how to access the default fg and bg of a form,
@@ -60,26 +60,26 @@ Instead of the name, another key can be provided to identify the element."
   "Clear the field by overwriting it with the background char.
 
 The default background char is #\space."
-  (with-accessors ((pos .position) (width .width) (selected .selected) (win .window) (style .style)) field
+  (with-accessors ((pos position) (width width) (selected .selected) (win window) (style style)) field
     (let* ((bg  (getf style :background))
            (sbg (getf style :selected-background))
            (bgchar (if selected
                        (if sbg sbg #\space)
                        (if bg bg #\space))))
-      (setf (.cursor-position win) pos)
+      (setf (cursor-position win) pos)
       (add win bgchar :n width)
-      (setf (.cursor-position win) pos))))
+      (setf (cursor-position win) pos))))
 
 (defgeneric update-cursor-position (object)
   (:documentation "Update the cursor position of the element of a form.")
   (:method (object)
     "The default method puts the cursor at the start position of the element."
-    (setf (.cursor-position (.window object)) (.position object))
-    (refresh (.window object))))
+    (setf (cursor-position (window object)) (position object))
+    (refresh (window object))))
 
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
-  (with-accessors ((pos .position) (inptr .fill-pointer) (dptr .display-pointer) (win .window)) field
+  (with-accessors ((pos position) (inptr .fill-pointer) (dptr .display-pointer) (win window)) field
     (move win
           ;; TODO: assumes a single-line field.
           (car pos)
@@ -95,19 +95,19 @@ The default background char is #\space."
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
 (defmethod draw ((button button))
-  (with-accessors ((pos .position) (name .name) (title .title) (win .window) (selected .selected) (style .style)) button
+  (with-accessors ((pos position) (name name) (title title) (win window) (selected .selected) (style style)) button
     (apply #'move win pos)
     (let* ((fg  (getf style :foreground))
            (sfg (getf style :selected-foreground)))
       (add-string win
                   (format nil "<~A>" (if title title name))
-                  :attributes (if selected (if sfg (.attributes sfg) nil) (if fg (.attributes fg) nil))
-                  :color-pair (if selected (if sfg (.color-pair sfg) nil) (if fg (.color-pair fg) nil))))))
+                  :attributes (if selected (if sfg (attributes sfg) nil) (if fg (attributes fg) nil))
+                  :color-pair (if selected (if sfg (color-pair sfg) nil) (if fg (color-pair fg) nil))))))
 
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
-  (with-accessors ((pos .position) (width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer)
-                   (selected .selected) (win .window) (title .title) (style .style)) field
+  (with-accessors ((pos position) (width width) (inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer)
+                   (selected .selected) (win window) (title title) (style style)) field
     (let* ((fg  (getf style :foreground))
            (sfg (getf style :selected-foreground))
            (len (length inbuf))
@@ -134,13 +134,13 @@ The default background char is #\space."
       (apply #'move win pos)
       (add-string win str
                   ;; TODO: find a more elegant way to highlight the selected field.
-                  :attributes (if selected (if sfg (.attributes sfg) nil) (if fg (.attributes fg) nil))
-                  :color-pair (if selected (if sfg (.color-pair sfg) nil) (if fg (.color-pair fg) nil)))
+                  :attributes (if selected (if sfg (attributes sfg) nil) (if fg (attributes fg) nil))
+                  :color-pair (if selected (if sfg (color-pair sfg) nil) (if fg (color-pair fg) nil)))
       (update-cursor-position field))))
 
 (defmethod draw ((form form))
   "Draw the form by drawing the elements, then moving the cursor to the current element."
-  (with-accessors ((elements .elements) (window .window)) form
+  (with-accessors ((elements elements) (window window)) form
     (loop for element in elements do
       (draw element))
     ;; after drawing the elements, reposition the cursor to the current element
@@ -151,7 +151,7 @@ The default background char is #\space."
 (defun select-previous-element (form event)
   "Select the previous element in a form's element list."
   ;;(declare (special form))
-  (with-accessors ((elements .elements) (current-element-number .current-element-number) (current-element .current-element) (win .window)) form
+  (with-accessors ((elements elements) (current-element-number .current-element-number) (current-element .current-element) (win window)) form
     (setf (.selected current-element) nil)
     ;; use mod to cycle the element list.
     (setf current-element-number (mod (- current-element-number 1) (length elements)))
@@ -163,7 +163,7 @@ The default background char is #\space."
 (defun select-next-element (form event)
   "Select the next element in a form's element list."
   ;;(declare (special form))
-  (with-accessors ((elements .elements) (current-element-number .current-element-number) (current-element .current-element) (win .window)) form
+  (with-accessors ((elements elements) (current-element-number .current-element-number) (current-element .current-element) (win window)) form
     (setf (.selected current-element) nil)
     ;; use mod to cycle the element list.
     (setf current-element-number (mod (+ current-element-number 1) (length elements)))
@@ -174,7 +174,7 @@ The default background char is #\space."
 
 (defun move-previous-char (field event)
   "Move the cursor to the previous char in the field."
-  (with-accessors ((inptr .fill-pointer) (dptr .display-pointer) (win .window)) field
+  (with-accessors ((inptr .fill-pointer) (dptr .display-pointer) (win window)) field
     (when (> inptr 0)
       (decf inptr))
     ;; when the inptr moves left past the dptr, simultaneously decf the dptr.
@@ -184,8 +184,8 @@ The default background char is #\space."
 
 (defun move-next-char (field event)
   "Move the cursor to the next char in the field."
-  (with-accessors ((width .width) (inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (mlen .max-buffer-length)
-                   (win .window)) field
+  (with-accessors ((width width) (inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer) (mlen max-buffer-length)
+                   (win window)) field
     (when (and (< inptr (length inbuf))
                (not (= (1+ inptr) mlen width)))
       (incf inptr))
@@ -197,7 +197,7 @@ The default background char is #\space."
 
 (defun delete-previous-char (field event)
   "Delete the previous char in the field, moving the cursor to the left."
-  (with-accessors ((inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (win .window)) field
+  (with-accessors ((inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer) (win window)) field
     (when (> inptr 0)
       (decf inptr)
       (when (> dptr 0)
@@ -208,7 +208,7 @@ The default background char is #\space."
 
 (defun delete-next-char (field event)
   "Delete the next char (char under the cursor) in the field, not moving the cursor."
-  (with-accessors ((inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (win .window)) field
+  (with-accessors ((inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer) (win window)) field
     ;; we can only delete to the right if the inptr is not at the end of the inbuf.
     (when (> (length inbuf) inptr)
       (when (> dptr 0)
@@ -223,10 +223,10 @@ The default background char is #\space."
 The buffer can be longer than the displayed field width, horizontal scrolling is enabled."
   (if (and (characterp char) (graphic-char-p char))
       (progn
-        (with-accessors ((width .width) (inbuf .buffer) (mlen .max-buffer-length) (inptr .fill-pointer)
-                         (dptr .display-pointer) (win .window)) field
+        (with-accessors ((width width) (inbuf buffer) (mlen max-buffer-length) (inptr .fill-pointer)
+                         (dptr .display-pointer) (win window)) field
           (let ((len (length inbuf)))
-            (if (.insert-mode win)
+            (if (insert-mode win)
 
                 ;; insert mode
                 (progn
@@ -288,7 +288,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
   (declare (ignore event))
   (typecase object
     (field
-     (with-accessors ((inbuf .buffer) (inptr .fill-pointer) (dptr .display-pointer) (win .window)) object
+     (with-accessors ((inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer) (win window)) object
        (when (> (length inbuf) 0)
          (clear win)
          (format win "~A ~%" (value object))
@@ -317,13 +317,13 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
    :backspace 'delete-previous-char
    :dc        'delete-next-char
    :ic        (lambda (field event)
-                (setf (.insert-mode (.window field)) (not (.insert-mode (.window field)))))
+                (setf (insert-mode (window field)) (not (insert-mode (window field)))))
    t          'field-add-char))
 
 ;; TODO: should we pass the event to the button function?
 (defun call-button-function (button event)
   (declare (ignore event))
-  (funcall (.function button)))
+  (funcall (callback button)))
 
 ;; How to automatically bind a hotkey to every button?
 ;; that hotkey would have to be added to the form keymap, not to that of a button.

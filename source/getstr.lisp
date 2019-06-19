@@ -11,7 +11,7 @@ buffer overflow.
 
 If the destination coordinates y and x are given, move the cursor
 there first."
-  (let ((winptr (.winptr window)))
+  (let ((winptr (winptr window)))
     (with-foreign-pointer-as-string (string n)
       (cond ((and y x)
              (%mvwgetnstr winptr y x string n))

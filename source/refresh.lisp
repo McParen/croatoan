@@ -9,7 +9,7 @@ physical screen by the contents of the virtual screen.
 
 Only updates the changed parts of the window. In order to redraw the
 whole window, it has to be explicitely touched or marked for redraw."
-  (let ((winptr (.winptr win)))
+  (let ((winptr (winptr win)))
     ;; typease whether window or pad
     ;; if window, signal error if any parameters are provided.
     ;; if pad, signal error if not all parameters are provided.
@@ -31,7 +31,7 @@ whole window, it has to be explicitely touched or marked for redraw."
 Copy a window to the virtual screen, but do not display it on the
 visible physical screen. Call batch-refresh to display all marked
 refreshes."
-  (let ((winptr (.winptr win)))
+  (let ((winptr (winptr win)))
     ;; typecase uses typep internally, so pad has to be checked first because it is a subclass of window.
     (typecase win
       (pad (progn
@@ -50,7 +50,7 @@ refreshes."
 ;; It is unclear how redrawwin differs from touchwin.
 (defun mark-for-redraw (window &key first-line no-of-lines)
   "Mark a whole window or a number of lines to be completely redrawn on the next refresh."
-  (let ((winptr (.winptr window)))
+  (let ((winptr (winptr window)))
     (if (and first-line no-of-lines)
         (%wredrawln winptr first-line no-of-lines)
         (%redrawwin winptr))))

@@ -12,7 +12,7 @@ The window from which the char is read is automatically refreshed."
   (with-foreign-object (ptr 'wint_t)
     ;; #define KEY_CODE_YES    0400            /* A wchar_t contains a key code */
     ;; if the char is a function key, return t as a second value, otherwise nil.
-    (if (= 256 (%wget-wch (.winptr window) ptr))
+    (if (= 256 (%wget-wch (winptr window) ptr))
         (values (mem-ref ptr 'wint_t) t)
         (values (mem-ref ptr 'wint_t) nil))))
 

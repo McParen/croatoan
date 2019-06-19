@@ -21,7 +21,7 @@ If n is given, read at most n chars."
       (setf (mem-ref string :char (1- len)) 0)
       ;; populate the foreign string with chars.
       ;; the c routines return ERR (-1) or the number of chars extracted.
-      (let ((retval (%winnstr (.winptr window) string len)))
+      (let ((retval (%winnstr (winptr window) string len)))
         (if (= retval -1)
             nil
             ;; convert the char pointer to a lisp string.

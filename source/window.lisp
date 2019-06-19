@@ -9,7 +9,7 @@
 ;; takes a window object.
 ;; TODO: look up what delwin returns.
 (defun delete-window (window)
-  (%delwin (.winptr window)))
+  (%delwin (winptr window)))
 
 ;; takes a winptr.
 (defun move-window (window y x)

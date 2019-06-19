@@ -15,7 +15,7 @@ If no border chars are given, the default ncurses WACS chars will be used."
                          (br '(:struct cchar_t))
                          (wch 'wchar_t 5))
     (apply #'%wborder-set
-           (.winptr window) 
+           (winptr window) 
 
            ;; take a list of (wide) character codes and empty cchar_t pointers, return a list of cchar_t pointers or null pointers.
            (mapcar #'(lambda (char ptr)
