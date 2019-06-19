@@ -116,7 +116,7 @@
   (let* ((allowed-gray-values (loop for i from 0 to 23 collect (+ 8 (* 10 i))))
          (delta-list (mapcar (lambda (x) (abs (- rgb x))) allowed-gray-values))
          (delta-min (apply #'min delta-list))
-         (pos (cl:position delta-min delta-list)))
+         (pos (position delta-min delta-list)))
     (+ 232 pos)))
     ;;(nth pos allowed-gray-values)))
 
@@ -128,7 +128,7 @@
     (cond
       ;; is the hex value one of the 16 basic ansi colors?
       ((member hex *xterm-color-hex-list*)
-       (cl:position hex *xterm-color-hex-list*))
+       (position hex *xterm-color-hex-list*))
       ;; if all three rgb values are equal, return the closest shade of gray.
       ((apply #'= rgb-list)
        (closest-gray (car rgb-list)))

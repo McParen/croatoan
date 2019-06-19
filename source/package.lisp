@@ -1,13 +1,7 @@
 (defpackage #:de.anvi.croatoan
   (:documentation "High-level Lisp interface to the basic CFFI Ncurses API.")
-
-  ;; TODO: do not :use the complete package, import-from individual functions.
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:trivial-gray-streams)
-
-  ;; TODO: dont use position, use location.
-  ;; TODO: dont :use cffi, qualify the symbols explicitely, so no need to shadow callback.
-  (:shadow position callback)
-
+  (:shadow callback)
   (:nicknames #:croatoan)
   (:export
 
@@ -49,9 +43,9 @@
    complex-char-array
    width
    height
-   position
-   position-y
-   position-x
+   location
+   location-y
+   location-x
    cursor-position
    cursor-position-y
    cursor-position-x
@@ -71,7 +65,7 @@
    input-buffering
    process-control-chars
    cursor-visibility
-   source
+   source-location
 
    ;; Predicates
    closed-p

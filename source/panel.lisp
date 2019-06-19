@@ -10,7 +10,7 @@
 (defun raise (win)
   "Raise window one position in the stack."
   (when (not (eq win (car *window-stack*)))
-    (let ((pos (cl:position win *window-stack*)))
+    (let ((pos (position win *window-stack*)))
       (rotatef (nth (1- pos) *window-stack*)
                (nth     pos  *window-stack*)))))
 
@@ -21,7 +21,7 @@
 (defun lower (win)
   "Lower window one position in the stack."
   (when (not (eq win (car (last *window-stack*))))
-    (let ((pos (cl:position win *window-stack*)))
+    (let ((pos (position win *window-stack*)))
       (rotatef (nth (1+ pos) *window-stack*)
                (nth     pos  *window-stack*)))))
 

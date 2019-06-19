@@ -68,9 +68,8 @@
       (setf bindings (plist2alist bindings-plist)))))
 
 (defclass window (fundamental-character-input-stream fundamental-character-output-stream)
-  ((position
-    ;; has to be a 2el-list so we can use 1 arg with setf.
-    :initarg       :position
+  ((location
+    :initarg       :location
     :initform      '(0 0)
     :type          cons
     :documentation "The (y=row x=column) coordinate of the top left corner of the window.")
@@ -279,13 +278,13 @@
     :initarg       :relative
     :initform      nil
     :type          boolean
-    :documentation "The position of the sub-window is relative to the parent window (t) or to the screen (nil, default).")
+    :documentation "The location of the sub-window is relative to the parent window (t) or to the screen (nil, default).")
 
-   (source
-    :initarg       :source
+   (source-location
+    :initarg       :source-location
     :initform      nil
     :type          (or null cons)
-    :documentation "Position (y x) of the area of the parent window, which is mapped to the subwindow. By default it is identical to the position of the subwindow."))
+    :documentation "Location (y x) of the area of the parent window, which is mapped to the subwindow. By default it is identical to the location of the subwindow."))
 
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
 
@@ -463,7 +462,7 @@
     (unless layout (setf layout (list (length items) 1))) ))
 
 (defmethod initialize-instance :after ((win menu-window) &key)
-  (with-slots (winptr items type height width position sub-window border layout scrolled-layout max-item-length
+  (with-slots (winptr items type height width location sub-window border layout scrolled-layout max-item-length
                       current-item-mark color-pair) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
@@ -475,12 +474,12 @@
         (unless height (setf height (+ (* 2 padding) (car (or scrolled-layout layout)))))
         (unless width  (setf width  (+ (* 2 padding) (* (cadr (or scrolled-layout layout))
                                                         (+ (length current-item-mark) max-item-length)))))
-        (setf winptr (%newwin height width (car position) (cadr position)))
+        (setf winptr (%newwin height width (car location) (cadr location)))
         (setf sub-window
               (make-instance 'sub-window
                              :parent win :height (car (or scrolled-layout layout))
                              :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
-                             :position (list padding padding) :relative t))
+                             :location (list padding padding) :relative t))
         (when color-pair
           (setf (color-pair win) color-pair
                 ;; we need to set the window color pair for the :reverse attribute to work
@@ -522,7 +521,7 @@
   (:documentation  "A dialog is a decorated menu with a title, a message and items."))
 
 (defmethod initialize-instance :after ((win dialog-window) &key center)
-  (with-slots (winptr items height width position sub-window border layout max-item-length current-item-mark color-pair
+  (with-slots (winptr items height width location sub-window border layout max-item-length current-item-mark color-pair
                       message-pad message-text message-height message-pad-coordinates) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
@@ -537,26 +536,26 @@
         (unless height (setf height (+ 2 message-height (* 2 padding) (car layout))))
         (unless width (setf width (+ (* 2 padding) (* (cadr layout) (+ (length current-item-mark) max-item-length)))))
 
-        ;; if the key center was given, calculate position automatically, even if it was explicitely given.
-        (when center (setf position (list (- (round (/ %LINES 2)) (round (/ height 2)))
+        ;; if the key center was given, calculate location automatically, even if it was explicitely given.
+        (when center (setf location (list (- (round (/ %LINES 2)) (round (/ height 2)))
                                           (- (round (/ %COLS  2)) (round (/ width  2))))))
 
-        (setf winptr (%newwin height width (car position) (cadr position)))
+        (setf winptr (%newwin height width (car location) (cadr location)))
         (setf sub-window
               (make-instance 'sub-window
                              :parent win :height (car layout)
                              :width (* (cadr layout) (+ (length current-item-mark) max-item-length))
-                             :position (list (+ 2 message-height padding) (+ padding 1)) :relative t))
+                             :location (list (+ 2 message-height padding) (+ padding 1)) :relative t))
 
         ;; if there is space reserved for a message, and the message is provided,
         ;; initialize a pad and set the background color.
         (when (and message-text (> message-height 0))
           (setf message-pad (make-instance 'pad :height message-height :width (- width 4)))
           (setf message-pad-coordinates
-                (list (+ 2 (car position)) ;screen-min-y
-                      (+ 2 (cadr position)) ;screen-min-x
-                      (+ (+ 2 (car position)) message-height) ;screen-max-y
-                      (+ (+ 2 (cadr position) (- width 4))))) ;screen-max-x
+                (list (+ 2 (car location)) ;screen-min-y
+                      (+ 2 (cadr location)) ;screen-min-x
+                      (+ (+ 2 (car location)) message-height) ;screen-max-y
+                      (+ (+ 2 (cadr location) (- width 4))))) ;screen-max-x
           (when color-pair
             (setf (background message-pad) (make-instance 'complex-char :color-pair color-pair)))
           (format message-pad message-text))
@@ -583,13 +582,13 @@
     :initform      nil
     :accessor      title
     :type          (or null string)
-    :documentation "Title of the element to be displayed at an position depending on the element type.")
+    :documentation "Title of the element to be displayed at an location depending on the element type.")
 
-   (position
-    :initarg       :position
+   (location
+    :initarg       :location
     :initform      nil
     :type          (or null cons)
-    :accessor      position
+    :accessor      location
     :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element.")
 
    (bindings
@@ -842,18 +841,18 @@ If there is no window asociated with the element, return the window associated w
   (:documentation ""))
 
 (defmethod initialize-instance :after ((win form-window) &key)
-  (with-slots (winptr height width position sub-window border) win
+  (with-slots (winptr height width location sub-window border) win
     ;; only for form windows
     (when (eq (type-of win) 'form-window)
-      (setf winptr (%newwin height width (car position) (cadr position)))
+      (setf winptr (%newwin height width (car location) (cadr location)))
       (setf sub-window
-            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
+            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :location (list 1 1) :relative t)))))
 
-;; if a window-position is given during make-instance, it can be simply ignored.
-;; or we can check for position and signal an error.
+;; if a window-location is given during make-instance, it can be simply ignored.
+;; or we can check for location and signal an error.
 (defclass pad (window)
   ()
-  (:documentation "A pad is a window without a specified position on screen, which is specified dynamically during refresh."))
+  (:documentation "A pad is a window without a specified location on screen, which is specified dynamically during refresh."))
 
 (defmethod initialize-instance :after ((win pad) &key)
   (with-slots (winptr height width) win
@@ -869,19 +868,19 @@ If there is no window asociated with the element, return the window associated w
     :documentation "The parent pad which will contain the sub-pad."))
   (:documentation  "A sub-pad shares the memory and the display with a parent pad and has to be contained within it."))
 
-;; sub-pads always use positions relative to parent pads
+;; sub-pads always use locations relative to parent pads
 (defmethod initialize-instance :after ((win sub-pad) &key)
-  (with-slots (winptr parent height width position) win
+  (with-slots (winptr parent height width location) win
     ;; just for a sub-pad window
     (when (eq (type-of win) 'sub-pad)
-      (setf winptr (%subpad (slot-value parent 'winptr) height width (car position) (cadr position))))))
+      (setf winptr (%subpad (slot-value parent 'winptr) height width (car location) (cadr location))))))
 
 #|
 ;; this will be called for both window and screen.
 ;; create a curses window when an instance is created.
 (defmethod initialize-instance :after ((win window) &key)
   (with-slots (winptr cursor-visibility enable-colors input-echoing input-reading 
-                      input-blocking enable-fkeys enable-scrolling height width position) win
+                      input-blocking enable-fkeys enable-scrolling height width location) win
 
     ;; different initialisations depending on the window type.
     ;; %initscr initializes a screen, %newwin initializes a window.
@@ -897,7 +896,7 @@ If there is no window asociated with the element, return the window associated w
                 (set-input-reading winptr input-reading)
                 (set-cursor-visibility cursor-visibility))) ;kernel.lisp
       ;; a window is initialized when we create a new window.
-      (window (setf winptr (%newwin height width (car position) (cadr position)))))
+      (window (setf winptr (%newwin height width (car location) (cadr location)))))
 
     ;; the following settings have to be executed for all window types.
     (set-input-blocking winptr input-blocking)
@@ -908,12 +907,12 @@ If there is no window asociated with the element, return the window associated w
 ;; We cant do this because _all_ auxiliary methods are always used and combined.
 
 (defmethod initialize-instance :after ((win window) &key)
-  (with-slots (winptr height width position color-pair background) win
+  (with-slots (winptr height width location color-pair background) win
     ;; just for WINDOW types
     (when (eq (type-of win) 'window)
       (unless width (setf width 0))
       (unless height (setf height 0))
-      (setf winptr (%newwin height width (car position) (cadr position)))
+      (setf winptr (%newwin height width (car location) (cadr location)))
 
       (when color-pair (setf (color-pair win) color-pair))
       (when background (setf (background win) background)) )))
@@ -944,28 +943,28 @@ If there is no window asociated with the element, return the window associated w
 ;; move also needs a method for subwindows.
 ;; Subwindows must be deleted before the main window can be deleted.
 (defmethod initialize-instance :after ((win sub-window) &key)
-  (with-slots (winptr parent height width position relative) win
+  (with-slots (winptr parent height width location relative) win
     ;; leaving out the size of a window maxes it out to the right and to the bottom
     (unless width (setf width 0))
     (unless height (setf height 0))
     ;; just for SUB-WINDOW types
     (when (eq (type-of win) 'sub-window)
       (if relative
-          ;;(setf winptr (%derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
-          (setf winptr (let ((val (%derwin (slot-value parent 'winptr) height width (car position) (cadr position))))
+          ;;(setf winptr (%derwin (slot-value parent 'winptr) height width (car location) (cadr location)))
+          (setf winptr (let ((val (%derwin (slot-value parent 'winptr) height width (car location) (cadr location))))
                          (if (null-pointer-p val)
                              ;; may also be null if the parent window passed is null
                              (error "Subwindow could not be created. Probably too big and not contained in the parent window.")
                              val)))
-          (setf winptr (%subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
+          (setf winptr (%subwin (slot-value parent 'winptr) height width (car location) (cadr location)))))))
 
 (defmethod initialize-instance :after ((win decorated-window) &key)
-  (with-slots (winptr width height position sub-window) win
+  (with-slots (winptr width height location sub-window) win
     ;; only for decorated window types
     (when (eq (type-of win) 'decorated-window)
-      (setf winptr (%newwin height width (car position) (cadr position)))
+      (setf winptr (%newwin height width (car location) (cadr location)))
       (setf sub-window
-            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
+            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :location (list 1 1) :relative t)))))
 
 ;; called after _all_ :after aux methods.
 ;; for all window types in the hierarchy.
@@ -985,62 +984,62 @@ If there is no window asociated with the element, return the window associated w
 
 ;; Accessors
 
-(defgeneric position (window))
-(defmethod position ((window window))
+(defgeneric location (window))
+(defmethod location ((window window))
   (list (%getbegy (slot-value window 'winptr)) (%getbegx (slot-value window 'winptr))))
-(defmethod position ((win sub-window))
+(defmethod location ((win sub-window))
   (with-slots (winptr relative) win
     (if relative
         (list (%getpary winptr) (%getparx winptr))
         (list (%getbegy winptr) (%getbegx winptr)))))
-(defgeneric (setf position) (coordinates window))
-(defmethod (setf position) (coordinates (w window))
-  (setf (slot-value w 'position) coordinates)
+(defgeneric (setf location) (coordinates window))
+(defmethod (setf location) (coordinates (w window))
+  (setf (slot-value w 'location) coordinates)
   (%mvwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
-;; The slots position-y and position-x dont exist, these accessors exist for convenience.
+;; The slots location-y and location-x dont exist, these accessors exist for convenience.
 
-(defgeneric position-y (window))
-(defmethod position-y ((win window))
+(defgeneric location-y (window))
+(defmethod location-y ((win window))
   (%getbegy (slot-value win 'winptr)))
-(defmethod position-y ((win sub-window))
+(defmethod location-y ((win sub-window))
   (with-slots (winptr relative) win
     (if relative
         (%getpary winptr)
         (%getbegy winptr))))
 
-(defgeneric position-x (window))
-(defmethod position-x ((win window))
+(defgeneric location-x (window))
+(defmethod location-x ((win window))
   (%getbegx (slot-value win 'winptr)))
-(defmethod position-x ((win sub-window))
+(defmethod location-x ((win sub-window))
   (with-slots (winptr relative) win
     (if relative
         (%getparx winptr)
         (%getbegx winptr))))
 
-(defgeneric (setf position-y) (y window))
-(defmethod (setf position-y) (y (win window))
-  (let ((x (cadr (slot-value win 'position))))
-    (setf (slot-value win 'position) (list y x))
+(defgeneric (setf location-y) (y window))
+(defmethod (setf location-y) (y (win window))
+  (let ((x (cadr (slot-value win 'location))))
+    (setf (slot-value win 'location) (list y x))
     (%mvwin (slot-value win 'winptr) y x)))
 
-(defgeneric (setf position-x) (x window))
-(defmethod (setf position-x) (x (win window))
-  (let ((y (car (slot-value win 'position))))
-    (setf (slot-value win 'position) (list y x))
+(defgeneric (setf location-x) (x window))
+(defmethod (setf location-x) (x (win window))
+  (let ((y (car (slot-value win 'location))))
+    (setf (slot-value win 'location) (list y x))
     (%mvwin (slot-value win 'winptr) y x)))
 
 ;; "The screen-relative parameters of the window are not changed. 
 ;; This routine is used to display different parts of the parent 
-;; window at the same physical position on the screen."
+;; window at the same physical location on the screen."
 ;;
 ;; "The mvderwin() function specifies a mapping of characters.
 ;; The function identifies a mapped area of the parent of the specified window"
 
 ;; TODO: rename to source-location
-(defgeneric (setf source) (coordinates sub-window))
-(defmethod (setf source) (coordinates (w sub-window))
-  (setf (slot-value w 'source) coordinates)
+(defgeneric (setf source-location) (coordinates sub-window))
+(defmethod (setf source-location) (coordinates (w sub-window))
+  (setf (slot-value w 'source-location) coordinates)
   (%mvderwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
 (defgeneric width (window))
@@ -1063,7 +1062,7 @@ If there is no window asociated with the element, return the window associated w
   (setf (slot-value w 'cursor-position) coordinates)
   (%wmove (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
-;; The slots position-y and position-x dont exist, but the pseudo accessors
+;; The slots location-y and location-x dont exist, but the pseudo accessors
 ;; exist for convenience.
 
 (defgeneric cursor-position-y (window))

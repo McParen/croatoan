@@ -20,7 +20,7 @@
       -1
       ;; depending on whether we use 8 or 256 colors, we have different names for the same colors.
       (let* ((color-list (if (<= %colors 8) *ansi-color-list* *xterm-color-name-list*))
-             (position (cl:position color-name color-list)))
+             (position (position color-name color-list)))
         (if position
             position
             (error "color name does not exist.")))))

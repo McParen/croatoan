@@ -26,8 +26,8 @@ If relative is t, move the cursor by y rows and x columns."
 If relative is t, move the window by y rows and x columns."
   (let ((winptr (winptr window)))
     (if relative
-        (let ((pos-y (car  (position window)))
-              (pos-x (cadr (position window))))
+        (let ((pos-y (car  (location window)))
+              (pos-x (cadr (location window))))
           (%mvwin winptr (+ pos-y y) (+ pos-x x)))
         (%mvwin winptr y x))))
 

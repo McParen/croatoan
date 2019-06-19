@@ -60,7 +60,7 @@ Instead of the name, another key can be provided to identify the element."
   "Clear the field by overwriting it with the background char.
 
 The default background char is #\space."
-  (with-accessors ((pos position) (width width) (selected .selected) (win window) (style style)) field
+  (with-accessors ((pos location) (width width) (selected .selected) (win window) (style style)) field
     (let* ((bg  (getf style :background))
            (sbg (getf style :selected-background))
            (bgchar (if selected
@@ -74,12 +74,12 @@ The default background char is #\space."
   (:documentation "Update the cursor position of the element of a form.")
   (:method (object)
     "The default method puts the cursor at the start position of the element."
-    (setf (cursor-position (window object)) (position object))
+    (setf (cursor-position (window object)) (location object))
     (refresh (window object))))
 
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
-  (with-accessors ((pos position) (inptr .fill-pointer) (dptr .display-pointer) (win window)) field
+  (with-accessors ((pos location) (inptr .fill-pointer) (dptr .display-pointer) (win window)) field
     (move win
           ;; TODO: assumes a single-line field.
           (car pos)
@@ -95,7 +95,7 @@ The default background char is #\space."
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
 (defmethod draw ((button button))
-  (with-accessors ((pos position) (name name) (title title) (win window) (selected .selected) (style style)) button
+  (with-accessors ((pos location) (name name) (title title) (win window) (selected .selected) (style style)) button
     (apply #'move win pos)
     (let* ((fg  (getf style :foreground))
            (sfg (getf style :selected-foreground)))
@@ -106,7 +106,7 @@ The default background char is #\space."
 
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
-  (with-accessors ((pos position) (width width) (inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer)
+  (with-accessors ((pos location) (width width) (inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer)
                    (selected .selected) (win window) (title title) (style style)) field
     (let* ((fg  (getf style :foreground))
            (sfg (getf style :selected-foreground))

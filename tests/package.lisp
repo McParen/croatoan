@@ -1,9 +1,7 @@
 (defpackage #:de.anvi.croatoan.tests
-  (:documentation "Tests and examples demonstrating the use of the Croatoan API.")
+  (:documentation "Tests and examples demonstrating the use of the croatoan API.")
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:de.anvi.croatoan)
-
-  (:shadowing-import-from #:de.anvi.croatoan position callback)
-  (:nicknames #:a)
+  (:shadowing-import-from #:de.anvi.croatoan callback)
   (:export
 
    ;; ncurses.lisp
