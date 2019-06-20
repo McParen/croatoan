@@ -2,7 +2,7 @@
   (:documentation "High-level Lisp interface to the basic CFFI Ncurses API.")
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:trivial-gray-streams)
   (:shadow callback)
-  (:nicknames #:croatoan)
+  (:nicknames #:croatoan #:crt)
   (:export
 
    ;; croatoan.lisp
