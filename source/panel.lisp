@@ -39,7 +39,7 @@
   (if *window-stack*
       (progn
         (mapc #'(lambda (w)
-                  (when (visible w)
+                  (when (visiblep w)
                     (touch w)
                     (mark-for-refresh w)))
               (reverse *window-stack*))

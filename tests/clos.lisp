@@ -1,7 +1,7 @@
 (in-package :de.anvi.croatoan.tests)
 
 (defun tetris ()
-  (let ((scr (make-instance 'screen :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)))
+  (let ((scr (make-instance 'screen :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)))
     (unwind-protect
 
          (let* ((board (make-array '(20 10) :initial-element nil))
@@ -150,7 +150,7 @@
 (defun snake ()
   (labels ((display-snake (scr body)
              (mapc #'(lambda (pair) (add-char scr (char-code #\*) :y (car pair) :x (cadr pair))) body)))
-    (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
+    (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)
       (let* ((body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
              (xpos (cadar body))
              (ypos (caar body))
@@ -180,7 +180,7 @@
 
 (defun snake2 ()
   "Use bind and run-event-loop for event handling. Use lists instead of complex numbers for directions."
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)
     (let* ((body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
            (head (car body))
            (tail (car (last body)))
@@ -207,7 +207,7 @@
 ;; https://github.com/pipeseroni/pipes.sh/blob/master/pipes.sh
 ;; https://www.youtube.com/watch?v=T4n87IIa--U
 (defun pipes ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)
     (let* ((pos (list (round (/ (height scr) 2)) (round (/ (width scr) 2))))
            (dirs '((1 0) (-1 0) (0 -1) (0 1)))
            (dir (nth (random 4) dirs))
@@ -248,7 +248,7 @@
          (refresh scr))))))
 
 (defun matrix ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visible nil)
     (let* ((width (width scr))
            (height (height scr))
            (positions (loop repeat width collect (random height)))
@@ -272,7 +272,7 @@
                    (setf (nth column positions) (mod (1+ (nth column positions)) height)))))))))
 
 (defun matrix2 ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visible nil)
     (let* ((width (width scr))
            (height (height scr))
            ;; start at a random height in each column.
@@ -534,7 +534,7 @@
 
 (defun t03d ()
   "Read and display wide (multi-byte) characters until q is pressed."
-  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visible nil)
     (clear scr)
     (refresh scr)
     (loop for ch = (get-wide-char scr)
@@ -563,7 +563,7 @@
 ;; also see t08c
 (defun t03d2 ()
   "Use gray stream functions to read and display wide (multi-byte) characters until q is pressed."
-  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visible nil)
     (clear scr)
     (refresh scr)
     (loop for ch = (read-char scr)
@@ -607,14 +607,14 @@
 (defun t03e ()
   "Test switching between input modes and control char processing."
   (with-screen (scr :input-echoing nil :input-blocking t :input-buffering nil :process-control-chars nil)
-    (with-accessors ((input-buffering input-buffering) (process-control-chars process-control-chars)) scr
+    (with-accessors ((input-buffering input-buffering-p) (process-control-chars process-control-chars-p)) scr
       (clear scr)
       (format scr "buffering ~A process-control-chars ~A (raw)~%" input-buffering process-control-chars)
       (format scr "ch1: ~A~%" (get-char scr))
-      (setf (process-control-chars scr) t)
+      (setf (process-control-chars-p scr) t)
       (format scr "buffering ~A process-control-chars ~A (cbreak)~%" input-buffering process-control-chars)
       (format scr "ch2: ~A~%" (get-char scr))
-      (setf (input-buffering scr) t)
+      (setf (input-buffering-p scr) t)
       (format scr "buffering ~A process-control-chars ~A (cooked)~%" input-buffering process-control-chars)
       (format scr "ch3: ~A~%" (get-char scr))
       ;; ignore the typed enter key
@@ -686,7 +686,7 @@
 
 ;; a more concise way to write t04a
 (defun t04b ()
-  (with-screen (scr :enable-colors t :cursor-visibility nil)
+  (with-screen (scr :enable-colors t :cursor-visible nil)
     (clear scr)
 
     (print (attributes scr) scr)
@@ -783,7 +783,7 @@
            (refresh scr)
            (get-char scr)
 
-           (let ((win (make-instance 'window :height 15 :width 50 :location '(5 5) :border t)))
+           (let ((win (make-instance 'window :height 15 :width 50 :location '(5 5) :draw-border t)))
              (setf (background win) (make-instance 'complex-char :color-pair '(:red :blue)))
              (add-string win "Window 1")
              (refresh win)
@@ -983,7 +983,7 @@
 
 ;; the same as t09, but we can now raise the overlapping windows by hitting 1, 2 or 3.
 (defun t09a ()
-  (let* ((scr (make-instance 'screen :enable-colors t :input-blocking t :input-echoing nil :use-default-colors t :cursor-visibility nil)))
+  (let* ((scr (make-instance 'screen :enable-colors t :input-blocking t :input-echoing nil :use-default-colors t :cursor-visible nil)))
     (unwind-protect
          (progn
            (clear scr)
@@ -1030,13 +1030,13 @@
 
 (defun t09b ()
   "Use with-screen, event-case and mapc to simplify t09a."
-  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visibility nil)
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
     (box scr)
     (refresh scr)
     
-    (let ((w1 (make-instance 'window :height 10 :width 30 :location '(3 5)  :border t))
-          (w2 (make-instance 'window            :width 30 :location '(6 10) :border t))
-          (w3 (make-instance 'window :height 10           :location '(9 15) :border t)))
+    (let ((w1 (make-instance 'window :height 10 :width 30 :location '(3 5)  :draw-border t))
+          (w2 (make-instance 'window            :width 30 :location '(6 10) :draw-border t))
+          (w3 (make-instance 'window :height 10           :location '(9 15) :draw-border t)))
 
       (setf (background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black))
             (background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
@@ -1059,19 +1059,19 @@
 ;; https://www.gnu.org/software/guile-ncurses/manual/html_node/The-curses-panel-library.html
 (defun t09c ()
   "Use a window stack to manage overlapping windows."
-  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :enable-fkeys t :cursor-visibility nil :stacked t)
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :enable-function-keys t :cursor-visible nil :stacked t)
     (box scr)
     (setf (background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
     ;; we have to stack scr because the event loop runs on scr, and this refreshes scr implicitely every time
     ;; and overlaps the other windows
-    ;;(setf (stacked scr) t)
+    ;;(setf (stackedp scr) t)
 
     (let ((winlst nil)
           (n 0))
       ;; create 8 windows (with 8 different background colors),
       ;; add them to the local winlist and to the global stack
       (loop for i from 0 to 7 do
-           (push (make-instance 'window :height 10 :width 30 :location (list (+ 3 (* i 1)) (+ 3 (* i 3))) :border t :stacked t)
+           (push (make-instance 'window :height 10 :width 30 :location (list (+ 3 (* i 1)) (+ 3 (* i 3))) :draw-border t :stacked t)
                  winlst))
       ;; number them and set the background colors
       (loop for i from 0 to 7 do
@@ -1079,7 +1079,7 @@
            (format (nth i winlst) "~A" i)
            (setf (background (nth i winlst))
                  (make-instance 'complex-char :simple-char #\space :color-pair (list :black (nth i *ansi-color-list*)))))
-           ;;(setf (stacked (nth i winlst)) t)
+           ;;(setf (stackedp (nth i winlst)) t)
       (refresh-stack)
 
       (event-case (scr event)
@@ -1104,7 +1104,7 @@
         ;; type v to toggle window visibility         
         (#\v
          ;; toggle visibility for window n
-         (setf (visible (nth n winlst)) (not (visible (nth n winlst))))
+         (setf (visiblep (nth n winlst)) (not (visiblep (nth n winlst))))
          (refresh-stack))
         (#\q (return-from event-case))
         (otherwise nil))
@@ -1120,10 +1120,10 @@
 ;; print the keys and key codes of any key pressed.
 ;; TODO: when we reach the end of the screen, the ~% doesnt print newlines any more and the screen doesnt scroll.
 ;; see scroll.lisp. a lot of window options, including scrolling, arent closified yet.
-;; enable-fkeys t: fkeys have codes 255+
-;; enable-fkeys nil: fkeys are multi-char escape codes.
+;; enable-function-keys t: fkeys have codes 255+
+;; enable-function-keys nil: fkeys are multi-char escape codes.
 (defun t10 ()
-  (let ((scr (make-instance 'screen :input-echoing nil :enable-fkeys t)))
+  (let ((scr (make-instance 'screen :input-echoing nil :enable-function-keys t)))
     (unwind-protect
          (progn
            (clear scr)
@@ -1143,7 +1143,7 @@
 ;; cleaner key printing.
 ;; prints key names instead of numeric char codes.
 (defun t10a ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t)
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t)
     (format scr "~A lines high, ~A columns wide.~%~%" (height scr) (width scr))
     ;; TODO: get-event explicitely gets single-byte events, not wide events.
     (loop (let ((event (get-event scr)))
@@ -1189,9 +1189,9 @@
            (setf 
 
             ;; this is sufficient to make the whole window scroll.
-            ;;(enable-scrolling scr t)
+            ;;(scrolling-enabled-p scr t)
             ;;(%scrollok (winptr scr) t)
-            (enable-scrolling scr) t 
+            (scrolling-enabled-p scr) t 
 
             ;; to make only a few lines (5 to 10) scroll, we have to set a line-based region.
             ;;(set-scrolling-region scr 5 10)
@@ -1422,7 +1422,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; It depends on the terminal emulator whether they will work for you.
 ;; They both worked in xterm for me.
 (defun t13 ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)
     (loop
        (let ((event (get-event scr)))
          (if event
@@ -1435,7 +1435,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; minimal setting to get the mouse working.
 ;; reads and prints a single mouse event.
 (defun t14 ()
-  (let ((scr (make-instance 'screen :input-echoing nil :input-blocking t :enable-fkeys t)))
+  (let ((scr (make-instance 'screen :input-echoing nil :input-blocking t :enable-function-keys t)))
     (unwind-protect 
          (progn
            (%mousemask #b00000111111111111111111111111111 (null-pointer)) ; activate all mouse events.
@@ -1452,7 +1452,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; mouse events are now detected in the event loop.
 ;; print the y x coordinates and the detected event.
 (defun t14a ()
-  (with-screen (scr :input-echoing nil :input-blocking t :enable-fkeys t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
     (set-mouse-event '(:button-1-clicked :button-2-clicked :button-3-clicked))
     (event-case (scr event y x)
       ((:button-1-clicked :button-2-clicked :button-3-clicked) (format scr "~3A ~3A ~A~%" y x event))
@@ -1460,7 +1460,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 ;; left click prints a 1, right click prints a 3.
 (defun t14b ()
-  (with-screen (scr :input-echoing nil :input-blocking t :enable-fkeys t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
     (set-mouse-event '(:button-1-clicked :button-3-clicked))
     (event-case (scr event mouse-y mouse-x)
       (:button-1-clicked (move scr mouse-y mouse-x) (princ "1" scr))
@@ -1469,7 +1469,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t14c ()
   "Print all mouse events."
-  (with-screen (scr :input-echoing nil :input-blocking t :enable-fkeys t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
     (%mousemask #b00000111111111111111111111111111 (null-pointer))
     (event-case (scr event y x)
       (#\q (return-from event-case))
@@ -1477,7 +1477,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 ;; resize event: the standard screen size is resized automatically.
 (defun t15 ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil :enable-colors t)
     (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
     (loop
        (let ((event (get-event scr)))
@@ -1494,7 +1494,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 ;; resize event: arrange window _locations_ relative to the screen size.
 (defun t15a ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil :enable-colors t)
     (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
     (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (let ((time 0)
@@ -1526,7 +1526,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 ;; resize event: arrange window _sizes_ relative to the screen size.
 (defun t15b ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-fkeys t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil :enable-colors t)
     (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
     (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
     (let ((time 0)
@@ -1573,7 +1573,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; read a single line of Lisp input (30 chars max) from the last line, 
 ;; evaluate it and print the result to the output window above.
 (defun t16a ()
-  (with-screen (scr :input-echoing t :input-blocking t :enable-fkeys t :cursor-visibility t :enable-colors nil)
+  (with-screen (scr :input-echoing t :input-blocking t :enable-function-keys t :cursor-visible nil :enable-colors nil)
     (let ((out (make-instance 'window :height (1- (height scr)) :width (width scr) :location '(0 0)))
           (in (make-instance 'window :height 1 :width (width scr) :location (list (1- (height scr)) 0))))
 
@@ -1589,7 +1589,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 ;; add a loop to the input, making it a simple repl.
 (defun t16b ()
-  (with-screen (scr :input-echoing t :input-blocking t :enable-fkeys t :cursor-visibility t :enable-colors nil)
+  (with-screen (scr :input-echoing t :input-blocking t :enable-function-keys t :cursor-visible t :enable-colors nil)
     (let ((out (make-instance 'window :height (1- (height scr)) :width (width scr) :location '(0 0)))
           (in (make-instance 'window :height 1 :width (width scr) :location (list (1- (height scr)) 0))))
       (loop
@@ -1608,11 +1608,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; ncurses' get-string only allows the backspace key.
 ;; extend the functionality of the input line of the simple repl.
 (defun t16c ()
-  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t)
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t)
     (let* ((wout (make-instance 'window :height (1- (height scr)) :width (width scr) :location '(0 0) :enable-scrolling t))
            ;; input blocking is a property of every single window, not just of the global screen.
            (win (make-instance 'window :height 1 :width (width scr) :location (list (1- (height scr)) 0)
-                               :enable-fkeys t :input-blocking t))
+                               :enable-function-keys t :input-blocking t))
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
       (event-case (win event)
@@ -1638,9 +1638,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (decf n)
            (delete-char win)))
         (:ic ; INS / Einfg key
-         (format t "(insert-mode win) => ~A~%" (insert-mode win))
-         (setf (insert-mode win) (not (insert-mode win)))
-         (format t "(insert-mode win) => ~A~%" (insert-mode win))
+         (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
+         (setf (insert-mode-p win) (not (insert-mode-p win)))
+         (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
          (refresh wout))
         (:backspace ; BS key
          (when (> (cadr (cursor-position win)) 0)
@@ -1658,7 +1658,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (when (and (characterp event)
                     (< (cadr (cursor-position win)) (1- (width win))))
            (incf n)
-           ;; insert-mode does not insert if we do not use gray stream functions
+           ;; insert-mode-p does not insert if we do not use gray stream functions
            ;;(add-wide-char win event))))
            (write-char event win)))) ; calls stream-write-char
            ;; (princ event win) ; calls print-object
@@ -1671,9 +1671,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; on the screen, the list is displayed in reverse.
 (defun t16d ()
   "Use an input buffer instead of extracting the string from the window. Create windows using the with-windows macro."
-  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t)
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t)
     (with-windows ((wout :height (1- (height scr)) :width (width scr) :location '(0 0) :enable-scrolling t)
-                   (win  :height 1                  :width (width scr) :location (list (1- (height scr)) 0) :enable-fkeys t :input-blocking t))
+                   (win  :height 1                  :width (width scr) :location (list (1- (height scr)) 0) :enable-function-keys t :input-blocking t))
       (let ((*standard-output* wout)
             (inbuf nil) ; input buffer character list
             (inptr 0))  ; position of the next character in the buffer
@@ -1708,14 +1708,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (move win 0 inptr)
              (refresh win)))
           (:ic
-           (format t "(insert-mode win) => ~A~%" (insert-mode win))
-           (setf (insert-mode win) (not (insert-mode win)))
-           (format t "(insert-mode win) => ~A~%" (insert-mode win))
+           (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
+           (setf (insert-mode-p win) (not (insert-mode-p win)))
+           (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
            (refresh wout))
           (otherwise
            (if (= inptr (length inbuf))
                (setf inbuf (cons event inbuf))
-               (if (insert-mode win)
+               (if (insert-mode-p win)
                    (setf inbuf (insert-nth (- (length inbuf) inptr) event inbuf))
                    (setf inbuf (replace-nth (- (length inbuf) (1+ inptr)) event inbuf))))
            (incf inptr)
@@ -1726,7 +1726,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t16e ()
   "Edit a single input field, not part of a form."
-  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let ((*standard-output* scr)
           (field (make-instance 'field :location (list 3 20) :width 10 :window scr)))
 
@@ -1750,7 +1750,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t16f ()
   "Group several input fields and buttons to a form."
-  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let* ((ch1 (make-instance 'complex-char :simple-char #\space :color-pair '() :attributes '()))
            (ch2 (make-instance 'complex-char :simple-char #\_))
            (ch3 (make-instance 'complex-char :simple-char #\space :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
@@ -1801,7 +1801,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t16g ()
   "Use the element default style."
-  (with-screen (scr :input-echoing nil :cursor-visibility t :enable-colors t :enable-fkeys t :input-blocking t)
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let* ((ch1 (make-instance 'complex-char :color-pair '(:blue :black)))
            (ch2 (make-instance 'complex-char :simple-char #\_))
            (ch3 (make-instance 'complex-char :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
@@ -1843,7 +1843,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
       ;; Access fields by their name instead of looping through the elements list.
       (mapc #'(lambda (name)
-                (let ((field (get-element form name)))
+                (let ((field (find-element form name)))
                   (format scr "~5A ~10A ~20A~%" name (title field) (value field))))
             (list :f1 :f2 :f3))
       
@@ -1854,10 +1854,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let* ((win1 (make-instance 'window :location '(2 2) :border t))
-           (win2 (make-instance 'sub-window :parent win1 :height 5 :width 20 :location '(4 4) :border t))
-           (win3 (make-instance 'sub-window :parent win1           :width 20 :location '(4 4) :border t :relative t)))
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (let* ((win1 (make-instance 'window :location '(2 2) :draw-border t))
+           (win2 (make-instance 'sub-window :parent win1 :height 5 :width 20 :location '(4 4) :draw-border t))
+           (win3 (make-instance 'sub-window :parent win1           :width 20 :location '(4 4) :draw-border t :relative t)))
       (princ "win1" win1)
       (princ "win2" win2)
       (princ "win3 relative" win3)
@@ -1873,8 +1873,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; we can change which part of the parent is displayed by changing the sub-windows source-location
 ;; we can change where it is displayed by changing the sub-windows location.
 (defun t17a ()
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
-    (let ((win (make-instance 'sub-window :parent scr :height 5 :width 20 :location '(2 2) :border t :relative t)))
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (let ((win (make-instance 'sub-window :parent scr :height 5 :width 20 :location '(2 2) :draw-border t :relative t)))
       ;; initial content written to subwin and thus to scr.
       (move win 1 1) (princ "subwin" win)
 
@@ -1999,7 +1999,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; print a simple menu, let the user choose an item by arrow keys, return the chosen item.
 ;; https://www.gnu.org/software/guile-ncurses/manual/html_node/A-simple-key-usage-example.html
 (defun t19 ()
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (flet ((draw-menu (win choices i)
              (clear win)
              (loop for j from 0 to (1- (length choices)) do
@@ -2021,7 +2021,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 ;; an even simpler 2-item menu is a yes-no-dialog.
 (defun t19a ()
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (flet ((draw-menu (win choices i)
              (move win 2 0) (clear win :target :end-of-line)
              (loop for j from 0 to (1- (length choices)) do
@@ -2039,9 +2039,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19b ()
   "Use the menu class, draw-menu and select functions."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (menu (make-instance 'menu-window :items choices :location (list 0 20) :title "t19b" :border t :enable-fkeys t)))
+           (menu (make-instance 'menu-window :items choices :location (list 0 20) :title "t19b"
+                                :cyclic-selection t :draw-border t :enable-function-keys t)))
       (let ((result (select menu)))
         (format scr "You chose ~A" result)
         (touch scr)
@@ -2051,7 +2052,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19b2 ()
   "Use the select function with independent windows and menus"
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items1 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555"
                      "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (menu1 (make-instance 'menu :items items1 :name "sub-menu 1" :max-item-length 50))
@@ -2068,11 +2069,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19c ()
   "Improved t19b, the menu can be called repeatedly with the key a."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (menu (make-instance 'menu-window :items choices :location (list 0 25) :scrolled-layout (list 6 1)
-                                :title "t19c" :border t :enable-fkeys t)))
+                                :title "t19c" :draw-border t :enable-function-keys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select menu)))
@@ -2085,7 +2086,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19c2 ()
   "Test the menu-item class for submenus."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr))))
            (choices (list "Choice 0" 'choice11 fun1 "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                           "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
@@ -2096,25 +2097,25 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                      :location (list 2 57) :scrolled-layout (list 6 1)
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
-                                     :name "submenu2" :title t :border t :enable-fkeys t :visible nil))
+                                     :name "submenu2" :title t :draw-border t :enable-function-keys t :visible nil))
            ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
                                      :location (list 1 41) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #x999999)
-                                     :name "submenu1" :title nil :border t :enable-fkeys t :visible nil))
+                                     :name "submenu1" :title nil :draw-border t :enable-function-keys t :visible nil))
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
                                      :location (list 0 25) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #xcccccc)
-                                     :name "menu" :title nil :border nil :enable-fkeys t :visible nil)))
+                                     :name "menu" :title nil :draw-border nil :enable-function-keys t :visible nil)))
       ;; add the menus and submenus to a window stack
       ;; scr has to be stacked too so we can make the menus disappear.
-      (setf (stacked scr) t
-            (stacked menu) t
-            (stacked sub-menu1) t
-            (stacked sub-menu2) t)
+      (setf (stackedp scr) t
+            (stackedp menu) t
+            (stackedp sub-menu1) t
+            (stackedp sub-menu2) t)
 
       (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
 
@@ -2137,11 +2138,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19c3 ()
   "Menu with checkbox items."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (menu (make-instance 'menu-window :items choices :location (list 0 25) :scrolled-layout (list 6 1)
-                                :title "t19c" :border t :enable-fkeys t
+                                :title "t19c" :draw-border t :enable-function-keys t
                                 :menu-type :checklist
                                 :max-item-length 20
                                 :color-pair (list :yellow :red) )))
@@ -2157,11 +2158,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19d ()
   "Use the arrow keys to pick a value from an 2D array menu, given as a layout parameter."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items (loop for i below 200 collect (format nil "Item ~A" i)))
            (menu (make-instance 'menu-window
                                 :items items :location (list 0 0) :layout (list 20 10) :scrolled-layout (list 10 4)
-                                :cyclic-selection nil :max-item-length 9 :title "t19d" :border t :enable-fkeys t)))
+                                :cyclic-selection nil :max-item-length 9 :title "t19d" :draw-border t :enable-function-keys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select menu)))
@@ -2174,13 +2175,13 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19e ()
   "A one-line menu without a title and border resembling a menu bar."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
            (menu (make-instance 'menu-window :input-blocking t :items items :location (list 0 0)
                                 :layout (list 1 (length items))
                                 :scrolled-layout (list 1 6)
                                 ;;:color-pair (list :black :yellow)
-                                :max-item-length 10 :width (width scr) :border t :enable-fkeys t)))
+                                :max-item-length 10 :width (width scr) :draw-border t :enable-function-keys t)))
       ;; start the output below the menu
       (move scr 4 0)
       ;; exit the infinite loop by exiting the menu with q.
@@ -2194,21 +2195,21 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19e2 ()
   "A menu bar and submenus."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items1 (list "Choice 0" "Choice11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                           "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (sub-menu1 (make-instance 'menu-window :items items1 :location (list 2 30) :scrolled-layout (list 6 1)
-                                     :title nil :name "submenu1" :border t :enable-fkeys t :visible nil :menu-type :selection))
+                                     :title nil :name "submenu1" :draw-border t :enable-function-keys t :visible nil :menu-type :selection))
            (sub-menu2 (make-instance 'menu-window :items items1 :location (list 2 45) :scrolled-layout (list 6 1)
-                                     :title nil :name "submenu2" :border t :enable-fkeys t :visible nil :menu-type :checklist))
+                                     :title nil :name "submenu2" :draw-border t :enable-function-keys t :visible nil :menu-type :checklist))
            (fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
            (menu (make-instance 'menu-window :input-blocking t :items items2 :location (list 0 0) :layout (list 1 (length items2))
-                                :max-item-length 15 :width (width scr) :border t :enable-fkeys t)))
-      (setf (stacked scr) t
-            (stacked menu) t
-            (stacked sub-menu1) t
-            (stacked sub-menu2) t)
+                                :max-item-length 15 :width (width scr) :draw-border t :enable-function-keys t)))
+      (setf (stackedp scr) t
+            (stackedp menu) t
+            (stackedp sub-menu1) t
+            (stackedp sub-menu2) t)
       (move scr 4 0) ;; start the output at line 4, below the menu bar.    
       (refresh-stack)
       (loop named menu-case
@@ -2222,7 +2223,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19f ()
   "A more fancy version of t19a, a yes-no dialog using the class dialog-window."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items (list "Yes" "No" "OK" 'cancel))
            (menu (make-instance 'dialog-window
                                 :input-blocking t
@@ -2235,8 +2236,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :current-item-mark "> "
                                 :color-pair (list :yellow :red)
                                 :width 60
-                                :border t
-                                :enable-fkeys t
+                                :draw-border t
+                                :enable-function-keys t
                                 :name "t19f"
                                 :title t
                                 ;; if the title is given as a string, it overrides the default title = name
@@ -2256,7 +2257,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19g ()
   "A checkbox dialog."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility nil :enable-colors t :use-default-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :use-default-colors t)
     (let* ((items (list "Yes" "No" "OK" 'cancel "Maybe"))
            (menu (make-instance 'dialog-window
                                 :input-blocking t
@@ -2272,7 +2273,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :color-pair (list :yellow :red)
                                 ;; we do not need an item mark in a checklist
                                 :current-item-mark ""
-                                :width 60 :border t :enable-fkeys t
+                                :width 60 :draw-border t :enable-function-keys t
                                 :title "this is a checkbox dialog"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
@@ -2291,7 +2292,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; Passing the color attribute directly to a character.
 (defun t20 ()
   "Display a randomly created carpet of the seven default colors, except for black."
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-colors t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-colors t :cursor-visible nil)
     (let ((width  (width scr))
           (height (height scr))
           (colors '(:red :green :yellow :blue :magenta :cyan :white)))
@@ -2310,7 +2311,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; echo-wide-char has to be used.
 (defun t20a ()
   "Display the 256 supported colors. This only works with TERM=xterm-256color in xterm and gnome-terminal."
-  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visibility nil)
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visible nil)
     ;; 0-15: 8 ANSI colors and 8 bold ANSI colors
     (loop for i from 0 to 7 do
          (loop for j from 0 to 1 do
@@ -2365,7 +2366,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 ;; Tests for insert-char, insert-string, extract-char.
 (defun t21 ()
-  (with-screen (scr :cursor-visibility nil)
+  (with-screen (scr :cursor-visible nil)
     (move scr 0 0) (add-char scr #\a)
     ;; overwrite b over a
     (move scr 0 0)
@@ -2442,7 +2443,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t23 ()
   "Use save-excursion to return the cursor to its initial location."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility t :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible t :enable-colors t)
     (move scr 0 0)
     (princ "1. hello" scr)
     (save-excursion scr
@@ -2453,7 +2454,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t24 ()
   "Test usage of insert-line and delete-line."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility t :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible t :enable-colors t)
     (loop for i from 0 to (- (height scr) 1)
        do
          (move scr i 0)
@@ -2469,7 +2470,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t25 ()
   "Test initialisation and refreshing of pads and sub-pads."
-  (with-screen (scr :input-blocking t :cursor-visibility nil :enable-colors t)
+  (with-screen (scr :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((p (make-instance 'pad :height 100 :width 100))
           (sp (make-instance 'sub-pad :parent p :height 5 :width 10 :location (list 10 10))))
 
@@ -2522,7 +2523,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t26 ()
   "Test accessors of window and cursor locations."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visibility t :enable-colors t :stacked t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible t :enable-colors t :stacked t)
     (let ((win (make-instance 'window :height 5 :width 20 :location (list 0 0) :stacked t)))
 
       (setf (background scr) (make-instance 'complex-char :color-pair '(:white :red))
@@ -2648,7 +2649,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; Assumes an 80x24 terminal
 (defun t29 ()
   "Draw an ASCII-art tree to illustrate the use of shapes."
-  (with-screen (scr :input-blocking t :enable-colors t :input-echoing nil :cursor-visibility nil :input-buffering nil)
+  (with-screen (scr :input-blocking t :enable-colors t :input-echoing nil :cursor-visible nil :input-buffering nil)
     (let* ((leaf-char   (make-instance 'complex-char :simple-char #\O :color-pair '(:green :black)))
            (trunk-char  (make-instance 'complex-char :simple-char #\H :color-pair '(:white :black)))
            (ground-char (make-instance 'complex-char :simple-char #\i :color-pair '(:green :black)))

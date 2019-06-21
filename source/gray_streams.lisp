@@ -37,7 +37,7 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
 
 ;; write-char, format ~C
 (defmethod stream-write-char ((stream window) (ch character))
-  (if (insert-mode stream)
+  (if (insert-mode-p stream)
       (progn
         (insert-wide-char stream ch)
         ;; move the cursor after the inserted character.
@@ -112,7 +112,7 @@ CL-USER>
 ;;(defmethod stream-write-char ((stream window) (ch character))
 ;;  (let ((code (char-code ch))
 ;;        (winptr (winptr stream)))
-;;    (if (insert-mode stream)
+;;    (if (insert-mode-p stream)
 ;;        (progn
 ;;          (%winsch winptr code)
 ;;          ;; move the cursor after the inserted character.

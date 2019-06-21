@@ -104,13 +104,13 @@
     :accessor      frame-rate
     :documentation "Set the frame rate in fps (frames per second). When input-blocking is nil, sleep for 1/frame-rate seconds between event loop cycles. Has the same effect as setting input-blocking duration, and should thus not be used simultaneously.")
 
-   (enable-fkeys
-    :initarg       :enable-fkeys
+   (function-keys-enabled-p
+    :initarg       :enable-function-keys
     :initform      nil
     :type          boolean
     :documentation "Enable (t) or disable (nil) support for function keys.")
 
-   (enable-scrolling
+   (scrolling-enabled-p
     :initarg       :enable-scrolling
     :initform      nil
     :type          boolean
@@ -125,11 +125,11 @@
    ;; IC / INS / Insert / Einfg key
    ;; this will only apply to lisps standard output functions.
    ;; ncurses functions add-char and insert-char can be used explicitely.
-   (insert-mode
+   (insert-mode-p
     :initarg       :insert-mode
     :initform      nil
     :type          boolean
-    :accessor      insert-mode
+    :accessor      insert-mode-p
     :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting it (nil, default).")
 
    ;; we need instance-local bindings so we dont have to create a keymap for every window and every program
@@ -170,25 +170,25 @@
     :type          (or null cons)
     :documentation "A two element list of keywords denoting the foreground and background color of new characters added to a window.")
 
-   (border
-    :initarg       :border
+   (draw-border-p
+    :initarg       :draw-border
     :initform      nil
     :type          boolean
-    :reader        border
-    :documentation "Enable (t) or disable (nil, default) an initial border around a window.")
+    :reader        draw-border-p
+    :documentation "Draw (t) or don't draw (nil, default) an initial border around a window. Not redrawn automatically.")
 
-   (stacked
+   (stackedp
     :initarg       :stacked
     :initform      nil
     :type          boolean
     :documentation "If stacked is t, the window is added to the global window stack, so overlapping windows can be refreshed in the stacking order.")
 
-   (visible
+   (visiblep
     :initarg       :visible
     :initform      t
     :type          boolean
-    :accessor      visible
-    :documentation "If visible is nil, do not refresh the window when refreshing the window stack.")
+    :accessor      visiblep
+    :documentation "If visible is nil, do not refresh the stacked window when refreshing the window stack.")
 
    (winptr
     :initform      nil
@@ -200,51 +200,51 @@
 ;; also see source/panel.lisp
 (defparameter *window-stack* nil)
 
-;; ":stacked t" or "(setf (stacked win) t)" adds a new window to the stack
+;; ":stacked t" or "(setf (stackedp win) t)" adds a new window to the stack
 ;; "(setf (hidden win) t)" prevents the window from being refreshed.
-(defmethod stacked ((win window))
-  (slot-value win 'stacked))
-(defmethod (setf stacked) (stacked (win window))
-  (if stacked
+(defmethod stackedp ((win window))
+  (slot-value win 'stackedp))
+(defmethod (setf stackedp) (stackedp (win window))
+  (if stackedp
       ;; t:   check if in stack, if not, add to stack, if yes, error
       (if (member win *window-stack* :test #'eq)
-          (error "setf stacked t: window already on stack")
+          (error "setf stackedp t: window already on stack")
           (progn
             (push win *window-stack*)
-            (setf (slot-value win 'stacked) t)))
+            (setf (slot-value win 'stackedp) t)))
       ;; nil: check if in stack, if yes, remove from stack, if not, error
       (if (member win *window-stack* :test #'eq)
           (progn
             (setf *window-stack* (remove win *window-stack* :test #'eq))
-            (setf (slot-value win 'stacked) t))
-          (error "setf stacked nil: window not on stack"))))
+            (setf (slot-value win 'stackedp) t))
+          (error "setf stackedp nil: window not on stack"))))
 
 (defclass screen (window)
-  ((enable-colors
+  ((colors-enabled-p
     :initarg       :enable-colors
     :initform      nil
     :type          boolean
     :documentation "Enable (t) or disable (nil) display of colors, if the terminal supports it.")
 
-   (use-default-colors
+   (use-default-colors-p
     :initarg       :use-default-colors
     :initform      nil
     :type          boolean
-    :documentation "Use (t) the default colors of the terminal, instead of the ncurses default white on black.")
+    :documentation "Use (t) the default colors of the terminal, instead of the ncurses default pair white on black.")
 
-   (cursor-visibility
-    :initarg       :cursor-visibility
+   (cursor-visible-p
+    :initarg       :cursor-visible
     :initform      t
     :type          boolean
-    :documentation "Enable (t) or disable (nil) displaying a visible cursor.")
+    :documentation "Enable (t) or disable (nil) the display of a visible cursor.")
 
-   (input-echoing
+   (input-echoing-p
     :initarg       :input-echoing
     :initform      t
     :type          boolean
     :documentation "Enable (t) or disable (nil) echoing of chars during keyboard input.")
 
-   (input-buffering
+   (input-buffering-p
     :initarg       :input-buffering
     :initform      nil
     :type          boolean
@@ -252,7 +252,7 @@
     "Set whether typed characters will be returned immediately when they are typed (nil, default) 
     or buffered until Return is typed (t).")
 
-   (process-control-chars
+   (process-control-chars-p
     :initarg       :process-control-chars
     :initform      t
     :type          boolean
@@ -274,7 +274,7 @@
     :type          (or null window)
     :documentation "The parent window which will contain the sub-window.")
 
-   (relative
+   (relativep
     :initarg       :relative
     :initform      nil
     :type          boolean
@@ -371,10 +371,10 @@
     :type          string
     :documentation "A string prefixed to the current item in the menu.")
 
-   (cyclic-selection
+   (cyclic-selection-p
     :initarg       :cyclic-selection
     :initform      nil
-    :accessor      cyclic-selection
+    :accessor      cyclic-selection-p
     :type          boolean
     :documentation "Wrap around when the end of a non-scrolled menu is reached.")
 
@@ -462,11 +462,11 @@
     (unless layout (setf layout (list (length items) 1))) ))
 
 (defmethod initialize-instance :after ((win menu-window) &key)
-  (with-slots (winptr items type height width location sub-window border layout scrolled-layout max-item-length
+  (with-slots (winptr items type height width location sub-window draw-border-p layout scrolled-layout max-item-length
                       current-item-mark color-pair) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
-      (let ((padding (if border 1 0)))
+      (let ((padding (if draw-border-p 1 0)))
         ;; if no layout was given, use a vertical list (n 1)
         (unless layout (setf layout (list (length items) 1)))
         ;; if height and width are not given as initargs, they will be calculated,
@@ -521,7 +521,7 @@
   (:documentation  "A dialog is a decorated menu with a title, a message and items."))
 
 (defmethod initialize-instance :after ((win dialog-window) &key center)
-  (with-slots (winptr items height width location sub-window border layout max-item-length current-item-mark color-pair
+  (with-slots (winptr items height width location sub-window draw-border-p layout max-item-length current-item-mark color-pair
                       message-pad message-text message-height message-pad-coordinates) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
@@ -636,12 +636,12 @@
   "Return the window associated with an element, which can optionally be part of a form.
 
 If there is no window asociated with the element, return the window associated with the parent form."
-  (with-slots (window form) element
+  (with-slots (window parent-form) element
     (if window
         window
-        (if form
-            (if (slot-value form 'window)
-                (slot-value form 'window)
+        (if parent-form
+            (if (slot-value parent-form 'window)
+                (slot-value parent-form 'window)
                 (error "(window element) ERROR: No window is associated with the parent form."))
             (error "(window element) ERROR: Neither a window nor a parent form are associated with the element.")))))
 
@@ -650,12 +650,12 @@ If there is no window asociated with the element, return the window associated w
 
 (defmethod style ((element element))
   "If the element's style slot is empty, check whether a default style has been defined in the parent form."
-  (with-slots (style form) element
+  (with-slots (style parent-form) element
     (if style
         style
-        (if (slot-value form 'style)
+        (if (slot-value parent-form 'style)
             ;; get the default element style from the form style slot.
-            (getf (slot-value form 'style) (type-of element))
+            (getf (slot-value parent-form 'style) (type-of element))
             nil))))
 
 (defmethod (setf style) (style (element element))
@@ -828,11 +828,11 @@ If there is no window asociated with the element, return the window associated w
     ;; we have to set the current element before we can change it with select-previous-element and select-next-element
     (setf current-element (car elements))
     ;; set the selected option of the initial current element.
-    (setf (slot-value current-element 'selected) t)
+    (setf (slot-value current-element 'selectedp) t)
     ;; set the parent form slot of every field.
     (if elements
         (loop for element in elements
-           do (setf (slot-value element 'form) form))
+           do (setf (slot-value element 'parent-form) form))
         ;; if a list of elements was not passed, signal an error.
         (error "A list of elements is required to initialize a form."))))
 
@@ -841,7 +841,7 @@ If there is no window asociated with the element, return the window associated w
   (:documentation ""))
 
 (defmethod initialize-instance :after ((win form-window) &key)
-  (with-slots (winptr height width location sub-window border) win
+  (with-slots (winptr height width location sub-window draw-border-p) win
     ;; only for form windows
     (when (eq (type-of win) 'form-window)
       (setf winptr (%newwin height width (car location) (cadr location)))
@@ -879,8 +879,8 @@ If there is no window asociated with the element, return the window associated w
 ;; this will be called for both window and screen.
 ;; create a curses window when an instance is created.
 (defmethod initialize-instance :after ((win window) &key)
-  (with-slots (winptr cursor-visibility enable-colors input-echoing input-reading 
-                      input-blocking enable-fkeys enable-scrolling height width location) win
+  (with-slots (winptr cursor-visible-p colors-enabled-p input-echoing-p input-reading 
+                      input-blocking function-keys-enabled-p scrolling-enabled-p height width location) win
 
     ;; different initialisations depending on the window type.
     ;; %initscr initializes a screen, %newwin initializes a window.
@@ -891,17 +891,17 @@ If there is no window asociated with the element, return the window associated w
       ;; a screen is initialized when we start ncurses.
       (screen (progn
                 (setf winptr (%initscr))
-                (when enable-colors (%start-color))
-                (if input-echoing (%echo) (%noecho))
+                (when colors-enabled-p (%start-color))
+                (if input-echoing-p (%echo) (%noecho))
                 (set-input-reading winptr input-reading)
-                (set-cursor-visibility cursor-visibility))) ;kernel.lisp
+                (set-cursor-visibility cursor-visible-p))) ;kernel.lisp
       ;; a window is initialized when we create a new window.
       (window (setf winptr (%newwin height width (car location) (cadr location)))))
 
     ;; the following settings have to be executed for all window types.
     (set-input-blocking winptr input-blocking)
-    (%scrollok winptr enable-scrolling)
-    (%keypad winptr enable-fkeys)))
+    (%scrollok winptr scrolling-enabled-p)
+    (%keypad winptr function-keys-enabled-p)))
 |#
 
 ;; We cant do this because _all_ auxiliary methods are always used and combined.
@@ -918,38 +918,38 @@ If there is no window asociated with the element, return the window associated w
       (when background (setf (background win) background)) )))
 
 (defmethod initialize-instance :after ((scr screen) &key)
-  (with-slots (winptr enable-colors use-default-colors cursor-visibility input-echoing input-blocking enable-fkeys
-                      enable-scrolling color-pair background input-buffering process-control-chars) scr
+  (with-slots (winptr colors-enabled-p use-default-colors-p cursor-visible-p input-echoing-p input-blocking function-keys-enabled-p
+                      scrolling-enabled-p color-pair background input-buffering-p process-control-chars-p) scr
     ;; just for screen window types.
     (when (eq (type-of scr) 'screen)
       (setf winptr (%initscr))
-      (when enable-colors
+      (when colors-enabled-p
         (if (%has-colors)
             (progn
               (%start-color)
               ;; if t, set (:default :default), if nil set (:white :black), which is the ncurses default.
-              (set-default-color-pair use-default-colors))
+              (set-default-color-pair use-default-colors-p))
             (error "initialize-instance screen: This terminal does not support colors.")))
 
       (when color-pair (setf (color-pair scr) color-pair))
       (when background (setf (background scr) background))
       
-      (if input-echoing (%echo) (%noecho))
-      (set-input-mode input-buffering process-control-chars)
-      (set-cursor-visibility cursor-visibility))))
+      (if input-echoing-p (%echo) (%noecho))
+      (set-input-mode input-buffering-p process-control-chars-p)
+      (set-cursor-visibility cursor-visible-p))))
 
 ;; sub-window has to be contained within a parent window
 ;; touch parent before refreshing a subwindow
 ;; move also needs a method for subwindows.
 ;; Subwindows must be deleted before the main window can be deleted.
 (defmethod initialize-instance :after ((win sub-window) &key)
-  (with-slots (winptr parent height width location relative) win
+  (with-slots (winptr parent height width location relativep) win
     ;; leaving out the size of a window maxes it out to the right and to the bottom
     (unless width (setf width 0))
     (unless height (setf height 0))
     ;; just for SUB-WINDOW types
     (when (eq (type-of win) 'sub-window)
-      (if relative
+      (if relativep
           ;;(setf winptr (%derwin (slot-value parent 'winptr) height width (car location) (cadr location)))
           (setf winptr (let ((val (%derwin (slot-value parent 'winptr) height width (car location) (cadr location))))
                          (if (null-pointer-p val)
@@ -972,12 +972,12 @@ If there is no window asociated with the element, return the window associated w
   ;; before :before, :after and primary.
   (let ((result (call-next-method)))
     ;; after :before, :after and primary.
-    (with-slots (winptr input-blocking enable-fkeys enable-scrolling border stacked) win
+    (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p draw-border-p stackedp) win
       (set-input-blocking winptr input-blocking)
-      (%scrollok winptr enable-scrolling)
-      (when border (%box winptr 0 0))
-      (%keypad winptr enable-fkeys)
-      (when stacked (push win *window-stack*)))
+      (%scrollok winptr scrolling-enabled-p)
+      (when draw-border-p (%box winptr 0 0))
+      (%keypad winptr function-keys-enabled-p)
+      (when stackedp (push win *window-stack*)))
 
     ;; why do we have to return the result in :around aux methods?
     result))
@@ -988,8 +988,8 @@ If there is no window asociated with the element, return the window associated w
 (defmethod location ((window window))
   (list (%getbegy (slot-value window 'winptr)) (%getbegx (slot-value window 'winptr))))
 (defmethod location ((win sub-window))
-  (with-slots (winptr relative) win
-    (if relative
+  (with-slots (winptr relativep) win
+    (if relativep
         (list (%getpary winptr) (%getparx winptr))
         (list (%getbegy winptr) (%getbegx winptr)))))
 (defgeneric (setf location) (coordinates window))
@@ -1003,8 +1003,8 @@ If there is no window asociated with the element, return the window associated w
 (defmethod location-y ((win window))
   (%getbegy (slot-value win 'winptr)))
 (defmethod location-y ((win sub-window))
-  (with-slots (winptr relative) win
-    (if relative
+  (with-slots (winptr relativep) win
+    (if relativep
         (%getpary winptr)
         (%getbegy winptr))))
 
@@ -1012,8 +1012,8 @@ If there is no window asociated with the element, return the window associated w
 (defmethod location-x ((win window))
   (%getbegx (slot-value win 'winptr)))
 (defmethod location-x ((win sub-window))
-  (with-slots (winptr relative) win
-    (if relative
+  (with-slots (winptr relativep) win
+    (if relativep
         (%getparx winptr)
         (%getbegx winptr))))
 
@@ -1085,12 +1085,12 @@ If there is no window asociated with the element, return the window associated w
     (setf (slot-value win 'cursor-position) (list y x))
     (%wmove (slot-value win 'winptr) y x)))
 
-(defgeneric cursor-visibility (window))
-(defmethod cursor-visibility ((screen screen))
-  (slot-value screen 'cursor-visibility))
-(defgeneric (setf cursor-visibility) (status screen))
-(defmethod (setf cursor-visibility) (status (screen screen))
-  (setf (slot-value screen 'cursor-visibility) status)
+(defgeneric cursor-visible-p (window))
+(defmethod cursor-visible-p ((screen screen))
+  (slot-value screen 'cursor-visible-p))
+(defgeneric (setf cursor-visible-p) (status screen))
+(defmethod (setf cursor-visible-p) (status (screen screen))
+  (setf (slot-value screen 'cursor-visible-p) status)
   (set-cursor-visibility status))
 
 (defgeneric input-blocking (window))
@@ -1101,20 +1101,20 @@ If there is no window asociated with the element, return the window associated w
   (setf (slot-value window 'input-blocking) status)
   (set-input-blocking (slot-value window 'winptr) status))
 
-(defgeneric enable-fkeys (window))
-(defmethod enable-fkeys ((window window))
-  (slot-value window 'enable-fkeys))
-(defgeneric (setf enable-fkeys) (status window))
-(defmethod (setf enable-fkeys) (status (window window))
-  (setf (slot-value window 'enable-fkeys) status)
+(defgeneric function-keys-enabled-p (window))
+(defmethod function-keys-enabled-p ((window window))
+  (slot-value window 'function-keys-enabled-p))
+(defgeneric (setf function-keys-enabled-p) (status window))
+(defmethod (setf function-keys-enabled-p) (status (window window))
+  (setf (slot-value window 'function-keys-enabled-p) status)
   (%keypad (slot-value window 'winptr) status))
 
-(defgeneric enable-scrolling (window))
-(defmethod enable-scrolling ((window window))
-  (slot-value window 'enable-scrolling))
-(defgeneric (setf enable-scrolling) (status window))
-(defmethod (setf enable-scrolling) (status (window window))
-  (setf (slot-value window 'enable-scrolling) status)
+(defgeneric scrolling-enabled-p (window))
+(defmethod scrolling-enabled-p ((window window))
+  (slot-value window 'scrolling-enabled-p))
+(defgeneric (setf scrolling-enabled-p) (status window))
+(defmethod (setf scrolling-enabled-p) (status (window window))
+  (setf (slot-value window 'scrolling-enabled-p) status)
   (%scrollok (slot-value window 'winptr) status))
 
 (defgeneric scrolling-region (window))
@@ -1128,40 +1128,40 @@ If there is no window asociated with the element, return the window associated w
                (second (slot-value window 'scrolling-region))))
 ;; TODO: setf only when scrolling is enabled.
 
-(defgeneric input-echoing (screen))
-(defmethod input-echoing ((screen screen))
-  (slot-value screen 'input-echoing))
-(defgeneric (setf input-echoing) (status screen))
-(defmethod (setf input-echoing) (status (screen screen))
-  (setf (slot-value screen 'input-echoing) status)
+(defgeneric input-echoing-p (screen))
+(defmethod input-echoing-p ((screen screen))
+  (slot-value screen 'input-echoing-p))
+(defgeneric (setf input-echoing-p) (status screen))
+(defmethod (setf input-echoing-p) (status (screen screen))
+  (setf (slot-value screen 'input-echoing-p) status)
   ;;(set-input-echoing status))
   (if status (%echo) (%noecho)))
 
-(defgeneric input-buffering (screen))
-(defmethod input-buffering ((screen screen))
-  (slot-value screen 'input-buffering))
-(defgeneric (setf input-buffering) (status screen))
-(defmethod (setf input-buffering) (status (screen screen))
-  (setf (slot-value screen 'input-buffering) status)
-  (set-input-mode (slot-value screen 'input-buffering)
-                  (slot-value screen 'process-control-chars)))
+(defgeneric input-buffering-p (screen))
+(defmethod input-buffering-p ((screen screen))
+  (slot-value screen 'input-buffering-p))
+(defgeneric (setf input-buffering-p) (status screen))
+(defmethod (setf input-buffering-p) (status (screen screen))
+  (setf (slot-value screen 'input-buffering-p) status)
+  (set-input-mode (slot-value screen 'input-buffering-p)
+                  (slot-value screen 'process-control-chars-p)))
 
-(defgeneric process-control-chars (screen))
-(defmethod process-control-chars ((screen screen))
-  (slot-value screen 'process-control-chars))
-(defgeneric (setf process-control-chars) (status screen))
-(defmethod (setf process-control-chars) (status (screen screen))
-  (with-slots (input-buffering process-control-chars) screen
+(defgeneric process-control-chars-p (screen))
+(defmethod process-control-chars-p ((screen screen))
+  (slot-value screen 'process-control-chars-p))
+(defgeneric (setf process-control-chars-p) (status screen))
+(defmethod (setf process-control-chars-p) (status (screen screen))
+  (with-slots (input-buffering-p process-control-chars-p) screen
     ;; only make a change when the status changed.
-    (when (not (eq process-control-chars status))
+    (when (not (eq process-control-chars-p status))
       ;; only call ncurses when buffering is nil.
-      (unless input-buffering
+      (unless input-buffering-p
         ;; before we switch the unbuffered mode, we switch to the default cooked mode.
-        (if process-control-chars (%nocbreak) (%noraw))
+        (if process-control-chars-p (%nocbreak) (%noraw))
         ;; then make a "clean" switch back to the new unbuffered mode.
-        (set-input-mode input-buffering status))
+        (set-input-mode input-buffering-p status))
       ;; then save the new status.
-      (setf process-control-chars status) )))
+      (setf process-control-chars-p status) )))
 
 (defgeneric background (window))
 (defmethod background ((win window))

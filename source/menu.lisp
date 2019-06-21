@@ -42,7 +42,7 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   ;; we need to make menu special in order to setf i in the passed menu object.
   (declare (special menu))
   (with-accessors ((current-item-number current-item-number) (current-item current-item) (items items)
-                   (cyclic-selection cyclic-selection) (layout layout) (scrolled-layout scrolled-layout)
+                   (cyclic-selection cyclic-selection-p) (layout layout) (scrolled-layout scrolled-layout)
                    (scrolled-region-start scrolled-region-start)) menu
     (let ((i  (car  (rmi2sub layout current-item-number)))
           (j  (cadr (rmi2sub layout current-item-number)))
@@ -167,7 +167,7 @@ At the third position, display the item given by item-number."
 
 (defmethod draw ((menu menu-window))
   "Draw the menu-window."
-  (with-accessors ((title title) (name name) (border border) (sub-win sub-window)) menu
+  (with-accessors ((title title) (name name) (border draw-border-p) (sub-win sub-window)) menu
     ;; draw the menu to the sub-window
     (draw-menu sub-win menu)
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
@@ -210,8 +210,8 @@ At the third position, display the item given by item-number."
   (when *window-stack*
     ;; change visibility only when there is an active stack.
     (typecase menu
-      (menu-window (setf (visible menu) nil))
-      (menu (setf (visible (window menu)) nil)))
+      (menu-window (setf (visiblep menu) nil))
+      (menu (setf (visiblep (window menu)) nil)))
     (refresh-stack))
   (throw 'event-loop return-value))
 
@@ -290,7 +290,7 @@ If the item is a menu object, recursively display the sub menu."
 
     (menu-window
      (when *window-stack*
-       (setf (visible menu) t)
+       (setf (visiblep menu) t)
        (refresh-stack))
      (draw menu)
 

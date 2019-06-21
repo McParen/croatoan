@@ -7,12 +7,12 @@
                                (process-control-chars t)
                                (input-blocking t)
                                (input-echoing t)
-                               (enable-fkeys t)
+                               (enable-function-keys t)
                                (enable-scrolling nil)
                                (insert-mode nil)
                                (enable-colors  t)
                                (use-default-colors nil)
-                               (cursor-visibility t)
+                               (cursor-visible t)
                                (stacked nil)
                                (color-pair nil)
                                (background nil))
@@ -30,12 +30,12 @@ library. Do not run more than one screen at the same time."
                                       :process-control-chars ,process-control-chars
                                       :input-blocking ,input-blocking
                                       :input-echoing  ,input-echoing
-                                      :enable-fkeys   ,enable-fkeys
+                                      :enable-function-keys ,enable-function-keys
                                       :enable-scrolling ,enable-scrolling
                                       :insert-mode ,insert-mode
                                       :enable-colors  ,enable-colors
                                       :use-default-colors ,use-default-colors
-                                      :cursor-visibility ,cursor-visibility
+                                      :cursor-visible ,cursor-visible
                                       :stacked ,stacked
                                       :color-pair ,color-pair
                                       :background ,background))

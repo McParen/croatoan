@@ -49,22 +49,22 @@
    cursor-position
    cursor-position-y
    cursor-position-x
-   border
-   stacked
-   visible
+   draw-border-p
+   stackedp
+   visiblep
    winptr
    input-blocking
    frame-rate
-   enable-fkeys
-   enable-scrolling
+   function-keys-enabled-p
+   scrolling-enabled-p
    scrolling-region
-   insert-mode
+   insert-mode-p
    bindings
    background
-   input-echoing
-   input-buffering
-   process-control-chars
-   cursor-visibility
+   input-echoing-p
+   input-buffering-p
+   process-control-chars-p
+   cursor-visible-p
    source-location
 
    ;; Predicates
@@ -76,7 +76,7 @@
    current-item-number
    current-item
    current-item-mark
-   cyclic-selection
+   cyclic-selection-p
    max-item-length
    name
    value
@@ -93,7 +93,7 @@
    max-buffer-length
    callback
    title
-   get-element
+   find-element
    field-map
    form-map
    button-map

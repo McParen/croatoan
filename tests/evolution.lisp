@@ -176,7 +176,7 @@
 
 ;; enter a recursive infinite loop as the programs main loop.
 (defun evolve ()
-  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
+  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visible nil)
     (clear scr)
     (setf (background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
@@ -197,7 +197,7 @@
 
 ;; uses tagbody to separate between event handling and body.
 (defun evolve2 ()
-  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
+  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visible nil)
     (clear scr)
     (setf (background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
@@ -229,7 +229,7 @@
 
 ;; uses key-pressed-p to separate between events and the body, instead of loop and tagbody used in 1 and 2.
 (defun evolve3 ()
-  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
+  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visible nil)
     (clear scr)
     ;(setf (background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
@@ -249,7 +249,7 @@
 
 (defun evolve4 ()
   "Uses get-event to separate between events and the body, instead of key-pressed-p."
-  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
+  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visible nil)
     (clear scr)
     ;(setf (background scr) (make-instance 'complex-char :color-pair '(:green :white)))
 
@@ -270,7 +270,7 @@
 
 (defun evolve5 ()
   "Use the event-case macro for event handling."
-  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
+  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visible nil)
     (clear scr)
 
     (setq *width* (width scr))
@@ -293,7 +293,7 @@
 
 (defun evolve6 ()
   "Use the run-event-loop for event handling."
-  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visibility nil)
+  (with-screen (scr :input-blocking nil :input-echoing nil :cursor-visible nil)
     (clear scr)
 
     (setq *width* (width scr))

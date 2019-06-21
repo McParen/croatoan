@@ -81,10 +81,10 @@
 
 ;; called from initialize-instance :after ((scr screen)
 ;; test with t09a
-(defun set-default-color-pair (use-default-colors)
+(defun set-default-color-pair (use-default-colors-p)
   ;; reset the color pair alist on every screen init
   (setf *color-pair-alist* nil)
-  (if use-default-colors
+  (if use-default-colors-p
       (progn
         (%use-default-colors)
         (setf *color-pair-alist* (acons '(:default :default) 0 *color-pair-alist*)))
@@ -96,7 +96,7 @@
 
 The colors can be keywords or numbers -1:255.
 
--1 is the terminal :default color when use-default-colors is t.
+-1 is the terminal :default color when use-default-colors-p is t.
 
 If it is a new color pair, add it to ncurses, then return the new pair number.
 

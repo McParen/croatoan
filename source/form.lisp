@@ -43,7 +43,7 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (cons element (cdr list))
       (cons (car list) (replace-nth (1- n) element (cdr list)))))
 
-(defun get-element (form element-name &key (test #'eql) (key #'name))
+(defun find-element (form element-name &key (test #'eql) (key #'name))
   "Return from the given form the element given by its name.
 
 The name should be a keyword, symbol or integer, the default test is eql.
@@ -226,7 +226,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
         (with-accessors ((width width) (inbuf buffer) (mlen max-buffer-length) (inptr input-pointer)
                          (dptr display-pointer) (win window)) field
           (let ((len (length inbuf)))
-            (if (insert-mode win)
+            (if (insert-mode-p win)
 
                 ;; insert mode
                 (progn
@@ -317,7 +317,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
    :backspace 'delete-previous-char
    :dc        'delete-next-char
    :ic        (lambda (field event)
-                (setf (insert-mode (window field)) (not (insert-mode (window field)))))
+                (setf (insert-mode-p (window field)) (not (insert-mode-p (window field)))))
    t          'field-add-char))
 
 ;; TODO: should we pass the event to the button function?
