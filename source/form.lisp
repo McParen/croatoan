@@ -60,7 +60,7 @@ Instead of the name, another key can be provided to identify the element."
   "Clear the field by overwriting it with the background char.
 
 The default background char is #\space."
-  (with-accessors ((pos location) (width width) (selected .selected) (win window) (style style)) field
+  (with-accessors ((pos location) (width width) (selected selectedp) (win window) (style style)) field
     (let* ((bg  (getf style :background))
            (sbg (getf style :selected-background))
            (bgchar (if selected
@@ -79,7 +79,7 @@ The default background char is #\space."
 
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
-  (with-accessors ((pos location) (inptr .fill-pointer) (dptr .display-pointer) (win window)) field
+  (with-accessors ((pos location) (inptr input-pointer) (dptr display-pointer) (win window)) field
     (move win
           ;; TODO: assumes a single-line field.
           (car pos)
@@ -89,13 +89,13 @@ The default background char is #\space."
 
 (defmethod update-cursor-position ((form form))
   "Move the cursor to the correct position in current element of the form."
-  (update-cursor-position (.current-element form)))
+  (update-cursor-position (current-element form)))
 
 (defgeneric draw (object)
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
 (defmethod draw ((button button))
-  (with-accessors ((pos location) (name name) (title title) (win window) (selected .selected) (style style)) button
+  (with-accessors ((pos location) (name name) (title title) (win window) (selected selectedp) (style style)) button
     (apply #'move win pos)
     (let* ((fg  (getf style :foreground))
            (sfg (getf style :selected-foreground)))
@@ -106,8 +106,8 @@ The default background char is #\space."
 
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
-  (with-accessors ((pos location) (width width) (inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer)
-                   (selected .selected) (win window) (title title) (style style)) field
+  (with-accessors ((pos location) (width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
+                   (selected selectedp) (win window) (title title) (style style)) field
     (let* ((fg  (getf style :foreground))
            (sfg (getf style :selected-foreground))
            (len (length inbuf))
@@ -151,30 +151,30 @@ The default background char is #\space."
 (defun select-previous-element (form event)
   "Select the previous element in a form's element list."
   ;;(declare (special form))
-  (with-accessors ((elements elements) (current-element-number .current-element-number) (current-element .current-element) (win window)) form
-    (setf (.selected current-element) nil)
+  (with-accessors ((elements elements) (current-element-number current-element-number) (current-element current-element) (win window)) form
+    (setf (selectedp current-element) nil)
     ;; use mod to cycle the element list.
     (setf current-element-number (mod (- current-element-number 1) (length elements)))
     (setf current-element (nth current-element-number elements))
-    (setf (.selected current-element) t)
+    (setf (selectedp current-element) t)
     ;; after we switched the element number, we have to redraw the form.
     (draw form)))
 
 (defun select-next-element (form event)
   "Select the next element in a form's element list."
   ;;(declare (special form))
-  (with-accessors ((elements elements) (current-element-number .current-element-number) (current-element .current-element) (win window)) form
-    (setf (.selected current-element) nil)
+  (with-accessors ((elements elements) (current-element-number current-element-number) (current-element current-element) (win window)) form
+    (setf (selectedp current-element) nil)
     ;; use mod to cycle the element list.
     (setf current-element-number (mod (+ current-element-number 1) (length elements)))
     (setf current-element (nth current-element-number elements))
-    (setf (.selected current-element) t)
+    (setf (selectedp current-element) t)
     ;; after we switched the element number, we also have to redraw the form.
     (draw form)))
 
 (defun move-previous-char (field event)
   "Move the cursor to the previous char in the field."
-  (with-accessors ((inptr .fill-pointer) (dptr .display-pointer) (win window)) field
+  (with-accessors ((inptr input-pointer) (dptr display-pointer) (win window)) field
     (when (> inptr 0)
       (decf inptr))
     ;; when the inptr moves left past the dptr, simultaneously decf the dptr.
@@ -184,7 +184,7 @@ The default background char is #\space."
 
 (defun move-next-char (field event)
   "Move the cursor to the next char in the field."
-  (with-accessors ((width width) (inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer) (mlen max-buffer-length)
+  (with-accessors ((width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer) (mlen max-buffer-length)
                    (win window)) field
     (when (and (< inptr (length inbuf))
                (not (= (1+ inptr) mlen width)))
@@ -197,7 +197,7 @@ The default background char is #\space."
 
 (defun delete-previous-char (field event)
   "Delete the previous char in the field, moving the cursor to the left."
-  (with-accessors ((inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer) (win window)) field
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) field
     (when (> inptr 0)
       (decf inptr)
       (when (> dptr 0)
@@ -208,7 +208,7 @@ The default background char is #\space."
 
 (defun delete-next-char (field event)
   "Delete the next char (char under the cursor) in the field, not moving the cursor."
-  (with-accessors ((inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer) (win window)) field
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) field
     ;; we can only delete to the right if the inptr is not at the end of the inbuf.
     (when (> (length inbuf) inptr)
       (when (> dptr 0)
@@ -223,8 +223,8 @@ The default background char is #\space."
 The buffer can be longer than the displayed field width, horizontal scrolling is enabled."
   (if (and (characterp char) (graphic-char-p char))
       (progn
-        (with-accessors ((width width) (inbuf buffer) (mlen max-buffer-length) (inptr .fill-pointer)
-                         (dptr .display-pointer) (win window)) field
+        (with-accessors ((width width) (inbuf buffer) (mlen max-buffer-length) (inptr input-pointer)
+                         (dptr display-pointer) (win window)) field
           (let ((len (length inbuf)))
             (if (insert-mode win)
 
@@ -288,14 +288,14 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
   (declare (ignore event))
   (typecase object
     (field
-     (with-accessors ((inbuf buffer) (inptr .fill-pointer) (dptr .display-pointer) (win window)) object
+     (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) object
        (when (> (length inbuf) 0)
          (clear win)
          (format win "~A ~%" (value object))
          (setf inbuf nil inptr 0 dptr 0))))
     ;; when we want to debug the whole form.
     (form
-     (debug-print-field-buffer (.current-element object) event)))
+     (debug-print-field-buffer (current-element object) event)))
   (draw object))
 
 (define-keymap 'form-map

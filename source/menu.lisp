@@ -42,8 +42,8 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   ;; we need to make menu special in order to setf i in the passed menu object.
   (declare (special menu))
   (with-accessors ((current-item-number current-item-number) (current-item current-item) (items items)
-                   (cyclic-selection cyclic-selection) (layout .layout) (scrolled-layout .scrolled-layout)
-                   (scrolled-region-start .scrolled-region-start)) menu
+                   (cyclic-selection cyclic-selection) (layout layout) (scrolled-layout scrolled-layout)
+                   (scrolled-region-start scrolled-region-start)) menu
     (let ((i  (car  (rmi2sub layout current-item-number)))
           (j  (cadr (rmi2sub layout current-item-number)))
           (m  (car  layout))
@@ -106,7 +106,7 @@ At the third position, display the item given by item-number."
             ;; two types of menus: :selection or :checklist
             ;; show the checkbox before the item in checklists
             (if (eq type :checklist)
-                (if (.checked (nth item-number items)) "[X] " "[ ] ")
+                (if (checkedp (nth item-number items)) "[X] " "[ ] ")
                 "")
             
             ;; for the current item, draw the current-item-mark
@@ -138,7 +138,7 @@ At the third position, display the item given by item-number."
 ;; draws to any window, not just to a sub-window of a menu-window.
 (defmethod draw-menu (window menu)
   "Draw the menu to the window."
-  (with-accessors ((layout .layout) (scrolled-layout .scrolled-layout) (scrolled-region-start .scrolled-region-start)) menu
+  (with-accessors ((layout layout) (scrolled-layout scrolled-layout) (scrolled-region-start scrolled-region-start)) menu
     (clear window)
     (let ((m  (car  layout))
           (n  (cadr layout))
@@ -227,7 +227,7 @@ At the third position, display the item given by item-number."
   (case (menu-type menu)
     (:checklist
      ;; return all checked items (not their values) in the item list.
-     (return-from-menu menu (loop for i in (items menu) if (.checked i) collect i)))
+     (return-from-menu menu (loop for i in (items menu) if (checkedp i) collect i)))
 
     (:selection
      (let ((val (value (current-item menu))))
@@ -262,7 +262,7 @@ At the third position, display the item given by item-number."
 (defun toggle-item-checkbox (menu event)
   "Toggle the checked state of the current item, used in checkbox menus."
   (declare (ignore event))
-  (setf (.checked (current-item menu)) (not (.checked (current-item menu))))
+  (setf (checkedp (current-item menu)) (not (checkedp (current-item menu))))
   (draw menu))
 
 ;; all of these take two arguments: menu event

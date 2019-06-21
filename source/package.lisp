@@ -93,7 +93,6 @@
    max-buffer-length
    callback
    title
-   ;; value ; the value accessor converts the field buffer to a string
    get-element
    field-map
    form-map

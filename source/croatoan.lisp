@@ -248,7 +248,7 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
   (let ((handler (get-event-handler form event)))
     (if handler
         (apply handler form event args)
-        (handle-event (.current-element form) event args))))
+        (handle-event (current-element form) event args))))
 
 (defun exit-event-loop (&optional win event args)
   "Associate this function with an event to exit the event loop."

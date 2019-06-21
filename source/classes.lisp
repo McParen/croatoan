@@ -201,7 +201,7 @@
 (defparameter *window-stack* nil)
 
 ;; ":stacked t" or "(setf (stacked win) t)" adds a new window to the stack
-;; "(setf (.hidden win) t)" prevents the window from being refreshed.
+;; "(setf (hidden win) t)" prevents the window from being refreshed.
 (defmethod stacked ((win window))
   (slot-value win 'stacked))
 (defmethod (setf stacked) (stacked (win window))
@@ -313,10 +313,10 @@
     :type          (or null string symbol)
     :documentation "Short name of a menu item displayed in the menu.")
 
-   (checked
+   (checkedp
     :initarg       :checked
     :initform      nil
-    :accessor      .checked
+    :accessor      checkedp
     :type          boolean
     :documentation "t if the item has been checked, nil if it hasn't.")
 
@@ -388,20 +388,20 @@
    (layout
     :initarg       :layout
     :initform      nil
-    :accessor      .layout
+    :accessor      layout
     :type          (or null cons)
     :documentation "Layout (no-of-rows no-of-columns) of the items in the menu. If nil, we have a vertical list.")
 
    (scrolled-layout
     :initarg       :scrolled-layout
     :initform      nil
-    :accessor      .scrolled-layout
+    :accessor      scrolled-layout
     :type          (or null cons)
     :documentation "Layout (no-of-rows no-of-columns) of the menu items actually displayed on screen.")
 
    (scrolled-region-start
     :initform      (list 0 0)
-    :accessor      .scrolled-region-start
+    :accessor      scrolled-region-start
     :type          (or null cons)
     :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region.")
 
@@ -609,16 +609,16 @@
    
    ;; we need this to draw selected and other elements with different styles.
    ;; this has to be toggled at the same time as current-element of a form
-   (selected
+   (selectedp
     :initform      nil
     :type          boolean
-    :accessor      .selected
+    :accessor      selectedp
     :documentation "Flag denoting whether the element is currently selected in a form.")
 
-   (form
+   (parent-form
     :initform      nil
     :type          (or null form)
-    :accessor      .form
+    :accessor      parent-form
     :documentation "Parent form of the element. Added to every element upon the initialization of the form.")
 
    ;; elements do not necessarily have to have an associated window, only when they are used stand-alone.
@@ -631,7 +631,7 @@
 
   (:documentation "An element of a form, like a field or button."))
 
-;; (window (if (window field) (window field) (window (.form field))))
+;; (window (if (window field) (window field) (window (parent-form field))))
 (defmethod window ((element element))
   "Return the window associated with an element, which can optionally be part of a form.
 
@@ -741,16 +741,16 @@ If there is no window asociated with the element, return the window associated w
    (display-pointer
     :initform      0
     :type          (or null integer)
-    :accessor      .display-pointer
+    :accessor      display-pointer
     :documentation
     "Position in the input buffer from which n=width characters are displayed.
     When max-buffer-length is greater than width, display-pointer can be greater than zero.
     Horizontal scrolling is then enabled.")
 
-   (fill-pointer
+   (input-pointer
     :initform      0
     :type          integer
-    :accessor      .fill-pointer
+    :accessor      input-pointer
     :documentation "The position in the input buffer to which the next character will be written."))
 
   (:documentation "A field is an editable part of the screen for user input. Can be part of a form."))
@@ -780,14 +780,14 @@ If there is no window asociated with the element, return the window associated w
    (current-element-number
     :initform      0
     :type          integer
-    :accessor      .current-element-number
+    :accessor      current-element-number
     :documentation "Number of the currently selected element.")
 
    ;; has to be updated every time the current element number is updated.
    (current-element
     :initform      nil
     :type          (or null field button)
-    :accessor      .current-element
+    :accessor      current-element
     :documentation "Currently selected element object.")
 
    (style
