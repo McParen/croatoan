@@ -1143,36 +1143,38 @@
 ;; cleaner key printing.
 ;; prints key names instead of numeric char codes.
 (defun t10a ()
-  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t)
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t
+                    :input-buffering nil :process-control-chars nil :enable-newline-translation t)
+    (setf (scrolling-enabled-p scr) t)
     (format scr "~A lines high, ~A columns wide.~%~%" (height scr) (width scr))
-    ;; TODO: get-event explicitely gets single-byte events, not wide events.
     (loop (let ((event (get-event scr)))
             (when event
               (case event
-                ;; printable chars
                 (#\q (return))
-
+                
                 ;; non-printable ascii chars. (#\space and #\newline are standard, all others non-standard)
-                (#\escape (format scr "escape char~%"))
-                (#\tab (format scr "tab char~%"))
+                (#\escape (format scr "escape char ESC ^[ \e~%"))
+                (#\tab (format scr "horizontal tab char HT \t~%"))
                 (#\space (format scr "space char~%"))
-
+                
                 ;; NL can be either LF \n,CR \r,or CRLF \r\n, depending on the system. it is LF on ubuntu.
                 ;; NL is the standard, system independent, portable way.
-                (#\linefeed (format scr "enter/linefeed LF \n char~%"))
-                (#\return (format scr "enter/return CR \r char~%"))
-                (#\newline (format scr "enter/newline char~%")) 
+                (#\linefeed (format scr "enter/linefeed LF ^J \n char~%"))
+                (#\return (format scr "enter/return CR ^M \r char~%"))
+                (#\newline (format scr "enter/newline char~%")) ; = #\linefeed, code 10.
 
-                (#\rubout (format scr "rubout char~%")) ;; DEL, delete char 127
-                (#\backspace (format scr "backspace char~%")) ;; BS, not the same as the :backspace key
+                ;; use %nonl to prevent ^M (CR) from automatically being translated to ^J (LF)
+                (#\n (setf (newline-translation-enabled-p scr)
+                           (not (newline-translation-enabled-p scr)))
+                     (if (newline-translation-enabled-p scr)
+                         (format scr "%nl newline translation enabled: RET => NL (= LF)~%")
+                         (format scr "%nonl newline translation disabled: RET => CR~%")))
 
-                ;; function keys
-                ;; the same as #\rubout, but different code.
-                ;; ncurses bug: :backspace is returned for windows, #\rubout for stdscr.
-                (:backspace (format scr "backspace key~%")) 
+                (#\rubout (format scr "rubout char ^?~%")) ;; DEL, ^?, delete char 127
+                (#\backspace (format scr "backspace char ^H~%")) ;; BS, \b, ^H, code 8, not the same as the :backspace key
 
+                (:backspace (format scr "backspace key <--~%")) 
                 (otherwise (format scr "Event: ~A~%" event))))))))
-
 
 ;; demonstrate scrolling and scrolling regions.
 (defun t11 ()

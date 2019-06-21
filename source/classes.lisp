@@ -261,6 +261,17 @@
     or passed directly to the program (nil).
     When input-buffering is t, control chars are always processed and this option has no effect.")
 
+   (newline-translation-enabled-p
+    :initarg       :enable-newline-translation
+    :initform      t
+    :type          :boolean
+    :documentation
+    "If t (default), the #\return character (CR ^M \r) is automatically translated to newline (NL) on input, 
+     and NL is translated to CR LF on output. 
+     NL is the standard, system independent, portable way to end a line.
+     It can be either #\linefeed (LF ^J \n) on Linux, carriage #\return on MacOS, CRLF \r\n on Windows.
+     Setting newline translation to nil is necessary to be able to detect the #\return key.")
+
    (closed-p
     :type          boolean
     :documentation "Check whether the screen has been closed, without a subsequent call to refresh to reactivate it."))
@@ -918,7 +929,8 @@ If there is no window asociated with the element, return the window associated w
       (when background (setf (background win) background)) )))
 
 (defmethod initialize-instance :after ((scr screen) &key)
-  (with-slots (winptr colors-enabled-p use-default-colors-p cursor-visible-p input-echoing-p input-blocking function-keys-enabled-p
+  (with-slots (winptr colors-enabled-p use-default-colors-p cursor-visible-p input-echoing-p input-blocking
+                      function-keys-enabled-p newline-translation-enabled-p
                       scrolling-enabled-p color-pair background input-buffering-p process-control-chars-p) scr
     ;; just for screen window types.
     (when (eq (type-of scr) 'screen)
@@ -933,7 +945,7 @@ If there is no window asociated with the element, return the window associated w
 
       (when color-pair (setf (color-pair scr) color-pair))
       (when background (setf (background scr) background))
-      
+      (if newline-translation-enabled-p (%nl) (%nonl))
       (if input-echoing-p (%echo) (%noecho))
       (set-input-mode input-buffering-p process-control-chars-p)
       (set-cursor-visibility cursor-visible-p))))
@@ -1162,6 +1174,14 @@ If there is no window asociated with the element, return the window associated w
         (set-input-mode input-buffering-p status))
       ;; then save the new status.
       (setf process-control-chars-p status) )))
+
+(defgeneric newline-translation-enabled-p (screen))
+(defmethod newline-translation-enabled-p ((screen screen))
+  (slot-value screen 'newline-translation-enabled-p))
+(defgeneric (setf newline-translation-enabled-p) (status screen))
+(defmethod (setf newline-translation-enabled-p) (status (screen screen))
+  (setf (slot-value screen 'newline-translation-enabled-p) status)
+  (if status (%nl) (%nonl)))
 
 (defgeneric background (window))
 (defmethod background ((win window))

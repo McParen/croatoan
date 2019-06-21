@@ -5,6 +5,7 @@
 (defmacro with-screen ((screen &key
                                (input-buffering nil)
                                (process-control-chars t)
+                               (enable-newline-translation t)
                                (input-blocking t)
                                (input-echoing t)
                                (enable-function-keys t)
@@ -28,8 +29,9 @@ library. Do not run more than one screen at the same time."
         (let ((,screen (make-instance 'screen
                                       :input-buffering ,input-buffering
                                       :process-control-chars ,process-control-chars
+                                      :enable-newline-translation ,enable-newline-translation
                                       :input-blocking ,input-blocking
-                                      :input-echoing  ,input-echoing
+                                      :input-echoing ,input-echoing
                                       :enable-function-keys ,enable-function-keys
                                       :enable-scrolling ,enable-scrolling
                                       :insert-mode ,insert-mode

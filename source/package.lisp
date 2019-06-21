@@ -64,6 +64,7 @@
    input-echoing-p
    input-buffering-p
    process-control-chars-p
+   newline-translation-enabled-p
    cursor-visible-p
    source-location
 
