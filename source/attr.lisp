@@ -42,7 +42,7 @@
 
 ;; TODO: naming conflict with color->number
 ;; after we can convert everything to a color number, add this function to
-;; pair->number, so we can generate a color pair out of every color notation.
+;; pair-to-number, so we can generate a color pair out of every color notation.
 (defun color-to-number (color)
   "Takes a color in various notations, converts that notation to the exact or most appropriate color number."
   (typecase color
@@ -91,7 +91,7 @@
       (setf *color-pair-alist* (acons '(:white :black) 0 *color-pair-alist*))))
 
 ;; TODO: later rename to pair-to-number
-(defun pair->number (pair)
+(defun pair-to-number (pair)
   "Take a two-element list of colors, return the ncurses pair number.
 
 The colors can be keywords or numbers -1:255.
@@ -102,7 +102,7 @@ If it is a new color pair, add it to ncurses, then return the new pair number.
 
 If the pair already exists, return its pair number.
 
-Example: (pair->number '(:white :black)) => 0"
+Example: (pair-to-number '(:white :black)) => 0"
   (let ((result (assoc pair *color-pair-alist* :test #'equal)))
     (if result
         ;; if the entry already exists, just return the pair number.
@@ -120,7 +120,7 @@ Example: (pair->number '(:white :black)) => 0"
 
 ;; TODO: cross check with the ncurses primitives that we get the same result.
 ;; TODO: number-to-pair
-(defun number->pair (number)
+(defun number-to-pair (number)
   "Take a pair number, return a color pair in a 2 element list of keywords."
   (car (rassoc number *color-pair-alist*)))
 
@@ -159,9 +159,9 @@ from the given point without moving the cursor position."
   (when position (apply #'move win position))
   (let ((attrs (attrs2chtype attributes))
         (pairno (if color-pair
-                    (pair->number color-pair)
+                    (pair-to-number color-pair)
                     (if (color-pair win)
-                        (pair->number (color-pair win))
+                        (pair-to-number (color-pair win))
                         0))))
     (%wchgat (winptr win) n attrs pairno (null-pointer))))
 
@@ -169,7 +169,7 @@ from the given point without moving the cursor position."
 (defun set-color-pair (winptr color-pair)
   "Sets the color attribute only."
   (if color-pair
-      (%wcolor-set winptr (pair->number color-pair) (null-pointer))
+      (%wcolor-set winptr (pair-to-number color-pair) (null-pointer))
       ;; if color-pair is nil, set the color pair 0 (white black) or (default default).
       (%wcolor-set winptr 0 (null-pointer))))
 
@@ -244,16 +244,16 @@ from the given point without moving the cursor position."
       ;; convert the pair to an integer, then bit shift it by 8
       ;; right shift by 8 to get the color bits at their proper place in a chtype.
       ;; you cannot simply logior the pair number because that would overwrite the char.
-      (ash (pair->number color-pair) 8)
+      (ash (pair-to-number color-pair) 8)
       0))
 
-;; usage: c2x, extract wide char, everywhere where number->pair is used.
+;; usage: c2x, extract wide char, everywhere where number-to-pair is used.
 ;; first get the color attribute bits by log-AND-ing them with the ch.
 ;; then right shift them by 8 to extract the color pair short int from them.
 ;; then get the color pair (:white :black) associated with that number.
 (defun chtype2colors (ch)
   "Take a chtype or attr_t integer, return a list of two keywords denoting a color pair."
-  (number->pair (ash (logand ch (get-bitmask :color)) -8)))
+  (number-to-pair (ash (logand ch (get-bitmask :color)) -8)))
 
 (defun char2chtype (char)
   "Take a character in different forms, return a chtype containing that character."
@@ -323,7 +323,7 @@ chtype is a 32-bit integer representing a non-wide complex-char in ncurses."
                  ;; first get the color attribute bits by log-AND-ing them with ch.
                  ;; then right shift them by 8 to extract the color int from them.
                  ;; then get the color pair (:white :black) associated with that number.
-                 :color-pair (number->pair (ash (logand ch (get-bitmask :color)) -8))))
+                 :color-pair (number-to-pair (ash (logand ch (get-bitmask :color)) -8))))
 
 (defgeneric convert-char (char result-type)
   (:documentation "Take a char and convert it to a char of result-type."))

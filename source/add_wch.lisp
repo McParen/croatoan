@@ -89,8 +89,8 @@ If char is a complex char, attributes and color-pair are ignored."
         ;; we need the color attribute for chtypes.
         (color-pair-number
          (typecase char
-           (complex-char (if (color-pair char) (pair->number (color-pair char)) 0))
-           (otherwise    (if color-pair        (pair->number color-pair)        0))))
+           (complex-char (if (color-pair char) (pair-to-number (color-pair char)) 0))
+           (otherwise    (if color-pair        (pair-to-number color-pair)        0))))
         (count (if n
                    (if (= n -1)
                        (distance-to-eol window)
