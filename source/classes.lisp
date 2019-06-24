@@ -264,7 +264,7 @@
    (newline-translation-enabled-p
     :initarg       :enable-newline-translation
     :initform      t
-    :type          :boolean
+    :type          boolean
     :documentation
     "If t (default), the #\return character (CR ^M \r) is automatically translated to newline (NL) on input, 
      and NL is translated to CR LF on output. 
