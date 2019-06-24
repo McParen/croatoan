@@ -15,4 +15,5 @@
                          
                          ;; high-level clos api
                          (:file "clos")
+                         (:file "tetris")
                          (:file "evolution")))))
