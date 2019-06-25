@@ -17,5 +17,5 @@ If n is given, read at most n chars."
          (complex-string (make-instance 'complex-string)))
     (loop for i from 0 to (1- count) do
          (vector-push-extend (extract-wide-char window) (complex-char-array complex-string))
-         (move-to window :right))
+         (move-direction window :right))
     complex-string))

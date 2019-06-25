@@ -20,6 +20,6 @@ If n is given, read at most n chars."
         (str (make-array '(0) :element-type 'character :fill-pointer 0 :adjustable t)))
     (loop for i from 0 to (1- count) do
          (vector-push-extend (simple-char (extract-wide-char window)) str)
-         (move-to window :right))
+         (move-direction window :right))
     ;; return string buffer containing i chars
     str))

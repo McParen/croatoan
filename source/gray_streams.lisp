@@ -41,7 +41,7 @@ we will not need add-char and add-string any more, we will simply use Lisp's for
       (progn
         (insert-wide-char stream ch)
         ;; move the cursor after the inserted character.
-        (move-to stream :right))
+        (move-direction stream :right))
       (add-wide-char stream ch)))
 
 ;; 170830: #sbcl, according to stassats we can not specialize on the second argument,
