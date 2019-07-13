@@ -124,6 +124,51 @@ Example: (pair-to-number '(:white :black)) => 0"
   "Take a pair number, return a color pair in a 2 element list of keywords."
   (car (rassoc number *color-pair-alist*)))
 
+;; TODO: We cant run complete-pair here, because we dont have the window.
+;; we have to run this within add-char, add-wide-char, etc.
+(defun complete-pair (window color-pair)
+  "If either the foreground or background color is nil, complete the pair for the given window.
+
+Try to complete the missing colors in the following order:
+
+1. window color pair.
+2. window background character color pair.
+3. ncurses default color pair 0 (white on black or the terminal default color pair)."
+  (let ((fg (car  color-pair))
+        (bg (cadr color-pair)))
+    (cond
+      ;; when both colors are given, just return the original pair
+      ((and color-pair fg bg) color-pair)
+      ;; when the pair is nil or when both colors are missing
+      ((or (null color-pair)
+           (and (null fg) (null bg)))
+       (cond
+         ((color-pair window) (color-pair window))
+         ((and (background window)
+               (color-pair (background window)))
+          (color-pair (background window)))
+         (t (number-to-pair 0))))
+      ;; when only the bg is missing, complete the bg
+      ((null bg)
+       (cond
+         ((cadr (color-pair window))
+          (list fg (cadr (color-pair window))))
+         ((and (background window)
+               (cadr (color-pair (background window))))
+          (list fg (cadr (color-pair (background window)))))
+         (t
+          (list fg (cadr (number-to-pair 0))))))
+      ;; when only the fg is missing, complete the fg
+      ((null fg)
+       (cond
+         ((car (color-pair window))
+          (list (car (color-pair window)) bg))
+         ((and (background window)
+               (car (color-pair (background window))))
+          (list (car (color-pair (background window))) bg))
+         (t
+          (list (car (number-to-pair 0)) bg)))) )))
+
 ;; TODO: use %wattr_on instead of %wattron, also for get and set
 (defun add-attributes (win attributes)
   "Takes a list of keywords and turns the appropriate attributes on."
@@ -294,17 +339,36 @@ they override the attributes and the color-of the complex char."
                           (attrs2chtype attributes)
                           (colors2chtype color-pair)))))
 
-;; we do not really need this function, but it is provided to parallel funcall-with-cchar_t.
-;; TODO: it has to accept complex-chars because funcall-make-cchar_t also does.
-(defun funcall-make-chtype (fn window char attributes color-pair count)
-  "Make a chtype and apply low-level ncurses function fn count times to window and chtype.
+;; factor out count calculation and complete-pair
+(defun funcall-make-chtype (fn window char attributes color-pair n)
+  "Assemble a chtype out of a char, attributes and a color-pair.
 
-chtype is a 32-bit integer representing a non-wide complex-char in ncurses."
-  (let ((chtype (make-chtype char attributes color-pair))
-        (winptr (winptr window)))
-    (if (= count 1)
-        (funcall fn winptr chtype)
-        (dotimes (i count) (funcall fn winptr chtype)))))
+Apply low-level ncurses function fn count times to window and chtype.
+
+chtype is a 32-bit integer representing a non-wide complex-char in ncurses.
+
+char can be a lisp character, an ACS keyword, an integer code point or
+a complex char.
+
+attributes should be a list of valid attribute keywords.
+
+color-pair should be a list of a foreground and background color keyword.
+
+attributes and color-pair can be nil.
+
+If char is a complex char, attributes and color-pair are ignored."
+  (let ((winptr (winptr window))
+        (count (if n
+                   (if (= n -1)
+                       (distance-to-eol window)
+                       n)
+                   1))
+        (chtype (make-chtype char attributes (complete-pair window color-pair))))
+    (case count
+      (0 nil)
+      (1 (funcall fn winptr chtype))
+      (otherwise (dotimes (i count)
+                   (funcall fn winptr chtype))))))
 
 ;; Example: (xchar2chtype (chtype2xchar 2490466)) => 2490466
 
