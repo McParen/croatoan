@@ -109,6 +109,7 @@
    add
    add-char
    echo
+   echo-char
    new-line
    acs
    wacs
@@ -188,6 +189,7 @@
    extract-wide-char
 
    ;; insch / insert a character before cursor in a curses window
+   insert
    insert-char
 
    ;; ins_wch / insert a complex character and rendition into a window

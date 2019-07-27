@@ -38,7 +38,7 @@ If n is -1, add as many chars from the string as will fit on the line."
   "Return the number of lines from the cursor position to the bottom of the window."
   (- (height window) (car (cursor-position window))))
 
-(defun add-char (window char &key attributes color-pair y x position n)
+(defun add-char (window char &key attributes color-pair style y x position n)
   "Add the narrow (single-byte) char to the window, then advance the cursor.
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -49,23 +49,35 @@ The position can also be passed in form of a two-element list.
 If n is given for a char, write n chars. If n is -1, add as many chars
 as will fit on the line.
 
-Example: 
-
-(add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
+Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
-  (let ((winptr (winptr window))
-        (count (if n
-                   (if (= n -1)
-                       (distance-to-eol window)
-                       n)
-                   1))
-        (chtype (make-chtype char attributes color-pair)))
-    (loop
-       repeat count
-       do (%waddch winptr chtype))))
+  (let ((attributes (if style
+                        (getf style :attributes)
+                        attributes))
+        (color-pair (if style
+                        (list (getf style :foreground) (getf style :background))
+                        color-pair)))
+    (funcall-make-chtype #'%waddch window char attributes color-pair n)))
 
-(defun echo (window char &key attributes color-pair y x position)
+;; At the moment, echo is just a wrapper for echo-wide-char.
+(defun echo (window char &rest keys &key &allow-other-keys)
+  "Add one character to the window, then advance the cursor.
+
+If the position coordinates y (row) and x (column) are given, move the
+cursor to the position first and then add the character.
+
+The position can also be passed in form of a two-element list.
+
+If n is given for a char, write n chars. If n is -1, add as many chars
+as will fit on the line.
+
+If char is a complex-char, its own style overrides any style parameters.
+
+If a style is passed, it overrides attributes and color-pair."
+  (apply #'echo-wide-char window char keys))
+
+(defun echo-char (window char &key attributes color-pair style y x position)
   "Add one narrow (single-byte) character to the window, then refresh the window.
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -78,12 +90,18 @@ performance gain if we know that we only need to output a single
 character."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
-  (let ((winptr (winptr window))
-        (chtype (make-chtype char attributes color-pair)))
-    (typecase window
-      ;; a pad is a subclass of window, therefore we have to check pad first.
-      (pad (%pechochar winptr chtype))
-      (window (%wechochar winptr chtype)))))
+  (let ((count 1)
+        (fn (typecase window
+              ;; a pad is a subclass of window, therefore we have to check pad first.
+              (pad #'%pechochar)
+              (window #'%wechochar)))
+        (attributes (if style
+                        (getf style :attributes)
+                        attributes))
+        (color-pair (if style
+                        (list (getf style :foreground) (getf style :background))
+                        color-pair)))
+    (funcall-make-chtype fn window char attributes color-pair count)))
 
 ;; just an utility function if you dont want to use (format nil "bla
 ;; bla ~%") to insert newlines. in C you can simply insert \n.

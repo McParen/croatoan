@@ -56,18 +56,16 @@ Instead of the name, another key can be provided to identify the element."
 ;; this is the only place we set the background style for the field
 ;; TODO: how to access the default fg and bg of a form,
 ;; if the field is not part of a form? by having a form slot in the field.
+
 (defmethod clear ((field field) &key)
   "Clear the field by overwriting it with the background char.
 
 The default background char is #\space."
   (with-accessors ((pos location) (width width) (selected selectedp) (win window) (style style)) field
-    (let* ((bg  (getf style :background))
-           (sbg (getf style :selected-background))
-           (bgchar (if selected
-                       (if sbg sbg #\space)
-                       (if bg bg #\space))))
+    (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
+           (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
       (setf (cursor-position win) pos)
-      (add win bgchar :n width)
+      (add win bg-char :style bg-style :n width)
       (setf (cursor-position win) pos))))
 
 (defgeneric update-cursor-position (object)
@@ -97,19 +95,14 @@ The default background char is #\space."
 (defmethod draw ((button button))
   (with-accessors ((pos location) (name name) (title title) (win window) (selected selectedp) (style style)) button
     (apply #'move win pos)
-    (let* ((fg  (getf style :foreground))
-           (sfg (getf style :selected-foreground)))
-      (add-string win
-                  (format nil "<~A>" (if title title name))
-                  :attributes (if selected (if sfg (attributes sfg) nil) (if fg (attributes fg) nil))
-                  :color-pair (if selected (if sfg (color-pair sfg) nil) (if fg (color-pair fg) nil))))))
+    (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground))))
+      (add-string win (format nil "<~A>" (if title title name)) :style fg-style))))
 
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
   (with-accessors ((pos location) (width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
                    (selected selectedp) (win window) (title title) (style style)) field
-    (let* ((fg  (getf style :foreground))
-           (sfg (getf style :selected-foreground))
+    (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground)))
            (len (length inbuf))
            (val (value field))
            (str (if (< len width)
@@ -123,19 +116,8 @@ The default background char is #\space."
                                          ;; if the remaining substring is shorter than width, just display it.
                                          len) ))))
       (clear field)
-
-      ;; if a title is given, add it on the same line before the field.
-      ;; the place for the title has to be available in the window.
-      ;; we need a layout manager to automatically position the elements.
-      (when title
-        (move win (car pos) 1)
-        (add-string win title))
-
       (apply #'move win pos)
-      (add-string win str
-                  ;; TODO: find a more elegant way to highlight the selected field.
-                  :attributes (if selected (if sfg (attributes sfg) nil) (if fg (attributes fg) nil))
-                  :color-pair (if selected (if sfg (color-pair sfg) nil) (if fg (color-pair fg) nil)))
+      (add-string win str :style fg-style)
       (update-cursor-position field))))
 
 (defmethod draw ((form form))

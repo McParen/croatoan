@@ -51,6 +51,8 @@ This function is a wrapper around %setcchar and should not be used elsewhere."
 (defun funcall-make-cchar_t (fn window char attributes color-pair n)
   "Assemble a cchar_t out of a char, attributes and a color-pair.
 
+Then apply the fn to window and the assembled cchar_t.
+
 char can be a lisp character, an ACS keyword, an integer code point or
 a complex char.
 
@@ -88,9 +90,10 @@ If char is a complex char, attributes and color-pair are ignored."
         ;; we just need the pair number here, NOT the bit-shifted color attribute.
         ;; we need the color attribute for chtypes.
         (color-pair-number
-         (typecase char
-           (complex-char (if (color-pair char) (pair-to-number (color-pair char)) 0))
-           (otherwise    (if color-pair        (pair-to-number color-pair)        0))))
+         (let ((color-pair (complete-pair window (typecase char
+                                                   (complex-char (color-pair char))
+                                                   (otherwise color-pair)))))
+           (if color-pair (pair-to-number color-pair) 0)))
         (count (if n
                    (if (= n -1)
                        (distance-to-eol window)
@@ -100,7 +103,7 @@ If char is a complex char, attributes and color-pair are ignored."
     ;; uses %setcchar to create a cchar_t pointer and passes it to fn.
     (funcall-make-cchar_t-ptr fn winptr ch attr_t color-pair-number count)))
 
-(defun add-wide-char (window char &key attributes color-pair y x position n)
+(defun add-wide-char (window char &key attributes color-pair style y x position n)
   "Add the wide (multi-byte) char to the window, then advance the cursor.
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -109,12 +112,22 @@ cursor to the position first and then add the character.
 The position can also be passed in form of a two-element list.
 
 If n is given for a char, write n chars. If n is -1, add as many chars
-as will fit on the line."
+as will fit on the line.
+
+If char is a complex-char, its own style overrides any style parameters.
+
+If a style is passed, it overrides attributes and color-pair."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
-  (funcall-make-cchar_t #'%wadd-wch window char attributes color-pair n))
+  (let ((attributes (if style
+                        (getf style :attributes)
+                        attributes))
+        (color-pair (if style
+                        (list (getf style :foreground) (getf style :background))
+                        color-pair)))
+    (funcall-make-cchar_t #'%wadd-wch window char attributes color-pair n)))
 
-(defun echo-wide-char (window char &key attributes color-pair y x position)
+(defun echo-wide-char (window char &key attributes color-pair style y x position)
   "Add one wide (multi-byte) character to the window, then refresh the window.
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -131,7 +144,13 @@ character."
         ;; for some reason, there is a special echo function for pads.
         (fn (typecase window
               (pad #'%pecho-wchar)
-              (window #'%wecho-wchar))))
+              (window #'%wecho-wchar)))
+        (attributes (if style
+                        (getf style :attributes)
+                        attributes))
+        (color-pair (if style
+                        (list (getf style :foreground) (getf style :background))
+                        color-pair)))
     (funcall-make-cchar_t fn window char attributes color-pair count)))
 
 ;; wide-char equivalents of the ACS chars.
