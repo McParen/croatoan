@@ -1583,14 +1583,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   "Edit a single input field, not part of a form."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let ((*standard-output* scr)
+          (s1 (list :attributes '(:underline)))
+          (s2 (list :simple-char #\.))
           (field (make-instance 'field :location (list 3 20) :width 10 :window scr)))
 
-      (setf (style field)
-            (list :foreground (make-instance 'complex-char :simple-char #\space :attributes '(:underline))
-                  :background (make-instance 'complex-char :simple-char #\.)))
+      (setf (style field) (list :foreground s1 :background s2))
 
       (bind field #\newline 'de.anvi.croatoan::debug-print-field-buffer)
-
+      
       ;; pressing ^A (for "accept") exits the edit mode for now
       (edit field)
 
@@ -1606,25 +1606,22 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16f ()
   "Group several input fields and buttons to a form."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-    (let* ((ch1 (make-instance 'complex-char :simple-char #\space :color-pair '() :attributes '()))
-           (ch2 (make-instance 'complex-char :simple-char #\_))
-           (ch3 (make-instance 'complex-char :simple-char #\space :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
-           (ch4 (make-instance 'complex-char :simple-char #\space :color-pair '(:blue :white) :attributes '()))
+    (let* ((s1 (list :foreground nil :background nil :attributes nil))
+           (s2 (list :simple-char #\_))
+           (s3 (list :foreground :yellow :background :red :attributes '(:underline :bold :italic)))
+           (s4 (list :foreground :blue :background :white :attributes nil))
 
-           ;; style is a plist interpreted by the field and button drawing functions.
-           (style1 (list :foreground ch1
-                         :background ch2
-                         :selected-foreground ch3
-                         :selected-background ch4))
-           
-           (field1 (make-instance 'field :location (list 3 20) :width 10 :style style1 :max-buffer-length 5))
-           (field2 (make-instance 'field :location (list 5 20) :width 10 :style style1))
-           (field3 (make-instance 'field :location (list 7 20) :width 10 :style style1 :max-buffer-length 15))
+           ;; a style is a plist interpreted by the drawing functions.
+           (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
 
-           (style2 (list :foreground ch1 :selected-foreground ch4))
-           
-           (button1 (make-instance 'button :location (list 10 20) :name "Hello"  :style style2))
-           (button2 (make-instance 'button :location (list 10 30) :name "Accept" :style style2))
+           (field1 (make-instance 'field :location (list 3 20) :width 10 :style s5 :max-buffer-length 5))
+           (field2 (make-instance 'field :location (list 5 20) :width 10 :style s5))
+           (field3 (make-instance 'field :location (list 7 20) :width 10 :style s5 :max-buffer-length 15))
+
+           (s6 (list :foreground s1 :selected-foreground s4))
+
+           (button1 (make-instance 'button :location (list 10 20) :name "Hello"  :style s6))
+           (button2 (make-instance 'button :location (list 10 30) :name "Accept" :style s6))
 
            ;; a window is associated with the parent form, and can be accessed by the elements.           
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2) :window scr)))
@@ -1657,30 +1654,30 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16g ()
   "Use the element default style."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-    (let* ((ch1 (make-instance 'complex-char :color-pair '(:blue :black)))
-           (ch2 (make-instance 'complex-char :simple-char #\_))
-           (ch3 (make-instance 'complex-char :color-pair '(:yellow :red) :attributes '(:underline :bold :italic)))
-           (ch4 (make-instance 'complex-char :simple-char #\_ :color-pair '(:white :blue)))
+    (let* ((s1 (list :foreground :blue :background :black))
+           (s2 (list :simple-char #\_))
+           (s3 (list :foreground :yellow :background :red :attributes '(:underline :bold :italic)))
+           (s4 (list :simple-char #\_ :foreground :white :background :blue))
 
-           (style1 (list :foreground ch1
-                         :background ch2
-                         :selected-foreground ch3
-                         :selected-background ch4))
+           ;; element styles reference previousy defined character styles.
+           (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
+           (s6 (list :foreground s4 :selected-foreground s3))
 
-           (style2 (list :foreground ch4
-                         :selected-foreground ch3))
+           (s8 (list :foreground :yellow :simple-char #\.))
+           (s9 (list :foreground s1 :background s8))
            
-           (style3 (list 'field  style1
-                         'button style2))
-           
+           ;; the form style consists of style of form elements.
+           (s7 (list 'field s5 'button s6 'label s9))
+
            (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 20) :width 15 :max-buffer-length 5))
            (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 20) :width 15))
            (field3 (make-instance 'field :name :f3                   :location (list 7 20) :width 15 :max-buffer-length 20))
 
            (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 10 20)))
            (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 10 30)))
-           
-           (form (make-instance 'form :elements (list field1 field2 field3 button1 button2) :style style3 :window scr)))
+
+           (form (make-instance 'form :elements (list field1 field2 field3 button1 button2)
+                                :style s7 :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
       (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
@@ -1692,7 +1689,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; The set value shouldnt be longer than the max-buffer-length
       (setf (value field2) "hello"
             (value field3) "dear john")
-      
+
       (edit form)
       (clear scr)
 
