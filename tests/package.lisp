@@ -104,6 +104,7 @@
    #:t28
    #:t28a
    #:t29
+   #:t30
 
    ;; clos.lisp
    #:matrix

@@ -2551,3 +2551,24 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; redraw with squarify nil
       (draw-t29-shapes scr (list tree-trunk tree-crown ground sun) nil)
       (get-char scr) )))
+
+(defun t30 ()
+  "Test color pair completion."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (with-windows ((w1 :height 5 :width 5 :location '(0 0))
+                   (w2 :height 5 :width 5 :location '(0 5))
+                   (w3 :height 5 :width 5 :location '(0 10)))
+      (setf (background w1) (make-instance 'complex-char :color-pair '(:black :cyan))
+            (background w2) (make-instance 'complex-char :color-pair '(:black :magenta))
+            (background w3) (make-instance 'complex-char :color-pair '(:black :white)))
+      ;; the character style contains only one color
+      ;; the fg/bg of the target window is used to complete the color pair.
+      (let ((s1 (list :attributes '(:bold) :foreground :red))
+            (s2 (list :attributes '(:bold) :background :yellow)))
+        (add w1 #\a :y 2 :x 2 :style s1)
+        (add w2 #\b :y 2 :x 2 :style s1)
+        (add w3 #\c :y 2 :x 2 :style s2))
+      (refresh w1)
+      (refresh w2)
+      (refresh w3)
+      (get-char w1))))
