@@ -159,6 +159,37 @@
     (setf (frame-rate scr) 20)
     (run-event-loop scr)))
 
+(defun matrix3 ()
+  "Test character styles and color pair completion."
+  (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visible nil)
+    (let* ((width (width scr))
+           (height (height scr))
+           (positions (loop repeat width collect (random height)))
+           (speeds (loop repeat width collect (random 4)))
+           (s1 (list :attributes '(:bold) :foreground :white))
+           (s2 (list :attributes '(:bold) :foreground :green :background nil))
+           (s3 (list :attributes nil      :foreground :green :background :black)))
+      (flet ((randch () (+ 64 (random 58))))
+        (bind scr #\q 'exit-event-loop)
+        (bind scr #\r
+          (lambda (win event)
+            (setf (getf s2 :foreground) :red
+                  (getf s3 :foreground) :red)))
+        (bind scr nil
+          (lambda (win event)
+            (loop for column from 0 to (1- width) do
+                 (loop repeat (nth column speeds) do
+                      (let ((pos (nth column positions)))
+                        (add win (randch) :y (mod pos height) :x column :style s1)
+                        (add win (randch) :y (mod (- pos 1) height) :x column :style s2)
+                        (add win (randch) :y (mod (- pos 2) height) :x column :style s2)
+                        (add win (randch) :y (mod (- pos 3) height) :x column :style s3)
+                        (add win #\space  :y (mod (- pos (floor height 3)) height) :x column :style s3)
+                        (refresh win)
+                        (setf (nth column positions) (mod (1+ pos) height)))))))))
+    (setf (frame-rate scr) 20)
+    (run-event-loop scr)))
+
 ;; initialize ncurses, deinitialize ncurses
 ;; tests initialize-instance
 (defun t00 ()
