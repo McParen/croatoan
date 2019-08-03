@@ -92,6 +92,21 @@ The default background char is #\space."
 (defgeneric draw (object)
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
+(defmethod draw ((label label))
+  (with-accessors ((pos location) (win window) (title title) (width width) (style style) (ref-element reference)) label
+    (let* ((string (or title (title ref-element)))
+           (fg-style (getf style :foreground))
+           (bg-style (getf style :background))
+           (bg-char (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
+      (when string
+        ;; first draw the background, but only if width > string
+        (when width
+          (apply #'move win pos)
+          (add win bg-char :style bg-style :n width))
+        ;; then the label over the background
+        (apply #'move win pos)
+        (add-string win string :style fg-style)))))
+
 (defmethod draw ((button button))
   (with-accessors ((pos location) (name name) (title title) (win window) (selected selectedp) (style style)) button
     (apply #'move win pos)
@@ -135,24 +150,36 @@ The default background char is #\space."
   ;;(declare (special form))
   (with-accessors ((elements elements) (current-element-number current-element-number) (current-element current-element) (win window)) form
     (setf (selectedp current-element) nil)
+
     ;; use mod to cycle the element list.
     (setf current-element-number (mod (- current-element-number 1) (length elements)))
     (setf current-element (nth current-element-number elements))
-    (setf (selectedp current-element) t)
-    ;; after we switched the element number, we have to redraw the form.
-    (draw form)))
+    
+    ;; ignore inactive elements like labels.
+    (if (activep current-element)
+        (progn
+          (setf (selectedp current-element) t)
+          ;; after we switched the element number, we also have to redraw the form.
+          (draw form))
+        (select-previous-element form event))))
 
 (defun select-next-element (form event)
   "Select the next element in a form's element list."
   ;;(declare (special form))
   (with-accessors ((elements elements) (current-element-number current-element-number) (current-element current-element) (win window)) form
     (setf (selectedp current-element) nil)
+    
     ;; use mod to cycle the element list.
     (setf current-element-number (mod (+ current-element-number 1) (length elements)))
     (setf current-element (nth current-element-number elements))
-    (setf (selectedp current-element) t)
-    ;; after we switched the element number, we also have to redraw the form.
-    (draw form)))
+
+    ;; ignore inactive elements like labels.
+    (if (activep current-element)
+        (progn
+          (setf (selectedp current-element) t)
+          ;; after we switched the element number, we also have to redraw the form.
+          (draw form))
+        (select-next-element form event))))
 
 (defun move-previous-char (field event)
   "Move the cursor to the previous char in the field."

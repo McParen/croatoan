@@ -626,6 +626,12 @@
     :accessor      selectedp
     :documentation "Flag denoting whether the element is currently selected in a form.")
 
+   (activep
+    :initform      t
+    :type          boolean
+    :accessor      activep
+    :documentation "If t (default), the element can be selected. Used to prevent labels from being selected.")
+
    (parent-form
     :initform      nil
     :type          (or null form)
@@ -671,6 +677,33 @@ If there is no window asociated with the element, return the window associated w
 
 (defmethod (setf style) (style (element element))
   (setf (slot-value element 'style) style))
+
+(defclass label (element)
+  ((reference
+    :initarg       :reference
+    :initform      nil
+    :accessor      reference
+    :type          (or null element)
+    :documentation "If a reference element is specified, the element's title will be displayed instead of the label's.")
+   
+   (width
+    :initarg       :width
+    :initform      nil
+    :type          (or null integer)
+    :accessor      width
+    :documentation "The width of the label.")
+
+   (style
+    :initarg       :style
+    :initform      nil
+    :type          (or null cons)
+    :documentation "")
+
+   (activep
+    :initform      nil
+    :documentation "Labels are by default not active and can not be selected when cycling through the elements."))
+  
+  (:documentation "A string displayed at the specified location."))
 
 (defclass button (element)
   ((callback

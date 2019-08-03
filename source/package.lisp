@@ -34,6 +34,7 @@
    field
    form
    button
+   label
    shape
 
    ;; accessors

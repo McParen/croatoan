@@ -1697,17 +1697,21 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (s8 (list :foreground :yellow :simple-char #\.))
            (s9 (list :foreground s1 :background s8))
            
-           ;; the form style consists of style of form elements.
+           ;; the form style consists of default styles of form elements.
            (s7 (list 'field s5 'button s6 'label s9))
 
            (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 20) :width 15 :max-buffer-length 5))
            (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 20) :width 15))
            (field3 (make-instance 'field :name :f3                   :location (list 7 20) :width 15 :max-buffer-length 20))
 
+           (label1 (make-instance 'label :name :l1 :reference field1 :width 18 :location (list 3 1)))
+           (label2 (make-instance 'label :name :l2 :reference field2 :width 18 :location (list 5 1)))
+           (label3 (make-instance 'label :name :l3 :title "Age"                :location (list 7 1)))
+
            (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 10 20)))
            (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 10 30)))
 
-           (form (make-instance 'form :elements (list field1 field2 field3 button1 button2)
+           (form (make-instance 'form :elements (list field1 field2 field3 label1 label2 label3 button1 button2)
                                 :style s7 :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
