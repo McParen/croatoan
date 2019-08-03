@@ -90,10 +90,9 @@ If char is a complex char, attributes and color-pair are ignored."
         ;; we just need the pair number here, NOT the bit-shifted color attribute.
         ;; we need the color attribute for chtypes.
         (color-pair-number
-         (let ((color-pair (complete-pair window (typecase char
-                                                   (complex-char (color-pair char))
-                                                   (otherwise color-pair)))))
-           (if color-pair (pair-to-number color-pair) 0)))
+         (pair-to-number (complete-pair window (typecase char
+                                                 (complex-char (color-pair char))
+                                                 (otherwise color-pair)))))
         (count (if n
                    (if (= n -1)
                        (distance-to-eol window)

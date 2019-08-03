@@ -90,7 +90,6 @@
         (setf *color-pair-alist* (acons '(:default :default) 0 *color-pair-alist*)))
       (setf *color-pair-alist* (acons '(:white :black) 0 *color-pair-alist*))))
 
-;; TODO: later rename to pair-to-number
 (defun pair-to-number (pair)
   "Take a two-element list of colors, return the ncurses pair number.
 
@@ -102,21 +101,26 @@ If it is a new color pair, add it to ncurses, then return the new pair number.
 
 If the pair already exists, return its pair number.
 
+If pair is nil, return the default color number, 0.
+
 Example: (pair-to-number '(:white :black)) => 0"
-  (let ((result (assoc pair *color-pair-alist* :test #'equal)))
-    (if result
-        ;; if the entry already exists, just return the pair number.
-        (cdr result)
-      ;; if the pair doesnt exist, create a new pair number
-      (let ((new-pair-number (list-length *color-pair-alist*)))
-        ;; add it to the alist first.
-        (setf *color-pair-alist* (acons pair new-pair-number *color-pair-alist*))
-        ;; then add it to ncurses.
-        (let ((fg (car pair))
-              (bg (cadr pair)))
-          (%init-pair new-pair-number (color-to-number fg) (color-to-number bg)))
-        ;; return the newly added pair number.
-        new-pair-number))))
+  (if pair
+      (let ((result (assoc pair *color-pair-alist* :test #'equal)))
+        (if result
+            ;; if the entry already exists, just return the pair number.
+            (cdr result)
+            ;; if the pair doesnt exist, create a new pair number
+            (let ((new-pair-number (list-length *color-pair-alist*)))
+              ;; add it to the alist first.
+              (setf *color-pair-alist* (acons pair new-pair-number *color-pair-alist*))
+              ;; then add it to ncurses.
+              (let ((fg (car pair))
+                    (bg (cadr pair)))
+                (%init-pair new-pair-number (color-to-number fg) (color-to-number bg)))
+              ;; return the newly added pair number.
+              new-pair-number)))
+      ;; If pair is nil, return the default color number, 0.
+      0))
 
 ;; TODO: cross check with the ncurses primitives that we get the same result.
 ;; TODO: number-to-pair
