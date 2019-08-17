@@ -318,11 +318,30 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
      (debug-print-field-buffer (current-element object) event)))
   (draw object))
 
+(defun return-from-form (form return-value)
+  (declare (ignore form))
+  (throw 'event-loop return-value))
+
+;; TODO: does it make sense to use &optional here?
+;; we need it to be able to assign them as thunks to button callbacks.
+;; when called from a key binding the form and the event are passed to it.
+(defun cancel-form (&optional form event)
+  "Associate this function with an event to exit the form event loop."
+  (declare (ignore event))
+  (return-from-form form nil))
+
+(defun accept-form (&optional form event)
+  "Associate this function with an event to exit the form event loop."
+  (declare (ignore event))
+  (return-from-form form t))
+
 (define-keymap 'form-map
   (list
    ;; Use C-a ^A #\soh 1 to exit the edit loop.
    ;; TODO: what should the exit return?
-   #\soh      'exit-event-loop
+   #\soh      'accept-form
+   ;; C-x = cancel = CAN = #\can
+   #\can      'cancel-form
    :btab      'select-previous-element
    :up        'select-previous-element
    #\tab      'select-next-element
