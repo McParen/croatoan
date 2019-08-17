@@ -683,9 +683,11 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :reference
     :initform      nil
     :accessor      reference
-    :type          (or null element)
-    :documentation "If a reference element is specified, the element's title will be displayed instead of the label's.")
-   
+    :type          (or null symbol keyword string)
+    :documentation
+    "If the name of a reference element is specified, the element's title will be displayed instead of the label's.
+    If a title for the label is explicitely provided, it overrides the title of the reference element.")
+
    (width
     :initarg       :width
     :initform      nil
@@ -830,7 +832,7 @@ If there is no window asociated with the element, return the window associated w
    ;; has to be updated every time the current element number is updated.
    (current-element
     :initform      nil
-    :type          (or null field button)
+    :type          (or null field button label)
     :accessor      current-element
     :documentation "Currently selected element object.")
 
