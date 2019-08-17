@@ -143,6 +143,17 @@ The default background char is #\space."
     ;; after drawing the elements, reposition the cursor to the current element
     (update-cursor-position form)))
 
+(defmethod draw ((form form-window))
+  "Draw the form by drawing the elements, then moving the cursor to the current element."
+  ;; update cursor position only refreshes the window associated with the form, which is the sub-window
+  ;; in order to see the border, we have to touch and refresh the parent border window.
+  ;; refreshing the parent window has to be done before refreshing the cursor position in the sub
+  ;; or the cursor will be moved to 0,0 of the parent window.
+  (touch form)
+  (refresh form)
+  ;; draw the form contents, the superclass of form-window is form (and decorated-window).
+  (call-next-method))
+
 ;; previous-element and next-element are the only two elements where the current-element-number is changed.
 ;; here also current-element and selected has to be set.
 (defun select-previous-element (form event)
