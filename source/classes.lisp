@@ -885,12 +885,15 @@ If there is no window asociated with the element, return the window associated w
   (:documentation ""))
 
 (defmethod initialize-instance :after ((win form-window) &key)
-  (with-slots (winptr height width location sub-window draw-border-p) win
+  (with-slots (winptr height width location sub-window draw-border-p window) win
     ;; only for form windows
     (when (eq (type-of win) 'form-window)
       (setf winptr (%newwin height width (car location) (cadr location)))
-      (setf sub-window
-            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :location (list 1 1) :relative t)))))
+      (setf sub-window (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2)
+                                      :location (list 1 1) :relative t :enable-function-keys t))
+      ;; set the sub of the decorated window to be the associated window of the form
+      ;; the form will be drawn to the associated window, i.e. to the sub
+      (setf window sub-window) )))
 
 ;; if a window-location is given during make-instance, it can be simply ignored.
 ;; or we can check for location and signal an error.
@@ -1338,6 +1341,11 @@ If there is no window asociated with the element, return the window associated w
 (defmethod close ((stream dialog-window) &key abort)
   (declare (ignore abort))
   (%delwin (winptr (message-pad stream)))
+  (%delwin (winptr (sub-window stream)))
+  (%delwin (winptr stream)))
+
+(defmethod close ((stream form-window) &key abort)
+  (declare (ignore abort))
   (%delwin (winptr (sub-window stream)))
   (%delwin (winptr stream)))
 
