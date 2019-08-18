@@ -93,8 +93,12 @@ The default background char is #\space."
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
 (defmethod draw ((label label))
-  (with-accessors ((pos location) (win window) (title title) (width width) (style style) (ref-element reference)) label
-    (let* ((string (or title (title ref-element)))
+  (with-accessors ((pos location) (win window) (name name) (title title) (width width) (style style) (reference reference)
+                   (parent-form parent-form)) label
+    (let* ((string (or title
+                       (title (find-element parent-form reference))
+                       (symbol-name (name (find-element parent-form reference)))
+                       (symbol-name name)))
            (fg-style (getf style :foreground))
            (bg-style (getf style :background))
            (bg-char (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
@@ -318,22 +322,40 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
      (debug-print-field-buffer (current-element object) event)))
   (draw object))
 
-(defun return-from-form (form return-value)
-  (declare (ignore form))
-  (throw 'event-loop return-value))
+(defun cancel-form (object event)
+  "Associate this function with an event (key binding or button) to exit the form event loop.
 
-;; TODO: does it make sense to use &optional here?
-;; we need it to be able to assign them as thunks to button callbacks.
-;; when called from a key binding the form and the event are passed to it.
-(defun cancel-form (&optional form event)
-  "Associate this function with an event to exit the form event loop."
-  (declare (ignore event))
-  (return-from-form form nil))
+The first return value is nil, emphasizing that the user has canceled the form.
 
-(defun accept-form (&optional form event)
-  "Associate this function with an event to exit the form event loop."
+If called by a button, the name of the button is returned as a second value.
+
+This allows to specify why the form was canceled."
   (declare (ignore event))
-  (return-from-form form t))
+  (throw 'event-loop (values nil (name object))))
+
+(defun accept-form (object event)
+  "Associate this function with an event (key binding or button) to exit the form event loop.
+
+The first return value is t, emphasizing that the user has accepted the form.
+
+If called by a button, the name of the button is returned as a second value.
+
+This allows to specify why the form was accepted."
+  (declare (ignore event))
+  (throw 'event-loop (values t (name object))))
+
+(defun reset-form (object event)
+  (declare (ignore event))
+  (let ((form (typecase object
+                (form object)
+                (t (parent-form object)))))
+    (loop for element in (elements form)
+       do (when (and (typep element 'field) (activep element))
+            (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) element
+              (setf inbuf nil
+                    inptr 0
+                    dptr 0))))
+    (draw form)))
 
 (define-keymap 'form-map
   (list
@@ -362,7 +384,8 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
 ;; TODO: should we pass the event to the button function?
 (defun call-button-function (button event)
   (declare (ignore event))
-  (funcall (callback button)))
+  (when (callback button)
+    (funcall (callback button) button event)))
 
 ;; How to automatically bind a hotkey to every button?
 ;; that hotkey would have to be added to the form keymap, not to that of a button.

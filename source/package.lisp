@@ -33,6 +33,7 @@
    sub-pad
    field
    form
+   form-window
    button
    label
    shape
@@ -99,6 +100,9 @@
    field-map
    form-map
    button-map
+   cancel-form
+   accept-form
+   reset-form
    
    ;; shape
    origin-x
