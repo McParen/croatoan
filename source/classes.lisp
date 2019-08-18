@@ -869,16 +869,18 @@ If there is no window asociated with the element, return the window associated w
   (:documentation "A form is a list of fields."))
 
 (defmethod initialize-instance :after ((form form) &key)
-  (with-slots (current-element elements bindings keymap) form
-    ;; Initialize the current element as the first element from the passed elements list.
-    ;; we have to set the current element before we can change it with select-previous-element and select-next-element
-    (setf current-element (car elements))
-    ;; set the selected option of the initial current element.
-    (setf (slot-value current-element 'selectedp) t)
-    ;; set the parent form slot of every field.
+  (with-slots (elements current-element bindings keymap) form
     (if elements
-        (loop for element in elements
-           do (setf (slot-value element 'parent-form) form))
+        (progn
+          ;; Initialize the current element as the first element from the passed elements list.
+          ;; we have to set the current element before we can change it with select-previous-element and select-next-element
+          (setf current-element (car elements))
+          ;; set the selected option of the initial current element.
+          (setf (slot-value current-element 'selectedp) t)
+          ;; set the parent form slot of every element.
+          (loop for element in elements
+             do (setf (slot-value element 'parent-form) form)))
+
         ;; if a list of elements was not passed, signal an error.
         (error "A list of elements is required to initialize a form."))))
 
