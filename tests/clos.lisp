@@ -1642,7 +1642,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (s3 (list :foreground :yellow :background :red :attributes '(:underline :bold :italic)))
            (s4 (list :foreground :blue :background :white :attributes nil))
 
-           ;; a style is a plist interpreted by the drawing functions.
+           ;; a style is a plist interpreted by the element drawing functions.
            (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
 
            (field1 (make-instance 'field :location (list 3 20) :width 10 :style s5 :max-buffer-length 5))
@@ -1651,11 +1651,12 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
            (s6 (list :foreground s1 :selected-foreground s4))
 
-           (button1 (make-instance 'button :location (list 10 20) :name "Hello"  :style s6))
-           (button2 (make-instance 'button :location (list 10 30) :name "Accept" :style s6))
+           (button1 (make-instance 'button :location (list 10 10) :name "Hello"  :style s6))
+           (button2 (make-instance 'button :location (list 10 20) :name "Accept" :style s6))
+           (button3 (make-instance 'button :location (list 10 30) :name "Cancel" :style s6))
 
            ;; a window is associated with the parent form, and can be accessed by the elements.           
-           (form (make-instance 'form :elements (list field1 field2 field3 button1 button2) :window scr)))
+           (form (make-instance 'form :elements (list field1 field2 field3 button1 button2 button3) :window scr)))
 
       (setf (background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
 
@@ -1664,26 +1665,27 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (bind (find-keymap 'field-map) :f3 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
-      (setf (callback button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
-      (setf (callback button2) 'exit-event-loop)
+      (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
+      (setf (callback button2) 'accept-form)
+      (setf (callback button3) 'cancel-form)
 
       ;; pressing ^A or C-a (for "accept") exits the edit mode
       ;; TAB, up and down cycles the fields and buttons
-      (edit form)
-      (clear scr)
-
-      ;; display the contents of the input buffer of all fields of the form
-      ;; use field-buffer-to-string to get the contents of the field buffer as a string instead of a list of chars.
-      (loop for i in (elements form) do
-        (when (typep i 'field)
-          (format scr "~A ~A ~%" (buffer i) (value i))))
+      (if (prog1 (edit form) (clear scr))
+          ;; display the contents of the input buffer of all fields of the form
+          ;; use field-buffer-to-string to get the contents of the field buffer as a string instead of a list of chars.
+          (loop for el in (elements form)
+             do (when (typep el 'field)
+                  (format scr "~A ~A ~%" (buffer el) (value el))))
+          ;; user did not accept the form (default) or called cancel-form.
+          (format scr "nil"))
 
       (refresh scr)
       ;; wait for keypress, then exit
       (get-char scr) )))
 
 (defun t16g ()
-  "Use the element default style."
+  "Use the element default style of the form."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let* ((s1 (list :foreground :blue :background :black))
            (s2 (list :simple-char #\_))
@@ -1704,35 +1706,38 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 20) :width 15))
            (field3 (make-instance 'field :name :f3                   :location (list 7 20) :width 15 :max-buffer-length 20))
 
-           (label1 (make-instance 'label :name :l1 :reference field1 :width 18 :location (list 3 1)))
-           (label2 (make-instance 'label :name :l2 :reference field2 :width 18 :location (list 5 1)))
-           (label3 (make-instance 'label :name :l3 :title "Age"                :location (list 7 1)))
+           (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :location (list 3 1)))
+           (label2 (make-instance 'label :name :l2 :reference :f1 :width 18 :location (list 5 1)))
+           (label3 (make-instance 'label :name :l3 :title "Age"             :location (list 7 1)))
 
-           (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 10 20)))
-           (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 10 30)))
+           (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 10 10)))
+           (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 10 20)))
+           (button3 (make-instance 'button :name :b3 :title "Cancel" :location (list 10 30)))
 
-           (form (make-instance 'form :elements (list field1 field2 field3 label1 label2 label3 button1 button2)
+           (form (make-instance 'form :elements (list field1 field2 field3 label1 label2 label3 button1 button2 button3)
                                 :style s7 :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
       (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
-      (setf (callback button1) (lambda () (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
-      (setf (callback button2) 'exit-event-loop)
+      (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
+      (setf (callback button2) 'accept-form)
+      (setf (callback button3) 'cancel-form)
 
       ;; The set value shouldnt be longer than the max-buffer-length
       (setf (value field2) "hello"
             (value field3) "dear john")
 
-      (edit form)
-      (clear scr)
-
       ;; Access fields by their name instead of looping through the elements list.
-      (mapc #'(lambda (name)
-                (let ((field (find-element form name)))
-                  (format scr "~5A ~10A ~20A~%" name (title field) (value field))))
-            (list :f1 :f2 :f3))
+      (if (prog1 (edit form) (clear scr))
+          ;; edit returned t, which means the user accepted the form
+          (mapc #'(lambda (name)
+                    (let ((field (find-element form name)))
+                      (format scr "~5A ~10A ~20A~%" name (title field) (value field))))
+                (list :f1 :f2 :f3))
+          ;; edit returned nil, which means the user canceled the form
+          (format scr "nil"))
       
       (refresh scr)
       ;; wait for keypress, then exit
