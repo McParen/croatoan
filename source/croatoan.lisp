@@ -230,7 +230,10 @@ One of the events must provide a way to exit the event loop by throwing 'event-l
 The function exit-event-loop is pre-defined to perform this non-local exit."
   (catch 'event-loop
     (loop
-       (let* ((window (typecase object (window object) (otherwise (window object))))
+       (let* ((window (typecase object
+                        (form-window (sub-window object))
+                        (window object)
+                        (otherwise (window object))))
               (event (get-wide-event window)))
          (handle-event object event args)
          ;; should a frame rate be a property of the window or of the object?
