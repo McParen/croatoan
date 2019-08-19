@@ -1743,6 +1743,115 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; wait for keypress, then exit
       (get-char scr) )))
 
+(defun t16h ()
+  "Create a form window."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let* ((ch1 (list :foreground :black :background :white))
+           (ch2 (list :simple-char #\_ :foreground :black :background :white))
+           (ch3 (list :foreground :yellow :background :red :attributes '(:underline :bold :italic)))
+           (ch4 (list :simple-char #\_ :foreground :white :background :blue))
+
+           (style1 (list :foreground ch1 :background ch2 :selected-foreground ch3 :selected-background ch4))
+           (style2 (list :foreground ch4 :selected-foreground ch3))
+           (style3 (list 'field style1 'button style2))
+           
+           (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 15) :width 15 :max-buffer-length 5))
+           (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 15) :width 15))
+           (field3 (make-instance 'field :name :f3 :title "Age"      :location (list 7 15) :width 15 :max-buffer-length 20))
+           
+           (button1 (make-instance 'button :name :b1 :title "Say Hello" :location (list 10 7)))
+           (button2 (make-instance 'button :name :b1 :title "Cancel"    :location (list 10 20)))
+           (button3 (make-instance 'button :name :b2 :title "Accept"    :location (list 10 30)))
+           
+           (form (make-instance 'form-window :elements (list field1 field2 field3 button1 button2 button3)
+                                :style style3 :enable-function-keys t :input-blocking t :title "form window"
+                                :draw-border t :height 15 :width 50 :location (list 5 15))))
+
+      (setf (background scr) (make-instance 'complex-char :simple-char #\space))
+      (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
+      (refresh scr)
+
+      ;; Functions to be called when the button is activated by #\newline or #\space.
+      (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there") (refresh scr))))
+      (setf (callback button2) 'cancel-form)
+      (setf (callback button3) 'accept-form)
+
+      ;; The set value shouldnt be longer than the max-buffer-length (not checked yet)
+      (setf (value field1) "hello"
+            (value field2) "there"
+            (value field3) "dear john")
+
+      (event-case (scr event)
+        (#\q (return-from event-case))
+        ;; display the form window input box by pressing a.
+        (#\a
+         (if (edit form)
+             ;; edit returns t if the form is accepted
+             (progn
+               (clear scr)
+               ;; Access fields by their name instead of looping through the elements list.
+               (mapc #'(lambda (name)
+                         (let ((field (find-element form name)))
+                           (format scr "~5A ~10A ~20A~%" name (title field) (value field))))
+                     (list :f1 :f2 :f3))
+               (refresh scr))
+
+             ;; and nil if it is cancelled.
+             (progn
+               (clear scr)
+               (princ nil scr)
+               (refresh scr)))))
+
+        ;; close the ncurses windows before exiting.
+        (close form))))
+
+(defun t16i ()
+  "A simple line input form window."
+  (let ((value nil))
+    (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+      (let* ((ch1 (list :foreground :black :background :white))
+             (ch2 (list :simple-char #\_ :foreground :black :background :white))
+             (ch3 (list :foreground :yellow :background :red :attributes '(:underline :bold :italic)))
+             (ch4 (list :simple-char #\_ :foreground :white :background :blue))
+             (ch5 (list :simple-char #\. :foreground :black :background :white))
+             
+             (style1 (list :foreground ch1 :background ch2 :selected-foreground ch3 :selected-background ch4))
+             (style2 (list :foreground ch1 :selected-foreground ch4))
+             (style3 (list :foreground ch1 :background ch5))
+
+             ;; form element default styles
+             (style4 (list 'field style1 'button style2 'label style3))
+             
+             (label1 (make-instance 'label :name :l1 :reference :f1 :width 20 :location (list 2 1)))
+             (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 2 22) :width 20 :max-buffer-length 25))
+
+             (label2 (make-instance 'label :name :l2 :reference :f2 :width 20 :location (list 4 1)))
+             (field2 (make-instance 'field :name :f2 :title "Surname" :location (list 4 22) :width 20 :max-buffer-length 25))
+
+             (button1 (make-instance 'button :name :b3 :title "Reset"  :location (list 6 15)))
+             (button2 (make-instance 'button :name :b2 :title "Cancel" :location (list 6 25)))
+             (button3 (make-instance 'button :name :b2 :title "Accept" :location (list 6 34)))
+
+             (form (make-instance 'form-window :elements (list field1 field2 label1 label2 button1 button2 button3)
+                                  :style style4 :enable-function-keys t :input-blocking t :title "form window"
+                                  :draw-border t :height 10 :width 50 :location (list 5 15))))
+
+        (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
+        (refresh scr)
+
+        (setf (callback button1) 'reset-form)
+        (setf (callback button2) 'cancel-form)
+        (setf (callback button3) 'accept-form)
+
+        (if (edit form)
+            (setq value (pairlis (list (title field1) (title field2))
+                                 (list (value field1) (value field2))))
+            (setq value nil))
+        (close form)))
+
+    ;; return the input values
+    value))
+
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
