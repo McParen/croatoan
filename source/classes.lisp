@@ -595,6 +595,13 @@
     :type          (or null string)
     :documentation "Title of the element to be displayed at an location depending on the element type.")
 
+   (value
+    :initarg       :value
+    :initform      nil
+    :accessor      value
+    :type          (or symbol keyword string number)
+    :documentation "Value of the element, mostly the result of the form editing.")
+
    (location
     :initarg       :location
     :initform      nil
@@ -814,7 +821,14 @@ If there is no window asociated with the element, return the window associated w
   (setf (slot-value field 'buffer) (reverse (coerce new-value 'list))))
 
 (defclass form ()
-  ((elements
+  ((name
+    :initarg       :name
+    :initform      nil
+    :reader        name
+    :type          (or null symbol keyword string)
+    :documentation "Name of the form.")
+
+   (elements
     :initarg       :elements
     ;; Make sure we already have fields when we initialize a form.
     :initform      nil
