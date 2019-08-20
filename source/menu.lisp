@@ -136,7 +136,7 @@ At the third position, display the item given by item-number."
       (change-attributes win max-item-length '(:reverse) ))))
 
 ;; draws to any window, not just to a sub-window of a menu-window.
-(defmethod draw-menu (window menu)
+(defun draw-menu (window menu)
   "Draw the menu to the window."
   (with-accessors ((layout layout) (scrolled-layout scrolled-layout) (scrolled-region-start scrolled-region-start)) menu
     (clear window)
@@ -205,6 +205,15 @@ At the third position, display the item given by item-number."
                (third  coords)     ;screen-max-y
                (fourth coords))))) ;screen-max-x
 
+(defun reset-menu (menu)
+  "After the menu is closed reset it to its initial state."
+  (with-slots (items current-item-number current-item scrolled-region-start menu-type) menu
+    (setf current-item-number   0
+          current-item          (car items)
+          scrolled-region-start (list 0 0))
+    (when (eq menu-type :checklist)
+      (loop for i in items if (checkedp i) do (setf (checkedp i) nil)))))
+
 (defun return-from-menu (menu return-value)
   "Set menu window to invisible, refresh the window stack, return the value from select."
   (when *window-stack*
@@ -213,6 +222,7 @@ At the third position, display the item given by item-number."
       (menu-window (setf (visiblep menu) nil))
       (menu (setf (visiblep (window menu)) nil)))
     (refresh-stack))
+  (reset-menu menu)
   (throw 'event-loop return-value))
 
 (defun exit-menu-event-loop (menu event)
