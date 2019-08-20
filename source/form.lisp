@@ -95,10 +95,11 @@ The default background char is #\space."
 (defmethod draw ((label label))
   (with-accessors ((pos location) (win window) (name name) (title title) (width width) (style style) (reference reference)
                    (parent-form parent-form)) label
-    (let* ((string (or title
-                       (title (find-element parent-form reference))
-                       (symbol-name (name (find-element parent-form reference)))
-                       (symbol-name name)))
+    (let* ((text (or title
+                     (title (find-element parent-form reference))
+                     (name (find-element parent-form reference))
+                     name))
+           (string (when text (format nil "~A" text)))
            (fg-style (getf style :foreground))
            (bg-style (getf style :background))
            (bg-char (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
