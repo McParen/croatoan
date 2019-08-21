@@ -847,7 +847,9 @@ If there is no window asociated with the element, return the window associated w
       (setf max-buffer-length width))))
 
 (defmethod value ((field field))
-  (coerce (reverse (slot-value field 'buffer)) 'string))
+  "If the field buffer is empty, return nil, otherwise return the buffer as a string."
+  (when (slot-value field 'buffer)
+    (coerce (reverse (slot-value field 'buffer)) 'string)))
 
 (defmethod (setf value) (new-value (field field))
   (setf (slot-value field 'buffer) (reverse (coerce new-value 'list))))
