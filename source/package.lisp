@@ -36,6 +36,7 @@
    form-window
    button
    label
+   checkbox
    shape
 
    ;; accessors
@@ -103,6 +104,7 @@
    cancel-form
    accept-form
    reset-form
+   checkedp
    
    ;; shape
    origin-x

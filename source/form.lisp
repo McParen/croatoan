@@ -75,6 +75,14 @@ The default background char is #\space."
     (setf (cursor-position (window object)) (location object))
     (refresh (window object))))
 
+(defmethod update-cursor-position ((checkbox checkbox))
+  "Update the cursor position of a checkbox."
+  (with-accessors ((pos location) (inptr input-pointer) (dptr display-pointer) (win window)) checkbox
+    (move win
+          (car pos)
+          (1+ (cadr pos))) ;; put the cursor after the [
+    (refresh win) ))
+
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
   (with-accessors ((pos location) (inptr input-pointer) (dptr display-pointer) (win window)) field
@@ -117,6 +125,14 @@ The default background char is #\space."
     (apply #'move win pos)
     (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground))))
       (add-string win (format nil "<~A>" (if title title name)) :style fg-style))))
+
+(defmethod draw ((checkbox checkbox))
+  (with-accessors ((pos location) (name name) (win window) (selected selectedp) (style style)
+                   (checkedp checkedp)) checkbox
+    (apply #'move win pos)
+    (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground))))
+      (add-string win (format nil "[~A]" (if checkedp "X" "_")) :style fg-style)
+      (update-cursor-position checkbox))))
 
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
@@ -388,6 +404,11 @@ This allows to specify why the form was accepted."
   (when (callback button)
     (funcall (callback button) button event)))
 
+(defun toggle-checkbox (checkbox event)
+  (declare (ignore event))
+  (setf (checkedp checkbox) (not (checkedp checkbox)))
+  (draw checkbox))
+
 ;; How to automatically bind a hotkey to every button?
 ;; that hotkey would have to be added to the form keymap, not to that of a button.
 ;; that would be like a global keymap, in contrast to an elements local keymap.
@@ -395,6 +416,11 @@ This allows to specify why the form was accepted."
   (list
    #\space     'call-button-function
    #\newline   'call-button-function))
+
+(define-keymap 'checkbox-map
+  (list
+   #\space     'toggle-checkbox
+   #\x         'toggle-checkbox))
 
 ;; TODO: we want edit to return the edited form.
 ;; exit-event-loop just returns the keyword :exit-event-loop

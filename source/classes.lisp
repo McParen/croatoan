@@ -746,6 +746,38 @@ If there is no window asociated with the element, return the window associated w
 
   (:documentation "An element that can call a function by pressing enter (or in future, with a mouse click)."))
 
+(defclass checkbox (element)
+  ((style
+    :initarg       :style
+    :initform      nil
+    :type          (or null cons)
+    :documentation "A plist containing :foreground and :selected-foreground.")
+
+   (checkedp
+    :initarg       :checked
+    :initform      nil
+    :accessor      checkedp
+    :type          boolean
+    :documentation "t if the checkbox has been checked, nil if it hasn't.")
+   
+   (bindings
+    :initarg       :bindings
+    :initform      nil
+    :type          (or null cons)
+    :accessor      bindings
+    :documentation
+    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
+    Used by the run-event-loop function.")
+
+   (keymap
+    :initarg       :keymap
+    :initform      'checkbox-map
+    :type          (or null symbol keyword keymap)
+    :accessor      keymap
+    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings."))
+
+  (:documentation "A boolean element that can be checked (t) or unchecked (nil)"))
+
 (defclass field (element)
   ((width
     :initarg       :width
