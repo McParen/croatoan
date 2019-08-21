@@ -1689,7 +1689,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let* ((s1 (list :foreground :blue :background :black))
            (s2 (list :simple-char #\_))
-           (s3 (list :foreground :yellow :background :red :attributes '(:underline :bold :italic)))
+           (s3 (list :foreground :yellow :background :red :attributes '(:bold :italic)))
            (s4 (list :simple-char #\_ :foreground :white :background :blue))
 
            ;; element styles reference previousy defined character styles.
@@ -1700,21 +1700,25 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (s9 (list :foreground s1 :background s8))
            
            ;; the form style consists of default styles of form elements.
-           (s7 (list 'field s5 'button s6 'label s9))
+           (s7 (list 'field s5 'button s6 'label s9 'checkbox s5))
 
            (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 20) :width 15 :max-buffer-length 5))
            (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 20) :width 15))
            (field3 (make-instance 'field :name :f3                   :location (list 7 20) :width 15 :max-buffer-length 20))
 
+           (cb1 (make-instance 'checkbox :name :c1 :title "Employed" :location (list 9 20)))
+
            (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :location (list 3 1)))
-           (label2 (make-instance 'label :name :l2 :reference :f1 :width 18 :location (list 5 1)))
+           (label2 (make-instance 'label :name :l2 :reference :f2 :width 18 :location (list 5 1)))
            (label3 (make-instance 'label :name :l3 :title "Age"             :location (list 7 1)))
+           (label4 (make-instance 'label :name :l4 :reference :c1 :width 18 :location (list 9 1)))
+           
+           (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 11 10)))
+           (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 11 20)))
+           (button3 (make-instance 'button :name :b3 :title "Cancel" :location (list 11 30)))
 
-           (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 10 10)))
-           (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 10 20)))
-           (button3 (make-instance 'button :name :b3 :title "Cancel" :location (list 10 30)))
-
-           (form (make-instance 'form :elements (list field1 field2 field3 label1 label2 label3 button1 button2 button3)
+           (form (make-instance 'form
+                                :elements (list field1 field2 field3 cb1 label1 label2 label3 label4 button1 button2 button3)
                                 :style s7 :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
@@ -1728,16 +1732,22 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; The set value shouldnt be longer than the max-buffer-length
       (setf (value field2) "hello"
             (value field3) "dear john")
-
+      
       ;; Access fields by their name instead of looping through the elements list.
-      (if (prog1 (edit form) (clear scr))
+      (if (edit form)
           ;; edit returned t, which means the user accepted the form
-          (mapc #'(lambda (name)
-                    (let ((field (find-element form name)))
-                      (format scr "~5A ~10A ~20A~%" name (title field) (value field))))
-                (list :f1 :f2 :f3))
+          (progn
+            (clear scr)
+            (mapc #'(lambda (name)
+                      (let ((element (find-element form name)))
+                        (format scr "~5A ~10A ~20A~%" name (title element) (value element))))
+                  (list :f1 :f2 :f3))
+            ;; display the state of the checkbox
+            (format scr "~5A ~10A ~20A~%" (name cb1) (title cb1) (checkedp cb1)))
           ;; edit returned nil, which means the user canceled the form
-          (format scr "nil"))
+          (progn
+            (clear scr)
+            (format scr "nil")))
       
       (refresh scr)
       ;; wait for keypress, then exit
