@@ -177,7 +177,7 @@ The default background char is #\space."
 
 ;; previous-element and next-element are the only two elements where the current-element-number is changed.
 ;; here also current-element and selected has to be set.
-(defun select-previous-element (form event)
+(defun select-previous-element (form event &rest args)
   "Select the previous element in a form's element list."
   ;;(declare (special form))
   (with-accessors ((elements elements) (current-element-number current-element-number) (current-element current-element) (win window)) form
@@ -195,7 +195,7 @@ The default background char is #\space."
           (draw form))
         (select-previous-element form event))))
 
-(defun select-next-element (form event)
+(defun select-next-element (form event &rest args)
   "Select the next element in a form's element list."
   ;;(declare (special form))
   (with-accessors ((elements elements) (current-element-number current-element-number) (current-element current-element) (win window)) form
@@ -213,7 +213,7 @@ The default background char is #\space."
           (draw form))
         (select-next-element form event))))
 
-(defun move-previous-char (field event)
+(defun move-previous-char (field event &rest args)
   "Move the cursor to the previous char in the field."
   (with-accessors ((inptr input-pointer) (dptr display-pointer) (win window)) field
     (when (> inptr 0)
@@ -223,7 +223,7 @@ The default background char is #\space."
       (decf dptr))
     (draw field)))
 
-(defun move-next-char (field event)
+(defun move-next-char (field event &rest args)
   "Move the cursor to the next char in the field."
   (with-accessors ((width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer) (mlen max-buffer-length)
                    (win window)) field
@@ -236,7 +236,7 @@ The default background char is #\space."
       (incf dptr))
     (draw field)))
 
-(defun delete-previous-char (field event)
+(defun delete-previous-char (field event &rest args)
   "Delete the previous char in the field, moving the cursor to the left."
   (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) field
     (when (> inptr 0)
@@ -247,7 +247,7 @@ The default background char is #\space."
     ;; we dont have to redraw the complete form, just the changed field.
     (draw field)))
 
-(defun delete-next-char (field event)
+(defun delete-next-char (field event &rest args)
   "Delete the next char (char under the cursor) in the field, not moving the cursor."
   (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) field
     ;; we can only delete to the right if the inptr is not at the end of the inbuf.
@@ -258,7 +258,7 @@ The default background char is #\space."
       (setf inbuf (remove-nth (- (length inbuf) (1+ inptr)) inbuf)))
     (draw field)))
 
-(defun field-add-char (field char)
+(defun field-add-char (field char &rest args)
   "Add char to the current cursor position in the field.
 
 The buffer can be longer than the displayed field width, horizontal scrolling is enabled."
@@ -325,7 +325,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
       ;; TODO: this doesnt work with acs chars, which are keywords.
       nil))
 
-(defun debug-print-field-buffer (object event)
+(defun debug-print-field-buffer (object event &rest args)
   (declare (ignore event))
   (typecase object
     (field
@@ -339,7 +339,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
      (debug-print-field-buffer (current-element object) event)))
   (draw object))
 
-(defun cancel-form (object event)
+(defun cancel-form (object event &rest args)
   "Associate this function with an event (key binding or button) to exit the form event loop.
 
 The first return value is nil, emphasizing that the user has canceled the form.
@@ -350,7 +350,7 @@ This allows to specify why the form was canceled."
   (declare (ignore event))
   (throw 'event-loop (values nil (name object))))
 
-(defun accept-form (object event)
+(defun accept-form (object event &rest args)
   "Associate this function with an event (key binding or button) to exit the form event loop.
 
 The first return value is t, emphasizing that the user has accepted the form.
@@ -361,7 +361,17 @@ This allows to specify why the form was accepted."
   (declare (ignore event))
   (throw 'event-loop (values t (name object))))
 
-(defun reset-form (object event)
+(defun accept-field (field event &rest args)
+  "When the field is used without a parent form, accepting the field edit returns the field value."
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) field
+    ;; TODO: we have to be able to exit an empty field, return nil.
+    (when (> (length inbuf) 0)
+      (let ((val (value field)))
+        (clear win)
+        (setf inbuf nil inptr 0 dptr 0)
+        (throw 'event-loop val)))))
+
+(defun reset-form (object event &rest args)
   (declare (ignore event))
   (let ((form (typecase object
                 (form object)
@@ -377,10 +387,11 @@ This allows to specify why the form was accepted."
 (define-keymap 'form-map
   (list
    ;; Use C-a ^A #\soh 1 to exit the edit loop.
-   ;; TODO: what should the exit return?
    #\soh      'accept-form
    ;; C-x = cancel = CAN = #\can
    #\can      'cancel-form
+   ;; C-r = reset = DC2 = #\dc2
+   #\dc2      'reset-form
    :btab      'select-previous-element
    :up        'select-previous-element
    #\tab      'select-next-element
@@ -388,8 +399,7 @@ This allows to specify why the form was accepted."
 
 (define-keymap 'field-map
   (list
-   #\soh      'exit-event-loop  ; we need this in case a field is used alone outside of a form.
-   ;;#\soh      'move-start-of-line
+   #\soh      'accept-field  ; we need this in case a field is used alone outside of a form.
    :left      'move-previous-char
    :right     'move-next-char
    :backspace 'delete-previous-char
@@ -398,13 +408,12 @@ This allows to specify why the form was accepted."
                 (setf (insert-mode-p (window field)) (not (insert-mode-p (window field)))))
    t          'field-add-char))
 
-;; TODO: should we pass the event to the button function?
-(defun call-button-function (button event)
+(defun call-button-function (button event &rest args)
   (declare (ignore event))
   (when (callback button)
     (funcall (callback button) button event)))
 
-(defun toggle-checkbox (checkbox event)
+(defun toggle-checkbox (checkbox event &rest args)
   (declare (ignore event))
   (setf (checkedp checkbox) (not (checkedp checkbox)))
   (draw checkbox))
@@ -422,10 +431,8 @@ This allows to specify why the form was accepted."
    #\space     'toggle-checkbox
    #\x         'toggle-checkbox))
 
-;; TODO: we want edit to return the edited form.
-;; exit-event-loop just returns the keyword :exit-event-loop
-(defun edit (object)
+(defun edit (object &rest args)
   (draw object)
-  ;; since we have no further args passed to run-event-loop, all handler functions have to accept
-  ;; at most two arguments, object and event.
-  (run-event-loop object))
+  ;; since we have args passed to run-event-loop, all handler functions have to accept
+  ;; a &rest args argument.
+  (apply #'run-event-loop object args))
