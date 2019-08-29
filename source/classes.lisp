@@ -1278,12 +1278,10 @@ If there is no window asociated with the element, return the window associated w
 (defgeneric (setf background) (char window &optional apply))
 (defmethod (setf background) (char (window window) &optional (apply t))
   (setf (slot-value window 'background) char)
-  (if char
-      (set-background-cchar_t window char apply)
-      ;; if the background char is nil, set a space without attributes or colors.
-      (set-background-cchar_t window
-                              (make-instance 'complex-char :simple-char #\space)
-                              apply)))
+  ;; ncurses
+  ;;(set-background-char (slot-value window 'winptr) char apply))
+  ;; ncursesw
+  (set-background-cchar_t window char apply))
 
 ;(defgeneric attributes (window))
 (defmethod attributes ((window window))

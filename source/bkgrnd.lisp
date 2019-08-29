@@ -20,7 +20,11 @@ in the window.
 Otherwise, it is applied only to newly added simple characters."
   (let ((fn (if apply #'%wbkgrnd #'%wbkgrndset))
         (count 1))
-    (funcall-make-cchar_t fn window char nil nil count)))
+    (if char
+        (funcall-make-cchar_t fn window char nil nil count)
+        ;; setting char to nil means to unset the background
+        ;; unset the background means set space as char and the default color pair 0
+        (funcall-make-cchar_t fn window #\space nil (number-to-pair 0) count))))
 
 ;; used in: get-background-cchar_t, extract-wide-char
 (defun funcall-get-cchar_t (fn window)
