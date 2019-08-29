@@ -43,6 +43,8 @@
    simple-char
    attributes
    color-pair
+   fgcolor
+   bgcolor
    complex-char-array
    width
    height
@@ -102,6 +104,7 @@
    form-map
    button-map
    cancel-form
+   accept-field
    accept-form
    reset-form
    checkedp

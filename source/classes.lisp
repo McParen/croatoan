@@ -1326,6 +1326,55 @@ If there is no window asociated with the element, return the window associated w
   (setf (slot-value window 'color-pair) color-pair)
   (set-color-pair (slot-value window 'winptr) color-pair))
 
+
+(defgeneric fgcolor (obj)
+  (:documentation "Return the car of the color-pair, the foreground color."))
+
+(defgeneric bgcolor (obj)
+  (:documentation "Return the cadr of the color-pair, the background color."))
+
+(defmethod fgcolor ((win window))
+  (car (slot-value win 'color-pair)))
+
+(defmethod bgcolor ((win window))
+  (cadr (slot-value win 'color-pair)))
+
+
+(defgeneric (setf fgcolor) (fgcolor obj)
+  (:documentation "Return the car of the color-pair, the foreground color."))
+
+(defgeneric (setf bgcolor) (bgcolor obj)
+  (:documentation "Return the cadr of the color-pair, the background color."))
+
+(defmethod (setf fgcolor) (fgcolor (win window))
+  ;; if the color pair is nil, create a new color pair
+  ;; otherwise set the car of the color-pair
+  (if (slot-value win 'color-pair)
+      (setf (car (slot-value win 'color-pair)) fgcolor)
+      (setf (slot-value win 'color-pair) (list fgcolor nil)))
+
+  ;; if both fg and bg are nil, set color-pair to nil, instead of having a list of two nils.
+  (when (and (null (car (slot-value win 'color-pair)))
+             (null (cadr (slot-value win 'color-pair))))
+    (setf (slot-value win 'color-pair) nil))
+
+  ;; set the color pair in the underlying ncurses lib.
+  (set-color-pair (slot-value win 'winptr) (slot-value win 'color-pair)))
+
+(defmethod (setf bgcolor) (bgcolor (win window))
+  ;; if the color pair is nil, create a new color pair
+  ;; otherwise set the car of the color-pair
+  (if (slot-value win 'color-pair)
+      (setf (cadr (slot-value win 'color-pair)) bgcolor)
+      (setf (slot-value win 'color-pair) (list nil bgcolor)))
+
+  ;; if both fg and bg are nil, set color-pair to nil, instead of having a list of two nils.
+  (when (and (null (car (slot-value win 'color-pair)))
+             (null (cadr (slot-value win 'color-pair))))
+    (setf (slot-value win 'color-pair) nil))
+
+  (set-color-pair (slot-value win 'winptr) (slot-value win 'color-pair)))
+
 ;;; print, prin1, princ, format ~A, ~S
 
 ;; print a wide but simple lisp character to a window

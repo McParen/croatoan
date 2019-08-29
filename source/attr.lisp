@@ -128,30 +128,58 @@ Example: (pair-to-number '(:white :black)) => 0"
   "Take a pair number, return a color pair in a 2 element list of keywords."
   (car (rassoc number *color-pair-alist*)))
 
-;; TODO: We cant run complete-pair here, because we dont have the window.
-;; we have to run this within add-char, add-wide-char, etc.
-(defun complete-pair (window color-pair)
+(defun complete-default-pair (color-pair)
+  "Take a color pair possibly containing nil, return a pair completed from the default color pair 0."
+  (let ((fg (car  color-pair))
+        (bg (cadr color-pair))
+        (default-pair (number-to-pair 0)))
+    (cond
+      ;; when both colors are given, just return the original pair
+      ((and color-pair fg bg) color-pair)
+
+      ;; when the pair is nil or when both colors are missing      
+      ((or (null color-pair)
+           (and (null fg) (null bg)))
+       ;; just return the default pair
+       default-pair)
+
+      ;; when only the bg is missing, complete the bg
+      ((null bg)
+       (list fg (cadr default-pair)))
+
+      ;; when only the fg is missing, complete the fg
+      ((null fg)
+       (list (car default-pair) bg)))))
+
+(defun complete-pair (window pair)
   "If either the foreground or background color is nil, complete the pair for the given window.
+
+Return the completed pair.
 
 Try to complete the missing colors in the following order:
 
 1. window color pair.
 2. window background character color pair.
 3. ncurses default color pair 0 (white on black or the terminal default color pair)."
-  (let ((fg (car  color-pair))
-        (bg (cadr color-pair)))
+  (let ((fg (car  pair))
+        (bg (cadr pair)))
     (cond
       ;; when both colors are given, just return the original pair
-      ((and color-pair fg bg) color-pair)
-      ;; when the pair is nil or when both colors are missing
-      ((or (null color-pair)
+      ((and pair fg bg) pair)
+
+      ;; when the pair is nil or when both colors are missing      
+      ((or (null pair)
            (and (null fg) (null bg)))
        (cond
-         ((color-pair window) (color-pair window))
+         ((color-pair window)
+          ;; if color pair exists, but is not complete, complete it recursively in a second step.
+          ;; if we have fg from color pair, and a bg from background, they will be combined.
+          (complete-pair window (color-pair window)))
          ((and (background window)
                (color-pair (background window)))
-          (color-pair (background window)))
+          (complete-pair window (color-pair (background window))))
          (t (number-to-pair 0))))
+      
       ;; when only the bg is missing, complete the bg
       ((null bg)
        (cond
@@ -162,6 +190,7 @@ Try to complete the missing colors in the following order:
           (list fg (cadr (color-pair (background window)))))
          (t
           (list fg (cadr (number-to-pair 0))))))
+
       ;; when only the fg is missing, complete the fg
       ((null fg)
        (cond
@@ -214,13 +243,11 @@ from the given point without moving the cursor position."
                         0))))
     (%wchgat (winptr win) n attrs pairno (null-pointer))))
 
-;; (set-color window '(:black :white))
 (defun set-color-pair (winptr color-pair)
-  "Sets the color attribute only."
-  (if color-pair
-      (%wcolor-set winptr (pair-to-number color-pair) (null-pointer))
-      ;; if color-pair is nil, set the color pair 0 (white black) or (default default).
-      (%wcolor-set winptr 0 (null-pointer))))
+  "Sets the color attribute of the window only."
+  (%wcolor-set winptr
+               (pair-to-number (complete-default-pair color-pair))
+               (null-pointer)))
 
 (defparameter *bitmask-alist*
   ;; the first four are not attributes, but bitmasks used to extract parts of the chtype.

@@ -38,7 +38,7 @@ If n is -1, add as many chars from the string as will fit on the line."
   "Return the number of lines from the cursor position to the bottom of the window."
   (- (height window) (car (cursor-position window))))
 
-(defun add-char (window char &key attributes color-pair style y x position n)
+(defun add-char (window char &key attributes fgcolor bgcolor color-pair style y x position n)
   "Add the narrow (single-byte) char to the window, then advance the cursor.
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -55,9 +55,11 @@ Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
   (let ((attributes (if style
                         (getf style :attributes)
                         attributes))
-        (color-pair (if style
-                        (list (getf style :foreground) (getf style :background))
-                        color-pair)))
+        (color-pair (cond (style
+                           (list (getf style :fgcolor) (getf style :bgcolor)))
+                          ((or fgcolor bgcolor)
+                           (list fgcolor bgcolor))
+                          (t color-pair))))
     (funcall-make-chtype #'%waddch window char attributes color-pair n)))
 
 ;; At the moment, echo is just a wrapper for echo-wide-char.
@@ -77,7 +79,7 @@ If char is a complex-char, its own style overrides any style parameters.
 If a style is passed, it overrides attributes and color-pair."
   (apply #'echo-wide-char window char keys))
 
-(defun echo-char (window char &key attributes color-pair style y x position)
+(defun echo-char (window char &key attributes fgcolor bgcolor color-pair style y x position)
   "Add one narrow (single-byte) character to the window, then refresh the window.
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -98,9 +100,11 @@ character."
         (attributes (if style
                         (getf style :attributes)
                         attributes))
-        (color-pair (if style
-                        (list (getf style :foreground) (getf style :background))
-                        color-pair)))
+        (color-pair (cond (style
+                           (list (getf style :fgcolor) (getf style :bgcolor)))
+                          ((or fgcolor bgcolor)
+                           (list fgcolor bgcolor))
+                          (t color-pair))))
     (funcall-make-chtype fn window char attributes color-pair count)))
 
 ;; just an utility function if you dont want to use (format nil "bla

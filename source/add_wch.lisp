@@ -102,7 +102,7 @@ If char is a complex char, attributes and color-pair are ignored."
     ;; uses %setcchar to create a cchar_t pointer and passes it to fn.
     (funcall-make-cchar_t-ptr fn winptr ch attr_t color-pair-number count)))
 
-(defun add-wide-char (window char &key attributes color-pair style y x position n)
+(defun add-wide-char (window char &key attributes fgcolor bgcolor color-pair style y x position n)
   "Add the wide (multi-byte) char to the window, then advance the cursor.
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -121,12 +121,14 @@ If a style is passed, it overrides attributes and color-pair."
   (let ((attributes (if style
                         (getf style :attributes)
                         attributes))
-        (color-pair (if style
-                        (list (getf style :foreground) (getf style :background))
-                        color-pair)))
+        (color-pair (cond (style
+                           (list (getf style :fgcolor) (getf style :bgcolor)))
+                          ((or fgcolor bgcolor)
+                           (list fgcolor bgcolor))
+                          (t color-pair))))
     (funcall-make-cchar_t #'%wadd-wch window char attributes color-pair n)))
 
-(defun echo-wide-char (window char &key attributes color-pair style y x position)
+(defun echo-wide-char (window char &key attributes fgcolor bgcolor color-pair style y x position)
   "Add one wide (multi-byte) character to the window, then refresh the window.
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -147,9 +149,11 @@ character."
         (attributes (if style
                         (getf style :attributes)
                         attributes))
-        (color-pair (if style
-                        (list (getf style :foreground) (getf style :background))
-                        color-pair)))
+        (color-pair (cond (style
+                           (list (getf style :fgcolor) (getf style :bgcolor)))
+                          ((or fgcolor bgcolor)
+                           (list fgcolor bgcolor))
+                          (t color-pair))))
     (funcall-make-cchar_t fn window char attributes color-pair count)))
 
 ;; wide-char equivalents of the ACS chars.

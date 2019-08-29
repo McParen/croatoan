@@ -1,6 +1,6 @@
 (in-package :de.anvi.croatoan)
 
-(defun insert-wide-char (window char &key attributes color-pair style y x position n)
+(defun insert-wide-char (window char &key attributes fgcolor bgcolor color-pair style y x position n)
   "Insert char into window before the character currently under the cursor.
 
 Chars right of the cursor are moved one position to the right.
@@ -20,9 +20,11 @@ If n is given, insert n chars."
   (let ((attributes (if style
                         (getf style :attributes)
                         attributes))
-        (color-pair (if style
-                        (list (getf style :foreground) (getf style :background))
-                        color-pair)))
+        (color-pair (cond (style
+                           (list (getf style :fgcolor) (getf style :bgcolor)))
+                          ((or fgcolor bgcolor)
+                           (list fgcolor bgcolor))
+                          (t color-pair))))
     (funcall-make-cchar_t #'%wins-wch window char attributes color-pair n)))
 
 ;; TODO: (defmethod insert (obj character))

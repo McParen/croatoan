@@ -1,6 +1,6 @@
 (in-package :de.anvi.croatoan)
 
-(defun insert-string (window string &key attributes color-pair style y x position n)
+(defun insert-string (window string &key attributes fgcolor bgcolor color-pair style y x position n)
   "Insert string before the current position in window.
 
 Chars right of the cursor are moved to the right. The rightmost chars
@@ -23,16 +23,18 @@ The position can also be passed in form of a two-element list."
                      (complex-string (length (complex-char-array string)))))))
     (typecase string
       (string
-       (if (or attributes color-pair style)
+       ;;(if (or attributes fgcolor bgcolor color-pair style)
            ;; lisp string combined with attributes and colors
            (loop
               repeat count
               for ch across (reverse string)
-              do (insert-wide-char window ch :attributes attributes :color-pair color-pair :style style))
+              do (insert-wide-char window ch :attributes attributes :fgcolor fgcolor :bgcolor bgcolor
+                                   :color-pair color-pair :style style)) )
            ;; simple lisp string, no attributes or colors
-           (if n
-               (%winsnstr (winptr window) string n)
-               (%winsstr  (winptr window) string))))
+           ;; TODO 190826 we dont want to use this because we want to force color-set and bkgd to use separate colors
+           ;;(if n
+           ;;    (%winsnstr (winptr window) string n)
+           ;;    (%winsstr  (winptr window) string))))
       (complex-string
        (loop
           repeat count
