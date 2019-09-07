@@ -1415,7 +1415,9 @@ If there is no window asociated with the element, return the window associated w
   ;; if by time of closing, the window is still on the stack, remove it first.
   (if (member stream *window-stack* :test #'eq)
       (setf *window-stack* (remove stream *window-stack* :test #'eq)))
-  (%delwin (winptr stream)))
+  (%delwin (winptr stream))
+  ;; The default method provided by class FUNDAMENTAL-STREAM sets a flag for OPEN-STREAM-P.
+  (call-next-method))
 
 (defmethod close ((stream sub-window) &key abort)
   (declare (ignore abort))
