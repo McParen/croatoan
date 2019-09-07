@@ -348,6 +348,7 @@ If called by a button, the name of the button is returned as a second value.
 
 This allows to specify why the form was canceled."
   (declare (ignore event))
+  (reset-form object event)
   (throw 'event-loop (values nil (name object))))
 
 (defun accept-form (object event &rest args)
@@ -404,7 +405,7 @@ This allows to specify why the form was accepted."
    :right     'move-next-char
    :backspace 'delete-previous-char
    :dc        'delete-next-char
-   :ic        (lambda (field event)
+   :ic        (lambda (field event &rest args)
                 (setf (insert-mode-p (window field)) (not (insert-mode-p (window field)))))
    t          'field-add-char))
 
