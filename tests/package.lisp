@@ -112,6 +112,7 @@
    #:matrix
    #:matrix2
    #:matrix3
+   #:matrix4
    #:snake
    #:snake2
    #:tetris

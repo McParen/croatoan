@@ -166,15 +166,15 @@
            (height (height scr))
            (positions (loop repeat width collect (random height)))
            (speeds (loop repeat width collect (random 4)))
-           (s1 (list :attributes '(:bold) :foreground :white))
-           (s2 (list :attributes '(:bold) :foreground :green :background nil))
-           (s3 (list :attributes nil      :foreground :green :background :black)))
+           (s1 (list :attributes '(:bold) :fgcolor :white))
+           (s2 (list :attributes '(:bold) :fgcolor :green :bgcolor nil))
+           (s3 (list :attributes nil      :fgcolor :green :bgcolor :black)))
       (flet ((randch () (+ 64 (random 58))))
         (bind scr #\q 'exit-event-loop)
         (bind scr #\r
           (lambda (win event)
-            (setf (getf s2 :foreground) :red
-                  (getf s3 :foreground) :red)))
+            (setf (getf s2 :fgcolor) :red
+                  (getf s3 :fgcolor) :red)))
         (bind scr nil
           (lambda (win event)
             (loop for column from 0 to (1- width) do
@@ -185,6 +185,33 @@
                         (add win (randch) :y (mod (- pos 2) height) :x column :style s2)
                         (add win (randch) :y (mod (- pos 3) height) :x column :style s3)
                         (add win #\space  :y (mod (- pos (floor height 3)) height) :x column :style s3)
+                        (refresh win)
+                        (setf (nth column positions) (mod (1+ pos) height)))))))))
+    (setf (frame-rate scr) 20)
+    (run-event-loop scr)))
+
+(defun matrix4 ()
+  "Test passing colors with fgcolor without passing them as pairs."
+  (with-screen (scr :input-echoing nil :input-blocking nil :cursor-visible nil)
+    (let* ((width (width scr))
+           (height (height scr))
+           (positions (loop repeat width collect (random height)))
+           (speeds (loop repeat width collect (random 4))))
+      (flet ((randch () (+ 64 (random 58))))
+        (bind scr #\q 'exit-event-loop)
+        (bind scr nil
+          (lambda (win event)
+            (loop for column from 0 to (1- width) do
+                 (loop repeat (nth column speeds) do
+                      (let ((pos (nth column positions)))
+                        (setf (attributes win) '(:bold))
+                        (setf (fgcolor win) :green)
+                        (add win (randch) :y (mod pos height) :fgcolor :white :x column)
+                        (add win (randch) :y (mod (- pos 1) height) :x column)
+                        (add win (randch) :y (mod (- pos 2) height) :x column)
+                        (setf (attributes win) '())
+                        (add win (randch) :y (mod (- pos 3) height) :x column)
+                        (add win #\space  :y (mod (- pos (floor height 3)) height) :x column)
                         (refresh win)
                         (setf (nth column positions) (mod (1+ pos) height)))))))))
     (setf (frame-rate scr) 20)
@@ -291,7 +318,7 @@
     (get-char scr)))
 
 (defun t02b ()
-  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :use-default-colors t)
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :use-terminal-colors t)
     ;; simple chars added to a window without a rendered style.
     (add-string scr "Hello there!")
     (fresh-line scr) (refresh scr) (get-char scr)
@@ -425,13 +452,12 @@
        while (not (equal (code-char ch) #\q))
        do
          (clear scr)
-         ;; display the human-readable version of a wide char by using the utf-8 %waddch interface.
-         ;; adding both attributes and colors works this way.
-         (add-wide-char scr ch             :attributes (list :underline) :color-pair (list :yellow :red) :y 0 :x 0)
+         ;; display the human-readable version of a wide char.
+         (add-wide-char scr ch             :attributes (list :underline) :fgcolor :yellow :bgcolor :red  :y 0 :x 0)
          (add-wide-char scr (code-char ch) :attributes (list :bold)      :color-pair (list :yellow :red) :y 0 :x 2)
-         ;; extract the wide char added by the utf-8 %waddch interface.
+         ;; extract the wide char again.
          (let ((ch2 (extract-wide-char scr :y 0 :x 0)))
-           ;; display the lisp-readable version of the extracted wide char
+           ;; display the lisp-readable version of the extracted complex wide char
            (move scr 1 0)
            ;; TODO: prin1, print and ~S should print unreadable #<..>
            ;; only princ and ~A should render complex chars
@@ -439,6 +465,7 @@
            ;; print the slots of the extracted complex wide char
            (princ (attributes ch2) scr)
            (princ (color-pair ch2) scr)
+           ;; display the rendered complex wide char again
            (add-wide-char scr ch2 :y 3 :x 0) ))))
 
 ;; gray stream version of t03d
@@ -867,7 +894,8 @@
 
 ;; the same as t09, but we can now raise the overlapping windows by hitting 1, 2 or 3.
 (defun t09a ()
-  (let* ((scr (make-instance 'screen :enable-colors t :input-blocking t :input-echoing nil :use-default-colors t :cursor-visible nil)))
+  (let* ((scr (make-instance 'screen :enable-colors t :input-blocking t :input-echoing nil ;;:use-terminal-colors t
+                             :cursor-visible nil)))
     (unwind-protect
          (progn
            (clear scr)
@@ -884,9 +912,13 @@
              (box w2)
              (box w3)
 
-             (setf (background w1) (make-instance 'complex-char :color-pair '(:white :black)))
-             ;; window w2 uses the :default fg and bg color of the terminal, because use-default-colors is t.
-             (setf (background w3) (make-instance 'complex-char :color-pair '(:white :black)))
+             ;; after we define a default pair, :terminal -1 refers to these colors.
+             (setf (use-terminal-colors-p scr) t)
+             ;;(setf (default-color-pair scr) (list :yellow :red))
+
+             (setf (background w1) (make-instance 'complex-char :color-pair '(:default-fg :yellow)))
+             ;; window w2 uses the :default fg and bg color of the terminal, because use-terminal-colors is t.
+             (setf (background w3) (make-instance 'complex-char :color-pair '(:yellow :terminal)))
 
              ;; print currently active color pairs to w3
              (format w3 "~A" de.anvi.croatoan::*color-pair-alist*)
@@ -1637,10 +1669,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16f ()
   "Group several input fields and buttons to a form."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-    (let* ((s1 (list :foreground nil :background nil :attributes nil))
+    (let* ((s1 (list :fgcolor nil :bgcolor nil :attributes nil))
            (s2 (list :simple-char #\_))
-           (s3 (list :foreground :yellow :background :red :attributes '(:underline :bold :italic)))
-           (s4 (list :foreground :blue :background :white :attributes nil))
+           (s3 (list :fgcolor :yellow :bgcolor :red :attributes '(:underline :bold :italic)))
+           (s4 (list :fgcolor :blue :bgcolor :white :attributes nil))
 
            ;; a style is a plist interpreted by the element drawing functions.
            (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
@@ -1687,16 +1719,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16g ()
   "Use the element default style of the form."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-    (let* ((s1 (list :foreground :blue :background :black))
+    (let* ((s1 (list :fgcolor :blue :bgcolor :black))
            (s2 (list :simple-char #\_))
-           (s3 (list :foreground :yellow :background :red :attributes '(:bold :italic)))
-           (s4 (list :simple-char #\_ :foreground :white :background :blue))
+           (s3 (list :fgcolor :yellow :bgcolor :red :attributes '(:bold :italic)))
+           (s4 (list :simple-char #\_ :fgcolor :white :bgcolor :blue))
 
            ;; element styles reference previousy defined character styles.
            (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
            (s6 (list :foreground s4 :selected-foreground s3))
 
-           (s8 (list :foreground :yellow :simple-char #\.))
+           (s8 (list :fgcolor :yellow :simple-char #\.))
            (s9 (list :foreground s1 :background s8))
            
            ;; the form style consists of default styles of form elements.
@@ -1756,18 +1788,18 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16h ()
   "Create a form window."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-    (let* ((ch1 (list :foreground :black :background :white))
-           (ch2 (list :simple-char #\_ :foreground :black :background :white))
-           (ch3 (list :foreground :yellow :background :red :attributes '(:underline :bold :italic)))
-           (ch4 (list :simple-char #\_ :foreground :white :background :blue))
+    (let* ((ch1 (list :fgcolor :black :bgcolor :white))
+           (ch2 (list :simple-char #\_ :fgcolor :black :bgcolor :white))
+           (ch3 (list :fgcolor :yellow :bgcolor :red :attributes '(:underline :bold :italic)))
+           (ch4 (list :simple-char #\_ :fgcolor :white :bgcolor :blue))
 
            (style1 (list :foreground ch1 :background ch2 :selected-foreground ch3 :selected-background ch4))
            (style2 (list :foreground ch4 :selected-foreground ch3))
            (style3 (list 'field style1 'button style2))
            
-           (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 15) :width 15 :max-buffer-length 5))
-           (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 15) :width 15))
-           (field3 (make-instance 'field :name :f3 :title "Age"      :location (list 7 15) :width 15 :max-buffer-length 20))
+           (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 3) :width 20 :max-buffer-length 5))
+           (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 3) :width 20))
+           (field3 (make-instance 'field :name :f3 :title "Age"      :location (list 7 3) :width 20 :max-buffer-length 20))
            
            (button1 (make-instance 'button :name :b1 :title "Say Hello" :location (list 10 7)))
            (button2 (make-instance 'button :name :b1 :title "Cancel"    :location (list 10 20)))
@@ -1816,14 +1848,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
         (close form))))
 
 (defun t16i ()
-  "A simple line input form window."
+  "A simple input form window."
   (let ((value nil))
     (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-      (let* ((ch1 (list :foreground :black :background :white))
-             (ch2 (list :simple-char #\_ :foreground :black :background :white))
-             (ch3 (list :foreground :yellow :background :red :attributes '(:underline :bold :italic)))
-             (ch4 (list :simple-char #\_ :foreground :white :background :blue))
-             (ch5 (list :simple-char #\. :foreground :black :background :white))
+      (let* ((ch1 (list :fgcolor :black :bgcolor :white))
+             (ch2 (list :simple-char #\_ :fgcolor :black :bgcolor :white))
+             (ch3 (list :fgcolor :yellow :bgcolor :red :attributes '(:underline :bold :italic)))
+             (ch4 (list :simple-char #\_ :fgcolor :white :bgcolor :blue))
+             (ch5 (list :simple-char #\. :fgcolor :black :bgcolor :white))
              
              (style1 (list :foreground ch1 :background ch2 :selected-foreground ch3 :selected-background ch4))
              (style2 (list :foreground ch1 :selected-foreground ch4))
@@ -2268,7 +2300,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19g ()
   "A checkbox dialog."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :use-default-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :use-terminal-colors t)
     (let* ((items (list "Yes" "No" "OK" 'cancel "Maybe"))
            (menu (make-instance 'dialog-window
                                 :input-blocking t
@@ -2681,7 +2713,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (get-char scr) )))
 
 (defun t30 ()
-  "Test color pair completion."
+  "Test color pair completion for style parameters."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (with-windows ((w1 :height 5 :width 5 :location '(0 0))
                    (w2 :height 5 :width 5 :location '(0 5))
@@ -2691,8 +2723,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
             (background w3) (make-instance 'complex-char :color-pair '(:black :white)))
       ;; the character style contains only one color
       ;; the fg/bg of the target window is used to complete the color pair.
-      (let ((s1 (list :attributes '(:bold) :foreground :red))
-            (s2 (list :attributes '(:bold) :background :yellow)))
+      (let ((s1 (list :attributes '(:bold) :fgcolor :red))
+            (s2 (list :attributes '(:bold) :bgcolor :yellow)))
         (add w1 #\a :y 2 :x 2 :style s1)
         (add w2 #\b :y 2 :x 2 :style s1)
         (add w3 #\c :y 2 :x 2 :style s2))
