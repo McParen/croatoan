@@ -11,8 +11,8 @@
                                (enable-function-keys t)
                                (enable-scrolling nil)
                                (insert-mode nil)
-                               (enable-colors  t)
-                               (use-default-colors nil)
+                               (enable-colors t)
+                               (use-terminal-colors nil)
                                (cursor-visible t)
                                (stacked nil)
                                (color-pair nil)
@@ -35,8 +35,8 @@ library. Do not run more than one screen at the same time."
                                       :enable-function-keys ,enable-function-keys
                                       :enable-scrolling ,enable-scrolling
                                       :insert-mode ,insert-mode
-                                      :enable-colors  ,enable-colors
-                                      :use-default-colors ,use-default-colors
+                                      :enable-colors ,enable-colors
+                                      :use-terminal-colors ,use-terminal-colors
                                       :cursor-visible ,cursor-visible
                                       :stacked ,stacked
                                       :color-pair ,color-pair

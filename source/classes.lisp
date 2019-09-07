@@ -226,11 +226,12 @@
     :type          boolean
     :documentation "Enable (t) or disable (nil) display of colors, if the terminal supports it.")
 
-   (use-default-colors-p
-    :initarg       :use-default-colors
+   (use-terminal-colors-p
+    :initarg       :use-terminal-colors
     :initform      nil
     :type          boolean
-    :documentation "Use (t) the default colors of the terminal, instead of the ncurses default pair white on black.")
+    :documentation
+    "Use (t) colors set by the terminal (named :terminal) as the default instead of the ncurses default white on black.")   
 
    (cursor-visible-p
     :initarg       :cursor-visible
@@ -1017,7 +1018,7 @@ If there is no window asociated with the element, return the window associated w
       (when background (setf (background win) background)) )))
 
 (defmethod initialize-instance :after ((scr screen) &key)
-  (with-slots (winptr colors-enabled-p use-default-colors-p cursor-visible-p input-echoing-p input-blocking
+  (with-slots (winptr colors-enabled-p use-terminal-colors-p cursor-visible-p input-echoing-p input-blocking
                       function-keys-enabled-p newline-translation-enabled-p
                       scrolling-enabled-p color-pair background input-buffering-p process-control-chars-p) scr
     ;; just for screen window types.
@@ -1027,10 +1028,8 @@ If there is no window asociated with the element, return the window associated w
         (if (%has-colors)
             (progn
               (%start-color)
-              ;; if t, set (:default :default), if nil set (:white :black), which is the ncurses default.
-              (set-default-color-pair use-default-colors-p))
+              (set-default-color-pair use-terminal-colors-p))
             (error "initialize-instance screen: This terminal does not support colors.")))
-
       (when color-pair (setf (color-pair scr) color-pair))
       (when background (setf (background scr) background))
       (if newline-translation-enabled-p (%nl) (%nonl))

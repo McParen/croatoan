@@ -9,21 +9,35 @@
   '(:black :maroon :green :olive  :navy :purple  :teal :silver
     :gray  :red    :lime  :yellow :blue :magenta :cyan :white))
 
+(defparameter *default-color-pair* nil)
+
 ;; do not use the color alist but the two color lists, for 8 and 256 colors
 ;; in the 256 colors mode, only the first 16 colors are named.
+;; the terminal default colors are only available when
+;; the screen is initialized with :use-terminal-colors t
+;; the :terminal color number is -1.
 (defun color-name-to-number (color-name)
   "Take a keyword denoting a color name, return the color number."
-  (if (eq color-name :default)
-      ;; the terminal default colors are only available when
-      ;; the screen is initialized with :use-default-colors t
-      ;; the :default color number is -1.
-      -1
-      ;; depending on whether we use 8 or 256 colors, we have different names for the same colors.
-      (let* ((color-list (if (<= %colors 8) *ansi-color-list* *xterm-color-name-list*))
-             (position (position color-name color-list)))
-        (if position
-            position
-            (error "color name does not exist.")))))
+  (let* ((name (cond ((eq color-name :default-fg)
+                      (car *default-color-pair*))
+                     ((eq color-name :default-bg)
+                      (cadr *default-color-pair*))
+                     (t color-name)))
+         ;; generate an alist of colors in the form ((:terminal . -1) (:black . 0) ...)
+         ;; depending on whether we use 8 or 256 colors, we have different names for the same color numbers.
+         (alist (if (<= %colors 8)
+                    (loop
+                       for i from -1 to 7
+                       for j in (cons :terminal *ansi-color-list*)
+                       collect (cons j i))
+                    (loop
+                       for i from -1 to 15
+                       for j in (cons :terminal *xterm-color-name-list*)
+                       collect (cons j i))))
+         (number (cdr (assoc name alist))))
+    (if number
+        number
+        (error "color-name-to-number: color name ~A does not exist." name))))
 
 ;; address a color by:
 ;; integer: color number 0-255, so we can cycle through all available colors
@@ -79,23 +93,55 @@
 ;; for now it is reset to nil on evey screen init by set-default-color-pair
 (defparameter *color-pair-alist* nil)
 
+(defun use-terminal-colors-p (screen)
+  (slot-value screen 'use-terminal-colors-p))
+
+(defun (setf use-terminal-colors-p) (flag screen)
+  (setf (slot-value screen 'use-terminal-colors-p) flag)
+  (if flag
+      (progn
+          (%use-default-colors)
+          (setf (default-color-pair screen) (list :terminal :terminal)))
+      (setf (default-color-pair screen) (list :white :black))))
+
+(defun default-color-pair (screen)
+  (declare (ignore screen))
+  *default-color-pair*)
+
+(defun (setf default-color-pair) (color-pair screen)
+  "Set the colors which will comprise the default color pair 0.
+
+The default color pair is used when no other colors are specified.
+
+The ncurses default color pair is white on black.
+
+If the terminal can set its own colors, they are named :terminal."
+  (setf *default-color-pair* color-pair)
+  (%assume-default-colors (color-name-to-number (car color-pair))
+                          (color-name-to-number (cadr color-pair))))
+
 ;; called from initialize-instance :after ((scr screen)
 ;; test with t09a
-(defun set-default-color-pair (use-default-colors-p)
+(defun set-default-color-pair (use-terminal-colors-p)
   ;; reset the color pair alist on every screen init
   (setf *color-pair-alist* nil)
-  (if use-default-colors-p
+  (if use-terminal-colors-p
       (progn
         (%use-default-colors)
-        (setf *color-pair-alist* (acons '(:default :default) 0 *color-pair-alist*)))
-      (setf *color-pair-alist* (acons '(:white :black) 0 *color-pair-alist*))))
+        (setf *default-color-pair* (list :terminal :terminal)))
+      (setf *default-color-pair* (list :white :black)))
+  ;; we cant make :white :black be pair 0, because pair 0 is ignored on several occasions
+  ;; Example: when color-pair of a window is set to pair 1
+  ;; adding a char with 0 is ignored and the char is added with pair 1.
+  ;; we have to add white on black as a number bigger than 0.
+  (setf *color-pair-alist* (acons '(:default-fg :default-bg) 0 *color-pair-alist*)))
 
 (defun pair-to-number (pair)
   "Take a two-element list of colors, return the ncurses pair number.
 
 The colors can be keywords or numbers -1:255.
 
--1 is the terminal :default color when use-default-colors-p is t.
+-1 is the :terminal color when use-terminal-colors-p is t.
 
 If it is a new color pair, add it to ncurses, then return the new pair number.
 

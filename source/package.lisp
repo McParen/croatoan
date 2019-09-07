@@ -43,6 +43,7 @@
    simple-char
    attributes
    color-pair
+   default-color-pair
    fgcolor
    bgcolor
    complex-char-array
@@ -157,6 +158,7 @@
    ;; color / curses color manipulation routines
 
    ;; default_colors / use terminal's default colors
+   use-terminal-colors-p
 
    ;; define_key / define a keycode
 
