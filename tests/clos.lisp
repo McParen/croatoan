@@ -37,16 +37,18 @@
     (let* ((body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
            (head (car body))
            (tail (car (last body)))
-           (dir '(0 1)))        ; initial direction = right
+           ;; initial direction = right
+           (dir '(0 1)))
       (flet ((draw-snake (win body)
                (mapc (lambda (pos) (add win #\* :position pos)) body)))
         (bind scr #\q    'exit-event-loop)
-        (bind scr :right (lambda (w e) (setf dir '( 0  1))))
-        (bind scr :left  (lambda (w e) (setf dir '( 0 -1))))
-        (bind scr :down  (lambda (w e) (setf dir '( 1  0))))
-        (bind scr :up    (lambda (w e) (setf dir '(-1  0))))
+        (bind scr :right (lambda (w e) (setq dir '( 0  1))))
+        (bind scr :left  (lambda (w e) (setq dir '( 0 -1))))
+        (bind scr :down  (lambda (w e) (setq dir '( 1  0))))
+        (bind scr :up    (lambda (w e) (setq dir '(-1  0))))
         (bind scr nil    (lambda (w e)
-                           (add scr #\space :position tail)  ; snake moves = erase last body pair
+                           ;; snake moves = erase last body pair by overwriting it with space
+                           (add scr #\space :position tail)
                            (setq body (cons (mapcar #'+ head dir) (butlast body)))
                            (setq head (car body))
                            (setq tail (car (last body)))
@@ -774,18 +776,17 @@
            (get-char scr))
       (close scr))))
 
-;; we now can use colors on *standard-output* also with standard lisp printing functions.
-;; and we can use them when other windows exist.
 (defun t08b ()
+  "Use colors on *standard-output* with standard lisp printing functions.
+
+Test whether a window (stream) was closed."
   (let* ((scr (make-instance 'screen :enable-colors t))
          (*standard-output* scr))
     (unwind-protect
          (progn
            (clear scr)
-
            (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (format t "~r" 1984)
-
            (refresh scr)
            (get-char scr)
 
@@ -796,16 +797,19 @@
              (format t "~r" 1985)
              (refresh win)
              (get-char win)
-             (close win))
+             (format t "~%before close: streamp: ~A open-stream-p: ~A" (streamp win) (open-stream-p win))
+             (refresh win)
+             (get-char win)
+             (format scr "~%after close: close: ~A streamp: ~A open-stream-p: ~A" (close win) (streamp win) (open-stream-p win))
+             (refresh scr)
+             (get-char scr))
 
            ;; *standard-output*is now again scr.
            (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (terpri)
            (format t "~r" 1984)
-
            (refresh scr)
            (get-char scr))
-
       (close scr))))
 
 ;; Write complex chars to standard output using standard lisp output functions + gray streams.
