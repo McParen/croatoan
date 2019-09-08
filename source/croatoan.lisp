@@ -51,13 +51,13 @@ library. Do not run more than one screen at the same time."
               ;; into the repl and get out of the debugger into the repl.
               ;; the debugger is annoying with ncurses apps.
               ;; add (abort) to automatically get out of the debugger.
-              (*debugger-hook*
-                ,(if bind-debugger-hook-p
-                     '#'(lambda (c h)
-                          (declare (ignore h))
-                          (end-screen)
-                          (print c))
-                     '*debugger-hook*)))
+              ;; this binding is added by default. call with-screen with :bind-debugger-hook-p nil to remove.
+              ,@(if bind-debugger-hook-p
+                  '((*debugger-hook* #'(lambda (c h)
+                                         (declare (ignore h))
+                                         (end-screen)
+                                         (print c))))
+                  nil))
 
           ;; clear the display when starting up.
           (clear ,screen)
