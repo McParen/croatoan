@@ -3,6 +3,7 @@
 ;;; Define all macros here centrally.
 
 (defmacro with-screen ((screen &key
+                               (bind-debugger-hook-p t)
                                (input-buffering nil)
                                (process-control-chars t)
                                (enable-newline-translation t)
@@ -20,10 +21,14 @@
                        &body body)
   "Create a screen, evaluate the forms in the body, then cleanly close the screen.
 
-Pass any arguments to the initialisation of the screen object. The screen 
-is cleared immediately after initialisation.
+Pass any arguments besides BIND-DEBUGGER-HOOK-P to the initialisation of the
+screen object. The screen is cleared immediately after initialisation.
 
-This macro is the main entry point for writing ncurses programs with the croatoan 
+This macro will bind *DEBUGGER-HOOK* so that END-SCREEN gets called before the
+condition is printed. This will interfere with SWANK as it also binds *DEBUGGER-HOOK*.
+To prevent WITH-SCREEN from binding *DEBUGGER-HOOK*, set BIND-DEBUGGER-HOOK-P to NIL.
+
+This macro is the main entry point for writing ncurses programs with the croatoan
 library. Do not run more than one screen at the same time."
   `(unwind-protect
         (let ((,screen (make-instance 'screen
@@ -46,7 +51,13 @@ library. Do not run more than one screen at the same time."
               ;; into the repl and get out of the debugger into the repl.
               ;; the debugger is annoying with ncurses apps.
               ;; add (abort) to automatically get out of the debugger.
-              (*debugger-hook* #'(lambda (c h) (declare (ignore h)) (end-screen) (print c) )))
+              (*debugger-hook*
+                ,(if bind-debugger-hook-p
+                     '#'(lambda (c h)
+                          (declare (ignore h))
+                          (end-screen)
+                          (print c))
+                     '*debugger-hook*)))
 
           ;; clear the display when starting up.
           (clear ,screen)
