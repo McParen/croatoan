@@ -841,6 +841,23 @@ If there is no window asociated with the element, return the window associated w
 
   (:documentation "A field is an editable part of the screen for user input. Can be part of a form."))
 
+;; Thread-safe FIFO queue, see MAKE-QUEUE, QUEUE-PUSH and QUEUE-POP
+(defstruct (queue (:constructor %make-queue (init-head &aux (init-tail (last init-head)))))
+  (lock (bt:make-lock) :read-only t)
+  (head init-head :read-only t)
+  (tail init-tail :read-only t))
+
+(defun make-queue (&key initial-contents)
+  (%make-queue (cons nil initial-contents)))
+
+(define-condition with-term-error (error)
+  ((form :initarg :form
+         :initform (error "Form required")
+         :documentation "The form that failed to execute")
+   (error :initarg :error
+         :initform (error "Error required")
+         :documentation "The error that was signaled when form was executed")))
+
 (defmethod initialize-instance :after ((field field) &key)
   (with-slots (max-buffer-length width bindings keymap) field
     ;; If unspecified, the default max-buffer-length should be equal to the visible field width.
@@ -1403,6 +1420,18 @@ If there is no window asociated with the element, return the window associated w
   (loop for ch across (complex-char-array cstr)
      do (princ (simple-char ch) stream)))
 
+(defmethod print-object ((obj queue) stream)
+  (with-slots (head lock) obj
+    (bt:with-lock-held (lock)
+      (print-unreadable-object (obj stream :type t)
+        (format stream "~:[<empty>~;~:*~a~]" (rest head))))))
+
+(defmethod print-object ((obj with-term-error) stream)
+  (print-unreadable-object (obj stream :type t :identity t)
+    (with-slots (form error) obj
+      (format stream "form: ~a ~_error: ~a"
+              form error))))
+
 ;; methods to close streams, and thus screen _and_ windows, since they are now gray streams.
 ;; end-screen = %endwin
 ;; delete-window = %delwin
@@ -1454,3 +1483,16 @@ If there is no window asociated with the element, return the window associated w
 ;;    Generic function CLOSE clobbers an earlier FTYPE proclamation
 ;;    (FUNCTION (STREAM &KEY (:ABORT T)) (VALUES (MEMBER T) &OPTIONAL)) for the
 ;; same name with (FUNCTION (T &KEY (:ABORT T)) *).
+
+(defmethod queue-push ((obj queue) new)
+  "Push an element onto the back of the queue and return it"
+  (with-slots (tail lock) obj
+    (bt:with-lock-held (lock)
+      (first (setf tail (cdr (rplacd tail (list new))))))))
+
+(defmethod queue-pop ((obj queue))
+  "Pop of the first element of queue and return it, returns NIL when queue is empty"
+  (with-slots (head lock) obj
+    (bt:with-lock-held (lock)
+      (when (rest head)
+        (first (setf head (rest head)))))))
