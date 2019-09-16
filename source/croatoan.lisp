@@ -2,6 +2,30 @@
 
 ;;; Define all macros here centrally.
 
+;; queue of functions consed to their form which are queued to be
+;; executed inside the ncurses thread
+(defparameter *term-queue* (make-queue))
+
+(defmacro with-term (&body body)
+  `(queue-push *term-queue*
+               (cons (lambda () ,@body)
+                     ',body)))
+
+(defun idle ()
+  (loop :for (fn . form) := (queue-pop *term-queue*)
+        :while fn
+        ;; We want to be able to see what form failed, for this we
+        ;; need to wrap the signald condition in a with-term-error
+        ;; which contains the failed form and the signaled condition.
+        :do (handler-case (funcall fn)
+              (error (e)
+                (restart-case (error 'with-term-error
+                                     :form form
+                                     :error e)
+                  (skip-with-term-form ()
+                    :report (lambda (stream)
+                              (format stream "Skip WITH-TERM form"))))))))
+
 (defmacro with-screen ((screen &key
                                (bind-debugger-hook-p t)
                                (input-buffering nil)
