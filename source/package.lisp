@@ -6,8 +6,6 @@
   (:export
 
    ;; croatoan.lisp
-   with-term
-   idle
    with-screen
    with-window
    with-windows
@@ -34,8 +32,6 @@
    pad
    sub-pad
    field
-   queue
-   with-term-error
    form
    form-window
    button
@@ -77,9 +73,6 @@
    newline-translation-enabled-p
    cursor-visible-p
    source-location
-   make-queue
-   queue-push
-   queue-pop
 
    ;; Predicates
    closed-p
@@ -116,6 +109,15 @@
    accept-form
    reset-form
    checkedp
+
+   ;; queue
+   submit
+   process
+   queue
+   job-error   
+   make-queue
+   queue-push
+   queue-pop
    
    ;; shape
    origin-x

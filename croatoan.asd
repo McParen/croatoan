@@ -71,6 +71,7 @@
             :components
             ((:file "package")
              (:file "classes")
+             (:file "queue")
              (:file "croatoan")
              (:file "gray_streams")
              (:file "utf8")
