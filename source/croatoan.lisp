@@ -135,6 +135,8 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
           ;; depending on which version of ncurses is loaded, decide which event reader to use.
           (let ((,event #+(or sb-unicode unicode openmcl-unicode-strings) (get-wide-event ,window)
                         #-(or sb-unicode unicode openmcl-unicode-strings) (get-event ,window)))
+            (when (null event)
+              (process))
             (case ,event
               ,@body)))))
 
@@ -247,6 +249,7 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
                         (otherwise (window object))))
               (event (get-wide-event window)))
          (handle-event object event args)
+         (process)
          ;; should a frame rate be a property of the window or of the object?
          (when (and (null event) (frame-rate window))
            (sleep (/ 1.0 (frame-rate window)))) ))))
