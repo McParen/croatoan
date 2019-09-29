@@ -85,13 +85,16 @@ The next thing one might want to do is set some keybindings, for
 example, bind `c` to clear the screen:
 
 ```
-SCRATCH> (croatoan:submit (croatoan:bind *scr* #\c (lambda (win event) (croatoan:clear *scr*))))
+SCRATCH> (croatoan:submit
+           (croatoan:bind *scr* #\c (lambda (win event)
+                                      (croatoan:clear *scr*))))
 ```
 
 And `q` to quit the event loop:
 
 ```
-SCRATCH> (croatoan:submit (croatoan:bind *scr* #\q (lambda (win event) (throw 'croatoan::event-loop :quit))))
+SCRATCH> (croatoan:submit
+           (croatoan:bind *scr* #\q 'croatoan:exit-event-loop))
 ```
 
 There is one caveat though, `*STANDARD-OUTPUT*` differs between the
