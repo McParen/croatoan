@@ -124,14 +124,14 @@
    %color-extended-content
    %color-pair
    %pair-number
-   %COLOR_BLACK
-   %COLOR_RED
-   %COLOR_GREEN
-   %COLOR_YELLOW
-   %COLOR_BLUE   
-   %COLOR_MAGENTA
-   %COLOR_CYAN
-   %COLOR_WHITE
+   %COLOR-BLACK
+   %COLOR-RED
+   %COLOR-GREEN
+   %COLOR-YELLOW
+   %COLOR-BLUE   
+   %COLOR-MAGENTA
+   %COLOR-CYAN
+   %COLOR-WHITE
 
    ;; default_colors / use terminal's default colors
    %use-default-colors

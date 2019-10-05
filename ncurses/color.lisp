@@ -30,7 +30,6 @@
 ;;; Low-level CFFI wrappers
 
 (defcfun ("start_color"      %start-color)      :int)
-
 (defcfun ("has_colors"       %has-colors)       :boolean)
 (defcfun ("can_change_color" %can-change-color) :boolean)
 
@@ -47,11 +46,11 @@
 (defcfun ("COLOR_PAIR"  %color-pair)  :int (n :int))
 (defcfun ("PAIR_NUMBER" %pair-number) :int (attrs :int))     
 
-(defconstant %COLOR_BLACK   0)
-(defconstant %COLOR_RED     1)
-(defconstant %COLOR_GREEN   2)
-(defconstant %COLOR_YELLOW  3)
-(defconstant %COLOR_BLUE    4)
-(defconstant %COLOR_MAGENTA 5)
-(defconstant %COLOR_CYAN    6)
-(defconstant %COLOR_WHITE   7)
+(defconstant %COLOR-BLACK   0)
+(defconstant %COLOR-RED     1)
+(defconstant %COLOR-GREEN   2)
+(defconstant %COLOR-YELLOW  3)
+(defconstant %COLOR-BLUE    4)
+(defconstant %COLOR-MAGENTA 5)
+(defconstant %COLOR-CYAN    6)
+(defconstant %COLOR-WHITE   7)
