@@ -3,7 +3,7 @@
 ;;; Define all macros here centrally.
 
 (defmacro with-screen ((screen &key
-                               (bind-debugger-hook-p t)
+                               (bind-debugger-hook t)
                                (input-buffering nil)
                                (process-control-chars t)
                                (enable-newline-translation t)
@@ -52,7 +52,7 @@ library. Do not run more than one screen at the same time."
               ;; the debugger is annoying with ncurses apps.
               ;; add (abort) to automatically get out of the debugger.
               ;; this binding is added by default. call with-screen with :bind-debugger-hook-p nil to remove.
-              ,@(if bind-debugger-hook-p
+              ,@(if bind-debugger-hook
                   '((*debugger-hook* #'(lambda (c h)
                                          (declare (ignore h))
                                          (end-screen)
