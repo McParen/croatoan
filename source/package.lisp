@@ -115,9 +115,8 @@
    process
    queue
    job-error   
-   make-queue
-   queue-push
-   queue-pop
+   enqueue
+   dequeue
    
    ;; shape
    origin-x
