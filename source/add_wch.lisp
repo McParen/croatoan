@@ -90,9 +90,17 @@ If char is a complex char, attributes and color-pair are ignored."
         ;; we just need the pair number here, NOT the bit-shifted color attribute.
         ;; we need the color attribute for chtypes.
         (color-pair-number
-         (pair-to-number (complete-pair window (typecase char
-                                                 (complex-char (color-pair char))
-                                                 (otherwise color-pair)))))
+         (if (or (eq fn #'%wbkgrnd)
+                 (eq fn #'%wbkgrndset))
+             ;; when setting the background, do not complete using the windows color pair and background
+             ;; just complete from the default pair
+             (pair-to-number (complete-default-pair (typecase char
+                                                      (complex-char (color-pair char))
+                                                      (otherwise color-pair))))
+             ;; for every other function, complete from the full sequence
+             (pair-to-number (complete-pair window (typecase char
+                                                     (complex-char (color-pair char))
+                                                     (otherwise color-pair))))))
         (count (if n
                    (if (= n -1)
                        (distance-to-eol window)
