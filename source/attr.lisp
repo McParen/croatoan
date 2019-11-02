@@ -282,12 +282,8 @@ from the given point without moving the cursor position."
   (when (and y x) (move win y x))
   (when position (apply #'move win position))
   (let ((attrs (attrs2chtype attributes))
-        (pairno (if color-pair
-                    (pair-to-number color-pair)
-                    (if (color-pair win)
-                        (pair-to-number (color-pair win))
-                        0))))
-    (%wchgat (winptr win) n attrs pairno (null-pointer))))
+        (pair-number (pair-to-number (complete-pair win color-pair))))
+    (%wchgat (winptr win) n attrs pair-number (null-pointer))))
 
 (defun set-color-pair (winptr color-pair)
   "Sets the color attribute of the window only."
