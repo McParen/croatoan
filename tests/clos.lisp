@@ -289,9 +289,49 @@
     
     (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (refresh scr)
-    (get-char scr)))
+    (get-char scr)
+
+    (setf (background scr) (make-instance 'complex-char :simple-char #\, :color-pair '(:white :green)))
+    (refresh scr)
+    (get-char scr) ))
 
 (defun t02a ()
+  "Separately set the window foreground and background color pairs."
+  (with-screen (scr :fgcolor :yellow :bgcolor :red)
+    (clear scr)
+    (move scr 0 0)
+    (add-string scr "hello there!")
+
+    (setf (color-pair scr) '(:red :yellow))
+    (move scr 3 6)
+    (add-string scr "dear john!")
+
+    (setf (fgcolor scr) :yellow
+          (bgcolor scr) :red)
+    (move scr 3 3 :relative t)
+    (add-string scr "call me maybe!")
+
+    ;; setting the cursor position directly instead of using move
+    (setf (cursor-position scr) (list 9 12))
+    (add-string scr "welcome to tijuana")
+    (refresh scr)
+    (get-char scr)
+
+    ;; setting fg to green, will set the bg to the default black
+    (setf (background scr) (make-instance 'complex-char :simple-char #\. :fgcolor :green))
+    (refresh scr)
+    (get-char scr)
+    ;; setting bg to green will set the fg to the default white
+    (setf (background scr) (make-instance 'complex-char :simple-char #\, :bgcolor :green))
+
+    ;; text will still use the window color pair
+    (move scr 3 3 :relative t)
+    (add scr "hasta siempre")
+    
+    (refresh scr)
+    (get-char scr) ))
+
+(defun t02b ()
   "Set and get a wide character background."
   (with-screen (scr)
     ;;(de.anvi.croatoan::funcall-make-cchar_t-ptr #'%wbkgrnd (winptr scr) 0 0 0 1)
@@ -319,7 +359,7 @@
     (refresh scr)
     (get-char scr)))
 
-(defun t02b ()
+(defun t02c ()
   (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :use-terminal-colors t)
     ;; simple chars added to a window without a rendered style.
     (add-string scr "Hello there!")
@@ -336,7 +376,7 @@
     (fresh-line scr) (refresh scr) (get-char scr)
     
     ;; the background style renders simple text, but it doesnt change the text with a set color pair
-    (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:black :magenta)))
+    (setf (background scr) (make-instance 'complex-char :simple-char #\. :fgcolor :black :bgcolor :magenta))
     (add-string scr "I can feel it.")
     (fresh-line scr) (refresh scr) (get-char scr)
     
@@ -685,7 +725,7 @@
 ;; close now closes both windows and the main screen.
 ;; but the creation of a window/screen now has to be outside the unwind-protect form.
 (defun t07a ()
-  (let ((scr (make-instance 'screen :enable-colors t)))
+  (let ((scr (make-instance 'screen :enable-colors t :cursor-visible nil)))
     ;; since windows are streams now, we can use close on tem too.
     ;; in order to be able to close scr, as compared to end-screen without arguments in t07,
     ;; we have to move unwind-protect inside the let scope.
@@ -697,8 +737,8 @@
            (get-char scr)
 
            (let ((win (make-instance 'window :height 15 :width 50 :location '(5 5) :draw-border t)))
-             (setf (background win) (make-instance 'complex-char :color-pair '(:red :blue)))
-             (add-string win "Window 1")
+             (setf (background win) (make-instance 'complex-char :simple-char #\: :color-pair '(nil :blue)))
+             (add-string win "Window 1" :y 2 :x 4 :fgcolor :red :bgcolor :yellow)
              (refresh win)
              (get-char win)
              (close win))
@@ -2144,18 +2184,21 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                      :location (list 2 57) :scrolled-layout (list 6 1)
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
+                                     :bgcolor :red
                                      :name "submenu2" :title t :draw-border t :enable-function-keys t :visible nil))
            ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
                                      :location (list 1 41) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #x999999)
+                                     :fgcolor :green
                                      :name "submenu1" :title nil :draw-border t :enable-function-keys t :visible nil))
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
                                      :location (list 0 25) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #xcccccc)
+                                     :fgcolor :blue :bgcolor :yellow
                                      :name "menu" :title nil :draw-border nil :enable-function-keys t :visible nil)))
       ;; add the menus and submenus to a window stack
       ;; scr has to be stacked too so we can make the menus disappear.
