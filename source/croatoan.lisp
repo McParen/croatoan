@@ -16,6 +16,8 @@
                                (use-terminal-colors nil)
                                (cursor-visible t)
                                (stacked nil)
+                               (fgcolor nil)
+                               (bgcolor nil)
                                (color-pair nil)
                                (background nil))
                        &body body)
@@ -44,6 +46,8 @@ library. Do not run more than one screen at the same time."
                                       :use-terminal-colors ,use-terminal-colors
                                       :cursor-visible ,cursor-visible
                                       :stacked ,stacked
+                                      :fgcolor ,fgcolor
+                                      :bgcolor ,bgcolor
                                       :color-pair ,color-pair
                                       :background ,background))
 

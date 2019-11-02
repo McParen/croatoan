@@ -20,15 +20,29 @@
     :accessor      attributes
     :documentation "List of keywords denoting attributes.")
 
-   (color-pair
-    :initarg       :color-pair
+   (fgcolor
+    :initarg       :fgcolor
     :initform      nil
-    :type          (or null cons)
-    :accessor      color-pair
-    :documentation "Two element list of keywords denoting a foreground and background color of the char."))
+    :type          (or null keyword integer list)
+    :accessor      fgcolor
+    :documentation "A keyword denoting the foreground color of the complex character.")
+
+   (bgcolor
+    :initarg       :bgcolor
+    :initform      nil
+    :type          (or null keyword integer list)
+    :accessor      bgcolor
+    :documentation "A keyword denoting the background color of the complex character."))
 
   (:documentation
    "A complex char consists of a simple char, a list of attribute keywords and a pair of color keywords."))
+
+(defmethod initialize-instance :after ((xch complex-char) &key color-pair)
+  "If color-pair is passed as a keyword, set fgcolor and bgcolor."
+  (when color-pair
+    (with-slots (fgcolor bgcolor) xch
+      (setf fgcolor (car color-pair)
+            bgcolor (cadr color-pair)))))
 
 (defclass complex-string ()
   ((complex-char-array
@@ -43,12 +57,13 @@
 
 ;; TODO: what to do when there is no init string, when we start empty and build the string char by char,
 ;; for example when extracting a complex string.
-(defmethod initialize-instance :after ((cstr complex-string) &key string attributes color-pair)
+(defmethod initialize-instance :after ((cstr complex-string) &key string attributes fgcolor bgcolor color-pair)
   (with-slots (complex-char-array) cstr
     (when string
       (loop for char across string
          do (vector-push-extend
-             (make-instance 'complex-char :simple-char char :attributes attributes :color-pair color-pair)
+             (make-instance 'complex-char :simple-char char :attributes attributes
+                            :fgcolor fgcolor :bgcolor bgcolor :color-pair color-pair)
              complex-char-array)))))
 
 (defclass keymap ()
@@ -164,11 +179,17 @@
     :type          (or null cons)
     :documentation "A list of keywords denoting attributes of new characters added to a window.")
 
-   (color-pair
-    :initarg       :color-pair
+   (fgcolor
+    :initarg       :fgcolor
     :initform      nil
-    :type          (or null cons)
-    :documentation "A two element list of keywords denoting the foreground and background color of new characters added to a window.")
+    :type          (or null keyword integer list)
+    :documentation "A keyword denoting the foreground color of new characters added to the window.")
+   
+   (bgcolor
+    :initarg       :bgcolor
+    :initform      nil
+    :type          (or null keyword integer list)
+    :documentation "A keyword denoting the background color of new characters added to the window.")
 
    (draw-border-p
     :initarg       :draw-border
@@ -473,9 +494,9 @@
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
     (unless layout (setf layout (list (length items) 1))) ))
 
-(defmethod initialize-instance :after ((win menu-window) &key)
+(defmethod initialize-instance :after ((win menu-window) &key color-pair)
   (with-slots (winptr items type height width location sub-window draw-border-p layout scrolled-layout max-item-length
-                      current-item-mark color-pair) win
+                      current-item-mark fgcolor bgcolor) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
       (let ((padding (if draw-border-p 1 0)))
@@ -492,13 +513,18 @@
                              :parent win :height (car (or scrolled-layout layout))
                              :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
                              :location (list padding padding) :relative t))
-        (when color-pair
-          (setf (color-pair win) color-pair
-                ;; we need to set the window color pair for the :reverse attribute to work
-                (color-pair sub-window) color-pair
-                ;; we also need the background to have the whole item width colored
-                (background win)        (make-instance 'complex-char :color-pair color-pair)
-                (background sub-window) (make-instance 'complex-char :color-pair color-pair))) ))))
+        (cond ((or fgcolor bgcolor)
+               (set-color-pair winptr (color-pair win))
+               (setf (color-pair sub-window) (color-pair win)
+                     (background win) (make-instance 'complex-char :color-pair (color-pair win))
+                     (background sub-window) (make-instance 'complex-char :color-pair (color-pair win)) ))
+              ;; when a color-pair is passed as a keyword
+              (color-pair
+               ;; set fg and bg, pass to ncurses
+               (setf (color-pair win) color-pair
+                     (color-pair sub-window) color-pair
+                     (background win) (make-instance 'complex-char :color-pair color-pair)
+                     (background sub-window) (make-instance 'complex-char :color-pair color-pair)))) ))))
 
 (defclass dialog-window (menu-window)
   ;; this has to be a pad, so we can scroll it if the message is large.
@@ -532,9 +558,9 @@
 
   (:documentation  "A dialog is a decorated menu with a title, a message and items."))
 
-(defmethod initialize-instance :after ((win dialog-window) &key center)
-  (with-slots (winptr items height width location sub-window draw-border-p layout max-item-length current-item-mark color-pair
-                      message-pad message-text message-height message-pad-coordinates) win
+(defmethod initialize-instance :after ((win dialog-window) &key color-pair center)
+  (with-slots (winptr items height width location sub-window draw-border-p layout max-item-length current-item-mark
+                      fgcolor bgcolor message-pad message-text message-height message-pad-coordinates) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
 
@@ -573,13 +599,18 @@
           (format message-pad message-text))
 
         ;; TODO: do this once for all menus and dialogs, at the moment it is duplicated
-        (when color-pair
-          (setf (color-pair win) color-pair
-                ;; we need to set the window color pair for the :reverse attribute to work
-                (color-pair sub-window) color-pair
-                ;; we also need the background to have the whole item width colored
-                (background win)        (make-instance 'complex-char :color-pair color-pair)
-                (background sub-window) (make-instance 'complex-char :color-pair color-pair ))) ))))
+        (cond ((or fgcolor bgcolor)
+               (set-color-pair winptr (color-pair win))
+               (setf (color-pair sub-window) (color-pair win)
+                     (background win) (make-instance 'complex-char :color-pair (color-pair win))
+                     (background sub-window) (make-instance 'complex-char :color-pair (color-pair win)) ))
+              ;; when a color-pair is passed as a keyword
+              (color-pair
+               ;; set fg and bg, pass to ncurses
+               (setf (color-pair win) color-pair
+                     (color-pair sub-window) color-pair
+                     (background win) (make-instance 'complex-char :color-pair color-pair)
+                     (background sub-window) (make-instance 'complex-char :color-pair color-pair)))) ))))
 
 (defclass element ()
   ((name
@@ -1006,21 +1037,27 @@ If there is no window asociated with the element, return the window associated w
 
 ;; We cant do this because _all_ auxiliary methods are always used and combined.
 
-(defmethod initialize-instance :after ((win window) &key)
-  (with-slots (winptr height width location color-pair background) win
+(defmethod initialize-instance :after ((win window) &key color-pair)
+  (with-slots (winptr height width location fgcolor bgcolor background) win
     ;; just for WINDOW types
     (when (eq (type-of win) 'window)
       (unless width (setf width 0))
       (unless height (setf height 0))
       (setf winptr (%newwin height width (car location) (cadr location)))
 
-      (when color-pair (setf (color-pair win) color-pair))
+      ;; fg/bg should not be passed together with the color-pair keyword.
+      (cond ((or fgcolor bgcolor)
+             (set-color-pair winptr (color-pair win)))
+            (color-pair
+             ;; set fg and bg, pass to ncurses
+             (setf (color-pair win) color-pair)))
+
       (when background (setf (background win) background)) )))
 
-(defmethod initialize-instance :after ((scr screen) &key)
+(defmethod initialize-instance :after ((scr screen) &key color-pair)
   (with-slots (winptr colors-enabled-p use-terminal-colors-p cursor-visible-p input-echoing-p input-blocking
-                      function-keys-enabled-p newline-translation-enabled-p
-                      scrolling-enabled-p color-pair background input-buffering-p process-control-chars-p) scr
+                      function-keys-enabled-p newline-translation-enabled-p fgcolor bgcolor
+                      scrolling-enabled-p background input-buffering-p process-control-chars-p) scr
     ;; just for screen window types.
     (when (eq (type-of scr) 'screen)
       (setf winptr (%initscr))
@@ -1030,7 +1067,13 @@ If there is no window asociated with the element, return the window associated w
               (%start-color)
               (set-default-color-pair use-terminal-colors-p))
             (error "initialize-instance screen: This terminal does not support colors.")))
-      (when color-pair (setf (color-pair scr) color-pair))
+
+      (cond ((or fgcolor bgcolor)
+             (set-color-pair winptr (color-pair scr)))
+            (color-pair
+             ;; set fg and bg, pass to ncurses
+             (setf (color-pair scr) color-pair)))
+
       (when background (setf (background scr) background))
       (if newline-translation-enabled-p (%nl) (%nonl))
       (if input-echoing-p (%echo) (%noecho))
@@ -1315,64 +1358,56 @@ If there is no window asociated with the element, return the window associated w
 ;;   (setf (slot-value window 'attributes) attributes)
 ;;   (set-attributes window attributes))
 
-;; the generic functions are already implicitly generated above in defclass.
-;;(defgeneric color-pair (window))
-;;(defgeneric (setf color-pair) (color-pair window))
+(defmethod color-pair ((win window))
+  (with-slots (fgcolor bgcolor) win
+    (if (or fgcolor bgcolor)
+        (list fgcolor bgcolor)
+        ;; when both colors are nil, do not return (nil nil) but nil
+        nil)))
 
-(defmethod color-pair ((window window))
-  (slot-value window 'color-pair))
-(defmethod (setf color-pair) (color-pair (window window))
-  (setf (slot-value window 'color-pair) color-pair)
-  (set-color-pair (slot-value window 'winptr) color-pair))
+(defmethod (setf color-pair) (color-pair (win window))
+  (with-slots (fgcolor bgcolor) win
+    (if color-pair
+        (setf fgcolor (car color-pair)
+              bgcolor (cadr color-pair))
+        ;; when color-pair is nil, both fg and bg are set to nil
+        (setf fgcolor nil
+              bgcolor nil)))
+  ;; after the slots are set, pass the new pair to ncurses
+  (set-color-pair (slot-value win 'winptr) (color-pair win)))
 
+(defmethod color-pair ((xch complex-char))
+  (with-slots (fgcolor bgcolor) xch
+    (if (or fgcolor bgcolor)
+        (list fgcolor bgcolor)
+        ;; when both colors are nil, do not return (nil nil) but nil
+        nil)))
 
-(defgeneric fgcolor (obj)
-  (:documentation "Return the car of the color-pair, the foreground color."))
-
-(defgeneric bgcolor (obj)
-  (:documentation "Return the cadr of the color-pair, the background color."))
+(defmethod (setf color-pair) (color-pair (xch complex-char))
+  (with-slots (fgcolor bgcolor) xch
+    (if color-pair
+        (setf fgcolor (car color-pair)
+              bgcolor (cadr color-pair))
+        ;; when color-pair is nil, both fg and bg are set to nil
+        (setf fgcolor nil
+              bgcolor nil))))
 
 (defmethod fgcolor ((win window))
-  (car (slot-value win 'color-pair)))
+  (slot-value win 'fgcolor))
 
 (defmethod bgcolor ((win window))
-  (cadr (slot-value win 'color-pair)))
-
-
-(defgeneric (setf fgcolor) (fgcolor obj)
-  (:documentation "Return the car of the color-pair, the foreground color."))
-
-(defgeneric (setf bgcolor) (bgcolor obj)
-  (:documentation "Return the cadr of the color-pair, the background color."))
+  (slot-value win 'bgcolor))
 
 (defmethod (setf fgcolor) (fgcolor (win window))
-  ;; if the color pair is nil, create a new color pair
-  ;; otherwise set the car of the color-pair
-  (if (slot-value win 'color-pair)
-      (setf (car (slot-value win 'color-pair)) fgcolor)
-      (setf (slot-value win 'color-pair) (list fgcolor nil)))
-
-  ;; if both fg and bg are nil, set color-pair to nil, instead of having a list of two nils.
-  (when (and (null (car (slot-value win 'color-pair)))
-             (null (cadr (slot-value win 'color-pair))))
-    (setf (slot-value win 'color-pair) nil))
-
+  (setf (slot-value win 'fgcolor) fgcolor)
   ;; set the color pair in the underlying ncurses lib.
-  (set-color-pair (slot-value win 'winptr) (slot-value win 'color-pair)))
+  (set-color-pair (slot-value win 'winptr) (color-pair win)))
 
 (defmethod (setf bgcolor) (bgcolor (win window))
-  ;; if the color pair is nil, create a new color pair
-  ;; otherwise set the car of the color-pair
-  (if (slot-value win 'color-pair)
-      (setf (cadr (slot-value win 'color-pair)) bgcolor)
-      (setf (slot-value win 'color-pair) (list nil bgcolor)))
+  (setf (slot-value win 'bgcolor) bgcolor)
+  ;; set the color pair in the underlying ncurses lib.
+  (set-color-pair (slot-value win 'winptr) (color-pair win)))
 
-  ;; if both fg and bg are nil, set color-pair to nil, instead of having a list of two nils.
-  (when (and (null (car (slot-value win 'color-pair)))
-             (null (cadr (slot-value win 'color-pair))))
-    (setf (slot-value win 'color-pair) nil))
-
-  (set-color-pair (slot-value win 'winptr) (slot-value win 'color-pair)))
 
 ;;; print, prin1, princ, format ~A, ~S
 
