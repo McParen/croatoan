@@ -339,38 +339,36 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
      (debug-print-field-buffer (current-element object) event)))
   (draw object))
 
-(defun cancel-form (object event &rest args)
-  "Associate this function with an event (key binding or button) to exit the form event loop.
+(defun cancel (object event &rest args)
+  "Associate this function with an event (key binding or button) to exit the form event loop of a form or form element.
 
 The first return value is nil, emphasizing that the user has canceled the form.
 
-If called by a button, the name of the button is returned as a second value.
+The second value is a list of the object, the event that called the exit and the args passed.
 
 This allows to specify why the form was canceled."
-  (declare (ignore event))
-  (reset-form object event)
-  (throw 'event-loop (values nil (name object))))
 
-(defun accept-form (object event &rest args)
-  "Associate this function with an event (key binding or button) to exit the form event loop.
+  ;; TODO: should this be done by the routine or explicitely by the user?
+  (when (eq (type-of object) 'form)
+    (reset-form object event))
+
+  (throw 'event-loop (values nil (list object event args))))
+
+(defun accept (object event &rest args)
+  "Associate this function with an event (key binding or button) to exit the event loop of a form or form element.
 
 The first return value is t, emphasizing that the user has accepted the form.
 
 If called by a button, the name of the button is returned as a second value.
 
 This allows to specify why the form was accepted."
-  (declare (ignore event))
-  (throw 'event-loop (values t (name object))))
+  (throw 'event-loop (values t (list object event args))))
 
-(defun accept-field (field event &rest args)
-  "When the field is used without a parent form, accepting the field edit returns the field value."
+(defun reset-field (field event &rest args)
+  "Clear the field and reset its internal buffers and pointers."
   (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) field
-    ;; TODO: we have to be able to exit an empty field, return nil.
-    (when (> (length inbuf) 0)
-      (let ((val (value field)))
-        (clear win)
-        (setf inbuf nil inptr 0 dptr 0)
-        (throw 'event-loop val)))))
+    (clear field)
+    (setf inbuf nil inptr 0 dptr 0)))
 
 (defun reset-form (object event &rest args)
   (declare (ignore event))
@@ -387,12 +385,16 @@ This allows to specify why the form was accepted."
 
 (define-keymap 'form-map
   (list
-   ;; Use C-a ^A #\soh 1 to exit the edit loop.
-   #\soh      'accept-form
+   ;; C-a = ^A = #\soh = 1 = start of heading
+   ;; exit the edit loop, return t
+   #\soh      'accept
    ;; C-x = cancel = CAN = #\can
-   #\can      'cancel-form
+   ;; exit the edit loop, return nil
+   #\can      'cancel
    ;; C-r = reset = DC2 = #\dc2
+   ;; reset editable elements of the form (fields, checkboxes)
    #\dc2      'reset-form
+   
    :btab      'select-previous-element
    :up        'select-previous-element
    #\tab      'select-next-element
@@ -400,7 +402,16 @@ This allows to specify why the form was accepted."
 
 (define-keymap 'field-map
   (list
-   #\soh      'accept-field  ; we need this in case a field is used alone outside of a form.
+   ;; C-a = ^A = #\soh = 1 = start of heading
+   ;; exit the edit loop, return t
+   #\soh      'accept
+   ;; C-x = cancel = CAN = #\can
+   ;; exit the edit loop, return nil
+   #\can      'cancel
+   ;; C-r = reset = DC2 = #\dc2
+   ;; reset the field
+   #\dc2      'reset-field
+
    :left      'move-previous-char
    :right     'move-next-char
    :backspace 'delete-previous-char

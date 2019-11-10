@@ -104,9 +104,9 @@
    field-map
    form-map
    button-map
-   cancel-form
-   accept-field
-   accept-form
+   accept
+   cancel
+   reset-field
    reset-form
    checkedp
 
