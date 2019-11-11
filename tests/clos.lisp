@@ -1698,13 +1698,20 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
       (bind field #\newline 'de.anvi.croatoan::debug-print-field-buffer)
       
-      ;; pressing ^A (for "accept") exits the edit mode for now
-      (edit field)
-
-      (clear scr)
-      ;; display the contents of the input buffer of the field
-      (format t "buffer: ~A~%" (buffer field))
-      (format t "string: ~A" (value field))
+      ;; pressing ^A (for "accept") exits the edit mode (for now)
+      ;; the field variables are not reset when edit is exited, we can access them after the edit.
+      (if (edit field)
+          ;; accept returns t
+          (progn
+            (clear scr)
+            ;; display the contents of the input buffer of the field
+            (format t "buffer: ~A~%" (buffer field))
+            (format t "string: ~A" (value field)))
+          ;; when cancel returns nil
+          (progn
+            (clear scr)
+            (format t "field edit canceled.")))
+          
       (refresh scr)
 
       ;; wait for keypress, then exit
@@ -1734,16 +1741,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            ;; a window is associated with the parent form, and can be accessed by the elements.           
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2 button3) :window scr)))
 
-      (setf (background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :blue)))
-
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
       (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
       (bind (find-keymap 'field-map) :f3 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
-      (setf (callback button2) 'accept-form)
-      (setf (callback button3) 'cancel-form)
+      (setf (callback button2) 'accept)
+      (setf (callback button3) 'cancel)
 
       ;; pressing ^A or C-a (for "accept") exits the edit mode
       ;; TAB, up and down cycles the fields and buttons
@@ -1763,27 +1768,27 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16g ()
   "Use the element default style of the form."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-    (let* ((s1 (list :fgcolor :blue :bgcolor :black))
-           (s2 (list :simple-char #\_))
-           (s3 (list :fgcolor :yellow :bgcolor :red :attributes '(:bold :italic)))
-           (s4 (list :simple-char #\_ :fgcolor :white :bgcolor :blue))
-
+    (let* (;; character styles that can be referenced in element styles
+           (ch1 (list :fgcolor :blue :bgcolor :black))
+           (ch2 (list :simple-char #\_))
+           (ch3 (list :fgcolor :yellow :bgcolor :red :attributes '(:bold :italic)))
+           (ch4 (list :simple-char #\_ :fgcolor :white :bgcolor :blue))
+           (ch5 (list :fgcolor :yellow :simple-char #\.))
+           
            ;; element styles reference previousy defined character styles.
-           (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
-           (s6 (list :foreground s4 :selected-foreground s3))
-
-           (s8 (list :fgcolor :yellow :simple-char #\.))
-           (s9 (list :foreground s1 :background s8))
+           (s1 (list :foreground ch1 :background ch2 :selected-foreground ch3 :selected-background ch4))
+           (s2 (list :foreground ch4 :selected-foreground ch3))
+           (s3 (list :foreground ch1 :background ch5))
            
            ;; the form style consists of default styles of form elements.
-           (s7 (list 'field s5 'button s6 'label s9 'checkbox s5))
-
+           (sf1 (list 'field s1 'button s2 'label s3 'checkbox s1))
+           
            (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 20) :width 15 :max-buffer-length 5))
            (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 20) :width 15))
            (field3 (make-instance 'field :name :f3                   :location (list 7 20) :width 15 :max-buffer-length 20))
 
            (cb1 (make-instance 'checkbox :name :c1 :title "Employed" :location (list 9 20)))
-
+           
            (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :location (list 3 1)))
            (label2 (make-instance 'label :name :l2 :reference :f2 :width 18 :location (list 5 1)))
            (label3 (make-instance 'label :name :l3 :title "Age"             :location (list 7 1)))
@@ -1795,20 +1800,20 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
            (form (make-instance 'form
                                 :elements (list field1 field2 field3 cb1 label1 label2 label3 label4 button1 button2 button3)
-                                :style s7 :window scr)))
+                                :style sf1 :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
       (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
-      (setf (callback button2) 'accept-form)
-      (setf (callback button3) 'cancel-form)
+      (setf (callback button2) 'accept)
+      (setf (callback button3) 'cancel)
 
       ;; The set value shouldnt be longer than the max-buffer-length
       (setf (value field2) "hello"
             (value field3) "dear john")
-      
+
       ;; Access fields by their name instead of looping through the elements list.
       (if (edit form)
           ;; edit returned t, which means the user accepted the form
@@ -1859,8 +1864,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there") (refresh scr))))
-      (setf (callback button2) 'cancel-form)
-      (setf (callback button3) 'accept-form)
+      (setf (callback button2) 'cancel)
+      (setf (callback button3) 'accept)
 
       ;; The set value shouldnt be longer than the max-buffer-length (not checked yet)
       (setf (value field1) "hello"
@@ -1926,8 +1931,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
         (refresh scr)
 
         (setf (callback button1) 'reset-form)
-        (setf (callback button2) 'cancel-form)
-        (setf (callback button3) 'accept-form)
+        (setf (callback button2) 'cancel)
+        (setf (callback button3) 'accept)
 
         (if (edit form)
             (setq value (pairlis (list (title field1) (title field2))
