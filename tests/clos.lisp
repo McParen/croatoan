@@ -2147,11 +2147,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items1 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555"
                      "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (menu1 (make-instance 'menu :items items1 :name "sub-menu 1" :max-item-length 50))
+           (menu1 (make-instance 'menu :items items1 :name "sub-menu 1" :max-item-length 50 :menu-location (list 5 10)))
            (items2 (list "Item 0" menu1 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
-           (menu2 (make-instance 'menu :items items2 :name "sub-menu 2" :max-item-length 50))
+           (menu2 (make-instance 'menu :items items2 :name "sub-menu 2" :max-item-length 50 :menu-location (list 5 10)))
            (items3 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
-           (menu3 (make-instance 'menu :items items3 :name "t19b2b" :max-item-length 50)))
+           (menu3 (make-instance 'menu :items items3 :name "t19b2b" :max-item-length 50 :menu-location (list 5 10))))
       ;; associate the same window with all three menus.
       (setf (window menu1) scr
             (window menu2) scr
