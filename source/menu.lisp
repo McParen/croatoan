@@ -122,7 +122,12 @@ At the third position, display the item given by item-number."
   "Draw the item given by item-number at item position i,j in the window."
   (with-accessors ((current-item-number current-item-number)
                    (max-item-length max-item-length)) menu
-    (move win i (* j max-item-length))
+    (if (menu-location menu)
+        (move win
+              (+ i                     (car  (menu-location menu)))
+              (+ (* j max-item-length) (cadr (menu-location menu))))
+        ;; if a location is not given, display the menu starting at 0,0
+        (move win i (* j max-item-length)))
 
     ;; format the item text
     (let ((item-text (format-menu-item menu item-number)))
@@ -132,7 +137,12 @@ At the third position, display the item given by item-number."
     ;; if the item is the current item, change its attributes
     ;; TODO: dont use change-attributes, add the correct attributes with add-string.
     (when (= item-number current-item-number)
-      (move win i (* j max-item-length))
+      (if (menu-location menu)
+          (move win
+                (+ i                     (car  (menu-location menu)))
+                (+ (* j max-item-length) (cadr (menu-location menu))))
+          ;; if a location is not given, display the menu starting at 0,0
+          (move win i (* j max-item-length)))
       (change-attributes win max-item-length '(:reverse) ))))
 
 ;; draws to any window, not just to a sub-window of a menu-window.

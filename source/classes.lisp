@@ -385,6 +385,13 @@
     :type          keyword
     :documentation "Types of menus: :selection (default, can contain strings, symbols, menus) or :checklist.")
 
+   (menu-location
+    :initarg       :menu-location
+    :initform      nil
+    :accessor      menu-location
+    :type          (or null cons)
+    :documentation "Relative location of the menu within its associated window.")
+
    (current-item-number
     :initform      0
     :accessor      current-item-number
