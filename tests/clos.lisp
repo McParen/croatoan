@@ -1830,7 +1830,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                   (list :f1 :f2 :f3))
             ;; display the state of the checkbox
             (format scr "~5A ~10A ~20A~%" (name cb1) (title cb1) (checkedp cb1))
-            (format scr "~5A ~10A ~20A~%" (name m1) (title m1) (get-selection-value m1)))
+            (format scr "~5A ~10A ~20A~%" (name m1) (title m1) (value m1)))
 
           ;; edit returned nil, which means the user canceled the form
           (progn

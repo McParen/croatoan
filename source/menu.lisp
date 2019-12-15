@@ -238,19 +238,13 @@ At the third position, display the item given by item-number."
   "Take a menu, return a list of checked menu items."
   (loop for i in (items menu) if (checkedp i) collect i))  
 
-(defun get-selection (menu)
-  "Take a menu, return the currently selected or checked item or items."
-   (typecase menu
-     ;; return all checked items (not their values) in the item list.
-     (checklist (checked-items menu))
-     (menu (current-item menu))))
+(defmethod value ((menu menu))
+  "Return the value of the selected item."
+  (value (current-item menu)))
 
-(defun get-selection-value (menu)
-  "Get the value or values of the selected item or checked items."
-  (let ((selection (get-selection menu)))
-    (if (listp selection)
-        (mapcar #'value selection)
-        (value selection))))
+(defmethod value ((checklist checklist))
+  "Return the list of values of the checked items."
+  (mapcar #'value (checked-items checklist)))
 
 (defun accept-selection (menu event)
   "Return the value of the currently selected item or all checked items."

@@ -251,8 +251,6 @@
    return-from-menu
    exit-menu-event-loop
    accept-selection
-   get-selection
-   get-selection-value
    update-redraw-menu
    toggle-item-checkbox
 
