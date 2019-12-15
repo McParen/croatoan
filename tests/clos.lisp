@@ -1788,22 +1788,27 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (field3 (make-instance 'field :name :f3                   :location (list 7 20) :width 15 :max-buffer-length 20))
 
            (cb1 (make-instance 'checkbox :name :c1 :title "Employed" :location (list 9 20)))
-           
+
+           (m1 (make-instance 'checklist :name :m1 :title "checklist" :items (list 'a 'b 'c 'd 'e 'f) :layout (list 2 3)
+                              :max-item-length 6 :menu-location (list 11 20) :window scr))
+
            (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :location (list 3 1)))
            (label2 (make-instance 'label :name :l2 :reference :f2 :width 18 :location (list 5 1)))
            (label3 (make-instance 'label :name :l3 :title "Age"             :location (list 7 1)))
            (label4 (make-instance 'label :name :l4 :reference :c1 :width 18 :location (list 9 1)))
+           (label5 (make-instance 'label :name :l5 :reference :m1 :width 18 :location (list 11 1)))
            
-           (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 11 10)))
-           (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 11 20)))
-           (button3 (make-instance 'button :name :b3 :title "Cancel" :location (list 11 30)))
+           (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 14 10)))
+           (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 14 20)))
+           (button3 (make-instance 'button :name :b3 :title "Cancel" :location (list 14 30)))
 
            (form (make-instance 'form
-                                :elements (list field1 field2 field3 cb1 label1 label2 label3 label4 button1 button2 button3)
+                                :elements (list field1 field2 field3 cb1 label1 label2 label3 label4 label5
+                                                m1 button1 button2 button3)
                                 :style sf1 :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
-      (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
+      (bind form :f4 'crt::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
@@ -1824,7 +1829,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                         (format scr "~5A ~10A ~20A~%" name (title element) (value element))))
                   (list :f1 :f2 :f3))
             ;; display the state of the checkbox
-            (format scr "~5A ~10A ~20A~%" (name cb1) (title cb1) (checkedp cb1)))
+            (format scr "~5A ~10A ~20A~%" (name cb1) (title cb1) (checkedp cb1))
+            (format scr "~5A ~10A ~20A~%" (name m1) (title m1) (get-selection-value m1)))
+
           ;; edit returned nil, which means the user canceled the form
           (progn
             (clear scr)
