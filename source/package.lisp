@@ -26,6 +26,7 @@
    sub-window
    decorated-window
    menu
+   checklist
    menu-window
    menu-item
    dialog-window
@@ -250,6 +251,8 @@
    return-from-menu
    exit-menu-event-loop
    accept-selection
+   get-selection
+   get-selection-value
    update-redraw-menu
    toggle-item-checkbox
 

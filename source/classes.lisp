@@ -363,7 +363,7 @@
   (:documentation  "A menu consists of a list of menu items."))
 
 ;; default size of ncurses menus is 16 rows, 1 col.
-(defclass menu ()
+(defclass menu (element)
   ((name
     :initarg       :name
     :initform      nil
@@ -817,6 +817,15 @@ If there is no window asociated with the element, return the window associated w
 
   (:documentation "A boolean element that can be checked (t) or unchecked (nil)"))
 
+(defclass checklist (menu)
+  ((menu-type
+    :initarg       :menu-type
+    :initform      :checklist
+    :type          keyword
+    :documentation "The type of the menu is set to :checklist"))
+
+  (:documentation "A checklist is a multi-selection menu with checkable items."))
+
 (defclass field (element)
   ((width
     :initarg       :width
@@ -919,7 +928,7 @@ If there is no window asociated with the element, return the window associated w
    ;; has to be updated every time the current element number is updated.
    (current-element
     :initform      nil
-    :type          (or null field button label checkbox)
+    :type          (or null field button label checkbox menu checklist)
     :accessor      current-element
     :documentation "Currently selected element object.")
 

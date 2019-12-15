@@ -75,6 +75,12 @@ The default background char is #\space."
     (setf (cursor-position (window object)) (location object))
     (refresh (window object))))
 
+;; when the form element is an embedded selection menu or checklist
+(defmethod update-cursor-position ((object menu))
+  "Update the position of a menu, checklist or menu-window."
+    (setf (cursor-position (window object)) (menu-location object))
+    (refresh (window object)))
+
 (defmethod update-cursor-position ((checkbox checkbox))
   "Update the cursor position of a checkbox."
   (with-accessors ((pos location) (inptr input-pointer) (dptr display-pointer) (win window)) checkbox
@@ -396,9 +402,7 @@ This allows to specify why the form was accepted."
    #\dc2      'reset-form
    
    :btab      'select-previous-element
-   :up        'select-previous-element
-   #\tab      'select-next-element
-   :down      'select-next-element))
+   #\tab      'select-next-element))
 
 (define-keymap 'field-map
   (list

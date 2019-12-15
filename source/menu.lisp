@@ -119,37 +119,31 @@ At the third position, display the item given by item-number."
             (name (nth item-number items)) )))
 
 (defun draw-menu-item (win menu item-number i j)
-  "Draw the item given by item-number at item position i,j in the window."
+  "Draw the item given by item-number at item position (i j) in the window."
   (with-accessors ((current-item-number current-item-number)
-                   (max-item-length max-item-length)) menu
-    (if (menu-location menu)
+                   (max-item-length max-item-length)
+                   (menu-location menu-location)) menu
+    (if menu-location
         (move win
-              (+ i                     (car  (menu-location menu)))
-              (+ (* j max-item-length) (cadr (menu-location menu))))
+              (+ i                     (car  menu-location))
+              (+ (* j max-item-length) (cadr menu-location)))
         ;; if a location is not given, display the menu starting at 0,0
         (move win i (* j max-item-length)))
-
-    ;; format the item text
-    (let ((item-text (format-menu-item menu item-number)))
-      ;; display it in the sub-window of the menu
-      (format win item-text))
-    
     ;; if the item is the current item, change its attributes
-    ;; TODO: dont use change-attributes, add the correct attributes with add-string.
-    (when (= item-number current-item-number)
-      (if (menu-location menu)
-          (move win
-                (+ i                     (car  (menu-location menu)))
-                (+ (* j max-item-length) (cadr (menu-location menu))))
-          ;; if a location is not given, display the menu starting at 0,0
-          (move win i (* j max-item-length)))
-      (change-attributes win max-item-length '(:reverse) ))))
+    (let ((attr (if (= item-number current-item-number)
+                    (list :reverse)
+                    nil)))
+      ;; delete the item by overwriting it with an empty string.
+      (save-excursion win (add win #\space :n max-item-length))
+      (change-attributes win max-item-length attr)
+      ;; format the item text
+      ;; display it in the window associated with the menu
+      (add win (format-menu-item menu item-number) :attributes attr))))
 
 ;; draws to any window, not just to a sub-window of a menu-window.
 (defun draw-menu (window menu)
   "Draw the menu to the window."
   (with-accessors ((layout layout) (scrolled-layout scrolled-layout) (scrolled-region-start scrolled-region-start)) menu
-    (clear window)
     (let ((m  (car  layout))
           (n  (cadr layout))
           (m0 (car  scrolled-region-start))
@@ -240,6 +234,24 @@ At the third position, display the item given by item-number."
   (declare (ignore event))
   (return-from-menu menu nil))
 
+(defun checked-items (menu)
+  "Take a menu, return a list of checked menu items."
+  (loop for i in (items menu) if (checkedp i) collect i))  
+
+(defun get-selection (menu)
+  "Take a menu, return the currently selected or checked item or items."
+   (typecase menu
+     ;; return all checked items (not their values) in the item list.
+     (checklist (checked-items menu))
+     (menu (current-item menu))))
+
+(defun get-selection-value (menu)
+  "Get the value or values of the selected item or checked items."
+  (let ((selection (get-selection menu)))
+    (if (listp selection)
+        (mapcar #'value selection)
+        (value selection))))
+
 (defun accept-selection (menu event)
   "Return the value of the currently selected item or all checked items."
   (declare (ignore event))
@@ -247,7 +259,7 @@ At the third position, display the item given by item-number."
   (case (menu-type menu)
     (:checklist
      ;; return all checked items (not their values) in the item list.
-     (return-from-menu menu (loop for i in (items menu) if (checkedp i) collect i)))
+     (return-from-menu menu (checked-items menu)))
 
     (:selection
      (let ((val (value (current-item menu))))
