@@ -66,7 +66,7 @@
              (:file "wresize")))        ; resize a curses window
              
    ;; CLOS api on top of CFFI ncurses.
-   (:module "source"
+   (:module "src"
             :depends-on ("ncurses")
             :components
             ((:file "package")

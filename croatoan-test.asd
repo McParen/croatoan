@@ -1,11 +1,11 @@
-(asdf:defsystem :croatoan-tests
+(asdf:defsystem :croatoan-test
   :description "Tests and examples for the croatoan CLOS API and the low-level ncurses CFFI bindings."
   :author "Anton Vidovic <anton.vidovic@gmx.de>"
   :licence "MIT"
   :version "0.0.1"
   :depends-on (:croatoan)
   :components
-  ((:module "tests"
+  ((:module "test"
             :serial t
             :components ((:file "package")
 
