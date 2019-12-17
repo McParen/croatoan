@@ -2825,3 +2825,54 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       (refresh w2)
       (refresh w3)
       (get-char w1))))
+
+;; the ncurses window background property and the color-pair apparently set the same internal variable
+;; setting one to nil sets the other to nil.
+;; croatoan does not do that. here, the window color if it is set overrides the background property.
+;; if a color parameter is directly passed, it overrides both the window color-pair and background.
+(defun t31 ()
+  "Test color pair completion for fgcolor and bgcolor parameters."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (add-string scr "default colors" :y 0 :x 0) (refresh scr) (get-char scr)
+
+    (setf (color-pair scr) '(:yellow :blue))
+    (add-string scr "color-pair yellow on blue" :y 1 :x 0) (refresh scr) (get-char scr)
+
+    ;; text is not printed red on white because the color-pair overrides the background color.
+    (setf (background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:red :white)))
+    (add-string scr "                          background red on white" :y 2 :x 0) (refresh scr) (get-char scr) 
+
+    (setf (color-pair scr) '(:blue :yellow))
+    (add-string scr "color-pair blue on yellow" :y 3 :x 0) (refresh scr) (get-char scr)
+
+    ;; text is not printed red on white because the color-pair overrides the background color.
+    (setf (background scr nil) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :red)))
+    (add-string scr "                          background white on red" :y 4 :x 0) (refresh scr) (get-char scr)
+
+    ;; now when we set the color-pair to nil, the text is printed in background colors.
+    (setf (color-pair scr) nil)
+    (add-string scr "color-pair nil" :y 5 :x 0) (refresh scr) (get-char scr)
+
+    ;; when we then also set the background to nil, the text is displayed in default white on black.
+    (setf (background scr nil) nil)
+    (add-string scr "                          background nil" :y 6 :x 0) (refresh scr) (get-char scr)
+
+    (add-string scr "fgcolor red bgcolor cyan" :y 7 :x 0 :fgcolor :red :bgcolor :cyan) (refresh scr) (get-char scr)
+    (add-string scr "fgcolor red (bgcolor default)" :y 8 :x 0 :fgcolor :red)  (refresh scr) (get-char scr)
+    (add-string scr "(fgcolor default) bgcolor cyan" :y 9 :x 0 :bgcolor :cyan) (refresh scr) (get-char scr)
+
+    (setf (color-pair scr) '(:yellow :blue))
+    ;; the color parameters override the color-pair window property
+    (add-string scr "color pair yellow on blue, then fgcolor red" :y 10 :x 0 :fgcolor :red) (refresh scr) (get-char scr)
+    (add-string scr "color pair yellow on blue, then bgcolor cyan" :y 11 :x 0 :bgcolor :cyan) (refresh scr) (get-char scr)
+
+    ;; the background is ignored because color-pair is set
+    (setf (background scr nil) (make-instance 'complex-char :simple-char #\. :color-pair '(:white :red)))
+    (add-string scr "fgcolor red" :y 12 :x 0 :fgcolor :red)  (refresh scr) (get-char scr)
+    (add-string scr "bgcolor cyan" :y 13 :x 0 :bgcolor :cyan)  (refresh scr) (get-char scr)
+
+    ;; when the pair is set to nil, the background is used again.
+    (setf (color-pair scr) nil)
+    (add-string scr "fgcolor magenta" :y 14 :x 0 :fgcolor :magenta)  (refresh scr) (get-char scr)
+    (add-string scr "bgcolor cyan" :y 15 :x 0 :bgcolor :cyan)  (refresh scr) (get-char scr) ))
+
