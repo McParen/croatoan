@@ -11,6 +11,7 @@
    with-windows
    event-case
    keymap
+   define-keymap
    find-keymap
    run-event-loop
    exit-event-loop

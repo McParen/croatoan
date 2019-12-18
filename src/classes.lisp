@@ -252,7 +252,7 @@
     :initform      nil
     :type          boolean
     :documentation
-    "Use (t) colors set by the terminal (named :terminal) as the default instead of the ncurses default white on black.")   
+    "Use (t) colors set by the terminal (named :terminal) as the default instead of the ncurses default white on black.")
 
    (cursor-visible-p
     :initarg       :cursor-visible
@@ -685,7 +685,7 @@
     :documentation "Parent form of the element. Added to every element upon the initialization of the form.")
 
    ;; elements do not necessarily have to have an associated window, only when they are used stand-alone.
-   ;; when they are part of a form, we can reference the window associated with the form.
+   ;; when they are part of a form, we can reference the window associated with the parent form.
    (window
     :initarg       :window
     :initform      nil

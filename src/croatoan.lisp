@@ -158,7 +158,7 @@ The handler functions have two mandatory arguments, window and event.
 For every event-loop, at least an event to exit the event loop should be assigned,
 by associating it with the predefined function exit-event-loop.
 
-If a handler for the event :default is defined, it will handle all events for which
+If a handler for the default event t is defined, it will handle all events for which
 no specific event handler has been defined.
 
 If input-blocking of the window is set to nil, a handler for the nil event
@@ -185,6 +185,7 @@ Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
     (setf *keymaps* (acons name keymap *keymaps*))))
 
 (defun find-keymap (keymap-name)
+  "Return a keymap given by its name from the global keymap alist."
   (cdr (assoc keymap-name *keymaps*)))
 
 ;; source: alexandria
@@ -221,6 +222,7 @@ An event should be bound to the pre-defined function exit-event-loop."
                      (if (and keymap (bindings keymap))
                          (assoc event (bindings keymap))
                          nil))
+                 ;; if there are no local bindings, check the external keymap
                  (if (and keymap (bindings keymap))
                      (assoc event (bindings keymap))
                      nil)))))
@@ -242,7 +244,7 @@ An event should be bound to the pre-defined function exit-event-loop."
 The handlers can be added by the bind function, or by directly setting a predefined keymap
 to the window's bindings slot.
 
-Args is one or more additional argument passed to the handlers.
+Args is one or more additional arguments passed to the handlers.
 
 Provide a non-local exit point so we can exit the loop from an event handler. 
 
@@ -253,7 +255,9 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
     (loop
        (let* ((window (typecase object
                         (form-window (sub-window object))
+                        ;; if the object is a window
                         (window object)
+                        ;; if the object isnt a window, it should have an associated window.
                         (otherwise (window object))))
               (event (get-wide-event window)))
          (handle-event object event args)
@@ -269,6 +273,8 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
     "Default method for all objects without a specialized method."
     (let ((handler (get-event-handler object event)))
       (when handler
+        ;; if args is nil, apply will call the handler with just object and event
+        ;; this means that if we dont need args, we can define most handlers as two-argument functions.
         (apply handler object event args)))))
 
 (defmethod handle-event ((form form) event args)

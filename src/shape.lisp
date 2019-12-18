@@ -26,7 +26,7 @@
     :type          (or null cons)
     :accessor      coordinates
     :documentation "A list of coordinates relative to the origin that form this shape.")
-		
+
    (plot-char
     :initform      (make-instance 'complex-char :simple-char #\X :color-pair '(:white :black) :attributes nil)
     :initarg       :char
