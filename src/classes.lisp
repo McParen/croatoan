@@ -403,7 +403,16 @@
     :type          (or null string symbol menu-item)
     :accessor      current-item
     :documentation "Pointer to the currently selected item object. The first item is initialized as the current item.")
-   
+
+   (current-item-location
+    :initarg       :current-item-location
+    :initform      nil
+    :accessor      current-item-location
+    :type          (or null cons)
+    :documentation
+    "Location of the current item in the window.
+    This information is useful for positioning the cursor on the current item after displaying the menu.")
+
    (current-item-mark
     :initarg       :current-item-mark
     :initform      ""

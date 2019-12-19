@@ -76,14 +76,30 @@ The default background char is #\space."
     (refresh (window object))))
 
 ;; when the form element is an embedded selection menu or checklist
+;; will not work for menu-windows, which arent yet embedded in forms.
+;; we need a separate update-cursor-position for menu-window.
+;; used in menu.lisp/(draw menu)
+
 (defmethod update-cursor-position ((object menu))
-  "Update the position of a menu, checklist or menu-window."
-    (setf (cursor-position (window object)) (menu-location object))
-    (refresh (window object)))
+  "Update the cursor position of a menu after it is drawn.
+
+Place the cursor, when it is visible, on the first char of the current item."
+  (setf (cursor-position (window object)) (current-item-location object))
+  (refresh (window object)))
+
+(defmethod update-cursor-position ((object checklist))
+  "Update the cursor position of a checklist after it is drawn.
+
+Place the cursor between the brackets [_] of the current item."
+  (with-accessors ((pos current-item-location) (win window)) object
+    (move win
+          (car pos)
+          (1+ (cadr pos))) ;; put the cursor after the [
+    (refresh win)))
 
 (defmethod update-cursor-position ((checkbox checkbox))
   "Update the cursor position of a checkbox."
-  (with-accessors ((pos location) (inptr input-pointer) (dptr display-pointer) (win window)) checkbox
+  (with-accessors ((pos location) (win window)) checkbox
     (move win
           (car pos)
           (1+ (cadr pos))) ;; put the cursor after the [
@@ -109,6 +125,11 @@ The default background char is #\space."
 (defmethod draw ((label label))
   (with-accessors ((pos location) (win window) (name name) (title title) (width width) (style style) (reference reference)
                    (parent-form parent-form)) label
+    ;; pick the string to write in the following order
+    ;;   title of the label
+    ;;   title of the referenced element
+    ;;   name of the referenced element
+    ;;   name of the label
     (let* ((text (or title
                      (title (find-element parent-form reference))
                      (name (find-element parent-form reference))
