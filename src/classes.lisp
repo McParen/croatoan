@@ -44,26 +44,24 @@
       (setf fgcolor (car color-pair)
             bgcolor (cadr color-pair)))))
 
-(defun set= (list-a list-b &key (test #'eq) (key #'identity))
-  "Compares if  every element of list-a is contained in list-b.
-   The order  of elements in lists does not matter, so the lists are
-actually treated as sets.
+(defun set-equal (list-a list-b &key (test #'eq) (key #'identity))
+  "Compare if every element of list-a is contained in list-b.
 
-The items of  the set are extracted using function 'key' and compared
-using predicate 'test'."
-  (and (= (length list-a)
-          (length list-b))
-       (null (set-difference list-a list-b :test test :key key))))
+The order  of elements in lists does not matter, so the lists are actually treated as sets.
+
+The items of the set are extracted using function 'key' and compared using predicate 'test'."
+  (and (= (length list-a) (length list-b))
+       (null (set-exclusive-or list-a list-b :test test :key key))))
 
 (defun complex-char= (a b)
   (with-accessors ((simple-char-a simple-char)
-                   (bgcolor-a    bgcolor)
-                   (fgcolor-a    fgcolor)
-                   (attributes-a attributes)) a
+                   (bgcolor-a     bgcolor)
+                   (fgcolor-a     fgcolor)
+                   (attributes-a  attributes)) a
     (with-accessors ((simple-char-b simple-char)
-                     (bgcolor-b    bgcolor)
-                     (fgcolor-b    fgcolor)
-                     (attributes-b attributes)) b
+                     (bgcolor-b     bgcolor)
+                     (fgcolor-b     fgcolor)
+                     (attributes-b  attributes)) b
       (let* ((simple-char-equals-p (cond
                                      ((null simple-char-a)
                                       (null simple-char-b))
@@ -79,12 +77,9 @@ using predicate 'test'."
                                       (equalp simple-char-a
                                               simple-char-b)))))
         (and simple-char-equals-p
-             (equalp fgcolor-a
-                     fgcolor-b)
-             (equalp fgcolor-a
-                     fgcolor-b)
-             (set=   attributes-a
-                     attributes-b))))))
+             (equalp fgcolor-a fgcolor-b)
+             (equalp bgcolor-a bgcolor-b)
+             (set-equal attributes-a attributes-b))))))
 
 (defmethod make-load-form ((object complex-char) &optional environment)
   (make-load-form-saving-slots object
