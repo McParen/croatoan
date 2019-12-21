@@ -44,6 +44,38 @@
       (setf fgcolor (car color-pair)
             bgcolor (cadr color-pair)))))
 
+(defun complex-char= (a b)
+  (with-accessors ((simple-char-a simple-char)
+                   (bgcolor-a    bgcolor)
+                   (fgcolor-a    fgcolor)) a
+    (with-accessors ((simple-char-b simple-char)
+                     (bgcolor-b    bgcolor)
+                     (fgcolor-b    fgcolor)) b
+      (let* ((simple-char-equals-p (cond
+                                     ((null simple-char-a)
+                                      (null simple-char-b))
+                                     ((and (characterp simple-char-a)
+                                           (characterp simple-char-b))
+                                      (char= simple-char-a
+                                             simple-char-b))
+                                     ((and (integerp simple-char-a)
+                                           (integerp simple-char-b))
+                                      (= simple-char-a
+                                         simple-char-b))
+                                     (t ; mixed type or keyword
+                                      (equalp simple-char-a
+                                              simple-char-b)))))
+        (and simple-char-equals-p
+             (equalp fgcolor-a
+                     fgcolor-b)
+             (equalp fgcolor-a
+                     fgcolor-b))))))
+
+(defmethod make-load-form ((object complex-char) &optional environment)
+  (make-load-form-saving-slots object
+                               :slot-names '(simple-char attributes color-pair)
+                               :environment environment))
+
 (defclass complex-string ()
   ((complex-char-array
     :initarg       :complex-char-array

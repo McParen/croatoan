@@ -78,6 +78,7 @@
 
    ;; Predicates
    closed-p
+   complex-char=
    
    ;; menu
    items
