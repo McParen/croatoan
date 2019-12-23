@@ -54,6 +54,9 @@ The items of the set are extracted using function 'key' and compared using predi
        (null (set-exclusive-or list-a list-b :test test :key key))))
 
 (defun complex-char= (a b)
+  "Return t if the simple-char, the color pair and the attribute list of a complex-char are equal.
+
+The initial purpose of this function is to be used as the equality test for alexandria:define-constant."
   (with-accessors ((simple-char-a simple-char)
                    (bgcolor-a     bgcolor)
                    (fgcolor-a     fgcolor)
@@ -82,6 +85,7 @@ The items of the set are extracted using function 'key' and compared using predi
              (set-equal attributes-a attributes-b))))))
 
 (defmethod make-load-form ((object complex-char) &optional environment)
+  "Describe how complex-char objects can be serialized and loaded by the compiler."
   (make-load-form-saving-slots object
                                :slot-names '(simple-char attributes color-pair)
                                :environment environment))
@@ -359,7 +363,9 @@ The items of the set are extracted using function 'key' and compared using predi
     :initarg       :source-location
     :initform      nil
     :type          (or null cons)
-    :documentation "Location (y x) of the area of the parent window, which is mapped to the subwindow. By default it is identical to the location of the subwindow."))
+    :documentation
+    "Location (y x) of the area of the parent window, which is mapped to the subwindow. 
+    By default it is identical to the location of the subwindow."))
 
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
 
@@ -533,7 +539,7 @@ The items of the set are extracted using function 'key' and compared using predi
     ;; Convert strings and symbols to item objects
     (setf items (mapcar (lambda (x)
                           (if (typep x 'menu-item)
-                              ;; if an item object is given
+                              ;; if an item object is given, just return it
                               x
                               ;; if we have strings, symbols or menus, convert them to menu-items
                               (make-instance 'menu-item

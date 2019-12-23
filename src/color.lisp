@@ -40,6 +40,7 @@
 ;; xterm sources:
 ;; https://github.com/joejulian/xterm/blob/master/256colres.pl
 ;; https://github.com/joejulian/xterm/blob/master/256colres.h
+;; https://gist.github.com/clairvy/566623#file-256colors2-pl
 
 ;; scale rgb values from 0-255 down to 0-5, corresponding to colors in the xterm 6x6x6 RGB cube.
 (defun rgb-to-rgb6 (rgb-list)
@@ -50,7 +51,7 @@
                 (floor (/ (- x 55) 40))))
           rgb-list))
 
-;; scale rgb values from 0-5 to 0-255, from the xterm 6x6x6 RGB color cube to 24bit.
+;; scale rgb values from 0-5 to 0-255, from the xterm 6x6x6 RGB color cube to 3x8bit=24bit.
 (defun rgb6-to-rgb (rgb6-list)
   "Take a list of three RGB integers 0-5, return a list of three RGB integers 0-255 of the xterm color palette."
   (mapcar (lambda (x) (if (> x 0)
@@ -88,23 +89,23 @@
 ;;    :gray  :red    :lime  :yellow :blue :magenta :cyan :white))
 
 (defparameter *xterm-color-hex-list*
-  '(#x000000
-    #x800000
-    #x008000
-    #x808000
-    #x000080
-    #x800080
-    #x008080
-    #xc0c0c0
+  '(#x000000 ;black
+    #x800000 ;web maroon
+    #x008000 ;web green
+    #x808000 ;olive
+    #x000080 ;navy blue
+    #x800080 ;web purple
+    #x008080 ;teal
+    #xc0c0c0 ;silver
 
-    #x808080
-    #xff0000
-    #x00ff00
-    #xffff00
-    #x0000ff
-    #xff00ff
-    #x00ffff
-    #xffffff))
+    #x808080 ;web gray
+    #xff0000 ;red
+    #x00ff00 ;lime, x11: green
+    #xffff00 ;yellow
+    #x0000ff ;blue
+    #xff00ff ;magenta, x11: fuchsia
+    #x00ffff ;cyan, x11: aqua
+    #xffffff)) ;white
 
 (defun gray-to-rgb (sgr)
   "Take a sgr gray color number 232-255, return a list of three RGB integers 0-255."
@@ -121,6 +122,10 @@
     ;;(nth pos allowed-gray-values)))
 
 ;; otherwise return the closest short-rgb color.
+;; TODO: we do not want the approximated and the exact color returned by the same function.
+;; we need to check whether the hex is in the palette and return that
+;; and if it is NOT in the palette, then either init a new color or return the closest color
+;; from the palette.
 (defun hex-to-sgr (hex)
   "Takes a RGB hex triplet, returns the exact or most appropriate SGR color code 0-255."
   (let ((rgb-list (hex-to-rgb hex)))
@@ -130,6 +135,7 @@
       ((member hex *xterm-color-hex-list*)
        (position hex *xterm-color-hex-list*))
       ;; if all three rgb values are equal, return the closest shade of gray.
+      ;; TODO: what if they are almost equal, for example (243 242 244)?
       ((apply #'= rgb-list)
        (closest-gray (car rgb-list)))
       ;; if they arent equal, return the closest value from the 6x6x6 rgb cube.
@@ -137,10 +143,12 @@
 
 ;; handles all three xterm-256color color spaces
 ;; we need this to list the rgb values of all 256 xterm colors to compare them to the x11 color list.
+;; TODO: use this to make a list containing all 256 SGR hex codes.
 (defun sgr-to-hex (sgr)
   "Take a SGR color code 0-255, return a 24bit hex triplet."
   (cond
     ;; 8 ansi colors (8 normal and 8 bright or bold) 0-15
+    ;; just return the hex integer from the list
     ((< sgr 16)
      ;;(cdr (assoc sgr *ansi-color-sgr-hex-alist*)))
      (nth sgr *xterm-color-hex-list*))

@@ -81,12 +81,12 @@
             ;; hex rgb notation, for example (:hex #x00ff00)
             (integer (hex-to-sgr color)))))))))
 
-;; keys are 2 element lists of the form: (:fg :bg)
-;; fg and bg are keyword symbols
+;; keys are 2 element lists of the form: (:fgcolor :bgcolor)
+;; fgcolor and bgcolor are keyword symbols
 ;; vals are integers that represent ncurses color pairs.
 ;; only one color pair, 0, is predefined: (:default :default),
-;; which is identical to (:white :black) if use-default-colors is nil.
-;; if use-default-colors is t, it is whatever color pair the terminal
+;; which is identical to (:white :black) if use-terminal-colors is nil.
+;; if use-terminal-colors is t, it is whatever color pair the terminal
 ;; used before the ncurses init.
 ;; TODO: this also could be a hashmap
 ;; TODO: move this to be a screen variable, so it gets reset on every screen init
@@ -141,7 +141,7 @@ If the terminal can set its own colors, they are named :terminal."
 
 The colors can be keywords or numbers -1:255.
 
--1 is the :terminal color when use-terminal-colors-p is t.
+-1 is the :terminal default color when use-terminal-colors-p is t.
 
 If it is a new color pair, add it to ncurses, then return the new pair number.
 
@@ -149,7 +149,9 @@ If the pair already exists, return its pair number.
 
 If pair is nil, return the default color number, 0.
 
-Example: (pair-to-number '(:white :black)) => 0"
+Example: 
+
+(pair-to-number '(:white :black)) => 0"
   (if pair
       (let ((result (assoc pair *color-pair-alist* :test #'equal)))
         (if result
@@ -174,6 +176,8 @@ Example: (pair-to-number '(:white :black)) => 0"
   "Take a pair number, return a color pair in a 2 element list of keywords."
   (car (rassoc number *color-pair-alist*)))
 
+;; We cant run complete-pair here, because we dont have the window.
+;; we have to run complete-pair within add-char, add-wide-char, etc.
 (defun complete-default-pair (color-pair)
   "Take a color pair possibly containing nil, return a pair completed from the default color pair 0."
   (let ((fg (car  color-pair))
