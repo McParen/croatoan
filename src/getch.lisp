@@ -40,12 +40,12 @@ The window from which the char is read is automatically refreshed."
 (defparameter *key-alist*
   '((:code_yes  . 256) 
     (:min       . 257) 
-    (:break     . 257) 
+    (:break     . 257)
     (:down      . 258) 
     (:up        . 259)
     (:left      . 260) 
     (:right     . 261) 
-    (:home      . 262) 
+    (:home      . 262) ; Pos1
     (:backspace . 263) 
     (:f0        . 264)
 
@@ -121,8 +121,8 @@ The window from which the char is read is automatically refreshed."
     (:clear     . 333) 
     (:eos       . 334) 
     (:eol       . 335) 
-    (:sf        . 336)
-    (:sr        . 337) 
+    (:sf        . 336) ; :shift-down
+    (:sr        . 337) ; :shift-up
     (:npage     . 338) 
     (:ppage     . 339) 
     (:stab      . 340) 
@@ -138,14 +138,14 @@ The window from which the char is read is automatically refreshed."
     (:b2        . 350) 
     (:c1        . 351) 
     (:c3        . 352)
-    (:btab      . 353) 
+    (:btab      . 353) ; Shift + TAB = #\LATIN_SMALL_LETTER_S_WITH_CARON = sch
     (:beg       . 354) 
     (:cancel    . 355) 
     (:close     . 356) 
     (:command   . 357)
     (:copy      . 358) 
     (:create    . 359) 
-    (:end       . 360) 
+    (:end       . 360) ; Ende
     (:exit      . 361) 
     (:find      . 362)
     (:help      . 363) 
@@ -171,12 +171,12 @@ The window from which the char is read is automatically refreshed."
     (:sdc       . 383) 
     (:sdl       . 384) 
     (:select    . 385)
-    (:send      . 386) 
+    (:send      . 386) ; Shift-End
     (:seol      . 387) 
     (:sexit     . 388) 
     (:sfind     . 389) 
     (:shelp     . 390)
-    (:shome     . 391) 
+    (:shome     . 391) ; Shift-Home, Shift-Pos1
     (:sic       . 392) 
     (:sleft     . 393) 
     (:smessage  . 394) 
@@ -197,7 +197,72 @@ The window from which the char is read is automatically refreshed."
     (:mouse     . 409) 
     (:resize    . 410) 
     (:event     . 411) 
-    (:max       . 511)))
+    (:max       . 511) ; Alt-Delete
+
+    ;; The following codes are not part of ncurses because they are not portable, i.e. they do not
+    ;; exist on all terminals.
+    ;; These are tested on xterm / gnome-terminal
+    
+    ;; :shift-delete = :sdc
+    (:shift-alt-delete   . 512)
+    (:ctrl-delete        . 513) ; Ctrl-Delete
+    (:shift-ctrl-delete  . 514) ; Shift-Control-Delete
+
+    ;; :shift-down = :sf = 336
+    (:alt-down           . 517)
+    (:shift-alt-down     . 518)
+    (:ctrl-down          . 519)
+    (:shift-ctrl-down    . 520)
+    ;; (:shift-alt-ctrl-down . xxx) ;; hijacked by the ubuntu unity wm.
+
+    (:alt-end            . 522)
+    (:shift-alt-end      . 523)
+    (:ctrl-end           . 524)
+    (:shift-ctrl-end     . 525)
+    (:ctrl-alt-end       . 526)
+    ;; :shift-ctrl-alt-end . xxx
+
+    (:alt-home           . 527)
+    (:shift-alt-home     . 528)
+    (:ctrl-home          . 529)
+    (:shift-ctrl-home    . 530)
+    (:ctrl-alt-home      . 531)
+
+    (:alt-insert         . 532) ; Alt-Insert
+    ;; :shift-insert = middle mouse button paste, probably 513, hijacked by xterm.
+    (:ctrl-insert        . 534) ; Ctrl-Insert
+    (:ctrl-alt-insert    . 536) ; Ctrl-Alt-Insert
+
+    ;; Shift-Ctrl-Alt-Insert = ^[ [ 3 ; 8 ~
+
+    (:alt-left           . 537)
+    (:shift-alt-right    . 538)
+    (:ctrl-left          . 539)
+    (:shift-ctrl-left    . 540)
+
+    ;; npage
+    ;; :shift-npage
+    (:alt-npage          . 542)
+    (:ctrl-npage         . 544)
+    (:ctrl-alt-npage     . 546)
+    
+    ;; :ppage
+    ;; :shift-ppage activates an xterm ppage function
+    (:alt-ppage          . 547)
+    (:ctrl-ppage         . 549)
+    (:ctrl-alt-ppage     . 551)
+   
+    (:alt-right          . 552)
+    (:shift-alt-right    . 553)
+    (:ctrl-right         . 554)
+    (:shift-ctrl-left    . 555)
+
+    ;; :shift-up = :sr = 337
+    (:alt-up             . 558)
+    (:shift-alt-up       . 559)
+    (:ctrl-up            . 560)
+    (:shift-ctrl-up      . 561)))
+    ;; (:shift-alt-ctrl-up . xxx)
 
 ;; Takes a short int returned by get-char, 
 ;; returns a keyword represeting the function key.
@@ -229,6 +294,7 @@ The window from which the char is read is automatically refreshed."
 ;; events can be nil (no key pressed), characters #\a and function keys like :up, :down, etc.
 ;; todo: mouse, resizekey
 (defun get-event (window)
+  ;; doesnt really get a "char", but a single byte, which can be a char.
   (let ((ch (get-char window)))
     (cond
       ;; -1 means no key has been pressed.
@@ -242,13 +308,16 @@ The window from which the char is read is automatically refreshed."
              (multiple-value-bind (mev y x) (get-mouse-event)
                (values mev y x)) ; returns 3 values, see mouse.lisp
              ev)))
-      ;; todo: unknown codes, like mose, resize and unknown function keys.
-      (t (error "invalid value of char received from ncurses.")))))
+      ;; todo: unknown codes, like mouse, resize and unknown function keys.
+      (t
+       ;;(error "invalid value of char received from ncurses.")
+       (princ ch window)))))
 
 #|
-    ;; we dont need them defined as octal literals, this is antique.
+    ;; I dont want them defined as octal literals.
   '((:code_yes  . #o400)
     (:min       . #o401)
+
     (:break     . #o401)
     (:down      . #o402)
     (:up        . #o403)
@@ -346,10 +415,12 @@ The window from which the char is read is automatically refreshed."
     (:mouse     . #o631)
     (:resize    . #o632)
     (:event     . #o633)
+
     (:max       . #o777)))
 
 #define KEY_CODE_YES    0400            /* A wchar_t contains a key code */
 #define KEY_MIN         0401            /* Minimum curses key */
+
 #define KEY_BREAK       0401            /* Break key (unreliable) */
 #define KEY_DOWN        0402            /* down-arrow key */
 #define KEY_UP          0403            /* up-arrow key */
@@ -443,6 +514,7 @@ The window from which the char is read is automatically refreshed."
 #define KEY_MOUSE       0631            /* Mouse event has occurred */
 #define KEY_RESIZE      0632            /* Terminal resize event */
 #define KEY_EVENT       0633            /* We were interrupted by an event */
+
 #define KEY_MAX         0777            /* Maximum key value is 0633 */
 
 |# 
