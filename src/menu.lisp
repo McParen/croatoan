@@ -240,7 +240,7 @@ At the third position, display the item given by item-number."
       (menu (setf (visiblep (window menu)) nil)))
     (refresh-stack))
   (reset-menu menu)
-  (throw 'event-loop return-value))
+  (throw menu return-value))
 
 (defun exit-menu-event-loop (menu event)
   "Associate this function with an event to exit the menu event loop."

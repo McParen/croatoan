@@ -367,29 +367,38 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
   (draw object))
 
 (defun cancel (object event &rest args)
-  "Associate this function with an event (key binding or button) to exit the form event loop of a form or form element.
+  "Associate this function with an event (key binding or button) to exit the event loop of a form or form element.
 
 The first return value is nil, emphasizing that the user has canceled the form.
 
-The second value is a list of the object, the event that called the exit and the args passed.
+The second value is a list containing the object, the event that called the exit and the args passed.
 
 This allows to specify why the form was canceled."
-
   ;; TODO: should this be done by the routine or explicitely by the user?
   (when (eq (type-of object) 'form)
     (reset-form object event))
-
-  (throw 'event-loop (values nil (list object event args))))
+  (throw (if (eq (type-of object) 'form)
+             object
+             (if (parent-form object)
+                 (parent-form object)
+                 object))
+    (values nil (list object event args))))
 
 (defun accept (object event &rest args)
   "Associate this function with an event (key binding or button) to exit the event loop of a form or form element.
 
 The first return value is t, emphasizing that the user has accepted the form.
 
-If called by a button, the name of the button is returned as a second value.
+The second value is a list containing the object, the event that called the exit and the args passed.
 
-This allows to specify why the form was accepted."
-  (throw 'event-loop (values t (list object event args))))
+This allows to specify by which button or event the form was accepted."
+  ;; if the object has a parent-form, do not throw the object, throw its parent form, otherwise throw the object.
+  (throw (if (eq (type-of object) 'form)
+             object
+             (if (parent-form object)
+                 (parent-form object)
+                 object))
+    (values t (list object event args))))
 
 (defun reset-field (field event &rest args)
   "Clear the field and reset its internal buffers and pointers."
@@ -421,7 +430,7 @@ This allows to specify why the form was accepted."
    ;; C-r = reset = DC2 = #\dc2
    ;; reset editable elements of the form (fields, checkboxes)
    #\dc2      'reset-form
-   
+
    :btab      'select-previous-element
    #\tab      'select-next-element))
 

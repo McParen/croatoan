@@ -197,7 +197,7 @@ Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
       (push (cons (car lst) (cadr lst)) alist))))
 
 (defun get-event-handler (object event)
-  "Take an object and an event, return the handler for that event.
+  "Take an object and an event, return the object's handler for that event.
 
 The key bindings alist is stored in the bindings slot of the object.
 
@@ -251,7 +251,7 @@ Provide a non-local exit point so we can exit the loop from an event handler.
 One of the events must provide a way to exit the event loop by throwing 'event-loop.
 
 The function exit-event-loop is pre-defined to perform this non-local exit."
-  (catch 'event-loop
+  (catch object
     (loop
        (let* ((window (typecase object
                         (form-window (sub-window object))
@@ -278,16 +278,16 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
         (apply handler object event args)))))
 
 (defmethod handle-event ((form form) event args)
-  "If a form cant handle an event, let the current form element try to handle it."
+  "If a form can't handle an event, let the current form element try to handle it."
   (let ((handler (get-event-handler form event)))
     (if handler
         (apply handler form event args)
         (handle-event (current-element form) event args))))
 
-(defun exit-event-loop (&optional win event args)
+(defun exit-event-loop (object event &rest args)
   "Associate this function with an event to exit the event loop."
   (declare (ignore win event args))
-  (throw 'event-loop :exit-event-loop))
+  (throw object :exit-event-loop))
 
 (defmacro save-excursion (window &body body)
   "After executing body, return the cursor in window to its initial position."
