@@ -1,4 +1,4 @@
-(in-package :de.anvi.croatoan.tests)
+(in-package :de.anvi.croatoan.test)
 
 ;; Example from "Land of Lisp", Copyright by Conrad Barski.
 ;; Source: http://landoflisp.com/evolution.lisp

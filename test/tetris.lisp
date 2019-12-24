@@ -1,4 +1,4 @@
-(in-package :de.anvi.croatoan.tests)
+(in-package :de.anvi.croatoan.test)
 
 (defun tetris ()
   (let ((scr (make-instance 'screen :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)))

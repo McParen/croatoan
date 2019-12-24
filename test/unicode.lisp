@@ -1,4 +1,4 @@
-(in-package :de.anvi.croatoan.tests)
+(in-package :de.anvi.croatoan.test)
 
 ;; Tested in xterm and Gnome Terminal.
 ;; Doesn't work in the Linux console and aterm.

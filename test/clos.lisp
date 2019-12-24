@@ -1,4 +1,4 @@
-(in-package :de.anvi.croatoan.tests)
+(in-package :de.anvi.croatoan.test)
 
 (defun snake ()
   (labels ((display-snake (scr body)

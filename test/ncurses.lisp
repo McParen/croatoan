@@ -1,4 +1,4 @@
-(in-package :de.anvi.croatoan.tests)
+(in-package :de.anvi.croatoan.test)
 
 ;; here the ncurses primitive bindings should be tested.
 

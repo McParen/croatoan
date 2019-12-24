@@ -1,4 +1,4 @@
-(defpackage #:de.anvi.croatoan.tests
+(defpackage #:de.anvi.croatoan.test
   (:documentation "Tests and examples demonstrating the use of the croatoan API.")
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:de.anvi.croatoan)
   (:shadowing-import-from #:de.anvi.croatoan callback)
