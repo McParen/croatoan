@@ -23,12 +23,12 @@
                        &body body)
   "Create a screen, evaluate the forms in the body, then cleanly close the screen.
 
-Pass any arguments besides BIND-DEBUGGER-HOOK-P to the initialisation of the
+Pass any arguments besides BIND-DEBUGGER-HOOK to the initialisation of the
 screen object. The screen is cleared immediately after initialisation.
 
 This macro will bind *DEBUGGER-HOOK* so that END-SCREEN gets called before the
 condition is printed. This will interfere with SWANK as it also binds *DEBUGGER-HOOK*.
-To prevent WITH-SCREEN from binding *DEBUGGER-HOOK*, set BIND-DEBUGGER-HOOK-P to NIL.
+To prevent WITH-SCREEN from binding *DEBUGGER-HOOK*, set BIND-DEBUGGER-HOOK to NIL.
 
 This macro is the main entry point for writing ncurses programs with the croatoan
 library. Do not run more than one screen at the same time."
@@ -55,7 +55,7 @@ library. Do not run more than one screen at the same time."
               ;; into the repl and get out of the debugger into the repl.
               ;; the debugger is annoying with ncurses apps.
               ;; add (abort) to automatically get out of the debugger.
-              ;; this binding is added by default. call with-screen with :bind-debugger-hook-p nil to remove.
+              ;; this binding is added by default. call with-screen with :bind-debugger-hook nil to remove.
               ,@(if bind-debugger-hook
                   '((*debugger-hook* #'(lambda (c h)
                                          (declare (ignore h))

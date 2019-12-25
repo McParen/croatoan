@@ -36,7 +36,7 @@ using slime/swank. First, a bit of boiler plate:
                          ;; Do not override the swank debugger hook,
                          ;; as we want to enter the slime debugger in
                          ;; emacs when a error occurs.
-                         :bind-debugger-hook-p nil)
+                         :bind-debugger-hook nil)
     ;; Set *scr* to the initilized scr so that we can access it form
     ;; the swank thread and then enter the event-loop.
     (croatoan:run-event-loop (setf *scr* scr))))
@@ -132,6 +132,6 @@ SCRATCH> (croatoan:submit
            (croatoan:bind *scr* :resize
                           (lambda (win event)
                             (format *swank-output* "Terminal resized to width: ~a, height: ~a~%"
-                                    (croatoan:width *scr*)
-                                    (croatoan:height *scr*)))))
+                                    (croatoan:width win)
+                                    (croatoan:height win)))))
 ```
