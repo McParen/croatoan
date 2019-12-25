@@ -291,6 +291,7 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
 
 (defmacro save-excursion (window &body body)
   "After executing body, return the cursor in window to its initial position."
-  `(let ((pos (cursor-position ,window)))
-     ,@body
-     (move ,window (car pos) (cadr pos))))
+  (let ((pos (gensym)))
+    `(let ((,pos (cursor-position ,window)))
+       ,@body
+       (move ,window (car ,pos) (cadr ,pos)))))
