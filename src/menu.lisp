@@ -118,14 +118,17 @@ At the third position, display the item given by item-number."
             ;; then add the item name
             (name (nth item-number items)) )))
 
+;; this is the only function that actually positions items on the screen (using move)
 (defun draw-menu-item (win menu item-number i j)
   "Draw the item given by item-number at item position (i j) in the window."
   (with-accessors ((current-item-number current-item-number)
                    (current-item-location current-item-location)
                    (max-item-length max-item-length)
-                   (menu-location menu-location)) menu
-    (let (pos-y
-          pos-x)
+                   (menu-location menu-location)
+                   (style style)) menu
+    (let* (pos-y
+           pos-x
+           (item-selected-p (= item-number current-item-number)))
       (if menu-location
           ;; add an offset when menu-location is given
           (setq pos-y (+ i                     (car  menu-location))
@@ -135,19 +138,20 @@ At the third position, display the item given by item-number."
                 pos-x (* j max-item-length)))
       (move win pos-y pos-x)
       ;; save the location of the current item, to be used in update-cursor-position.
-      (when (= item-number current-item-number)
-        (setf current-item-location (list pos-y pos-x))))
-
-    ;; if the item is the current item, change its attributes
-    (let ((attr (if (= item-number current-item-number)
-                    (list :reverse)
-                    nil)))
-      ;; delete the item by overwriting it with an empty string.
-      (save-excursion win (add win #\space :n max-item-length))
-      (change-attributes win max-item-length attr)
-      ;; format the item text
-      ;; display it in the window associated with the menu
-      (add win (format-menu-item menu item-number) :attributes attr))))
+      (when item-selected-p
+        (setf current-item-location (list pos-y pos-x)))
+      (let ((fg-style (if style
+                          (getf style (if item-selected-p :selected-foreground :foreground))
+                          ;; default foreground style
+                          (if item-selected-p (list :attributes (list :reverse)) nil)))
+            (bg-style (if style
+                          (getf style (if item-selected-p :selected-background :background))
+                          ;; default background style
+                          (if item-selected-p (list :attributes (list :reverse)) nil))))
+        ;; write an empty string as the background.
+        (save-excursion win (add win #\space :style bg-style :n max-item-length))
+        ;; display it in the window associated with the menu
+        (add win (format-menu-item menu item-number) :style fg-style)))))
 
 ;; draws to any window, not just to a sub-window of a menu-window.
 (defun draw-menu (window menu)

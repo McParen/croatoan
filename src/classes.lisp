@@ -520,6 +520,14 @@ The initial purpose of this function is to be used as the equality test for alex
     :accessor      keymap
     :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
 
+   (style
+    :initarg       :style
+    :initform      nil
+    :type          (or null cons)
+    :documentation
+    "Style of menu items: :foreground, :background, :selected-foreground, :selected-background.
+    The default style of the selected item is the attribute :reverse, and nil for other items.")
+
    (window
     :initarg       :window
     :initform      nil
@@ -773,10 +781,11 @@ If there is no window asociated with the element, return the window associated w
   (with-slots (style parent-form) element
     (if style
         style
-        (if (slot-value parent-form 'style)
-            ;; get the default element style from the form style slot.
-            (getf (slot-value parent-form 'style) (type-of element))
-            nil))))
+        (when parent-form
+          (if (slot-value parent-form 'style)
+              ;; get the default element style from the form style slot.
+              (getf (slot-value parent-form 'style) (type-of element))
+              nil)))))
 
 (defmethod (setf style) (style (element element))
   (setf (slot-value element 'style) style))
