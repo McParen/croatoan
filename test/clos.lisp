@@ -1789,8 +1789,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
            (cb1 (make-instance 'checkbox :name :c1 :title "Employed" :location (list 9 20)))
 
+           (m1-style (list :foreground (list :fgcolor :blue)
+                           :selected-foreground (list :fgcolor :yellow :attributes (list :bold))))
+
            (m1 (make-instance 'checklist :name :m1 :title "checklist" :items (list 'a 'b 'c 'd 'e 'f) :layout (list 2 3)
-                              :max-item-length 6 :menu-location (list 11 20) :window scr))
+                              :max-item-length 6 :menu-location (list 11 20) :window scr :style m1-style))
 
            (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :location (list 3 1)))
            (label2 (make-instance 'label :name :l2 :reference :f2 :width 18 :location (list 5 1)))
@@ -2171,8 +2174,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
+           ;; a menu style is a plist describing four different menu item components.
+           ;; every style component is again a plist similar to a complex-char.
+           (menu-style (list :foreground (list :fgcolor :yellow)
+                             :background (list :fgcolor :yellow)
+                             :selected-foreground (list :attributes (list :reverse))
+                             :selected-background (list :attributes (list :reverse))))
            (menu (make-instance 'menu-window :items choices :location (list 0 25) :scrolled-layout (list 6 1)
-                                :title "t19c" :draw-border t :enable-function-keys t)))
+                                :title "t19c" :draw-border t :enable-function-keys t :style menu-style)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select menu)))
