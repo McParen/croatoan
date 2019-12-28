@@ -29,14 +29,14 @@ Otherwise, it is applied only to newly added simple characters."
 ;; used in: get-background-cchar_t, extract-wide-char
 (defun funcall-get-cchar_t (fn window)
   "Call function fn to read a cchar_t from window and return it as a wide complex char."
-  (with-foreign-object (ptr '(:struct cchar_t))
+  (cffi:with-foreign-object (ptr '(:struct cchar_t))
     ;; read a struct cchar_t into the space allocated with ptr
     (funcall fn (winptr window) ptr)
     ;; the slot cchar-chars is a a pointer to the wchar_t array.
-    (let* ((char (mem-aref (foreign-slot-pointer ptr '(:struct cchar_t) 'cchar-chars) 'wchar_t 0))
+    (let* ((char (cffi:mem-aref (cffi:foreign-slot-pointer ptr '(:struct cchar_t) 'cchar-chars) 'wchar_t 0))
            ;; ABI6
-           (col (foreign-slot-value ptr '(:struct cchar_t) 'cchar-colors))
-           (attr (foreign-slot-value ptr '(:struct cchar_t) 'cchar-attr)))
+           (col (cffi:foreign-slot-value ptr '(:struct cchar_t) 'cchar-colors))
+           (attr (cffi:foreign-slot-value ptr '(:struct cchar_t) 'cchar-attr)))
       (make-instance 'complex-char
                      :simple-char (code-char char)
                      :attributes (chtype2attrs attr)

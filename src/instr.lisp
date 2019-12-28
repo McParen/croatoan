@@ -16,13 +16,13 @@ If n is given, read at most n chars."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
   (let ((len (if n n (distance-to-eol window))))
-    (with-foreign-pointer (string len)
+    (cffi:with-foreign-pointer (string len)
       ;; zero the allocated foreign string first.
-      (setf (mem-ref string :char (1- len)) 0)
+      (setf (cffi:mem-ref string :char (1- len)) 0)
       ;; populate the foreign string with chars.
       ;; the c routines return ERR (-1) or the number of chars extracted.
       (let ((retval (%winnstr (winptr window) string len)))
         (if (= retval -1)
             nil
             ;; convert the char pointer to a lisp string.
-            (foreign-string-to-lisp string))))))
+            (cffi:foreign-string-to-lisp string))))))

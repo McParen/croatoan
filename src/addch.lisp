@@ -115,7 +115,7 @@ character."
 
 ;; pointer to the global/external c acs array, acs_map[].
 ;; also see defcvar + get-var-pointer
-(defparameter acs-map-array (foreign-symbol-pointer "acs_map"))
+(defparameter acs-map-array (cffi:foreign-symbol-pointer "acs_map"))
 
 ;; ncurses maps those standard chars at runtime to the acs characters.
 ;; here we use it in the function acs.
@@ -227,4 +227,4 @@ extern NCURSES_EXPORT_VAR(chtype) acs_map[];
 ;; Example: (acs 'ULCORNER)
 (defun acs (char-name)
   "Take a symbol, return the integer representing the acs char."
-  (mem-aref acs-map-array 'chtype (char-code (cdr (assoc char-name acs-alist)))))
+  (cffi:mem-aref acs-map-array 'chtype (char-code (cdr (assoc char-name acs-alist)))))

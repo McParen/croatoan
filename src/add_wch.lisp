@@ -39,11 +39,11 @@ as will fit on the line."
 cchar_t is a C struct representing a wide complex-char in ncurses.
 
 This function is a wrapper around %setcchar and should not be used elsewhere."
-  (with-foreign-objects ((ptr '(:struct cchar_t))
-                         (wch 'wchar_t 5))
-    (dotimes (i 5) (setf (mem-aref wch 'wchar_t i) 0))
-    (setf (mem-aref wch 'wchar_t) char)
-    (%setcchar ptr wch attr_t color-pair-number (null-pointer))
+  (cffi:with-foreign-objects ((ptr '(:struct cchar_t))
+                              (wch 'wchar_t 5))
+    (dotimes (i 5) (setf (cffi:mem-aref wch 'wchar_t i) 0))
+    (setf (cffi:mem-aref wch 'wchar_t) char)
+    (%setcchar ptr wch attr_t color-pair-number (cffi:null-pointer))
     (if (= count 1)
         (funcall fn winptr ptr)
         (dotimes (i count) (funcall fn winptr ptr)) )))

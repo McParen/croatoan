@@ -275,7 +275,7 @@ Overwrites any previous attribute settings including the color."
   (%wattrset winptr
              (apply #'logior (loop for i in attributes collect (get-bitmask i)))))
 
-;; (%wchgat (winptr win) 9 #x00040000 0 (null-pointer))
+;; (%wchgat (winptr win) 9 #x00040000 0 (cffi:null-pointer))
 (defun change-attributes (win n attributes &key color-pair y x position)
   "Change the attributes of n chars starting at the current cursor position.
 
@@ -287,13 +287,13 @@ from the given point without moving the cursor position."
   (when position (apply #'move win position))
   (let ((attrs (attrs2chtype attributes))
         (pair-number (pair-to-number (complete-pair win color-pair))))
-    (%wchgat (winptr win) n attrs pair-number (null-pointer))))
+    (%wchgat (winptr win) n attrs pair-number (cffi:null-pointer))))
 
 (defun set-color-pair (winptr color-pair)
   "Sets the color attribute of the window only."
   (%wcolor-set winptr
                (pair-to-number (complete-default-pair color-pair))
-               (null-pointer)))
+               (cffi:null-pointer)))
 
 (defparameter *bitmask-alist*
   ;; the first four are not attributes, but bitmasks used to extract parts of the chtype.

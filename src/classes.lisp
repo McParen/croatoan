@@ -1176,7 +1176,7 @@ If there is no window asociated with the element, return the window associated w
       (if relativep
           ;;(setf winptr (%derwin (slot-value parent 'winptr) height width (car location) (cadr location)))
           (setf winptr (let ((val (%derwin (slot-value parent 'winptr) height width (car location) (cadr location))))
-                         (if (null-pointer-p val)
+                         (if (cffi:null-pointer-p val)
                              ;; may also be null if the parent window passed is null
                              (error "Subwindow could not be created. Probably too big and not contained in the parent window.")
                              val)))

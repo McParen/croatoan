@@ -1,7 +1,6 @@
 (defpackage #:de.anvi.croatoan
   (:documentation "High-level Lisp interface to the basic CFFI Ncurses API.")
-  (:use #:common-lisp #:cffi #:de.anvi.ncurses #:trivial-gray-streams)
-  (:shadow callback)
+  (:use #:common-lisp #:de.anvi.ncurses #:trivial-gray-streams)
   (:nicknames #:croatoan #:crt)
   (:export
 
@@ -121,7 +120,7 @@
    job-error   
    enqueue
    dequeue
-   
+
    ;; shape
    origin-x
    origin-y
