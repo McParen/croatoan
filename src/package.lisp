@@ -78,7 +78,7 @@
    ;; Predicates
    closed-p
    complex-char=
-   
+
    ;; menu
    items
    menu-type
@@ -117,7 +117,7 @@
    submit
    process
    queue
-   job-error   
+   job-error
    enqueue
    dequeue
 
@@ -126,7 +126,7 @@
    origin-y
    coordinates
    plot-char
-   
+
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
    add
    add-char
@@ -140,7 +140,7 @@
    add-wide-char
    add-wide-char-utf-8
    echo-wide-char
-   
+
    ;; addstr / add a string of characters to a curses window and advance cursor
    add-string
 
@@ -150,7 +150,7 @@
    change-attributes
    add-attributes
    remove-attributes
-   
+
    ;; beep / curses bell and screen flash routines
    alert
 
@@ -162,7 +162,7 @@
 
    ;; border_set / create curses borders or lines using complex characters and renditions
    draw-wide-border
-   
+
    ;; clear / clear all or part of a curses window
    clear
 
@@ -186,7 +186,7 @@
    insert-nth
    edit
    field-buffer-to-string
-   
+
    ;; getch / get (or push back) characters from curses terminal keyboard
    get-char
    unget-char
@@ -223,7 +223,7 @@
 
    ;; inwstr / get a string of wide (multi-byte) characters from a curses window
    extract-wide-string
-   
+
    ;; inchstr / get a string of characters (and attributes) from a curses window
    extract-complex-string
 
@@ -300,7 +300,7 @@
    quadrilateral
    rectangle
    circle
-	  
+
    ;; slk / curses soft label routines
 
    ;; termattrs / environment query routines
@@ -309,6 +309,8 @@
    touch
 
    ;; util / miscellaneous curses utility routines
+   char-to-string
+   key-to-string
 
    ;; variables / curses global variables
 
