@@ -4,37 +4,6 @@
 ;;; miscellaneous curses utility routines
 ;;; http://invisible-island.net/ncurses/man/curs_util.3x.html
 
-;;; C prototypes
-
-;; char *unctrl(chtype c);
-;; wchar_t *wunctrl(cchar_t *c);
-;; char *keyname(int c);
-;; char *key_name(wchar_t w);
-;; void filter(void);
-;; void nofilter(void);
-;; void use_env(bool f);
-;; int putwin(WINDOW *win, FILE *filep);
-;; WINDOW *getwin(FILE *filep);
-;; int delay_output(int ms);
-;; int flushinp(void);
-
-;;; Low-level C functions
-
-;;; Commented out as they are already defined in ncurses/util.lisp
-
-;; (defcfun ("unctrl" %unctrl) :string (c chtype))
-;; (defcfun ("keyname" %keyname) :string (c :int))
-
-;; (defcfun ("filter" %filter) :void)
-;; (defcfun ("nofilter" %nofilter) :void)
-
-;; (defcfun ("use-env" %use-env) :void (f :boolean))
-
-;; (defcfun ("delay_output" %delay-output) :int (ms :int))
-;; (defcfun ("flushinp" %flushinp) :int)
-
-;;; High-level Lisp wrappers
-
 (defgeneric char-to-string (char)
   (:documentation "Return a string representing the char."))
 
