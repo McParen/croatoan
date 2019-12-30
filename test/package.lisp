@@ -111,6 +111,7 @@
    #:t29
    #:t30
    #:t31
+   #:t32
 
    ;; clos.lisp
    #:matrix
