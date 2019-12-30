@@ -2884,34 +2884,3 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (setf (color-pair scr) nil)
     (add-string scr "fgcolor magenta" :y 14 :x 0 :fgcolor :magenta)  (refresh scr) (get-char scr)
     (add-string scr "bgcolor cyan" :y 15 :x 0 :bgcolor :cyan)  (refresh scr) (get-char scr) ))
-
-(defun t32 ()
-  "Test/Example of `croatoan:key-to-string'. Try to press C-J to see the difference"
-  (with-screen (scr :input-echoing         nil
-                    :process-control-chars nil ; set to nil to get the example working
-                    :input-blocking        nil
-                    :enable-function-keys  nil
-                    :cursor-visible        nil)
-    (let ((output ""))
-      (flet ((redraw ()
-               (clear scr)
-               (add scr "Press control-q to exit" :x 0 :y 0)
-               (add scr output                    :x 0 :y 2)))
-        (bind scr t (lambda (w event)
-                      (declare (ignore w))
-                      (when (characterp event)
-                        (let* ((key-decoded  (key-to-string  event))
-                               (char-decoded (char-to-string event)))
-                          (setf output
-                                (format nil "event ~a key decoded ~a char decoded ~a"
-                                        event key-decoded char-decoded))
-                          (when (and char-decoded
-                                     (string= key-decoded "^Q"))
-                            (exit-event-loop scr nil))))))
-        (bind scr nil (lambda (w e)
-                        (declare (ignore w e))
-                        (redraw)
-                        (refresh scr)))
-        (clear scr)
-        (setf (frame-rate scr) 20)
-        (run-event-loop scr)))))
