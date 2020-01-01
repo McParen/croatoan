@@ -4,7 +4,7 @@
   :licence "MIT"
   :version "0.0.1"
   :depends-on (:cffi :trivial-gray-streams :bordeaux-threads)
-  :components 
+  :components
 
   ;; Basic CFFI wrapper for libncursesw and libncurses
   ((:module "ncurses"
@@ -64,7 +64,7 @@
              (:file "variables")        ; curses global variables
              (:file "window")           ; create curses windows
              (:file "wresize")))        ; resize a curses window
-             
+
    ;; CLOS api on top of CFFI ncurses.
    (:module "src"
             :depends-on ("ncurses")
@@ -76,6 +76,7 @@
              (:file "gray_streams")
              (:file "utf8")
 
+             (:file "util")             ; miscellanea utils
              (:file "addch")
              (:file "add_wch")
              (:file "addstr")

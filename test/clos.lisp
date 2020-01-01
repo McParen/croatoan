@@ -286,7 +286,7 @@
     (add-string scr "welcome to tijuana")
     (refresh scr)
     (get-char scr)
-    
+
     (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (refresh scr)
     (get-char scr)
@@ -327,7 +327,7 @@
     ;; text will still use the window color pair
     (move scr 3 3 :relative t)
     (add scr "hasta siempre")
-    
+
     (refresh scr)
     (get-char scr) ))
 
@@ -374,12 +374,12 @@
     (setf (color-pair scr) '())
     (add-string scr "Open the pod bay door.")
     (fresh-line scr) (refresh scr) (get-char scr)
-    
+
     ;; the background style renders simple text, but it doesnt change the text with a set color pair
     (setf (background scr) (make-instance 'complex-char :simple-char #\. :fgcolor :black :bgcolor :magenta))
     (add-string scr "I can feel it.")
     (fresh-line scr) (refresh scr) (get-char scr)
-    
+
     ;; remove the background char, set back to the default state.
     (setf (background scr) nil)
     (add-string scr "My mind is going.")
@@ -555,7 +555,7 @@
 ;; ----------+--------+--------+-----
 ;; buffering | t      | nil    | nil
 ;; ----------+--------+--------+-----
-;; control   | t      | t      | nil 
+;; control   | t      | t      | nil
 ;;
 (defun t03e ()
   "Test switching between input modes and control char processing."
@@ -658,14 +658,14 @@
 
     (add-attributes scr '(:bold :underline :reverse))
     (print (attributes scr) scr)
-    
+
     (setf (attributes scr) nil)
     (print (attributes scr) scr)
     (print "test" scr)
 
     (move scr 6 10)
     (change-attributes scr 10 '())
-    
+
     (refresh scr)
     (get-char scr)))
 
@@ -747,7 +747,7 @@
            (refresh scr)
            (get-char scr))
       ;; close is defined by the gray stream interface.
-      (close scr)))) 
+      (close scr))))
 
 ;; test the gray streams interface.
 (defun t08 ()
@@ -756,10 +756,10 @@
          (clear scr)
 
          (write-char #\a)     ; writes a to the repl. wont be visible until we quit ncurses.
-         
+
          (write-char #\b scr) ; writes b to scr.
          (terpri scr)
-         
+
          (princ "hello")      ; writes to the repl. wont be visible until we quit ncurses.
 
          (princ "hello" scr)
@@ -773,7 +773,7 @@
          (write-string "dear john" scr :start 0 :end 4)
          (terpri scr)
          (write-string "dear john" scr :start 5)
-         
+
          (fresh-line scr)     ; we call it 3 times, but only one newline will be added.
          (fresh-line scr)
          (fresh-line scr)
@@ -786,7 +786,7 @@
          (get-char scr))
     (end-screen)))
 
-;; when we define windows as streams, we can rebind the *standard-output* to print to a ncurses window. 
+;; when we define windows as streams, we can rebind the *standard-output* to print to a ncurses window.
 ;; this only works with standard lisp output functions, format, write-char, terpri, print, etc.
 ;; we still have to explicitely ncurses functions clear, close, refresh, etc. though.
 (defun t08a ()
@@ -966,7 +966,7 @@ Test whether a window (stream) was closed."
 
              ;; print currently active color pairs to w3
              (format w3 "~A" de.anvi.croatoan::*color-pair-alist*)
-             
+
              ;; TODO: clear, refresh, etc, should take one or more windows as arguments.
              ;; so we can do (refresh w1 w2 w3) instead of:
              (refresh w1)
@@ -993,7 +993,7 @@ Test whether a window (stream) was closed."
   (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
     (box scr)
     (refresh scr)
-    
+
     (let ((w1 (make-instance 'window :height 10 :width 30 :location '(3 5)  :draw-border t))
           (w2 (make-instance 'window            :width 30 :location '(6 10) :draw-border t))
           (w3 (make-instance 'window :height 10           :location '(9 15) :draw-border t)))
@@ -1061,7 +1061,7 @@ Test whether a window (stream) was closed."
         (#\b
          (lower-to-bottom (nth n winlst))
          (refresh-stack))
-        ;; type v to toggle window visibility         
+        ;; type v to toggle window visibility
         (#\v
          ;; toggle visibility for window n
          (setf (visiblep (nth n winlst)) (not (visiblep (nth n winlst))))
@@ -1087,7 +1087,7 @@ Test whether a window (stream) was closed."
     (unwind-protect
          (progn
            (clear scr)
-           
+
            (format scr "~A lines high, ~A columns wide.~%~%" (height scr) (width scr))
            (refresh scr)
 
@@ -1111,12 +1111,12 @@ Test whether a window (stream) was closed."
             (when event
               (case event
                 (#\q (return))
-                
+
                 ;; non-printable ascii chars. (#\space and #\newline are standard, all others non-standard)
                 (#\escape (format scr "escape char ESC ^[ \e~%"))
                 (#\tab (format scr "horizontal tab char HT \t~%"))
                 (#\space (format scr "space char~%"))
-                
+
                 ;; NL can be either LF \n,CR \r,or CRLF \r\n, depending on the system. it is LF on ubuntu.
                 ;; NL is the standard, system independent, portable way.
                 (#\linefeed (format scr "enter/linefeed LF ^J \n char~%"))
@@ -1133,7 +1133,7 @@ Test whether a window (stream) was closed."
                 (#\rubout (format scr "rubout char ^?~%")) ;; DEL, ^?, delete char 127
                 (#\backspace (format scr "backspace char ^H~%")) ;; BS, \b, ^H, code 8, not the same as the :backspace key
 
-                (:backspace (format scr "backspace key <--~%")) 
+                (:backspace (format scr "backspace key <--~%"))
                 (otherwise (format scr "Event: ~A~%" event))))))))
 
 ;; demonstrate scrolling and scrolling regions.
@@ -1148,12 +1148,12 @@ Test whether a window (stream) was closed."
            (setf (cursor-position scr) '(5 5))
 
            ;; see inopts.
-           (setf 
+           (setf
 
             ;; this is sufficient to make the whole window scroll.
             ;;(scrolling-enabled-p scr t)
             ;;(%scrollok (winptr scr) t)
-            (scrolling-enabled-p scr) t 
+            (scrolling-enabled-p scr) t
 
             ;; to make only a few lines (5 to 10) scroll, we have to set a line-based region.
             ;;(set-scrolling-region scr 5 10)
@@ -1173,7 +1173,7 @@ Test whether a window (stream) was closed."
     (unwind-protect
          (progn
 
-(add-string scr "ACS_ULCORNER ") (add-char scr (acs :upper-left-corner    )) (add-string scr " upper left corner") (new-line scr) 
+(add-string scr "ACS_ULCORNER ") (add-char scr (acs :upper-left-corner    )) (add-string scr " upper left corner") (new-line scr)
 (add-string scr "ACS_LLCORNER ") (add-char scr (acs :lower-left-corner    )) (add-string scr " lower left corner ") (new-line scr)
 (add-string scr "ACS_URCORNER ") (add-char scr (acs :upper-right-corner   )) (add-string scr " upper right corner ") (new-line scr)
 (add-string scr "ACS_LRCORNER ") (add-char scr (acs :lower-right-corner   )) (add-string scr " lower right corner ") (new-line scr)
@@ -1216,12 +1216,12 @@ Test whether a window (stream) was closed."
     (add-char scr :upper-left-corner    ) (format scr " ACS_ULCORNER / upper left corner      ~%")
     (add-char scr :lower-left-corner    ) (format scr " ACS_LLCORNER / lower left corner      ~%")
     (add-char scr :upper-right-corner   ) (format scr " ACS_URCORNER / upper right corner     ~%")
-    (add-char scr :lower-right-corner   ) (format scr " ACS_LRCORNER / lower right corner     ~%")   
+    (add-char scr :lower-right-corner   ) (format scr " ACS_LRCORNER / lower right corner     ~%")
     (add-char scr :tee-pointing-right   ) (format scr " ACS_LTEE     / tee pointing right     ~%")
-    (add-char scr :tee-pointing-left    ) (format scr " ACS_RTEE     / tee pointing left      ~%")   
+    (add-char scr :tee-pointing-left    ) (format scr " ACS_RTEE     / tee pointing left      ~%")
     (add-char scr :tee-pointing-up      ) (format scr " ACS_BTEE     / tee pointing up        ~%")
     (add-char scr :tee-pointing-down    ) (format scr " ACS_TTEE     / tee pointing down      ~%")
-    (add-char scr :horizontal-line      ) (format scr " ACS_HLINE    / horizontal line        ~%")   
+    (add-char scr :horizontal-line      ) (format scr " ACS_HLINE    / horizontal line        ~%")
     (add-char scr :vertical-line        ) (format scr " ACS_VLINE    / vertical line          ~%")
     (add-char scr :crossover-plus       ) (format scr " ACS_PLUS     / large plus or crossover~%")
     (add-char scr :scan-line-1          ) (format scr " ACS_S1       / scan line 1            ~%")
@@ -1279,7 +1279,7 @@ Test whether a window (stream) was closed."
        do (progn (move scr (+ 2 (* i 2)) 2)
                  (add-char scr symbol)
                  (format scr "  ~S~%~%" symbol)))
-    
+
     (loop for i from 0 for symbol in
          '(:crossover-plus
            :scan-line-1
@@ -1398,7 +1398,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; reads and prints a single mouse event.
 (defun t14 ()
   (let ((scr (make-instance 'screen :input-echoing nil :input-blocking t :enable-function-keys t)))
-    (unwind-protect 
+    (unwind-protect
          (progn
            (%mousemask #b00000111111111111111111111111111 (null-pointer)) ; activate all mouse events.
            (get-char scr) ; here you have to click to generate a mouse event.
@@ -1468,13 +1468,13 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (if event
                (case event
                  (:resize ;; if the scren is resized, relocate the window to the new center.
-                          (move-window win (round (/ (height scr) 2)) (round (/ (width scr) 2))) 
+                          (move-window win (round (/ (height scr) 2)) (round (/ (width scr) 2)))
                           ;; better differentiation of types with methods.
                           (move win 0 0)
                           (format win "Y:~A X:~A" (height scr) (width scr))
                           ;; repaint all windows completely by touching them before refreshing.
                           ;; overlapping windows have to be refreshed in reverse stacking order.
-                          (mapc #'(lambda (w) (touch w) (refresh w)) 
+                          (mapc #'(lambda (w) (touch w) (refresh w))
                                 (list scr win)))
                  (#\q (return)))
                (progn
@@ -1482,7 +1482,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                  (move win 1 0)
                  (incf time 0.01)
                  (format win "~A" time)
-                 (mapc #'(lambda (w) (touch w) (refresh w)) 
+                 (mapc #'(lambda (w) (touch w) (refresh w))
                        (list scr win)) ))))
       (close win))))
 
@@ -1502,7 +1502,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                           (resize win (- (height scr) 4) (- (width scr) 6))
                           (move win 0 0)
                           (format win "Y:~A X:~A" (height scr) (width scr))
-                          ;; when updating several overlapping windows, using mark-for-refresh and 
+                          ;; when updating several overlapping windows, using mark-for-refresh and
                           ;; batch-refresh instead of several calls to refresh prevents flickering.
                           (mapc #'(lambda (w) (touch w) (mark-for-refresh w)) (list scr win))
                           (refresh-marked))
@@ -1532,7 +1532,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (get-char scr))
     (end-screen)))
 
-;; read a single line of Lisp input (30 chars max) from the last line, 
+;; read a single line of Lisp input (30 chars max) from the last line,
 ;; evaluate it and print the result to the output window above.
 (defun t16a ()
   (with-screen (scr :input-echoing t :input-blocking t :enable-function-keys t :cursor-visible nil :enable-colors nil)
@@ -1543,7 +1543,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (refresh out)
 
       ;; blocking is t, so wait till the next keypress before exiting.
-      (get-char in) 
+      (get-char in)
 
       ;; close windows and window streams.
       (close in)
@@ -1578,15 +1578,15 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
       (event-case (win event)
-        (:left 
+        (:left
          (when (> (cadr (cursor-position win)) 0)
            (move win 0 -1 :relative t)))
-        (:right 
+        (:right
          (when (< (cadr (cursor-position win)) n)
            (move win 0 1 :relative t)))
         (#\newline ; RET key, C-j, C-m
            (when (> n 0) ; only print when the line is not empty.
-             (let* ((strin (extract-wide-string win :n n :y 0 :x 0)) 
+             (let* ((strin (extract-wide-string win :n n :y 0 :x 0))
                     (strout (eval (read-from-string strin))))
                (print (length strin))
                (princ strin)
@@ -1697,7 +1697,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (setf (style field) (list :foreground s1 :background s2))
 
       (bind field #\newline 'de.anvi.croatoan::debug-print-field-buffer)
-      
+
       ;; pressing ^A (for "accept") exits the edit mode (for now)
       ;; the field variables are not reset when edit is exited, we can access them after the edit.
       (if (edit field)
@@ -1711,7 +1711,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
           (progn
             (clear scr)
             (format t "field edit canceled.")))
-          
+
       (refresh scr)
 
       ;; wait for keypress, then exit
@@ -1738,7 +1738,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (button2 (make-instance 'button :location (list 10 20) :name "Accept" :style s6))
            (button3 (make-instance 'button :location (list 10 30) :name "Cancel" :style s6))
 
-           ;; a window is associated with the parent form, and can be accessed by the elements.           
+           ;; a window is associated with the parent form, and can be accessed by the elements.
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2 button3) :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
@@ -1774,15 +1774,15 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (ch3 (list :fgcolor :yellow :bgcolor :red :attributes '(:bold :italic)))
            (ch4 (list :simple-char #\_ :fgcolor :white :bgcolor :blue))
            (ch5 (list :fgcolor :yellow :simple-char #\.))
-           
+
            ;; element styles reference previousy defined character styles.
            (s1 (list :foreground ch1 :background ch2 :selected-foreground ch3 :selected-background ch4))
            (s2 (list :foreground ch4 :selected-foreground ch3))
            (s3 (list :foreground ch1 :background ch5))
-           
+
            ;; the form style consists of default styles of form elements.
            (sf1 (list 'field s1 'button s2 'label s3 'checkbox s1))
-           
+
            (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 20) :width 15 :max-buffer-length 5))
            (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 20) :width 15))
            (field3 (make-instance 'field :name :f3                   :location (list 7 20) :width 15 :max-buffer-length 20))
@@ -1800,7 +1800,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (label3 (make-instance 'label :name :l3 :title "Age"             :location (list 7 1)))
            (label4 (make-instance 'label :name :l4 :reference :c1 :width 18 :location (list 9 1)))
            (label5 (make-instance 'label :name :l5 :reference :m1 :width 18 :location (list 11 1)))
-           
+
            (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 14 10)))
            (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 14 20)))
            (button3 (make-instance 'button :name :b3 :title "Cancel" :location (list 14 30)))
@@ -1839,7 +1839,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
           (progn
             (clear scr)
             (format scr "nil")))
-      
+
       (refresh scr)
       ;; wait for keypress, then exit
       (get-char scr) )))
@@ -1855,15 +1855,15 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (style1 (list :foreground ch1 :background ch2 :selected-foreground ch3 :selected-background ch4))
            (style2 (list :foreground ch4 :selected-foreground ch3))
            (style3 (list 'field style1 'button style2))
-           
+
            (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 3) :width 20 :max-buffer-length 5))
            (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 3) :width 20))
            (field3 (make-instance 'field :name :f3 :title "Age"      :location (list 7 3) :width 20 :max-buffer-length 20))
-           
+
            (button1 (make-instance 'button :name :b1 :title "Say Hello" :location (list 10 7)))
            (button2 (make-instance 'button :name :b1 :title "Cancel"    :location (list 10 20)))
            (button3 (make-instance 'button :name :b2 :title "Accept"    :location (list 10 30)))
-           
+
            (form (make-instance 'form-window :elements (list field1 field2 field3 button1 button2 button3)
                                 :style style3 :enable-function-keys t :input-blocking t :title "form window"
                                 :draw-border t :height 15 :width 50 :location (list 5 15))))
@@ -1915,14 +1915,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (ch3 (list :fgcolor :yellow :bgcolor :red :attributes '(:underline :bold :italic)))
              (ch4 (list :simple-char #\_ :fgcolor :white :bgcolor :blue))
              (ch5 (list :simple-char #\. :fgcolor :black :bgcolor :white))
-             
+
              (style1 (list :foreground ch1 :background ch2 :selected-foreground ch3 :selected-background ch4))
              (style2 (list :foreground ch1 :selected-foreground ch4))
              (style3 (list :foreground ch1 :background ch5))
 
              ;; form element default styles
              (style4 (list 'field style1 'button style2 'label style3))
-             
+
              (label1 (make-instance 'label :name :l1 :reference :f1 :width 20 :location (list 2 1)))
              (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 2 22) :width 20 :max-buffer-length 25))
 
@@ -2088,7 +2088,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (loop
          for i in installed-systems
          for sys = (asdf:find-system i nil)
-         do 
+         do
            (when sys
              (format scr "~27@A | ~A~%"
                      i
@@ -2321,7 +2321,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
             (stackedp menu) t
             (stackedp sub-menu1) t
             (stackedp sub-menu2) t)
-      (move scr 4 0) ;; start the output at line 4, below the menu bar.    
+      (move scr 4 0) ;; start the output at line 4, below the menu bar.
       (refresh-stack)
       (loop named menu-case
          do (let ((result (select menu)))
@@ -2357,7 +2357,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
 
       (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
-      
+
       (refresh scr)
       (loop named menu-case
          do (let ((result (select menu)))
@@ -2390,7 +2390,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
       ;; #x2592 = :board
       (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
-      
+
       (refresh scr)
       (loop named menu-case
          do (let ((result (select menu)))
@@ -2582,7 +2582,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
            (refresh scr)
            ;; should yield NIL, since we refreshed
            (format scr "4. screen after refreshing: ~A~%" (closed-p scr))
-           
+
            (get-char scr))
       (close scr))))
 
@@ -2675,7 +2675,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
       (refresh-stack)
       (get-char scr)
-      
+
       (setf (location win) (list 2 4))
       (refresh-stack)
       (get-char scr)
@@ -2692,7 +2692,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       (princ "a" win)
       (refresh-stack)
       (get-char scr)
-      
+
       (setf (cursor-position-y win) 2)
       (princ "b" win)
       (refresh-stack)
@@ -2849,7 +2849,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     ;; text is not printed red on white because the color-pair overrides the background color.
     (setf (background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:red :white)))
-    (add-string scr "                          background red on white" :y 2 :x 0) (refresh scr) (get-char scr) 
+    (add-string scr "                          background red on white" :y 2 :x 0) (refresh scr) (get-char scr)
 
     (setf (color-pair scr) '(:blue :yellow))
     (add-string scr "color-pair blue on yellow" :y 3 :x 0) (refresh scr) (get-char scr)
@@ -2885,3 +2885,33 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (add-string scr "fgcolor magenta" :y 14 :x 0 :fgcolor :magenta)  (refresh scr) (get-char scr)
     (add-string scr "bgcolor cyan" :y 15 :x 0 :bgcolor :cyan)  (refresh scr) (get-char scr) ))
 
+(defun t32 ()
+  "Test/Example of `croatoan:key-to-string'. Try to press C-J to see the difference"
+  (with-screen (scr :input-echoing         nil
+                    :process-control-chars nil ; set to nil to get the example working
+                    :input-blocking        nil
+                    :enable-function-keys  nil
+                    :cursor-visible        nil)
+    (let ((output ""))
+      (flet ((redraw ()
+               (clear scr)
+               (add scr "Press control-q to exit" :x 0 :y 0)
+               (add scr output                    :x 0 :y 2)))
+        (bind scr t (lambda (w event)
+                      (declare (ignore w))
+                      (when (characterp event)
+                        (let* ((key-decoded  (key-to-string  event))
+                               (char-decoded (char-to-string event)))
+                          (setf output
+                                (format nil "event ~a key decoded ~a char decoded ~a"
+                                        event key-decoded char-decoded))
+                          (when (and char-decoded
+                                     (string= key-decoded "^Q"))
+                            (exit-event-loop scr nil))))))
+        (bind scr nil (lambda (w e)
+                        (declare (ignore w e))
+                        (redraw)
+                        (refresh scr)))
+        (clear scr)
+        (setf (frame-rate scr) 20)
+        (run-event-loop scr)))))
