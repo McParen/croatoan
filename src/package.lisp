@@ -188,6 +188,7 @@
    field-buffer-to-string
 
    ;; getch / get (or push back) characters from curses terminal keyboard
+   *key-alist*
    get-char
    unget-char
    key-supported-p
