@@ -2890,24 +2890,30 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
   (with-screen (scr :input-echoing         nil
                     :process-control-chars nil ; set to nil to get the example working
                     :input-blocking        nil
-                    :enable-function-keys  nil
+                    :enable-function-keys  t
                     :cursor-visible        nil)
-    (let ((output ""))
+    (let ((output "")
+          (*unknown-event-as-nil* nil))
       (flet ((redraw ()
                (clear scr)
                (add scr "Press control-q to exit" :x 0 :y 0)
                (add scr output                    :x 0 :y 2)))
         (bind scr t (lambda (w event)
                       (declare (ignore w))
-                      (when (characterp event)
-                        (let* ((key-decoded  (key-to-string  event))
-                               (char-decoded (char-to-string event)))
-                          (setf output
-                                (format nil "event ~a key decoded ~a char decoded ~a"
-                                        event key-decoded char-decoded))
-                          (when (and char-decoded
-                                     (string= key-decoded "^Q"))
-                            (exit-event-loop scr nil))))))
+                      (cond
+                        ((characterp event)
+                         (let* ((key-decoded  (key-to-string  event))
+                                (char-decoded (char-to-string event)))
+                           (setf output
+                                 (format nil "event ~a key decoded ~a char decoded ~a"
+                                         event key-decoded char-decoded))
+                           (when (and char-decoded
+                                      (string= key-decoded "^Q"))
+                             (exit-event-loop scr nil))))
+                        ((numberp event)
+                         (setf output (format nil "Unknown keycode ~a" event)))
+                        (t
+                         (setf output (format nil "Non character keycode ~a" event))))))
         (bind scr nil (lambda (w e)
                         (declare (ignore w e))
                         (redraw)

@@ -197,6 +197,7 @@
    get-event
 
    ;; get_wch / get (or push back) a wide (multi-byte) character from curses terminal keyboard
+   *unknown-event-as-nil*
    get-wide-char
    get-wide-event
 

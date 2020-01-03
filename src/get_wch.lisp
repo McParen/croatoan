@@ -16,6 +16,8 @@ The window from which the char is read is automatically refreshed."
         (values (cffi:mem-ref ptr 'wint_t) t)
         (values (cffi:mem-ref ptr 'wint_t) nil))))
 
+(defparameter *unknown-event-as-nil* t)
+
 (defun get-wide-event (window)
   "Return a single user input event.
 
@@ -29,8 +31,12 @@ If input-blocking is nil for the window, return nil if no key was typed."
       ((= ch 0) nil)
       (function-key-p
        (let ((ev (function-key ch)))
-         (if (eq ev :mouse)
-             (multiple-value-bind (mev y x) (get-mouse-event)
-               (values mev y x)) ; returns 3 values, see mouse.lisp
-             ev)))
+         (cond
+           ((eq ev :mouse)
+            (multiple-value-bind (mev y x) (get-mouse-event)
+              (values mev y x))) ; returns 3 values, see mouse.lisp
+         ((and (null ev)
+               (null *unknown-event-as-nil*))
+          ch)
+         (t ev))))
       (t (code-char ch)))))
