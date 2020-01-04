@@ -264,14 +264,17 @@ The window from which the char is read is automatically refreshed."
     (:shift-ctrl-up      . 561)))
     ;; (:shift-alt-ctrl-up . xxx)
 
-;; Takes a short int returned by get-char, 
-;; returns a keyword represeting the function key.
-;; returns nil if number is not in the list.
 (defun function-key (number)
-  (car (rassoc number *key-alist*)))
+  "Take a short int returned by get-char, return a keyword represeting the function key.
 
-;; Returns t if the number is a key, nil if it is a char.
+If the keycode is not in the list, return the unknown keycode instead of nil."
+  (let ((pair (rassoc number *key-alist*)))
+    (if pair
+        (car pair)
+        number)))
+
 (defun function-key-p (number)
+  "Returns t if the number is a known key, nil if it is a char."
   (if (and (> number 255)
            (rassoc number *key-alist*))
       t
