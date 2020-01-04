@@ -1,24 +1,12 @@
-(in-package :croatoan)
+(in-package :de.anvi.croatoan)
 
 ;; define_key
 ;; define a keycode
 ;; http://invisible-island.net/ncurses/man/define_key.3x.html
 
-;;; C prototypes
-
-;; int define_key(const char *definition, int keycode);
-
-;;; Low-level C functions
-
-(defcfun ("define_key" %define-key) :int (definition :string) (keycode :int))
-
-;;; High-level Lisp wrappers
-
-(defun define-key (definition code)
-  "Define a new keycode with its definition string.
-
-If the string is empty, or the code zero or negative, the existing
-definition is removed."
-  (%define-key definition code))
-
-;;; TODOs
+(defun define-function-key (key-name char-list)
+  "Add a new function key defined by the given character sequence."
+  (let ((max-key-code (reduce #'max *key-alist* :key #'cdr))
+        (control-string (coerce char-list 'string)))
+    (setf *key-alist* (acons key-name (1+ max-key-code) *key-alist*))
+    (%define-key control-string (1+ max-key-code))))

@@ -172,6 +172,7 @@
    use-terminal-colors-p
 
    ;; define_key / define a keycode
+   define-function-key
 
    ;; delch / delete character under the cursor in a curses window
    delete-char

@@ -91,6 +91,7 @@
              (:file "delch")
              (:file "deleteln")
              (:file "getch")
+             (:file "define_key")       ; define a keycode
              (:file "get_wch")
              (:file "getstr")
              (:file "initscr")
