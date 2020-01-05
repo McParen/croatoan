@@ -264,21 +264,70 @@ The window from which the char is read is automatically refreshed."
     (:shift-ctrl-up      . 561)))
     ;; (:shift-alt-ctrl-up . xxx)
 
+(defmacro access-alist (key find-fn test-fn get-value-fn default)
+  (let ((pair (gensym)))
+    `(let ((,pair (,find-fn ,key *key-alist* :test (function ,test-fn))))
+       (if ,pair
+           (values (,get-value-fn ,pair) t)
+           (values ,default              nil)))))
+
+(defun keyname-to-code (keyname &optional (default nil))
+  "Find the  corresponding curses code  (i.e. a number)  from croatoan
+keyname (a keyword) passed as parameter).
+
+If  such code  does  not exists  this function  returns  the value  of
+optional parameter: 'default'.  Also,  this function, returns a second
+value that is  not nil if a pair  has been found in alist  even it the
+cdr of said pair is nil."
+  (access-alist keyname assoc eq cdr default))
+
+(defun key-code-to-name (code &optional (default nil))
+  "Find  the  corresponding croatoan  keyname  (i.e.  a keyword)  from
+curses code (a keyword) passed as parameter).
+
+If such keyname does not exists  this function  returns  the value  of
+optional  parameter: 'default'.
+
+ Also,  this function, returns a second
+value that is  not nil if a pair  has been found in alist  even it the
+cdr of said pair is nil."
+  (access-alist code rassoc = car default))
+
+(defgeneric delete-key-code-mapping (object)
+  (:documentation "Delete a mapping croatoan keycode <-> curses integer, if exists"))
+
+(defmethod delete-key-code-mapping ((object symbol))
+  "Delete   a   mapping   croatoan  keyname   (keyword)   <->   curses
+  code  (number),  if exists.  Use  a  croatoan  keyname to  find  the
+  mapping. This operation modify '*key-alist*'"
+  (setf *key-alist*
+        (remove-if (lambda (a) (eq (car a) object)) *key-alist*)))
+
+(defmethod delete-key-code-mapping ((object number))
+  "Delete   a   mapping   croatoan  keyname   (keyword)   <->   curses
+  code  (number),   if  exists.  Use   a  curses  code  to   find  the
+  mapping. This operation modify '*key-alist*'"
+  (setf *key-alist*
+        (remove-if (lambda (a) (= (cdr a) object)) *key-alist*)))
+
+(defun add-key-code-mapping (keyname key-code)
+  "Add a new mapping  keyname (keyword) <->  curses   code (number).
+   If  the mapping  database already  contains 'keyname'  this mapping
+   will be overwritten by the value  passed as argument to this.  This
+   operation modify '*key-alist*'"
+  (setf *key-alist* (acons keyname key-code *key-alist*)))
+
 (defun function-key (number)
-  "Take a short int returned by get-char, return a keyword represeting the function key.
+  "Take a short int returned by get-char, return a keyword representing the function key.
 
 If the keycode is not in the list, return the unknown keycode instead of nil."
-  (let ((pair (rassoc number *key-alist*)))
-    (if pair
-        (car pair)
-        number)))
+  (key-code-to-name number number))
 
 (defun function-key-p (number)
-  "Returns t if the number is a known key, nil if it is a char."
-  (if (and (> number 255)
-           (rassoc number *key-alist*))
-      t
-      nil))
+  "Returns t if the number is a known  key, nil if it is either a char
+or an unknown key."
+  (and (> number 255)
+       (key-code-to-name number nil)))
 
 ;; http://rosettacode.org/wiki/Keyboard_input/Keypress_check
 ;; Returns t if a key has been pressed and a char can be read by get-char.
