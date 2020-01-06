@@ -312,10 +312,15 @@ cdr of said pair is nil."
 
 (defun add-key-code-mapping (keyname key-code)
   "Add a new mapping  keyname (keyword) <->  curses   code (number).
-   If  the mapping  database already  contains 'keyname'  this mapping
-   will be overwritten by the value  passed as argument to this.  This
-   operation modify '*key-alist*'"
-  (setf *key-alist* (acons keyname key-code *key-alist*)))
+   If the  mapping database  already contains 'keyname'  or 'key-code'
+   these mapping will  be overwritten by the values  passed as argument
+   to this function.  This operation modify '*key-alist*'"
+  (let ((list-pair-removed (remove-if (lambda (a)
+                                        (or (eq (car a) keyname)
+                                            (=  (cdr a) key-code)))
+                                      *key-alist*)))
+    (setf *key-alist*
+          (acons keyname key-code list-pair-removed))))
 
 (defun function-key (number)
   "Take a short int returned by get-char, return a keyword representing the function key.
