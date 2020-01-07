@@ -265,20 +265,19 @@ The window from which the char is read is automatically refreshed."
     ;; (:shift-alt-ctrl-up . xxx)
 
 (defmacro access-alist (key find-fn test-fn get-value-fn default)
+  "Helper macro for 'keyname-to-code' and 'key-code-to-name'."
   (let ((pair (gensym)))
     `(let ((,pair (,find-fn ,key *key-alist* :test (function ,test-fn))))
        (if ,pair
-           (values (,get-value-fn ,pair) t)
-           (values ,default              nil)))))
+           (,get-value-fn ,pair)
+           ,default))))
 
 (defun keyname-to-code (keyname &optional (default nil))
   "Find the  corresponding curses code  (i.e. a number)  from croatoan
 keyname (a keyword) passed as parameter).
 
 If  such code  does  not exists  this function  returns  the value  of
-optional parameter: 'default'.  Also,  this function, returns a second
-value that is  not nil if a pair  has been found in alist  even it the
-cdr of said pair is nil."
+optional parameter: 'default'."
   (access-alist keyname assoc eq cdr default))
 
 (defun key-code-to-name (code &optional (default nil))
@@ -286,11 +285,7 @@ cdr of said pair is nil."
 curses code (a keyword) passed as parameter).
 
 If such keyname does not exists  this function  returns  the value  of
-optional  parameter: 'default'.
-
- Also,  this function, returns a second
-value that is  not nil if a pair  has been found in alist  even it the
-cdr of said pair is nil."
+optional  parameter: 'default'."
   (access-alist code rassoc = car default))
 
 (defgeneric delete-key-code-mapping (object)
@@ -301,14 +296,16 @@ cdr of said pair is nil."
   code  (number),  if exists.  Use  a  croatoan  keyname to  find  the
   mapping. This operation modify '*key-alist*'"
   (setf *key-alist*
-        (remove-if (lambda (a) (eq (car a) object)) *key-alist*)))
+        (remove-if (lambda (a) (eq (car a) object))
+                   *key-alist*)))
 
 (defmethod delete-key-code-mapping ((object number))
   "Delete   a   mapping   croatoan  keyname   (keyword)   <->   curses
   code  (number),   if  exists.  Use   a  curses  code  to   find  the
   mapping. This operation modify '*key-alist*'"
   (setf *key-alist*
-        (remove-if (lambda (a) (= (cdr a) object)) *key-alist*)))
+        (remove-if (lambda (a) (= (cdr a) object))
+                   *key-alist*)))
 
 (defun add-key-code-mapping (keyname key-code)
   "Add a new mapping  keyname (keyword) <->  curses   code (number).
