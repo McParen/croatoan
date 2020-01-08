@@ -38,15 +38,15 @@ The window from which the char is read is automatically refreshed."
 ;; keys above the first 0-255 chars. cannot fit in a char variable any more.
 ;; http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/keys.html
 (defparameter *key-alist*
-  '((:code_yes  . 256) 
-    (:min       . 257) 
+  '((:code_yes  . 256)
+    (:min       . 257)
     (:break     . 257)
-    (:down      . 258) 
+    (:down      . 258)
     (:up        . 259)
-    (:left      . 260) 
-    (:right     . 261) 
+    (:left      . 260)
+    (:right     . 261)
     (:home      . 262) ; Pos1
-    (:backspace . 263) 
+    (:backspace . 263)
     (:f0        . 264)
 
     (:f1        . 265)
@@ -113,96 +113,96 @@ The window from which the char is read is automatically refreshed."
     (:f62       . 326)
     (:f63       . 327)
 
-    (:dl        . 328) 
-    (:il        . 329) 
+    (:dl        . 328)
+    (:il        . 329)
     (:dc        . 330)
-    (:ic        . 331) 
-    (:eic       . 332) 
-    (:clear     . 333) 
-    (:eos       . 334) 
-    (:eol       . 335) 
+    (:ic        . 331)
+    (:eic       . 332)
+    (:clear     . 333)
+    (:eos       . 334)
+    (:eol       . 335)
     (:sf        . 336) ; :shift-down
     (:sr        . 337) ; :shift-up
-    (:npage     . 338) 
-    (:ppage     . 339) 
-    (:stab      . 340) 
+    (:npage     . 338)
+    (:ppage     . 339)
+    (:stab      . 340)
     (:ctab      . 341)
-    (:catab     . 342) 
-    (:enter     . 343) 
-    (:sreset    . 344) 
-    (:reset     . 345) 
+    (:catab     . 342)
+    (:enter     . 343)
+    (:sreset    . 344)
+    (:reset     . 345)
     (:print     . 346)
-    (:ll        . 347) 
-    (:a1        . 348) 
-    (:a3        . 349) 
-    (:b2        . 350) 
-    (:c1        . 351) 
+    (:ll        . 347)
+    (:a1        . 348)
+    (:a3        . 349)
+    (:b2        . 350)
+    (:c1        . 351)
     (:c3        . 352)
     (:btab      . 353) ; Shift + TAB = #\LATIN_SMALL_LETTER_S_WITH_CARON = sch
-    (:beg       . 354) 
-    (:cancel    . 355) 
-    (:close     . 356) 
+    (:beg       . 354)
+    (:cancel    . 355)
+    (:close     . 356)
     (:command   . 357)
-    (:copy      . 358) 
-    (:create    . 359) 
+    (:copy      . 358)
+    (:create    . 359)
     (:end       . 360) ; Ende
-    (:exit      . 361) 
+    (:exit      . 361)
     (:find      . 362)
-    (:help      . 363) 
-    (:mark      . 364) 
-    (:message   . 365) 
-    (:move      . 366) 
+    (:help      . 363)
+    (:mark      . 364)
+    (:message   . 365)
+    (:move      . 366)
     (:next      . 367)
-    (:open      . 368) 
-    (:options   . 369) 
-    (:previous  . 370) 
+    (:open      . 368)
+    (:options   . 369)
+    (:previous  . 370)
     (:redo      . 371)
-    (:reference . 372) 
-    (:refresh   . 373) 
-    (:replace   . 374) 
+    (:reference . 372)
+    (:refresh   . 373)
+    (:replace   . 374)
     (:restart   . 375)
-    (:resume    . 376) 
-    (:save      . 377) 
-    (:sbeg      . 378) 
-    (:scancel   . 379) 
+    (:resume    . 376)
+    (:save      . 377)
+    (:sbeg      . 378)
+    (:scancel   . 379)
     (:scommand  . 380)
-    (:scopy     . 381) 
-    (:screate   . 382) 
-    (:sdc       . 383) 
-    (:sdl       . 384) 
+    (:scopy     . 381)
+    (:screate   . 382)
+    (:sdc       . 383)
+    (:sdl       . 384)
     (:select    . 385)
     (:send      . 386) ; Shift-End
-    (:seol      . 387) 
-    (:sexit     . 388) 
-    (:sfind     . 389) 
+    (:seol      . 387)
+    (:sexit     . 388)
+    (:sfind     . 389)
     (:shelp     . 390)
     (:shome     . 391) ; Shift-Home, Shift-Pos1
-    (:sic       . 392) 
-    (:sleft     . 393) 
-    (:smessage  . 394) 
+    (:sic       . 392)
+    (:sleft     . 393)
+    (:smessage  . 394)
     (:smove     . 395)
-    (:snext     . 396) 
-    (:soptions  . 397) 
-    (:sprevious . 398) 
+    (:snext     . 396)
+    (:soptions  . 397)
+    (:sprevious . 398)
     (:sprint    . 399)
-    (:sredo     . 400) 
-    (:sreplace  . 401) 
-    (:sright    . 402) 
+    (:sredo     . 400)
+    (:sreplace  . 401)
+    (:sright    . 402)
     (:srsume    . 403)
-    (:ssave     . 404) 
-    (:ssuspend  . 405) 
-    (:sundo     . 406) 
-    (:suspend   . 407) 
+    (:ssave     . 404)
+    (:ssuspend  . 405)
+    (:sundo     . 406)
+    (:suspend   . 407)
     (:undo      . 408)
-    (:mouse     . 409) 
-    (:resize    . 410) 
-    (:event     . 411) 
+    (:mouse     . 409)
+    (:resize    . 410)
+    (:event     . 411)
     (:max       . 511) ; Alt-Delete
 
     ;; The following codes are not part of ncurses because they are not portable, i.e. they do not
     ;; exist on all terminals.
     ;; These are tested on xterm / gnome-terminal
-    
+
     ;; :shift-delete = :sdc
     (:shift-alt-delete   . 512)
     (:ctrl-delete        . 513) ; Ctrl-Delete
@@ -245,13 +245,13 @@ The window from which the char is read is automatically refreshed."
     (:alt-npage          . 542)
     (:ctrl-npage         . 544)
     (:ctrl-alt-npage     . 546)
-    
+
     ;; :ppage
     ;; :shift-ppage activates an xterm ppage function
     (:alt-ppage          . 547)
     (:ctrl-ppage         . 549)
     (:ctrl-alt-ppage     . 551)
-   
+
     (:alt-right          . 552)
     (:shift-alt-right    . 553)
     (:ctrl-right         . 554)
@@ -264,21 +264,72 @@ The window from which the char is read is automatically refreshed."
     (:shift-ctrl-up      . 561)))
     ;; (:shift-alt-ctrl-up . xxx)
 
+(defmacro access-alist (key find-fn test-fn get-value-fn default)
+  "Helper macro for 'keyname-to-code' and 'key-code-to-name'."
+  (let ((pair (gensym)))
+    `(let ((,pair (,find-fn ,key *key-alist* :test (function ,test-fn))))
+       (if ,pair
+           (,get-value-fn ,pair)
+           ,default))))
+
+(defun keyname-to-code (keyname &optional (default nil))
+  "Find the  corresponding curses code  (i.e. a number)  from croatoan
+keyname (a keyword) passed as parameter).
+
+If  such code  does  not exists  this function  returns  the value  of
+optional parameter: 'default'."
+  (access-alist keyname assoc eq cdr default))
+
+(defun key-code-to-name (code &optional (default nil))
+  "Find  the  corresponding croatoan  keyname  (i.e.  a keyword)  from
+curses code (a keyword) passed as parameter).
+
+If such keyname does not exists  this function  returns  the value  of
+optional  parameter: 'default'."
+  (access-alist code rassoc = car default))
+
+(defgeneric delete-key-code-mapping (object)
+  (:documentation "Delete a mapping croatoan keycode <-> curses integer, if exists"))
+
+(defmethod delete-key-code-mapping ((object symbol))
+  "Delete   a   mapping   croatoan  keyname   (keyword)   <->   curses
+  code  (number),  if exists.  Use  a  croatoan  keyname to  find  the
+  mapping. This operation modify '*key-alist*'"
+  (setf *key-alist*
+        (remove-if (lambda (a) (eq (car a) object))
+                   *key-alist*)))
+
+(defmethod delete-key-code-mapping ((object number))
+  "Delete   a   mapping   croatoan  keyname   (keyword)   <->   curses
+  code  (number),   if  exists.  Use   a  curses  code  to   find  the
+  mapping. This operation modify '*key-alist*'"
+  (setf *key-alist*
+        (remove-if (lambda (a) (= (cdr a) object))
+                   *key-alist*)))
+
+(defun add-key-code-mapping (keyname key-code)
+  "Add a new mapping  keyname (keyword) <->  curses   code (number).
+   If the  mapping database  already contains 'keyname'  or 'key-code'
+   these mapping will  be overwritten by the values  passed as argument
+   to this function.  This operation modify '*key-alist*'"
+  (let ((list-pair-removed (remove-if (lambda (a)
+                                        (or (eq (car a) keyname)
+                                            (=  (cdr a) key-code)))
+                                      *key-alist*)))
+    (setf *key-alist*
+          (acons keyname key-code list-pair-removed))))
+
 (defun function-key (number)
-  "Take a short int returned by get-char, return a keyword represeting the function key.
+  "Take a short int returned by get-char, return a keyword representing the function key.
 
 If the keycode is not in the list, return the unknown keycode instead of nil."
-  (let ((pair (rassoc number *key-alist*)))
-    (if pair
-        (car pair)
-        number)))
+  (key-code-to-name number number))
 
 (defun function-key-p (number)
-  "Returns t if the number is a known key, nil if it is a char."
-  (if (and (> number 255)
-           (rassoc number *key-alist*))
-      t
-      nil))
+  "Returns t if the number is a known  key, nil if it is either a char
+or an unknown key."
+  (and (> number 255)
+       (key-code-to-name number nil)))
 
 ;; http://rosettacode.org/wiki/Keyboard_input/Keypress_check
 ;; Returns t if a key has been pressed and a char can be read by get-char.
@@ -301,7 +352,7 @@ If the keycode is not in the list, return the unknown keycode instead of nil."
   (let ((ch (get-char window)))
     (cond
       ;; -1 means no key has been pressed.
-      ((= ch -1) nil) 
+      ((= ch -1) nil)
       ;; 0-255 are regular chars, whch can be converted to lisp chars with code-char.
       ((and (>= ch 0) (<= ch 255)) (code-char ch))
       ;; if the code belongs to a known function key, return a keyword symbol.
@@ -520,4 +571,4 @@ If the keycode is not in the list, return the unknown keycode instead of nil."
 
 #define KEY_MAX         0777            /* Maximum key value is 0633 */
 
-|# 
+|#
