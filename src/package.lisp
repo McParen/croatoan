@@ -192,11 +192,10 @@
    get-char
    unget-char
    key-supported-p
-   keyname-to-code
+   key-name-to-code
    key-code-to-name
-   delete-key-code-mapping
-   delete-key-code-mapping
-   add-key-code-mapping
+   delete-function-key
+   add-function-key
    function-key
    function-key-p
    key-pressed-p

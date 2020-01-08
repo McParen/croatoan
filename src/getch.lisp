@@ -265,59 +265,57 @@ The window from which the char is read is automatically refreshed."
     ;; (:shift-alt-ctrl-up . xxx)
 
 (defmacro access-alist (key find-fn test-fn get-value-fn default)
-  "Helper macro for 'keyname-to-code' and 'key-code-to-name'."
+  "Helper macro for 'key-name-to-code' and 'key-code-to-name'."
   (let ((pair (gensym)))
     `(let ((,pair (,find-fn ,key *key-alist* :test (function ,test-fn))))
        (if ,pair
            (,get-value-fn ,pair)
            ,default))))
 
-(defun keyname-to-code (keyname &optional (default nil))
-  "Find the  corresponding curses code  (i.e. a number)  from croatoan
-keyname (a keyword) passed as parameter).
+(defun key-name-to-code (key-name &optional (default nil))
+  "Return the code (an integer) from the given keyname (a keyword).
 
-If  such code  does  not exists  this function  returns  the value  of
-optional parameter: 'default'."
-  (access-alist keyname assoc eq cdr default))
+If the code does not exist, return the value of the optional parameter: 'default'."
+  (access-alist key-name assoc eq cdr default))
 
 (defun key-code-to-name (code &optional (default nil))
-  "Find  the  corresponding croatoan  keyname  (i.e.  a keyword)  from
-curses code (a keyword) passed as parameter).
+  "Return the keyname  (a keyword)  from the given key code (an integer).
 
-If such keyname does not exists  this function  returns  the value  of
-optional  parameter: 'default'."
+If the keyname does not exist, return the value of the optional parameter: 'default'."
   (access-alist code rassoc = car default))
 
-(defgeneric delete-key-code-mapping (object)
+(defgeneric delete-function-key (object)
   (:documentation "Delete a mapping croatoan keycode <-> curses integer, if exists"))
 
-(defmethod delete-key-code-mapping ((object symbol))
-  "Delete   a   mapping   croatoan  keyname   (keyword)   <->   curses
-  code  (number),  if exists.  Use  a  croatoan  keyname to  find  the
-  mapping. This operation modify '*key-alist*'"
+(defmethod delete-function-key ((object symbol))
+  "Take a keyword, delete the corresponding mapping key name (keyword) <-> key code (integer), if it exists.
+
+This operation modifies '*key-alist*'"
   (setf *key-alist*
         (remove-if (lambda (a) (eq (car a) object))
                    *key-alist*)))
 
-(defmethod delete-key-code-mapping ((object number))
-  "Delete   a   mapping   croatoan  keyname   (keyword)   <->   curses
-  code  (number),   if  exists.  Use   a  curses  code  to   find  the
-  mapping. This operation modify '*key-alist*'"
+(defmethod delete-function-key ((object integer))
+  "Take a key code (integer), delete the mapping key name (keyword) <-> key code (number), if it exists.
+
+This operation modifies '*key-alist*'"
   (setf *key-alist*
         (remove-if (lambda (a) (= (cdr a) object))
                    *key-alist*)))
 
-(defun add-key-code-mapping (keyname key-code)
-  "Add a new mapping  keyname (keyword) <->  curses   code (number).
-   If the  mapping database  already contains 'keyname'  or 'key-code'
-   these mapping will  be overwritten by the values  passed as argument
-   to this function.  This operation modify '*key-alist*'"
+(defun add-function-key (key-name key-code)
+  "Add a new function key given by the mapping of key name (keyword) <->  key code (integer).
+
+If the alist already contains 'key-name' or 'key-code' this mapping
+will be overwritten by the new values.
+
+This operation modifies '*key-alist*'"
   (let ((list-pair-removed (remove-if (lambda (a)
-                                        (or (eq (car a) keyname)
+                                        (or (eq (car a) key-name)
                                             (=  (cdr a) key-code)))
                                       *key-alist*)))
     (setf *key-alist*
-          (acons keyname key-code list-pair-removed))))
+          (acons key-name key-code list-pair-removed))))
 
 (defun function-key (number)
   "Take a short int returned by get-char, return a keyword representing the function key.
