@@ -132,7 +132,7 @@ The initial purpose of this function is to be used as the equality test for alex
   ((location
     :initarg       :location
     :initform      '(0 0)
-    :type          cons
+    :type          (or null cons)
     :documentation "The (y=row x=column) coordinate of the top left corner of the window.")
 
    (width
@@ -696,7 +696,7 @@ The initial purpose of this function is to be used as the equality test for alex
     :initarg       :title
     :initform      nil
     :accessor      title
-    :type          (or null string)
+    :type          (or boolean string)
     :documentation "Title of the element to be displayed at an location depending on the element type.")
 
    (value
