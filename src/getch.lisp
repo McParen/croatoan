@@ -317,6 +317,9 @@ This operation modifies '*key-alist*'"
     (setf *key-alist*
           (acons key-name key-code list-pair-removed))))
 
+(defun gen-unused-key-code ()
+  (1+ (reduce #'max *key-alist* :key #'cdr)))
+
 (defun function-key (number)
   "Take a short int returned by get-char, return a keyword representing the function key.
 
