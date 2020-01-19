@@ -443,6 +443,30 @@
                 (#\q (return))
                 (otherwise (add-char scr (char-code event)))))))))
 
+;; 200119
+(defun t03b1 ()
+  "Show the second return value (key code) of get-event."
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-scrolling t)
+    (clear scr)
+    (format scr "get-char:~%")
+    (refresh scr)
+    (loop
+       (multiple-value-bind (event code) (get-event scr)
+         (when event
+           (case event
+             (#\q (return))
+             (otherwise (format scr "~A ~A~%" event code))))))
+
+    (clear scr)
+    (format scr "get-wide-char:~%")
+    (refresh scr)
+    (loop
+       (multiple-value-bind (event code) (get-wide-event scr)
+         (when event
+           (case event
+             (#\q (return))
+             (otherwise (format scr "~A ~A~%" event code)))))) ))
+
 ;; using the event-case macro to simplify the event loop.
 ;; do not use ((nil) nil) with input-blocking nil, it leads to 100% CPU usage.
 ;; if nothing happens in the nil case anyway, we can use blocking.
