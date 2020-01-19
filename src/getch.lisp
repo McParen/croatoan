@@ -353,16 +353,18 @@ or an unknown key."
   (let ((ch (get-char window)))
     (cond
       ;; -1 means no key has been pressed.
-      ((= ch -1) nil)
+      ((= ch -1)
+       (values nil ch))
       ;; 0-255 are regular chars, whch can be converted to lisp chars with code-char.
-      ((and (>= ch 0) (<= ch 255)) (code-char ch))
+      ((and (>= ch 0) (<= ch 255))
+       (values (code-char ch) ch))
       ;; if the code belongs to a known function key, return a keyword symbol.
       ((function-key-p ch)
        (let ((ev (function-key ch)))
          (if (eq ev :mouse)
              (multiple-value-bind (mev y x) (get-mouse-event)
                (values mev y x)) ; returns 3 values, see mouse.lisp
-             ev)))
+             (values ev ch))))
       ;; todo: unknown codes, like mouse, resize and unknown function keys.
       (t
        ;;(error "invalid value of char received from ncurses.")
