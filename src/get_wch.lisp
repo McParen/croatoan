@@ -1,14 +1,16 @@
 (in-package :de.anvi.croatoan)
 
-(defun get-wide-char (window &key y x)
+(defun get-wide-char (window &key y x position)
   "Read in a wide C wchar_t (multi-byte) from the keyboard and return it.
 
 If the destination coordinates y (row) and x (column) are given, move
 the cursor to the destination first and then read a multi-byte char.
 
-The window from which the char is read is automatically refreshed."
-  (when (and y x) (move window y x))
+The window from which the char is read is automatically refreshed.
 
+If the second returned value is t, the char is a function key, nil otherwise."
+  (when (and y x) (move window y x))
+  (when position (apply #'move window position))
   (cffi:with-foreign-object (ptr 'wint_t)
     ;; #define KEY_CODE_YES    0400            /* A wchar_t contains a key code */
     ;; if the char is a function key, return t as a second value, otherwise nil.
