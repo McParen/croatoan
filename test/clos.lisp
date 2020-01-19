@@ -1136,6 +1136,22 @@ Test whether a window (stream) was closed."
                 (:backspace (format scr "backspace key <--~%"))
                 (otherwise (format scr "Event: ~A~%" event))))))))
 
+(defun t10b ()
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :enable-scrolling t
+                    :input-buffering nil :process-control-chars nil :enable-newline-translation t)
+
+    ;; gnome-terminal, linux console
+    (define-function-key :alt-1 (list #\esc #\1))
+    (define-function-key :alt-n (list #\esc #\n))
+
+    ;; xterm
+    (define-function-key :shift-ctrl-alt-f1 (list #\esc #\[ #\1 #\; #\8 #\P))
+
+    (bind scr #\q 'exit-event-loop)
+    (bind scr t (lambda (w e) (format w "~A~%" e)))
+
+    (run-event-loop scr)))
+
 ;; demonstrate scrolling and scrolling regions.
 (defun t11 ()
   (let ((scr (make-instance 'screen)))
