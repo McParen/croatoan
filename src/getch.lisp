@@ -279,9 +279,11 @@ If the code does not exist, return the value of the optional parameter: 'default
   (access-alist key-name assoc eq cdr default))
 
 (defun key-code-to-name (code &optional (default nil))
-  "Return the keyname  (a keyword)  from the given key code (an integer).
+  "Take an integer representing the function key code, return a
+keyword representing the function key name.
 
-If the keyname does not exist, return the value of the optional parameter: 'default'."
+If a name to the given code is not in the key list, return the value
+of the optional parameter: 'default'."
   (access-alist code rassoc = car default))
 
 (defgeneric delete-function-key (object)
@@ -318,17 +320,19 @@ This operation modifies '*key-alist*'"
           (acons key-name key-code list-pair-removed))))
 
 (defun gen-unused-key-code ()
+  "Generate and return an unused key code.
+
+Used by define-function-key when a new escape sequence is added."
   (1+ (reduce #'max *key-alist* :key #'cdr)))
 
-(defun function-key (number)
-  "Take a short int returned by get-char, return a keyword representing the function key.
-
-If the keycode is not in the list, return the unknown keycode instead of nil."
-  (key-code-to-name number number))
-
 (defun function-key-p (number)
-  "Returns t if the number is a known  key, nil if it is either a char
-or an unknown key."
+  "Take a single-byte key code returned by get-char, return t if the
+number is a known function key, or nil if it is either a char or an
+unknown key.
+
+Used in get-event to check the return value of get-char.
+
+get-wide-char/event has a different way to check for function keys."
   (and (> number 255)
        (key-code-to-name number nil)))
 
@@ -360,7 +364,7 @@ or an unknown key."
        (values (code-char ch) ch))
       ;; if the code belongs to a known function key, return a keyword symbol.
       ((function-key-p ch)
-       (let ((ev (function-key ch)))
+       (let ((ev (key-code-to-name ch ch)))
          (if (eq ev :mouse)
              (multiple-value-bind (mev y x) (get-mouse-event)
                (values mev y x)) ; returns 3 values, see mouse.lisp

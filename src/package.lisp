@@ -196,7 +196,6 @@
    key-code-to-name
    delete-function-key
    add-function-key
-   function-key
    function-key-p
    key-pressed-p
    get-event

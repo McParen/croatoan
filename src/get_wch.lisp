@@ -31,7 +31,7 @@ If input-blocking is nil for the window, return nil if no key was typed."
       ((= ch 0)
        (values nil ch))
       (function-key-p
-       (let ((ev (function-key ch)))
+       (let ((ev (key-code-to-name ch ch)))
          (if (eq ev :mouse)
              (multiple-value-bind (mev y x) (get-mouse-event)
                (values mev y x)) ; returns 3 values, see mouse.lisp
