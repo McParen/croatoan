@@ -315,6 +315,7 @@
    ;; util / miscellaneous curses utility routines
    char-to-string
    key-to-string
+   flush-input
 
    ;; variables / curses global variables
 

@@ -13,7 +13,6 @@
 (defmethod char-to-string ((char integer))
   (%unctrl char))
 
-
 (defgeneric key-to-string (key)
   (:documentation
    "Return a string representing the key.
@@ -44,6 +43,17 @@ See: https://en.wikipedia.org/wiki/Control_character#How_control_characters_map_
 (defmethod key-to-string ((key integer))
   (%keyname key))
 
+(defun flush-input ()
+  "Throw away any typeahead that has been input by the user and has
+not yet been read by the program.
+
+This can be used to clear the input buffer after a key has been held
+down for a longer time to prevent that events are handled by the
+progrem even after the key is released. (That form of intertia can
+happen in games.)
+
+This ncurses function has the same purpose as cl:clear-input."
+  (%flushinp))
 
 ;;; NOTES
 
