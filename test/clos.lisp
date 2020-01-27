@@ -2925,6 +2925,74 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (add-string scr "fgcolor magenta" :y 14 :x 0 :fgcolor :magenta)  (refresh scr) (get-char scr)
     (add-string scr "bgcolor cyan" :y 15 :x 0 :bgcolor :cyan)  (refresh scr) (get-char scr) ))
 
+(defun t31a ()
+  "Test color pair completion for fgcolor and bgcolor parameters."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (format scr "default colors~%") (refresh scr) (get-char scr)
+
+    (setf (color-pair scr) '(:yellow :blue))
+    (format scr "color-pair yellow on blue | background ---~%") (refresh scr) (get-char scr)
+    
+    ;; color-pair overrides the background char because format uses add-wide-char under the hood
+    ;; format (add-wide-char) first checks the color pair of a window, then it checks the background.
+    
+    (setf (background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:red :white)))
+    (format scr "color-pair yellow on blue | background red on white~%") (refresh scr) (get-char scr) 
+
+    ;; only after we remove the color-pair we get characters using the background colors.
+    (setf (color-pair scr) nil)
+    (format scr "color-pair nil            | background red on white~%") (refresh scr) (get-char scr) 
+    
+    (clear scr)
+    (format scr "clear uses the background char~%") (refresh scr) (get-char scr)
+
+    (setf (color-pair scr) '(:blue :yellow))
+    (format scr "color pair blue on yellow | background red on white~%") (refresh scr) (get-char scr)
+    
+    (setf (color-pair scr) nil)
+    (format scr "color pair nil            | background red on white~%") (refresh scr) (get-char scr)
+    
+    (setf (background scr nil) nil)
+    (format scr "color pair nil            | background nil~%") (refresh scr) (get-char scr)
+
+    ;; clear with background nil
+    (clear scr) (refresh scr) (get-char scr)))
+
+(defun t31b ()
+  "Test color pair completion for fgcolor and bgcolor window properties."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (format scr "default colors~%") (refresh scr) (get-char scr)
+
+    (setf (fgcolor scr) :yellow)
+    (format scr "fgcolor yellow~%") (refresh scr) (get-char scr)
+
+    (setf (bgcolor scr) :red)
+    (format scr "fgcolor yellow bgcolor red~%") (refresh scr) (get-char scr)
+
+    (setf (color-pair scr) nil)
+    (format scr "color pair nil~%") (refresh scr) (get-char scr)
+
+    (setf (bgcolor scr) :red)
+    (add-string scr "fgcolor cyan bgcolor red" :fgcolor :cyan) (refresh scr) (get-char scr)
+
+    (setf (background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:blue :white)))
+
+    ;; the fg from background and bg from color-pair will be combined to blue on red.
+    (format scr "~%color-pair nil on red | background blue on white~%") (refresh scr) (get-char scr) ))
+
+(defun t31c ()
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (add scr #\a :fgcolor :red)
+    (terpri scr)
+    (setf (fgcolor scr) :yellow)
+    (format scr "~A~%" (color-pair scr))
+
+    (add scr #\b :fgcolor :white)
+    
+    (add scr #\c)
+    (refresh scr)
+    (get-char scr)))
+
 (defun t32 ()
   "Test/example of `croatoan:key-to-string' from util.lisp.
 
