@@ -2549,51 +2549,89 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (refresh scr)
     (get-char scr)))
 
-;; Tests for insert-char, insert-string, extract-char.
 (defun t21 ()
+  "Tests for insert-char, insert-string, extract-char."
   (with-screen (scr :cursor-visible nil)
-    (move scr 0 0) (add-char scr #\a)
+    (move scr 0 0)
+    (add-char scr #\a)
+
     ;; overwrite b over a
     (move scr 0 0)
-    (add-char scr
-              (make-instance 'complex-char :simple-char #\b :attributes (list :bold :underline) :color-pair '(:blue :yellow)))
-    (echo scr
-          (make-instance 'complex-char :simple-char #\e :attributes (list :underline) :color-pair '(:blue :yellow)))
+    (add scr (make-instance 'complex-char :simple-char #\b
+                            :attributes (list :bold :underline) :color-pair '(:blue :yellow)))
+
+    ;; add e after b
+    (echo scr (make-instance 'complex-char :simple-char #\e :attributes (list :underline)
+                             :color-pair '(:blue :yellow)))
+
+    ;; add pi after e
+    (insert-wide-char scr 960 :color-pair '(:red :white))
+
     ;; insert pi before b
-    (move scr 0 0) (insert-char scr :pi :color-pair '(:yellow :red))
-    ;; insert d before pi
-    (move scr 0 0) (insert-string scr "d ")
-    ;; change the attributes of the d
-    (move scr 0 0) (change-attributes scr 1 '(:underline) :color-pair '(:green :black))
-    ;; extract the complex d from the window, then print its properties.
+    (move scr 0 0)
+    (insert scr :pi :color-pair '(:yellow :red))
+
+    ;; insert "d " before pi
+    (move scr 0 0)
+    (insert scr "d ")
+
+    ;; change the attributes of the d (without moving the cursor)
+    (move scr 0 0)
+    (change-attributes scr 1 '(:underline) :color-pair '(:green :black))
+
+    ;; extract the complex d from the window
     (let ((e (extract-char scr)))
-      (move scr 1 0)
+
+      ;; print the extracted char and its properties
       ;; format uses print-object specialized on complex-chars
-      (format scr "~S~%~S ~S ~S" e (simple-char e) (attributes e) (color-pair e))
-      ;; print back the extracted char
-      (move scr 3 0)
+      (move scr 1 0)
+      (format scr "~S ~S ~S ~S" e (simple-char e) (attributes e) (color-pair e))
+
+      ;; print the extracted character by its components
+      (move scr 2 0)
       (add-char scr (simple-char e) :attributes (attributes e) :color-pair (color-pair e))
-      ;; directly print the complex char
-      (add-char scr e :y 5 :x 10 :n -1)
-      ;; print strings with attributes and colors
-      ;; attributes dont work (yet) when a long string gets wrapped around the last column.
-      (add-string scr "string with attributes" :y 11 :x 10 :attributes '(:underline) :color-pair '(:black :green))
-      ;; test adding both chars and strings with a single wrapper routine.
-      (add scr #\a :y 13 :x 0 :attributes '(:underline) :color-pair '(:yellow :red) :n -1)
-      (add scr "string with attributes" :y 15 :x 0 :n 11 :attributes '(:underline :bold) :color-pair '(:yellow :green)))
+      
+      ;; print the extracted complex character directly
+      ;; n -1 = repeat to the end of the line
+      (add-char scr e :y 3 :x 0 :n -1))
+    
+    (refresh scr)
+    (get-char scr)))
+
+(defun t21a ()
+  "Tests for string wrapping, printing and extracting complex strings."
+  (with-screen (scr :cursor-visible nil)
+    ;; print strings with attributes and colors
+    ;; attributes dont work (yet) when a long string gets wrapped around the last column.
+    (add-string scr "string with attributes 1" :y 0 :x 0 :attributes '(:underline) :color-pair '(:black :green))
+    
+    ;; test adding both chars and strings with a single wrapper routine.
+    (add scr #\a :y 2 :x 0 :attributes '(:underline) :color-pair '(:yellow :red) :n -1)
+
+    ;; n limits the number of chars printed
+    (add scr "string with attributes 2" :y 4 :x 0 :n 11 :attributes '(:underline :bold) :color-pair '(:yellow :green))
+    
     ;; test print-object specialisation on complex-string
-    (let ((str (make-instance 'complex-string :string "complex-string" :color-pair '(:blue :white) :attributes '(:underline))))
-      (format scr "~%~S~%" str)
-      (add-string scr str :y 18 :x 73 :n -1)
-      (add scr str :y 19 :x 70 :n -1))
-    ;; extract the first line as a complex-string, then reprint it at line 22
-    (let ((str (extract-complex-string scr :y 0 :x 0 :n 4)))
-      (move scr 22 1)
+    (let ((str (make-instance 'complex-string :string "complex-string" :color-pair '(:white :blue) :attributes '(:underline))))
+      (move scr 6 0)
+      (format scr "~S" str)
+
+      ;; print near the last column to force wrapping
+      ;; assumes terminal size 80x25
+      (add-string scr str :y 8 :x 70)
+      ;; n -1 avoids wrapping and prints the string only till the end of the line.
+      (add scr str :y 10 :x 70 :n -1))
+    
+    ;; extract 5 chars from the first line as a complex-string, then reprint it at line 12
+    (let ((str (extract-complex-string scr :y 0 :x 0 :n 5)))
+      (move scr 12 0)
       (add scr str :n -1))
-    ;; extract the first line as a simple string, then reprint it at line 23
+    
+    ;; extract 5 chars from the first line as a simple string, then reprint it at line 14
     (let ((str (extract-string scr :y 0 :x 0 :n 5)))
-      (move scr 23 1)
+      (move scr 14 0)
       (add scr str))
+    
     (refresh scr)
     (get-char scr)))
 
