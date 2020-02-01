@@ -112,6 +112,7 @@
    reset-field
    reset-form
    checkedp
+   draw
 
    ;; queue
    submit
@@ -203,6 +204,7 @@
    ;; get_wch / get (or push back) a wide (multi-byte) character from curses terminal keyboard
    get-wide-char
    get-wide-event
+   wait-for-event
 
    ;; getstr / accept character strings from curses terminal keyboard
    get-string
