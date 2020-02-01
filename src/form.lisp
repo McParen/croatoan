@@ -369,15 +369,16 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
 (defun cancel (object event &rest args)
   "Associate this function with an event (key binding or button) to exit the event loop of a form or form element.
 
-The first return value is nil, emphasizing that the user has canceled the form.
+The return value is nil, emphasizing that the user has canceled the form.
 
 The second value is a list containing the object, the event that called the exit and the args passed.
 
 This allows to specify why the form was canceled."
-  ;; TODO: should this be done by the routine or explicitely by the user?
-  (when (eq (type-of object) 'form)
+  (when (or (eq (type-of object) 'form)
+            (eq (type-of object) 'form-window))
     (reset-form object event))
-  (throw (if (eq (type-of object) 'form)
+  (throw (if (or (eq (type-of object) 'form)
+                 (eq (type-of object) 'form-window))
              object
              (if (parent-form object)
                  (parent-form object)
@@ -392,8 +393,10 @@ The first return value is t, emphasizing that the user has accepted the form.
 The second value is a list containing the object, the event that called the exit and the args passed.
 
 This allows to specify by which button or event the form was accepted."
-  ;; if the object has a parent-form, do not throw the object, throw its parent form, otherwise throw the object.
-  (throw (if (eq (type-of object) 'form)
+  ;; if the object has a parent-form, do not throw the object,
+  ;; throw its parent form, otherwise throw the object.
+  (throw (if (or (eq (type-of object) 'form)
+                 (eq (type-of object) 'form-window))
              object
              (if (parent-form object)
                  (parent-form object)
