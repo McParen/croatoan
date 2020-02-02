@@ -1993,6 +1993,89 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     ;; return the input values
     value))
 
+(defun t16j ()
+  "Perform long-running calculations in worker threads to prevent freezing the ncurses UI."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking nil)
+    (let* ((field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 20) :width 15))
+           (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 20) :width 15))
+           (field3 (make-instance 'field :name :f3 :title "Nickname" :location (list 7 20) :width 15))
+           (l1 (make-instance 'label :name :l1 :reference :f1 :width 18 :location (list 3 1)))
+           (l2 (make-instance 'label :name :l2 :reference :f2 :width 18 :location (list 5 1)))
+           (l3 (make-instance 'label :name :l3 :reference :f3 :width 18 :location (list 7 1)))
+           (b1 (make-instance 'button :name :b1 :title "Calc main"   :location (list 14 1)))
+           (b2 (make-instance 'button :name :b2 :title "Calc worker" :location (list 14 14)))
+           (b3 (make-instance 'button :name :b3 :title "Cancel" :location (list 14 29)))
+           (b4 (make-instance 'button :name :b4 :title "Accept" :location (list 14 39)))
+           ;; a thread-safe queue
+           (queue (make-instance 'queue))
+           (form (make-instance 'form :window scr
+                                :elements (list field1 field2 field3 l1 l2 l3 b1 b2 b3 b4) )))
+
+      ;; a long-running function running in the main thread freezes the ncurses UI.
+      (setf (callback b1) (lambda (b e)
+                            (sleep 10)
+                            (setf (value field3) (concatenate 'string (value field1) " " (value field2)))
+                            (draw form)))
+
+      ;; to avoid freezing non-thread-safe ncurses, move the calculation to a worker thread,
+      ;; then return the result through a thread-safe queue
+      ;; poll the queue within the nil event and handle the result returned by the worker.
+      (setf (callback b2) (lambda (b e)
+                            (setf (value field3) "Calculating...")
+                            (draw form)
+                            (let ((v1 (value field1))
+                                  (v2 (value field2)))
+                              (bt:make-thread (lambda ()
+                                                ;; simulate a long-running calculation
+                                                (sleep 10)
+                                                (enqueue (concatenate 'string v1 " " v2) queue))))))
+
+      ;; cancel the form, which makes the edit function return nil
+      (setf (callback b3) 'cancel)
+      ;; accept the form, which makes the edit function return t
+      (setf (callback b4) 'accept)
+
+      ;; initial value of the fields 1 & 2.
+      ;; the value of f3 will be calculated from 1 and 2.
+      (setf (value field1) "hello"
+            (value field2) "there")
+
+      ;; TODO 200103: we need to make frame-rate a property of every object that can be passed to run-event-loop
+      ;; not just a window.
+      (setf (frame-rate scr) 20)
+
+      ;; TODO 200103: at the moment the only way to set a polling loop is to set blocking to nil and set a frame
+      ;; rate, then bind the loop to the nil event.
+
+      ;; how to set a timer that polls the queue also when blocking is t? (tkinter has the after function)
+      (bind form nil (lambda (f e)
+                       ;; pop an item off the queue and set it as the result of the worker thread calculation to field3.
+                       ;; we do not need the loop here since we only have one item in the queue,
+                       ;; but in general the polling of a longer queue should be done by a loop.
+                       (loop
+                          for i = (dequeue queue)
+                          while i do
+                            (setf (value field3) i)
+                            (draw form))))
+
+      (if (edit form)
+          ;; edit returned t, which means the user accepted the form
+          (progn
+            (clear scr)
+            (format scr "Form accepted. edit returns t.~%~%")
+            (mapc #'(lambda (name)
+                      (let ((element (find-element form name)))
+                        (format scr "~5A ~10A ~20A~%" name (title element) (value element))))
+                  (list :f1 :f2 :f3)))
+          ;; edit returned nil, which means the user canceled the form
+          (progn
+            (clear scr)
+            (format scr "Form canceled. edit returns nil.")))
+
+      (refresh scr)
+      ;; temporarily set blocking to t, then wait for a keypress
+      (wait-for-event scr) )))
+
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
