@@ -323,6 +323,11 @@
    %wmove
 
    ;; ncurses / CRT screen handling and optimization package
+   *library-name*
+   *library-file-name*
+   libncurses
+   libncursesw
+   close-library
    chtype
    wchar_t
    wint_t

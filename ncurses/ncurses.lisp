@@ -4,25 +4,60 @@
 ;;; CRT screen handling and optimization package
 ;;; http://invisible-island.net/ncurses/man/ncurses.3x.html
 
+(defparameter *library-name* nil)
+
 ;; The wide multi-byte library is preferred and will be loaded when the underlying lisp system supports unicode.
 #+(or sb-unicode unicode openmcl-unicode-strings)
-(define-foreign-library libncursesw
-    (:darwin (:or "libncursesw.6.dylib" "libncursesw.5.dylib" "libncursesw.dylib" "libcurses.dylib"))
-    (:unix   (:or "libncursesw.so.6.1" "libncursesw.so.6.0" "libncursesw.so.6" "libncursesw.so.5.9" "libncursesw.so.5" "libncursesw.so"))
-    (t       (:default "libncursesw")))
-
-#+(or sb-unicode unicode openmcl-unicode-strings)
-(use-foreign-library libncursesw)
+(progn
+  (define-foreign-library libncursesw
+    (:darwin
+     (:or "libncursesw.6.dylib"
+          "libncursesw.5.dylib"
+          "libncursesw.dylib"
+          "libcurses.dylib"))
+    (:unix
+     (:or "libncursesw.so.6.2"
+          "libncursesw.so.6.1"
+          "libncursesw.so.6.0"
+          "libncursesw.so.6"
+          "libncursesw.so.5.9"
+          "libncursesw.so.5"
+          "libncursesw.so"))
+    (t (:default "libncursesw")))
+  (use-foreign-library libncursesw)
+  (setq *library-name* 'libncursesw))
 
 ;; Attempt to use the legacy single-byte library only when the lisp implementation doesnt support unicode.
 #-(or sb-unicode unicode openmcl-unicode-strings)
-(define-foreign-library libncurses
-    (:darwin (:or "libncurses.6.dylib" "libncurses.5.dylib" "libncurses.dylib" "libcurses.dylib"))
-    (:unix   (:or "libncurses.so.6.1" "libncurses.so.6.0" "libncurses.so.6" "libncurses.so.5.9" "libncurses.so.5" "libncurses.so"))
-    (t       (:default "libncurses")))
+(progn
+  (define-foreign-library libncurses
+    (:darwin
+     (:or "libncurses.6.dylib"
+          "libncurses.5.dylib"
+          "libncurses.dylib"
+          "libcurses.dylib"))
+    (:unix
+     (:or "libncurses.so.6.2"
+          "libncurses.so.6.1"
+          "libncurses.so.6.0"
+          "libncurses.so.6"
+          "libncurses.so.5.9"
+          "libncurses.so.5"
+          "libncurses.so"))
+    (t (:default "libncurses")))
+  (use-foreign-library libncurses)
+  (setq *library-name* 'libncurses))
 
-#-(or sb-unicode unicode openmcl-unicode-strings)
-(use-foreign-library libncurses)
+(defparameter *library-file-name* (file-namestring (cffi:foreign-library-pathname *library-name*)))
+
+(defun close-library ()
+  "Close the C ncurses library after use."
+  (setq *library-name* nil
+        *library-file-name* nil)
+  #+(or sb-unicode unicode openmcl-unicode-strings)
+  (close-foreign-library 'libncursesw)
+  #-(or sb-unicode unicode openmcl-unicode-strings)
+  (close-foreign-library 'libncurses))
 
 ;;; ------------------------------------------------------------------
 
