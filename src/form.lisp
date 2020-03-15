@@ -262,7 +262,13 @@ Place the cursor between the brackets [_] of the current item."
            (setf dptr (+ 1 (- (length inbuf) width))) )))
   (draw field))
 
-(defun move-previous-char (field event &rest args)
+(defgeneric move-previous-char (object event &rest args)
+  (:documentation "Move the cursor to the previous character.")
+  (:method (object event &rest args)
+    "The default method does nothing."
+    nil))
+
+(defmethod move-previous-char ((field field) event &rest args)
   "Move the cursor to the previous char in the field."
   (with-accessors ((inptr input-pointer) (dptr display-pointer) (win window)) field
     (when (> inptr 0)
@@ -272,7 +278,13 @@ Place the cursor between the brackets [_] of the current item."
       (decf dptr))
     (draw field)))
 
-(defun move-next-char (field event &rest args)
+(defgeneric move-next-char (object event &rest args)
+  (:documentation "Move the cursor to the next char.")
+  (:method (object event &rest args)
+    "The default method does nothing."
+    nil))
+
+(defmethod move-next-char ((field field) event &rest args)
   "Move the cursor to the next char in the field."
   (with-accessors ((width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer) (mlen max-buffer-length)
                    (win window)) field

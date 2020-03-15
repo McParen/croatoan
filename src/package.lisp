@@ -115,6 +115,8 @@
    draw
    move-start-of-line
    move-end-of-line
+   move-previous-char
+   move-next-char
 
    ;; queue
    submit
