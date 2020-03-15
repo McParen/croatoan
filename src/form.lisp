@@ -240,6 +240,28 @@ Place the cursor between the brackets [_] of the current item."
           (draw form))
         (select-next-element form event))))
 
+(defun move-start-of-line (field event &rest args)
+  "Move the cursor to the first char in the field."
+  (declare (ignore event))
+  (with-accessors ((inptr input-pointer) (dptr display-pointer) (win window)) field
+    (setf inptr 0 dptr 0)
+    (draw field)))
+
+(defun move-end-of-line (field event &rest args)
+  "Move the cursor to the last char in the field."
+  (declare (ignore event))
+  (with-accessors ((width width) (inptr input-pointer) (inbuf buffer) (dptr display-pointer) (win window)) field
+    (cond ((< (length inbuf) width)
+           (setf inptr (length inbuf))
+           (setf dptr 0))
+          ((= (length inbuf) width)
+           (setf inptr (1- (length inbuf)))
+           (setf dptr 0))
+          ((> (length inbuf) width)
+           (setf inptr (length inbuf))
+           (setf dptr (+ 1 (- (length inbuf) width))) )))
+  (draw field))
+
 (defun move-previous-char (field event &rest args)
   "Move the cursor to the previous char in the field."
   (with-accessors ((inptr input-pointer) (dptr display-pointer) (win window)) field

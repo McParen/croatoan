@@ -113,6 +113,8 @@
    reset-form
    checkedp
    draw
+   move-start-of-line
+   move-end-of-line
 
    ;; queue
    submit
