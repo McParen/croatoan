@@ -1490,6 +1490,15 @@ If there is no window asociated with the element, return the window associated w
   ;; set the color pair in the underlying ncurses lib.
   (set-color-pair (slot-value win 'winptr) (color-pair win)))
 
+(defun center-position (window)
+  "Return the position (y x) of the center of the window."
+  (with-accessors ((h height) (w width)) window
+    (list (if (oddp h)
+              (ceiling h 2)
+              (/ h 2))
+          (if (oddp w)
+              (ceiling w 2)
+              (/ w 2)))))
 
 ;;; print, prin1, princ, format ~A, ~S
 

@@ -74,6 +74,7 @@
    newline-translation-enabled-p
    cursor-visible-p
    source-location
+   center-position
 
    ;; Predicates
    closed-p
