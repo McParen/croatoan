@@ -271,6 +271,7 @@
 
    ;; move / move curses window cursor
    move
+   goto
    move-direction
    move-window
 
