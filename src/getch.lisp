@@ -38,6 +38,8 @@ The window from which the char is read is automatically refreshed."
 ;; keys above the first 0-255 chars. cannot fit in a char variable any more.
 ;; http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/keys.html
 (defparameter *key-alist*
+
+  ;; TODO 200318 do not use literal lists if they are modified later.
   '((:code_yes  . 256)
     (:min       . 257)
     (:break     . 257)
@@ -197,73 +199,150 @@ The window from which the char is read is automatically refreshed."
     (:mouse     . 409)
     (:resize    . 410)
     (:event     . 411)
-    (:max       . 511) ; Alt-Delete
+    (:max       . 511))) ; alt-delete
 
+#|
+    
     ;; The following codes are not part of ncurses because they are not portable, i.e. they do not
     ;; exist on all terminals.
     ;; These are tested on xterm / gnome-terminal
 
-    ;; :shift-delete = :sdc
-    (:shift-alt-delete   . 512)
-    (:ctrl-delete        . 513) ; Ctrl-Delete
-    (:shift-ctrl-delete  . 514) ; Shift-Control-Delete
+    ;; TODO 200105: add these keys only if we are on xterm/gnome-terminal
 
-    ;; :shift-down = :sf = 336
-    (:alt-down           . 517)
-    (:shift-alt-down     . 518)
-    (:ctrl-down          . 519)
-    (:shift-ctrl-down    . 520)
-    ;; (:shift-alt-ctrl-down . xxx) ;; hijacked by the ubuntu unity wm.
+    ;; moloch
+    ;; xterm
 
-    (:alt-end            . 522)
-    (:shift-alt-end      . 523)
-    (:ctrl-end           . 524)
-    (:shift-ctrl-end     . 525)
-    (:ctrl-alt-end       . 526)
-    ;; :shift-ctrl-alt-end . xxx
+    (:alt-delete          . 517)
+    (:shift-alt-delete    . 518)
+    (:ctrl-delete         . 519)
+    (:shift-ctrl-delete   . 520)
+    ;;(:shift-ctrl-alt-delete . xxx) ^[[3;8~
 
-    (:alt-home           . 527)
-    (:shift-alt-home     . 528)
-    (:ctrl-home          . 529)
-    (:shift-ctrl-home    . 530)
-    (:ctrl-alt-home      . 531)
+    (:alt-end             . 528)
+    (:shift-alt-end       . 529)
+    (:ctrl-end            . 530)
+    (:shift-ctrl-end      . 531)
+    (:ctrl-alt-end        . 532)
+    ;;(:shift-ctrl-alt-end . xxx) ^[[1;8F
+    
+    (:alt-home            . 533)
+    (:shift-alt-home      . 534)
+    (:ctrl-home           . 535)
+    (:shift-ctrl-home     . 536)
+    (:ctrl-alt-home       . 537)
+    ;;(:shift-ctrl-alt-home . xxx) ^[[1;8H
 
-    (:alt-insert         . 532) ; Alt-Insert
-    ;; :shift-insert = middle mouse button paste, probably 513, hijacked by xterm.
-    (:ctrl-insert        . 534) ; Ctrl-Insert
-    (:ctrl-alt-insert    . 536) ; Ctrl-Alt-Insert
+    (:alt-insert          . 538)
+;;    ;; :shift-insert = middle mouse button paste, probably 513, hijacked by xterm.
+    (:ctrl-insert         . 540)
+    (:ctrl-alt-insert     . 542)
 
-    ;; Shift-Ctrl-Alt-Insert = ^[ [ 3 ; 8 ~
-
-    (:alt-left           . 537)
-    (:shift-alt-right    . 538)
-    (:ctrl-left          . 539)
-    (:shift-ctrl-left    . 540)
-
-    ;; npage
-    ;; :shift-npage
-    (:alt-npage          . 542)
-    (:ctrl-npage         . 544)
-    (:ctrl-alt-npage     . 546)
-
-    ;; :ppage
-    ;; :shift-ppage activates an xterm ppage function
-    (:alt-ppage          . 547)
-    (:ctrl-ppage         . 549)
-    (:ctrl-alt-ppage     . 551)
-
-    (:alt-right          . 552)
-    (:shift-alt-right    . 553)
-    (:ctrl-right         . 554)
-    (:shift-ctrl-left    . 555)
-
+    (:alt-npage           . 548)
+    (:ctrl-npage          . 550)
+    (:ctrl-alt-ppage      . 552)
+    
+    (:alt-ppage           . 553)
+    (:ctrl-ppage          . 555)
+    (:ctrl-alt-ppage      . 557)
+    
     ;; :shift-up = :sr = 337
-    (:alt-up             . 558)
-    (:shift-alt-up       . 559)
-    (:ctrl-up            . 560)
-    (:shift-ctrl-up      . 561)))
+    (:alt-up              . 564)
+    (:shift-alt-up        . 565)
+    (:ctrl-up             . 566)
+    (:shift-ctrl-up       . 567)
+    ;; (:shift-alt-ctrl-up . xxx)
+    
+;;    ;; :shift-down = :sf = 336
+    (:alt-down            . 523)
+    (:shift-alt-down      . 524)
+    (:ctrl-down           . 525)
+    (:shift-ctrl-down     . 526)
+;;    ;; (:shift-alt-ctrl-down . xxx) ;; hijacked by the ubuntu unity wm.
+
+    (:alt-left            . 543)
+    (:shift-alt-left      . 544)
+    (:ctrl-left           . 545)
+    (:shift-ctrl-left     . 546)
+
+    (:alt-right           . 558)
+    (:shift-alt-right     . 559)
+    (:ctrl-right          . 560)
+    (:shift-ctrl-right    . 561)
+
+|#
+
+
+
+#|
+    ;;; paren
+
+    ;; xterm
+    
+;;    ;; :shift-delete = :sdc
+;;    (:shift-alt-delete   . 512)
+;;    (:ctrl-delete        . 513) ; Ctrl-Delete
+;;    (:shift-ctrl-delete  . 514) ; Shift-Control-Delete
+;;
+;;    ;; :shift-down = :sf = 336
+;;    (:alt-down           . 517)
+;;    (:shift-alt-down     . 518)
+;;    (:ctrl-down          . 519)
+;;    (:shift-ctrl-down    . 520)
+;;    ;; (:shift-alt-ctrl-down . xxx) ;; hijacked by the ubuntu unity wm.
+;;
+;;    (:alt-end            . 522)
+;;    (:shift-alt-end      . 523)
+;;    (:ctrl-end           . 524)
+;;    (:shift-ctrl-end     . 525)
+;;    (:ctrl-alt-end       . 526)
+;;    ;; :shift-ctrl-alt-end . xxx
+;;
+;;    (:alt-home           . 527)
+;;    (:shift-alt-home     . 528)
+;;    (:ctrl-home          . 529)
+;;    (:shift-ctrl-home    . 530)
+;;    (:ctrl-alt-home      . 531)
+;;
+;;    (:alt-insert         . 532) ; Alt-Insert
+;;    ;; :shift-insert = middle mouse button paste, probably 513, hijacked by xterm.
+;;    (:ctrl-insert        . 534) ; Ctrl-Insert
+;;    (:ctrl-alt-insert    . 536) ; Ctrl-Alt-Insert
+;;
+;;    ;; Shift-Ctrl-Alt-Insert = ^[ [ 3 ; 8 ~
+;;
+;;    (:alt-left           . 537)
+;;    (:shift-alt-right    . 538)
+;;    (:ctrl-left          . 539)
+;;    (:shift-ctrl-left    . 540)
+;;
+;;    ;; npage
+;;    ;; :shift-npage
+;;    (:alt-npage          . 542)
+;;    (:ctrl-npage         . 544)
+;;    (:ctrl-alt-npage     . 546)
+;;
+;;    ;; :ppage
+;;    ;; :shift-ppage activates an xterm ppage function
+;;    (:alt-ppage          . 547)
+;;    (:ctrl-ppage         . 549)
+;;    (:ctrl-alt-ppage     . 551)
+;;
+;;    (:alt-right          . 552)
+;;    (:shift-alt-right    . 553)
+;;    (:ctrl-right         . 554)
+;;    (:shift-ctrl-left    . 555)
+;;
+;;    ;; :shift-up = :sr = 337
+;;    (:alt-up             . 558)
+;;    (:shift-alt-up       . 559)
+;;    (:ctrl-up            . 560)
+;;    (:shift-ctrl-up      . 561)
     ;; (:shift-alt-ctrl-up . xxx)
 
+
+|#
+    
+    
 (defmacro access-alist (key find-fn test-fn get-value-fn default)
   "Helper macro for 'key-name-to-code' and 'key-code-to-name'."
   (let ((pair (gensym)))
@@ -289,41 +368,46 @@ of the optional parameter: 'default'."
 (defgeneric delete-function-key (object)
   (:documentation "Delete a mapping croatoan keycode <-> curses integer, if exists"))
 
-(defmethod delete-function-key ((object symbol))
-  "Take a keyword, delete the corresponding mapping key name (keyword) <-> key code (integer), if it exists.
+(defmethod delete-function-key ((key-name symbol))
+  "Take a key name, delete the mapping key name (keyword) <-> key code (integer), if it exists.
 
-This operation modifies '*key-alist*'"
-  (setf *key-alist*
-        (remove-if (lambda (a) (eq (car a) object))
-                   *key-alist*)))
+This operation modifies *key-alist*."
+  (setf *key-alist* (remove-if (lambda (a) (eq (car a) key-name))
+                               *key-alist*)))
 
-(defmethod delete-function-key ((object integer))
-  "Take a key code (integer), delete the mapping key name (keyword) <-> key code (number), if it exists.
+(defmethod delete-function-key ((key-code integer))
+  "Take a key code, delete the mapping key name (keyword) <-> key code (number), if it exists.
 
-This operation modifies '*key-alist*'"
-  (setf *key-alist*
-        (remove-if (lambda (a) (= (cdr a) object))
-                   *key-alist*)))
+This operation modifies *key-alist*."
+  (setf *key-alist* (remove-if (lambda (a) (= (cdr a) key-code))
+                               *key-alist*)))
 
 (defun add-function-key (key-name key-code)
   "Add a new function key given by the mapping of key name (keyword) <->  key code (integer).
 
-If the alist already contains 'key-name' or 'key-code' this mapping
-will be overwritten by the new values.
+If the alist already contains key-name or key-code this mapping will
+be overwritten by the new values.
 
-This operation modifies '*key-alist*'"
-  (let ((list-pair-removed (remove-if (lambda (a)
-                                        (or (eq (car a) key-name)
-                                            (=  (cdr a) key-code)))
-                                      *key-alist*)))
-    (setf *key-alist*
-          (acons key-name key-code list-pair-removed))))
+This operation modifies *key-alist*."
+  ;; if either key name or code already exist, remove them from the alist first.
+  (let ((alist (remove-if (lambda (a)
+                            (or (eq (car a) key-name)
+                                (=  (cdr a) key-code)))
+                          *key-alist*)))
+    (setf *key-alist* (acons key-name key-code alist))))
 
+;; TODO 200319 we cant add new code numbers if these numbers are already taken by ncurses
+;; whats the highest number pre-registered by ncurses?
 (defun gen-unused-key-code ()
   "Generate and return an unused key code.
 
-Used by define-function-key when a new escape sequence is added."
-  (1+ (reduce #'max *key-alist* :key #'cdr)))
+Used by define-function-key when a new escape sequence is added.
+
+To avoid conflicts with existing ncurses code numbers, new numbers start at 1024."
+  (let ((new-code (1+ (reduce #'max *key-alist* :key #'cdr))))
+    (if (> new-code 1023)
+        new-code
+        1024)))
 
 (defun function-key-p (number)
   "Take a single-byte key code returned by get-char, return t if the
