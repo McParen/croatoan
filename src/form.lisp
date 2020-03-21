@@ -61,7 +61,7 @@ Instead of the name, another key can be provided to identify the element."
   "Clear the field by overwriting it with the background char.
 
 The default background char is #\space."
-  (with-accessors ((pos location) (width width) (selected selectedp) (win window) (style style)) field
+  (with-accessors ((pos element-position) (width width) (selected selectedp) (win window) (style style)) field
     (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
            (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
       (setf (cursor-position win) pos)
@@ -72,7 +72,7 @@ The default background char is #\space."
   (:documentation "Update the cursor position of the element of a form.")
   (:method (object)
     "The default method puts the cursor at the start position of the element."
-    (setf (cursor-position (window object)) (location object))
+    (setf (cursor-position (window object)) (element-position object))
     (refresh (window object))))
 
 ;; when the form element is an embedded selection menu or checklist
@@ -84,14 +84,14 @@ The default background char is #\space."
   "Update the cursor position of a menu after it is drawn.
 
 Place the cursor, when it is visible, on the first char of the current item."
-  (setf (cursor-position (window object)) (current-item-location object))
+  (setf (cursor-position (window object)) (current-item-position object))
   (refresh (window object)))
 
 (defmethod update-cursor-position ((object checklist))
   "Update the cursor position of a checklist after it is drawn.
 
 Place the cursor between the brackets [_] of the current item."
-  (with-accessors ((pos current-item-location) (win window)) object
+  (with-accessors ((pos current-item-position) (win window)) object
     (move win
           (car pos)
           (1+ (cadr pos))) ;; put the cursor after the [
@@ -99,7 +99,7 @@ Place the cursor between the brackets [_] of the current item."
 
 (defmethod update-cursor-position ((checkbox checkbox))
   "Update the cursor position of a checkbox."
-  (with-accessors ((pos location) (win window)) checkbox
+  (with-accessors ((pos element-position) (win window)) checkbox
     (move win
           (car pos)
           (1+ (cadr pos))) ;; put the cursor after the [
@@ -107,7 +107,7 @@ Place the cursor between the brackets [_] of the current item."
 
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
-  (with-accessors ((pos location) (inptr input-pointer) (dptr display-pointer) (win window)) field
+  (with-accessors ((pos element-position) (inptr input-pointer) (dptr display-pointer) (win window)) field
     (move win
           ;; TODO: assumes a single-line field.
           (car pos)
@@ -123,7 +123,7 @@ Place the cursor between the brackets [_] of the current item."
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
 (defmethod draw ((label label))
-  (with-accessors ((pos location) (win window) (name name) (title title) (width width) (style style) (reference reference)
+  (with-accessors ((pos element-position) (win window) (name name) (title title) (width width) (style style) (reference reference)
                    (parent-form parent-form)) label
     ;; pick the string to write in the following order
     ;;   title of the label
@@ -148,13 +148,13 @@ Place the cursor between the brackets [_] of the current item."
         (add-string win string :style fg-style)))))
 
 (defmethod draw ((button button))
-  (with-accessors ((pos location) (name name) (title title) (win window) (selected selectedp) (style style)) button
+  (with-accessors ((pos element-position) (name name) (title title) (win window) (selected selectedp) (style style)) button
     (apply #'move win pos)
     (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground))))
       (add-string win (format nil "<~A>" (if title title name)) :style fg-style))))
 
 (defmethod draw ((checkbox checkbox))
-  (with-accessors ((pos location) (name name) (win window) (selected selectedp) (style style)
+  (with-accessors ((pos element-position) (name name) (win window) (selected selectedp) (style style)
                    (checkedp checkedp)) checkbox
     (apply #'move win pos)
     (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground))))
@@ -163,7 +163,7 @@ Place the cursor between the brackets [_] of the current item."
 
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
-  (with-accessors ((pos location) (width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
+  (with-accessors ((pos element-position) (width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
                    (selected selectedp) (win window) (title title) (style style)) field
     (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground)))
            (len (length inbuf))

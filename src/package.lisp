@@ -83,7 +83,6 @@
    ;; menu
    items
    menu-type
-   menu-location
    current-item-number
    current-item
    current-item-mark
@@ -100,6 +99,7 @@
    ;; form
    buffer
    elements
+   element-position
    style
    max-buffer-length
    callback

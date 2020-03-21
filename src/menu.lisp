@@ -122,24 +122,24 @@ At the third position, display the item given by item-number."
 (defun draw-menu-item (win menu item-number i j)
   "Draw the item given by item-number at item position (i j) in the window."
   (with-accessors ((current-item-number current-item-number)
-                   (current-item-location current-item-location)
+                   (current-item-position current-item-position)
                    (max-item-length max-item-length)
-                   (menu-location menu-location)
+                   (element-position element-position)
                    (style style)) menu
     (let* (pos-y
            pos-x
            (item-selected-p (= item-number current-item-number)))
-      (if menu-location
-          ;; add an offset when menu-location is given
-          (setq pos-y (+ i                     (car  menu-location))
-                pos-x (+ (* j max-item-length) (cadr menu-location)))
-          ;; if a location is not given, display the menu starting at 0,0
+      (if element-position
+          ;; add an offset when element-position is given
+          (setq pos-y (+ i                     (car  element-position))
+                pos-x (+ (* j max-item-length) (cadr element-position)))
+          ;; if a position is not given, display the menu starting at 0,0
           (setq pos-y i
                 pos-x (* j max-item-length)))
       (move win pos-y pos-x)
-      ;; save the location of the current item, to be used in update-cursor-position.
+      ;; save the position of the current item, to be used in update-cursor-position.
       (when item-selected-p
-        (setf current-item-location (list pos-y pos-x)))
+        (setf current-item-position (list pos-y pos-x)))
       (let ((fg-style (if style
                           (getf style (if item-selected-p :selected-foreground :foreground))
                           ;; default foreground style

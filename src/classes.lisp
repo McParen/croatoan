@@ -433,13 +433,6 @@ The initial purpose of this function is to be used as the equality test for alex
     :type          keyword
     :documentation "Types of menus: :selection (default, can contain strings, symbols, menus) or :checklist.")
 
-   (menu-location
-    :initarg       :menu-location
-    :initform      nil
-    :accessor      menu-location
-    :type          (or null cons)
-    :documentation "Relative location of the menu within its associated window.")
-
    (current-item-number
     :initform      0
     :accessor      current-item-number
@@ -452,13 +445,13 @@ The initial purpose of this function is to be used as the equality test for alex
     :accessor      current-item
     :documentation "Pointer to the currently selected item object. The first item is initialized as the current item.")
 
-   (current-item-location
-    :initarg       :current-item-location
+   (current-item-position
+    :initarg       :current-item-position
     :initform      nil
-    :accessor      current-item-location
+    :accessor      current-item-position
     :type          (or null cons)
     :documentation
-    "Location of the current item in the window.
+    "(y x) position of the current item in the window.
     This information is useful for positioning the cursor on the current item after displaying the menu.")
 
    (current-item-mark
@@ -706,12 +699,12 @@ The initial purpose of this function is to be used as the equality test for alex
     :type          (or symbol keyword string number)
     :documentation "Value of the element, mostly the result of the form editing.")
 
-   (location
-    :initarg       :location
+   (element-position
+    :initarg       :position
     :initform      nil
     :type          (or null cons)
-    :accessor      location
-    :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element.")
+    :accessor      element-position
+    :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element within its associated window.")
 
    (bindings
     :initarg       :bindings

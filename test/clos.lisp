@@ -1832,7 +1832,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (let ((*standard-output* scr)
           (s1 (list :attributes '(:underline)))
           (s2 (list :simple-char #\.))
-          (field (make-instance 'field :location (list 3 20) :width 10 :window scr)))
+          (field (make-instance 'field :position (list 3 20) :width 10 :window scr)))
 
       (setf (style field) (list :foreground s1 :background s2))
 
@@ -1868,15 +1868,15 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            ;; a style is a plist interpreted by the element drawing functions.
            (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
 
-           (field1 (make-instance 'field :location (list 3 20) :width 10 :style s5 :max-buffer-length 5))
-           (field2 (make-instance 'field :location (list 5 20) :width 10 :style s5))
-           (field3 (make-instance 'field :location (list 7 20) :width 10 :style s5 :max-buffer-length 15))
+           (field1 (make-instance 'field :position (list 3 20) :width 10 :style s5 :max-buffer-length 5))
+           (field2 (make-instance 'field :position (list 5 20) :width 10 :style s5))
+           (field3 (make-instance 'field :position (list 7 20) :width 10 :style s5 :max-buffer-length 15))
 
            (s6 (list :foreground s1 :selected-foreground s4))
 
-           (button1 (make-instance 'button :location (list 10 10) :name "Hello"  :style s6))
-           (button2 (make-instance 'button :location (list 10 20) :name "Accept" :style s6))
-           (button3 (make-instance 'button :location (list 10 30) :name "Cancel" :style s6))
+           (button1 (make-instance 'button :position (list 10 10) :name "Hello"  :style s6))
+           (button2 (make-instance 'button :position (list 10 20) :name "Accept" :style s6))
+           (button3 (make-instance 'button :position (list 10 30) :name "Cancel" :style s6))
 
            ;; a window is associated with the parent form, and can be accessed by the elements.
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2 button3) :window scr)))
@@ -1923,27 +1923,27 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            ;; the form style consists of default styles of form elements.
            (sf1 (list 'field s1 'button s2 'label s3 'checkbox s1))
 
-           (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 20) :width 15 :max-buffer-length 5))
-           (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 20) :width 15))
-           (field3 (make-instance 'field :name :f3                   :location (list 7 20) :width 15 :max-buffer-length 20))
+           (field1 (make-instance 'field :name :f1 :title "Forename" :position (list 3 20) :width 15 :max-buffer-length 5))
+           (field2 (make-instance 'field :name :f2 :title "Surname"  :position (list 5 20) :width 15))
+           (field3 (make-instance 'field :name :f3                   :position (list 7 20) :width 15 :max-buffer-length 20))
 
-           (cb1 (make-instance 'checkbox :name :c1 :title "Employed" :location (list 9 20)))
+           (cb1 (make-instance 'checkbox :name :c1 :title "Employed" :position (list 9 20)))
 
            (m1-style (list :foreground (list :fgcolor :blue)
                            :selected-foreground (list :fgcolor :yellow :attributes (list :bold))))
 
            (m1 (make-instance 'checklist :name :m1 :title "checklist" :items (list 'a 'b 'c 'd 'e 'f) :layout (list 2 3)
-                              :max-item-length 6 :menu-location (list 11 20) :window scr :style m1-style))
+                              :max-item-length 6 :position (list 11 20) :window scr :style m1-style))
 
-           (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :location (list 3 1)))
-           (label2 (make-instance 'label :name :l2 :reference :f2 :width 18 :location (list 5 1)))
-           (label3 (make-instance 'label :name :l3 :title "Age"             :location (list 7 1)))
-           (label4 (make-instance 'label :name :l4 :reference :c1 :width 18 :location (list 9 1)))
-           (label5 (make-instance 'label :name :l5 :reference :m1 :width 18 :location (list 11 1)))
+           (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :position (list 3 1)))
+           (label2 (make-instance 'label :name :l2 :reference :f2 :width 18 :position (list 5 1)))
+           (label3 (make-instance 'label :name :l3 :title "Age"             :position (list 7 1)))
+           (label4 (make-instance 'label :name :l4 :reference :c1 :width 18 :position (list 9 1)))
+           (label5 (make-instance 'label :name :l5 :reference :m1 :width 18 :position (list 11 1)))
 
-           (button1 (make-instance 'button :name :b1 :title "Hello"  :location (list 14 10)))
-           (button2 (make-instance 'button :name :b2 :title "Accept" :location (list 14 20)))
-           (button3 (make-instance 'button :name :b3 :title "Cancel" :location (list 14 30)))
+           (button1 (make-instance 'button :name :b1 :title "Hello"  :position (list 14 10)))
+           (button2 (make-instance 'button :name :b2 :title "Accept" :position (list 14 20)))
+           (button3 (make-instance 'button :name :b3 :title "Cancel" :position (list 14 30)))
 
            (form (make-instance 'form
                                 :elements (list field1 field2 field3 cb1 label1 label2 label3 label4 label5
@@ -1996,13 +1996,13 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (style2 (list :foreground ch4 :selected-foreground ch3))
            (style3 (list 'field style1 'button style2))
 
-           (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 3) :width 20 :max-buffer-length 5))
-           (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 3) :width 20))
-           (field3 (make-instance 'field :name :f3 :title "Age"      :location (list 7 3) :width 20 :max-buffer-length 20))
+           (field1 (make-instance 'field :name :f1 :title "Forename" :position (list 3 3) :width 20 :max-buffer-length 5))
+           (field2 (make-instance 'field :name :f2 :title "Surname"  :position (list 5 3) :width 20))
+           (field3 (make-instance 'field :name :f3 :title "Age"      :position (list 7 3) :width 20 :max-buffer-length 20))
 
-           (button1 (make-instance 'button :name :b1 :title "Say Hello" :location (list 10 7)))
-           (button2 (make-instance 'button :name :b1 :title "Cancel"    :location (list 10 20)))
-           (button3 (make-instance 'button :name :b2 :title "Accept"    :location (list 10 30)))
+           (button1 (make-instance 'button :name :b1 :title "Say Hello" :position (list 10 7)))
+           (button2 (make-instance 'button :name :b1 :title "Cancel"    :position (list 10 20)))
+           (button3 (make-instance 'button :name :b2 :title "Accept"    :position (list 10 30)))
 
            (form (make-instance 'form-window :elements (list field1 field2 field3 button1 button2 button3)
                                 :style style3 :enable-function-keys t :input-blocking t :title "form window"
@@ -2063,15 +2063,15 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              ;; form element default styles
              (style4 (list 'field style1 'button style2 'label style3))
 
-             (label1 (make-instance 'label :name :l1 :reference :f1 :width 20 :location (list 2 1)))
-             (field1 (make-instance 'field :name :f1 :title "Forename" :location (list 2 22) :width 20 :max-buffer-length 25))
+             (label1 (make-instance 'label :name :l1 :reference :f1 :width 20 :position (list 2 1)))
+             (field1 (make-instance 'field :name :f1 :title "Forename" :position (list 2 22) :width 20 :max-buffer-length 25))
 
-             (label2 (make-instance 'label :name :l2 :reference :f2 :width 20 :location (list 4 1)))
-             (field2 (make-instance 'field :name :f2 :title "Surname" :location (list 4 22) :width 20 :max-buffer-length 25))
+             (label2 (make-instance 'label :name :l2 :reference :f2 :width 20 :position (list 4 1)))
+             (field2 (make-instance 'field :name :f2 :title "Surname" :position (list 4 22) :width 20 :max-buffer-length 25))
 
-             (button1 (make-instance 'button :name :b3 :title "Reset"  :location (list 6 15)))
-             (button2 (make-instance 'button :name :b2 :title "Cancel" :location (list 6 25)))
-             (button3 (make-instance 'button :name :b2 :title "Accept" :location (list 6 34)))
+             (button1 (make-instance 'button :name :b3 :title "Reset"  :position (list 6 15)))
+             (button2 (make-instance 'button :name :b2 :title "Cancel" :position (list 6 25)))
+             (button3 (make-instance 'button :name :b2 :title "Accept" :position (list 6 34)))
 
              (form (make-instance 'form-window :elements (list field1 field2 label1 label2 button1 button2 button3)
                                   :style style4 :enable-function-keys t :input-blocking t :title "form window"
@@ -2096,16 +2096,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16j ()
   "Perform long-running calculations in worker threads to prevent freezing the ncurses UI."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking nil)
-    (let* ((field1 (make-instance 'field :name :f1 :title "Forename" :location (list 3 20) :width 15))
-           (field2 (make-instance 'field :name :f2 :title "Surname"  :location (list 5 20) :width 15))
-           (field3 (make-instance 'field :name :f3 :title "Nickname" :location (list 7 20) :width 15))
-           (l1 (make-instance 'label :name :l1 :reference :f1 :width 18 :location (list 3 1)))
-           (l2 (make-instance 'label :name :l2 :reference :f2 :width 18 :location (list 5 1)))
-           (l3 (make-instance 'label :name :l3 :reference :f3 :width 18 :location (list 7 1)))
-           (b1 (make-instance 'button :name :b1 :title "Calc main"   :location (list 14 1)))
-           (b2 (make-instance 'button :name :b2 :title "Calc worker" :location (list 14 14)))
-           (b3 (make-instance 'button :name :b3 :title "Cancel" :location (list 14 29)))
-           (b4 (make-instance 'button :name :b4 :title "Accept" :location (list 14 39)))
+    (let* ((field1 (make-instance 'field :name :f1 :title "Forename" :position (list 3 20) :width 15))
+           (field2 (make-instance 'field :name :f2 :title "Surname"  :position (list 5 20) :width 15))
+           (field3 (make-instance 'field :name :f3 :title "Nickname" :position (list 7 20) :width 15))
+           (l1 (make-instance 'label :name :l1 :reference :f1 :width 18 :position (list 3 1)))
+           (l2 (make-instance 'label :name :l2 :reference :f2 :width 18 :position (list 5 1)))
+           (l3 (make-instance 'label :name :l3 :reference :f3 :width 18 :position (list 7 1)))
+           (b1 (make-instance 'button :name :b1 :title "Calc main"   :position (list 14 1)))
+           (b2 (make-instance 'button :name :b2 :title "Calc worker" :position (list 14 14)))
+           (b3 (make-instance 'button :name :b3 :title "Cancel" :position (list 14 29)))
+           (b4 (make-instance 'button :name :b4 :title "Accept" :position (list 14 39)))
            ;; a thread-safe queue
            (queue (make-instance 'queue))
            (form (make-instance 'form :window scr
@@ -2380,11 +2380,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items1 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555"
                      "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (menu1 (make-instance 'menu :items items1 :name "sub-menu 1" :max-item-length 50 :menu-location (list 5 10)))
+           (menu1 (make-instance 'menu :items items1 :name "sub-menu 1" :max-item-length 50 :position (list 5 10)))
            (items2 (list "Item 0" menu1 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
-           (menu2 (make-instance 'menu :items items2 :name "sub-menu 2" :max-item-length 50 :menu-location (list 5 10)))
+           (menu2 (make-instance 'menu :items items2 :name "sub-menu 2" :max-item-length 50 :position (list 5 10)))
            (items3 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
-           (menu3 (make-instance 'menu :items items3 :name "t19b2b" :max-item-length 50 :menu-location (list 5 10))))
+           (menu3 (make-instance 'menu :items items3 :name "t19b2b" :max-item-length 50 :position (list 5 10))))
       ;; associate the same window with all three menus.
       (setf (window menu1) scr
             (window menu2) scr
@@ -2848,7 +2848,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       (close scr))))
 
 (defun t23 ()
-  "Use save-excursion to return the cursor to its initial location."
+  "Use save-excursion to return the cursor to its initial position."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible t :enable-colors t)
     (move scr 0 0)
     (princ "1. hello" scr)
