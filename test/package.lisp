@@ -1,5 +1,5 @@
 (defpackage #:de.anvi.croatoan.test
-  (:documentation "Tests and examples demonstrating the use of the croatoan API.")
+  (:documentation "Tests and examples for the low-level ncurses CFFI bindings and high-level CLOS API.")
   (:use #:common-lisp #:cffi #:de.anvi.ncurses #:de.anvi.croatoan)
   (:shadowing-import-from #:de.anvi.croatoan callback)
   (:export

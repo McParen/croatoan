@@ -1,6 +1,7 @@
 (defpackage #:de.anvi.ncurses
   (:documentation "Low-level CFFI bindings to the Ncurses C API. Not meant to be used directly.")
   (:use #:common-lisp #:cffi)
+  (:nicknames #:ncurses)
   (:export 
 
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
