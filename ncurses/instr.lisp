@@ -17,11 +17,11 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("instr"     %instr)     :int                                (str :string))
-(defcfun ("innstr"    %innstr)    :int                                (str :string) (n :int))
-(defcfun ("winstr"    %winstr)    :int (win window)                   (str :string))
-(defcfun ("winnstr"   %winnstr)   :int (win window)                   (str :string) (n :int))
-(defcfun ("mvinstr"   %mvinstr)   :int              (y :int) (x :int) (str :string))
-(defcfun ("mvinnstr"  %mvinnstr)  :int              (y :int) (x :int) (str :string) (n :int))
-(defcfun ("mvwinstr"  %mvwinstr)  :int (win window) (y :int) (x :int) (str :string))
-(defcfun ("mvwinnstr" %mvwinnstr) :int (win window) (y :int) (x :int) (str :string) (n :int))
+(cffi:defcfun ("instr"     %instr)     :int                                (str :string))
+(cffi:defcfun ("innstr"    %innstr)    :int                                (str :string) (n :int))
+(cffi:defcfun ("winstr"    %winstr)    :int (win window)                   (str :string))
+(cffi:defcfun ("winnstr"   %winnstr)   :int (win window)                   (str :string) (n :int))
+(cffi:defcfun ("mvinstr"   %mvinstr)   :int              (y :int) (x :int) (str :string))
+(cffi:defcfun ("mvinnstr"  %mvinnstr)  :int              (y :int) (x :int) (str :string) (n :int))
+(cffi:defcfun ("mvwinstr"  %mvwinstr)  :int (win window) (y :int) (x :int) (str :string))
+(cffi:defcfun ("mvwinnstr" %mvwinnstr) :int (win window) (y :int) (x :int) (str :string) (n :int))

@@ -26,22 +26,22 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("slk_init"        %slk-init)        :int    (fmt :int))
-(defcfun ("slk_set"         %slk-set)         :int    (labnum :int) (label :string) (fmt :int))
-(defcfun ("slk_refresh"     %slk-refresh)     :int)
-(defcfun ("slk_noutrefresh" %slk-noutrefresh) :int)
-(defcfun ("slk_label"       %slk-label)       :string (labnum :int))
-(defcfun ("slk_clear"       %slk-clear)       :int)
-(defcfun ("slk_restore"     %slk-restore)     :int)
-(defcfun ("slk_touch"       %slk-touch)       :int)
+(cffi:defcfun ("slk_init"        %slk-init)        :int    (fmt :int))
+(cffi:defcfun ("slk_set"         %slk-set)         :int    (labnum :int) (label :string) (fmt :int))
+(cffi:defcfun ("slk_refresh"     %slk-refresh)     :int)
+(cffi:defcfun ("slk_noutrefresh" %slk-noutrefresh) :int)
+(cffi:defcfun ("slk_label"       %slk-label)       :string (labnum :int))
+(cffi:defcfun ("slk_clear"       %slk-clear)       :int)
+(cffi:defcfun ("slk_restore"     %slk-restore)     :int)
+(cffi:defcfun ("slk_touch"       %slk-touch)       :int)
 
-(defcfun ("slk_attron"      %slk-attron)      :int    (attrs chtype))
-(defcfun ("slk_attroff"     %slk-attroff)     :int    (attrs chtype))
-(defcfun ("slk_attrset"     %slk-attrset)     :int    (attrs chtype))
+(cffi:defcfun ("slk_attron"      %slk-attron)      :int    (attrs chtype))
+(cffi:defcfun ("slk_attroff"     %slk-attroff)     :int    (attrs chtype))
+(cffi:defcfun ("slk_attrset"     %slk-attrset)     :int    (attrs chtype))
 
-(defcfun ("slk_attr_on"     %slk-attr-on)     :int    (attrs attr)                     (opts (:pointer :void)))
-(defcfun ("slk_attr_off"    %slk-attr-off)    :int    (attrs attr)                     (opts (:pointer :void)))
-(defcfun ("slk_attr_set"    %slk-attr-set)    :int    (attrs attr) (color-pair :short) (opts (:pointer :void)))
+(cffi:defcfun ("slk_attr_on"     %slk-attr-on)     :int    (attrs attr)                     (opts (:pointer :void)))
+(cffi:defcfun ("slk_attr_off"    %slk-attr-off)    :int    (attrs attr)                     (opts (:pointer :void)))
+(cffi:defcfun ("slk_attr_set"    %slk-attr-set)    :int    (attrs attr) (color-pair :short) (opts (:pointer :void)))
 
-(defcfun ("slk_attr"        %slk-attr)        attr)
-(defcfun ("slk_color"       %slk-color)       :int    (color-pair :short))
+(cffi:defcfun ("slk_attr"        %slk-attr)        attr)
+(cffi:defcfun ("slk_color"       %slk-color)       :int    (color-pair :short))

@@ -9,4 +9,4 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("use_legacy_coding" %use-legacy-coding) :int (level :int))
+(cffi:defcfun ("use_legacy_coding" %use-legacy-coding) :int (level :int))

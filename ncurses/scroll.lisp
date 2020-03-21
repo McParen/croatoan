@@ -12,6 +12,6 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("scroll" %scroll) :int (win window))
-(defcfun ("scrl"   %scrl)   :int              (n :int))
-(defcfun ("wscrl"  %wscrl)  :int (win window) (n :int))
+(cffi:defcfun ("scroll" %scroll) :int (win window))
+(cffi:defcfun ("scrl"   %scrl)   :int              (n :int))
+(cffi:defcfun ("wscrl"  %wscrl)  :int (win window) (n :int))

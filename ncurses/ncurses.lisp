@@ -9,7 +9,7 @@
 ;; The wide multi-byte library is preferred and will be loaded when the underlying lisp system supports unicode.
 #+(or sb-unicode unicode openmcl-unicode-strings)
 (progn
-  (define-foreign-library libncursesw
+  (cffi:define-foreign-library libncursesw
     (:darwin
      (:or "libncursesw.6.dylib"
           "libncursesw.5.dylib"
@@ -24,13 +24,13 @@
           "libncursesw.so.5"
           "libncursesw.so"))
     (t (:default "libncursesw")))
-  (use-foreign-library libncursesw)
+  (cffi:use-foreign-library libncursesw)
   (setq *library-name* 'libncursesw))
 
 ;; Attempt to use the legacy single-byte library only when the lisp implementation doesnt support unicode.
 #-(or sb-unicode unicode openmcl-unicode-strings)
 (progn
-  (define-foreign-library libncurses
+  (cffi:define-foreign-library libncurses
     (:darwin
      (:or "libncurses.6.dylib"
           "libncurses.5.dylib"
@@ -45,19 +45,20 @@
           "libncurses.so.5"
           "libncurses.so"))
     (t (:default "libncurses")))
-  (use-foreign-library libncurses)
+  (cffi:use-foreign-library libncurses)
   (setq *library-name* 'libncurses))
 
 (defparameter *library-file-name* (file-namestring (cffi:foreign-library-pathname *library-name*)))
 
+;; TODO 200307: add open library, push :ncurses and :croatoan to *features*
 (defun close-library ()
   "Close the C ncurses library after use."
   (setq *library-name* nil
         *library-file-name* nil)
   #+(or sb-unicode unicode openmcl-unicode-strings)
-  (close-foreign-library 'libncursesw)
+  (cffi:close-foreign-library 'libncursesw)
   #-(or sb-unicode unicode openmcl-unicode-strings)
-  (close-foreign-library 'libncurses))
+  (cffi:close-foreign-library 'libncurses))
 
 ;;; ------------------------------------------------------------------
 
@@ -95,7 +96,7 @@
 
 ;; not used, cffi automatically translates a boolean type
 ;; typedef unsigned char bool;
-(defctype bool :unsigned-char)
+(cffi:defctype bool :unsigned-char)
 
 #|
 --enable-lp64
@@ -121,35 +122,35 @@ typedef uint32_t mmask_t;
 
 ;; TODO: use ABI6 values for chtype, cchar_t and mmask: --with-chtype=uint32_t
 ;;(defctype chtype :unsigned-int)
-(defctype chtype :uint32)
+(cffi:defctype chtype :uint32)
 
 ;; wide character type, defined in:
 ;; /usr/lib/gcc/x86_64-linux-gnu/5/include/stddef.h
 ;; it has to be able to contain the 21-bit 10FFFF, which is the max allowed unicode point.
-(defctype wchar_t :int32)
+(cffi:defctype wchar_t :int32)
 
 ;; typedef unsigned int wint_t;
 ;; used in get_wch.lisp
 ;; wint_t needs to be a signed int to represent a negative WEOF value.
-(defctype wint_t :int32)
+(cffi:defctype wint_t :int32)
 
 ;; typedef chtype attr_t;
 ;; TODO: rename this to attr_t
-(defctype attr :uint32
+(cffi:defctype attr :uint32
   "The 32 bit integral type attr_t holds an OR-ed set of attributes.")
-(defctype attr_t :uint32
+(cffi:defctype attr_t :uint32
   "The 32 bit integral type attr_t holds an OR-ed set of attributes.")
 
 ;; winptr = *WINDOW
 ;; TODO: define window struct
 ;; (defctype ptr-window (:pointer (:struct window)))
-(defctype window :pointer)
+(cffi:defctype window :pointer)
 
 ;; scrptr = *SCREEN
-(defctype screen :pointer)
+(cffi:defctype screen :pointer)
 
 ;; fileptr = *FILE
-(defctype file :pointer)
+(cffi:defctype file :pointer)
 
 ;;; C structures
 
@@ -190,18 +191,18 @@ cchar_t;
 
 ;; Intended to be used with setcchar.
 ;; TODO: write meaningsful docstrings here.
-(defcstruct cchar_t
+(cffi:defcstruct cchar_t
   "C struct containing a wide char, a color pair and attributes."
   (cchar-attr   attr_t)
   (cchar-chars  wchar_t :count 5)
   (cchar-colors :int))
 
-(defctype ptr-cchar_t (:pointer (:struct cchar_t)))
+(cffi:defctype ptr-cchar_t (:pointer (:struct cchar_t)))
 
 ;; Intended to be used with convert-to-foreign plist translation.
 ;; For some reasons, plists with pointers dont work, so we have to pass by value.
 ;; TODO: we dont need this any more, everything works now with the cchar_t struct.
-(defcstruct cchar
+(cffi:defcstruct cchar
   "C struct containing a wide char, a color pair and attributes."
   (cchar-attr   attr_t)
   (cchar-chars  wchar_t)
@@ -226,9 +227,9 @@ cchar_t;
 
 ;; TODO: ABI6: --with-mmask_t=uint32_t
 ;;(defctype mmask_t :unsigned-int)
-(defctype mmask_t :uint32)
+(cffi:defctype mmask_t :uint32)
 
-(defcstruct mevent
+(cffi:defcstruct mevent
   "C struct containing mouse coordinates and button state."
   (id :short)
   (x :int)

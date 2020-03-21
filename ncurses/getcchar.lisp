@@ -11,14 +11,14 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("getcchar" %getcchar) :int
+(cffi:defcfun ("getcchar" %getcchar) :int
   (wcval      (:pointer (:struct cchar_t)))
   (wch        (:pointer wchar_t))
   (attrs      (:pointer attr))
   (color_pair (:pointer :short))
   (opts       (:pointer :void)))
 
-(defcfun ("setcchar" %setcchar) :int
+(cffi:defcfun ("setcchar" %setcchar) :int
   (wcval      (:pointer (:struct cchar_t)))
   (wch        (:pointer wchar_t))
   (attrs      attr)

@@ -18,11 +18,11 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("getbegx" %getbegx) :int (win window))
-(defcfun ("getbegy" %getbegy) :int (win window))
-(defcfun ("getcurx" %getcurx) :int (win window))
-(defcfun ("getcury" %getcury) :int (win window))
-(defcfun ("getmaxx" %getmaxx) :int (win window))
-(defcfun ("getmaxy" %getmaxy) :int (win window))
-(defcfun ("getparx" %getparx) :int (win window))
-(defcfun ("getpary" %getpary) :int (win window))
+(cffi:defcfun ("getbegx" %getbegx) :int (win window))
+(cffi:defcfun ("getbegy" %getbegy) :int (win window))
+(cffi:defcfun ("getcurx" %getcurx) :int (win window))
+(cffi:defcfun ("getcury" %getcury) :int (win window))
+(cffi:defcfun ("getmaxx" %getmaxx) :int (win window))
+(cffi:defcfun ("getmaxy" %getmaxy) :int (win window))
+(cffi:defcfun ("getparx" %getparx) :int (win window))
+(cffi:defcfun ("getpary" %getpary) :int (win window))

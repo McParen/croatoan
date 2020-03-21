@@ -29,22 +29,22 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("start_color"      %start-color)      :int)
-(defcfun ("has_colors"       %has-colors)       :boolean)
-(defcfun ("can_change_color" %can-change-color) :boolean)
+(cffi:defcfun ("start_color"      %start-color)      :int)
+(cffi:defcfun ("has_colors"       %has-colors)       :boolean)
+(cffi:defcfun ("can_change_color" %can-change-color) :boolean)
 
-(defcfun ("init_pair"     %init-pair)     :int (pair  :short) (f :short) (b :short))
-(defcfun ("init_color"    %init-color)    :int (color :short) (r :short) (g :short) (b :short))
-(defcfun ("pair_content"  %pair-content)  :int (pair  :short) (f (:pointer :short)) (b (:pointer :short)))
-(defcfun ("color_content" %color-content) :int (color :short) (r (:pointer :short)) (g (:pointer :short)) (b (:pointer :short)))
+(cffi:defcfun ("init_pair"     %init-pair)     :int (pair  :short) (f :short) (b :short))
+(cffi:defcfun ("init_color"    %init-color)    :int (color :short) (r :short) (g :short) (b :short))
+(cffi:defcfun ("pair_content"  %pair-content)  :int (pair  :short) (f (:pointer :short)) (b (:pointer :short)))
+(cffi:defcfun ("color_content" %color-content) :int (color :short) (r (:pointer :short)) (g (:pointer :short)) (b (:pointer :short)))
 
-(defcfun ("init_extended_pair"     %init-extended-pair)     :int (pair  :int) (f :int) (b :int))
-(defcfun ("init_extended_color"    %init-extended-color)    :int (color :int) (r :int) (g :int) (b :int))
-(defcfun ("extended_pair_content"  %pair-extended-content)  :int (pair  :int) (f (:pointer :int)) (b (:pointer :int)))
-(defcfun ("extended_color_content" %color-extended-content) :int (color :int) (r (:pointer :int)) (g (:pointer :int)) (b (:pointer :int)))
+(cffi:defcfun ("init_extended_pair"     %init-extended-pair)     :int (pair  :int) (f :int) (b :int))
+(cffi:defcfun ("init_extended_color"    %init-extended-color)    :int (color :int) (r :int) (g :int) (b :int))
+(cffi:defcfun ("extended_pair_content"  %pair-extended-content)  :int (pair  :int) (f (:pointer :int)) (b (:pointer :int)))
+(cffi:defcfun ("extended_color_content" %color-extended-content) :int (color :int) (r (:pointer :int)) (g (:pointer :int)) (b (:pointer :int)))
 
-(defcfun ("COLOR_PAIR"  %color-pair)  :int (n :int))
-(defcfun ("PAIR_NUMBER" %pair-number) :int (attrs :int))     
+(cffi:defcfun ("COLOR_PAIR"  %color-pair)  :int (n :int))
+(cffi:defcfun ("PAIR_NUMBER" %pair-number) :int (attrs :int))     
 
 (defconstant %COLOR-BLACK   0)
 (defconstant %COLOR-RED     1)

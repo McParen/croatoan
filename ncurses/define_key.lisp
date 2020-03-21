@@ -10,4 +10,4 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("define_key" %define-key) :int (definition :string) (keycode :int))
+(cffi:defcfun ("define_key" %define-key) :int (definition :string) (keycode :int))

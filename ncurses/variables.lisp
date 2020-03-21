@@ -19,9 +19,9 @@
 
 ;;; Lisp read-only global constants.
 
-(defcvar ("COLOR_PAIRS" %COLOR-PAIRS :read-only t) :int)
-(defcvar ("COLORS"      %COLORS      :read-only t) :int)
-(defcvar ("COLS"        %COLS        :read-only t) :int)
-(defcvar ("ESCDELAY"    %ESCDELAY    :read-only t) :int)
-(defcvar ("LINES"       %LINES       :read-only t) :int)
-(defcvar ("TABSIZE"     %TABSIZE     :read-only t) :int)
+(cffi:defcvar ("COLOR_PAIRS" %COLOR-PAIRS :read-only t) :int)
+(cffi:defcvar ("COLORS"      %COLORS      :read-only t) :int)
+(cffi:defcvar ("COLS"        %COLS        :read-only t) :int)
+(cffi:defcvar ("ESCDELAY"    %ESCDELAY    :read-only t) :int)
+(cffi:defcvar ("LINES"       %LINES       :read-only t) :int)
+(cffi:defcvar ("TABSIZE"     %TABSIZE     :read-only t) :int)

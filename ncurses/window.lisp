@@ -22,15 +22,15 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("newwin"     %newwin)     window               (nlines :int) (ncols :int) (begin_y :int) (begin_x :int))
-(defcfun ("delwin"     %delwin)     :int   (win window))
-(defcfun ("mvwin"      %mvwin)      :int   (win window)  (y :int) (x :int))
-(defcfun ("subwin"     %subwin)     window (orig window) (nlines :int) (ncols :int) (begin_y :int) (begin_x :int))
-(defcfun ("derwin"     %derwin)     window (orig window) (nlines :int) (ncols :int) (begin_y :int) (begin_x :int))
-(defcfun ("mvderwin"   %mvderwin)   :int   (win window)  (par_y :int) (par_x :int))
-(defcfun ("dupwin"     %dupwin)     window (win window))
+(cffi:defcfun ("newwin"     %newwin)     window               (nlines :int) (ncols :int) (begin_y :int) (begin_x :int))
+(cffi:defcfun ("delwin"     %delwin)     :int   (win window))
+(cffi:defcfun ("mvwin"      %mvwin)      :int   (win window)  (y :int) (x :int))
+(cffi:defcfun ("subwin"     %subwin)     window (orig window) (nlines :int) (ncols :int) (begin_y :int) (begin_x :int))
+(cffi:defcfun ("derwin"     %derwin)     window (orig window) (nlines :int) (ncols :int) (begin_y :int) (begin_x :int))
+(cffi:defcfun ("mvderwin"   %mvderwin)   :int   (win window)  (par_y :int) (par_x :int))
+(cffi:defcfun ("dupwin"     %dupwin)     window (win window))
 
-(defcfun ("wsyncup"    %wsyncup)    :void  (win window))
-(defcfun ("syncok"     %syncok)     :int   (win window) (bf :boolean))
-(defcfun ("wcursyncup" %wcursyncup) :void  (win window))
-(defcfun ("wsyncdown"  %wsyncdown)  :void  (win window))
+(cffi:defcfun ("wsyncup"    %wsyncup)    :void  (win window))
+(cffi:defcfun ("syncok"     %syncok)     :int   (win window) (bf :boolean))
+(cffi:defcfun ("wcursyncup" %wcursyncup) :void  (win window))
+(cffi:defcfun ("wsyncdown"  %wsyncdown)  :void  (win window))

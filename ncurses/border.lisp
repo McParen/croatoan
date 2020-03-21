@@ -23,7 +23,7 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("border" %border) :int 
+(cffi:defcfun ("border" %border) :int 
   (ls chtype) 
   (rs chtype) 
   (ts chtype) 
@@ -33,7 +33,7 @@
   (bl chtype) 
   (br chtype))
 
-(defcfun ("wborder" %wborder) :int 
+(cffi:defcfun ("wborder" %wborder) :int 
   (win window)
   (ls chtype) 
   (rs chtype) 
@@ -44,14 +44,14 @@
   (bl chtype) 
   (br chtype))
 
-(defcfun ("box"       %box)      :int (win window) (verch chtype) (horch chtype))
+(cffi:defcfun ("box"       %box)      :int (win window) (verch chtype) (horch chtype))
 
-(defcfun ("hline"     %hline)    :int              (ch chtype) (n :int))
-(defcfun ("whline"    %whline)   :int (win window) (ch chtype) (n :int))
-(defcfun ("vline"     %vline)    :int              (ch chtype) (n :int))
-(defcfun ("wvline"    %wvline)   :int (win window) (ch chtype) (n :int))
+(cffi:defcfun ("hline"     %hline)    :int              (ch chtype) (n :int))
+(cffi:defcfun ("whline"    %whline)   :int (win window) (ch chtype) (n :int))
+(cffi:defcfun ("vline"     %vline)    :int              (ch chtype) (n :int))
+(cffi:defcfun ("wvline"    %wvline)   :int (win window) (ch chtype) (n :int))
 
-(defcfun ("mvhline"   %mvhline)  :int              (y :int) (x :int) (ch chtype) (n :int))
-(defcfun ("mvwhline"  %mvwhline) :int (win window) (y :int) (x :int) (ch chtype) (n :int))
-(defcfun ("mvvline"   %mvvline)  :int              (y :int) (x :int) (ch chtype) (n :int))
-(defcfun ("mvwvline"  %mvwvline) :int (win window) (y :int) (x :int) (ch chtype) (n :int))
+(cffi:defcfun ("mvhline"   %mvhline)  :int              (y :int) (x :int) (ch chtype) (n :int))
+(cffi:defcfun ("mvwhline"  %mvwhline) :int (win window) (y :int) (x :int) (ch chtype) (n :int))
+(cffi:defcfun ("mvvline"   %mvvline)  :int              (y :int) (x :int) (ch chtype) (n :int))
+(cffi:defcfun ("mvwvline"  %mvwvline) :int (win window) (y :int) (x :int) (ch chtype) (n :int))

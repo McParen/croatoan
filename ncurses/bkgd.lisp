@@ -14,8 +14,8 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("bkgdset"  %bkgdset)  :void (ch chtype))
-(defcfun ("wbkgdset" %wbkgdset) :void (win window) (ch chtype))
-(defcfun ("bkgd"     %bkgd)     :int  (ch chtype))
-(defcfun ("wbkgd"    %wbkgd)    :int  (win window) (ch chtype))
-(defcfun ("getbkgd"  %getbkgd)  chtype (win window))
+(cffi:defcfun ("bkgdset"  %bkgdset)  :void (ch chtype))
+(cffi:defcfun ("wbkgdset" %wbkgdset) :void (win window) (ch chtype))
+(cffi:defcfun ("bkgd"     %bkgd)     :int  (ch chtype))
+(cffi:defcfun ("wbkgd"    %wbkgd)    :int  (win window) (ch chtype))
+(cffi:defcfun ("getbkgd"  %getbkgd)  chtype (win window))

@@ -15,9 +15,9 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("refresh"      %refresh)      :int)
-(defcfun ("wrefresh"     %wrefresh)     :int (win window))
-(defcfun ("wnoutrefresh" %wnoutrefresh) :int (win window))
-(defcfun ("doupdate"     %doupdate)     :int)
-(defcfun ("redrawwin"    %redrawwin)    :int (win window))
-(defcfun ("wredrawln"    %wredrawln)    :int (win window) (beg-line :int) (num-lines :int))
+(cffi:defcfun ("refresh"      %refresh)      :int)
+(cffi:defcfun ("wrefresh"     %wrefresh)     :int (win window))
+(cffi:defcfun ("wnoutrefresh" %wnoutrefresh) :int (win window))
+(cffi:defcfun ("doupdate"     %doupdate)     :int)
+(cffi:defcfun ("redrawwin"    %redrawwin)    :int (win window))
+(cffi:defcfun ("wredrawln"    %wredrawln)    :int (win window) (beg-line :int) (num-lines :int))

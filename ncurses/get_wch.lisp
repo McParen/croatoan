@@ -14,8 +14,8 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("get_wch"    %get-wch)    :int                                (wch (:pointer wint_t)))
-(defcfun ("wget_wch"   %wget-wch)   :int (win window)                   (wch (:pointer wint_t)))
-(defcfun ("mvget_wch"  %mvget-wch)  :int              (y :int) (x :int) (wch (:pointer wint_t)))
-(defcfun ("mvwget_wch" %mvwget-wch) :int (win window) (y :int) (x :int) (wch (:pointer wint_t)))
-(defcfun ("unget_wch"  %unget-wch)  :int (wch wchar_t))
+(cffi:defcfun ("get_wch"    %get-wch)    :int                                (wch (:pointer wint_t)))
+(cffi:defcfun ("wget_wch"   %wget-wch)   :int (win window)                   (wch (:pointer wint_t)))
+(cffi:defcfun ("mvget_wch"  %mvget-wch)  :int              (y :int) (x :int) (wch (:pointer wint_t)))
+(cffi:defcfun ("mvwget_wch" %mvwget-wch) :int (win window) (y :int) (x :int) (wch (:pointer wint_t)))
+(cffi:defcfun ("unget_wch"  %unget-wch)  :int (wch wchar_t))

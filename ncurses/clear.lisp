@@ -18,12 +18,12 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("erase"     %erase)     :int)
-(defcfun ("werase"    %werase)    :int (win window))
-(defcfun ("clear"     %clear)     :int)
-(defcfun ("wclear"    %wclear)    :int (win window))
+(cffi:defcfun ("erase"     %erase)     :int)
+(cffi:defcfun ("werase"    %werase)    :int (win window))
+(cffi:defcfun ("clear"     %clear)     :int)
+(cffi:defcfun ("wclear"    %wclear)    :int (win window))
 
-(defcfun ("clrtobot"  %clrtobot)  :int)
-(defcfun ("wclrtobot" %wclrtobot) :int (win window))
-(defcfun ("clrtoeol"  %clrtoeol)  :int)
-(defcfun ("wclrtoeol" %wclrtoeol) :int (win window))
+(cffi:defcfun ("clrtobot"  %clrtobot)  :int)
+(cffi:defcfun ("wclrtobot" %wclrtobot) :int (win window))
+(cffi:defcfun ("clrtoeol"  %clrtoeol)  :int)
+(cffi:defcfun ("wclrtoeol" %wclrtoeol) :int (win window))

@@ -19,10 +19,10 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("newpad" %newpad) window               (nlines :int) (ncols :int))
-(defcfun ("subpad" %subpad) window (orig window) (nlines :int) (ncols :int) (begin_y :int) (begin_x :int))
+(cffi:defcfun ("newpad" %newpad) window               (nlines :int) (ncols :int))
+(cffi:defcfun ("subpad" %subpad) window (orig window) (nlines :int) (ncols :int) (begin_y :int) (begin_x :int))
 
-(defcfun ("prefresh" %prefresh) :int 
+(cffi:defcfun ("prefresh" %prefresh) :int 
   (pad     window)
   (pminrow :int)
   (pmincol :int)
@@ -31,7 +31,7 @@
   (smaxrow :int)
   (smaxcol :int))
 
-(defcfun ("pnoutrefresh" %pnoutrefresh) :int
+(cffi:defcfun ("pnoutrefresh" %pnoutrefresh) :int
   (pad     window)
   (pminrow :int)
   (pmincol :int)
@@ -40,6 +40,6 @@
   (smaxrow :int)
   (smaxcol :int))
 
-(defcfun ("pechochar"   %pechochar)   :int (pad window) (ch chtype))
+(cffi:defcfun ("pechochar"   %pechochar)   :int (pad window) (ch chtype))
 
-(defcfun ("pecho_wchar" %pecho-wchar) :int (pad window) (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("pecho_wchar" %pecho-wchar) :int (pad window) (wch (:pointer (:struct cchar_t))))

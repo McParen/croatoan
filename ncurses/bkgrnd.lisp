@@ -15,9 +15,9 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("bkgrnd"     %bkgrnd)     :int               (wch (:pointer (:struct cchar_t))))
-(defcfun ("wbkgrnd"    %wbkgrnd)    :int  (win window) (wch (:pointer (:struct cchar_t))))
-(defcfun ("bkgrndset"  %bkgrndset)  :void              (wch (:pointer (:struct cchar_t))))
-(defcfun ("wbkgrndset" %wbkgrndset) :void (win window) (wch (:pointer (:struct cchar_t))))
-(defcfun ("getbkgrnd"  %getbkgrnd)  :int               (wch (:pointer (:struct cchar_t))))
-(defcfun ("wgetbkgrnd" %wgetbkgrnd) :int  (win window) (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("bkgrnd"     %bkgrnd)     :int               (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("wbkgrnd"    %wbkgrnd)    :int  (win window) (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("bkgrndset"  %bkgrndset)  :void              (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("wbkgrndset" %wbkgrndset) :void (win window) (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("getbkgrnd"  %getbkgrnd)  :int               (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("wgetbkgrnd" %wgetbkgrnd) :int  (win window) (wch (:pointer (:struct cchar_t))))

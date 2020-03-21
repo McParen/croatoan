@@ -15,9 +15,9 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("deleteln"  %deleteln)  :int)
-(defcfun ("wdeleteln" %wdeleteln) :int (win window))
-(defcfun ("insdelln"  %insdelln)  :int              (n :int))
-(defcfun ("winsdelln" %winsdelln) :int (win window) (n :int))
-(defcfun ("insertln"  %insertln)  :int)
-(defcfun ("winsertln" %winsertln) :int (win window))
+(cffi:defcfun ("deleteln"  %deleteln)  :int)
+(cffi:defcfun ("wdeleteln" %wdeleteln) :int (win window))
+(cffi:defcfun ("insdelln"  %insdelln)  :int              (n :int))
+(cffi:defcfun ("winsdelln" %winsdelln) :int (win window) (n :int))
+(cffi:defcfun ("insertln"  %insertln)  :int)
+(cffi:defcfun ("winsertln" %winsertln) :int (win window))

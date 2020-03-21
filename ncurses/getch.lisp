@@ -16,10 +16,10 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("getch"    %getch)    :int)
-(defcfun ("wgetch"   %wgetch)   :int (win window))
-(defcfun ("mvgetch"  %mvgetch)  :int              (y :int) (x :int))
-(defcfun ("mvwgetch" %mvwgetch) :int (win window) (y :int) (x :int))
+(cffi:defcfun ("getch"    %getch)    :int)
+(cffi:defcfun ("wgetch"   %wgetch)   :int (win window))
+(cffi:defcfun ("mvgetch"  %mvgetch)  :int              (y :int) (x :int))
+(cffi:defcfun ("mvwgetch" %mvwgetch) :int (win window) (y :int) (x :int))
 
-(defcfun ("ungetch"  %ungetch)  :int (ch :int))
-(defcfun ("has_key"  %has-key)  :int (ch :int))
+(cffi:defcfun ("ungetch"  %ungetch)  :int (ch :int))
+(cffi:defcfun ("has_key"  %has-key)  :int (ch :int))

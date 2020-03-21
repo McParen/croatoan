@@ -21,15 +21,15 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("clearok"    %clearok)    :int  (win window) (bf :boolean))
-(defcfun ("idlok"      %idlok)      :int  (win window) (bf :boolean))
-(defcfun ("idcok"      %idcok)      :void (win window) (bf :boolean))
-(defcfun ("immedok"    %immedok)    :void (win window) (bf :boolean))
-(defcfun ("leaveok"    %leaveok)    :int  (win window) (bf :boolean))
-(defcfun ("scrollok"   %scrollok)   :int  (win window) (bf :boolean))
+(cffi:defcfun ("clearok"    %clearok)    :int  (win window) (bf :boolean))
+(cffi:defcfun ("idlok"      %idlok)      :int  (win window) (bf :boolean))
+(cffi:defcfun ("idcok"      %idcok)      :void (win window) (bf :boolean))
+(cffi:defcfun ("immedok"    %immedok)    :void (win window) (bf :boolean))
+(cffi:defcfun ("leaveok"    %leaveok)    :int  (win window) (bf :boolean))
+(cffi:defcfun ("scrollok"   %scrollok)   :int  (win window) (bf :boolean))
 
-(defcfun ("setscrreg"  %setscrreg)  :int               (top :int) (bot :int))
-(defcfun ("wsetscrreg" %wsetscrreg) :int  (win window) (top :int) (bot :int))
+(cffi:defcfun ("setscrreg"  %setscrreg)  :int               (top :int) (bot :int))
+(cffi:defcfun ("wsetscrreg" %wsetscrreg) :int  (win window) (top :int) (bot :int))
 
-(defcfun ("nl"         %nl)         :void)
-(defcfun ("nonl"       %nonl)       :void)
+(cffi:defcfun ("nl"         %nl)         :void)
+(cffi:defcfun ("nonl"       %nonl)       :void)

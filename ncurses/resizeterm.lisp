@@ -12,6 +12,6 @@
 
 ;;; Low-level CFFI wrappers
 
-(defcfun ("is_term_resized" %is-term-resized) :boolean (lines :int) (columns :int))
-(defcfun ("resize_term"     %resize-term)     :int     (lines :int) (columns :int))
-(defcfun ("resizeterm"      %resizeterm)      :int     (lines :int) (columns :int))
+(cffi:defcfun ("is_term_resized" %is-term-resized) :boolean (lines :int) (columns :int))
+(cffi:defcfun ("resize_term"     %resize-term)     :int     (lines :int) (columns :int))
+(cffi:defcfun ("resizeterm"      %resizeterm)      :int     (lines :int) (columns :int))
