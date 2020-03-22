@@ -151,6 +151,8 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
 (defun bind (object event handler)
   "Bind the handler function to the event in the bindings alist of the object.
 
+If event is a list of events, bind the handler to each event separately.
+
 The handlers will be called by the run-event-loop when keyboard or mouse events occur.
 
 The handler functions have two mandatory arguments, window and event.
@@ -169,13 +171,25 @@ Alternatively, to achieve the same effect, input-blocking can be set to a specif
 delay in miliseconds.
 
 Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
-  (setf (bindings object)
-        (acons event handler (bindings object))))
+  (with-accessors ((bindings bindings)) object
+    (cond ((or (null event)
+               (atom event))
+           (setf bindings (acons event handler bindings)))
+          ((listp event)
+           (dolist (e event)
+             (setf bindings (acons e handler bindings)))))))
 
 (defun unbind (object event)
-  "Remove the event and the handler function from object's bindings alist."
-  (setf (slot-value object 'bindings)
-        (remove event (slot-value object 'bindings) :key #'car)))
+  "Remove the event and the handler function from object's bindings alist.
+
+If event is a list of events, remove each event separately from the alist."
+  (with-accessors ((bindings bindings)) object
+    (cond ((or (null event)
+               (atom event))
+           (setf bindings (remove event bindings :key #'car)))
+          ((listp event)
+           (dolist (e event)
+             (setf bindings (remove e bindings :key #'car)))))))
 
 (defparameter *keymaps* nil "An alist of available keymaps.")
 
@@ -201,6 +215,12 @@ Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
 
 The key bindings alist is stored in the bindings slot of the object.
 
+An external keymap can be defined so several objects can share the same
+set of bindings.
+
+Object-local bindings override the external keymap. The local bindings
+are checked first for a handler, then the external keymap.
+
 If no handler is defined for the event, the default event handler t is tried.
 If not even a default handler is defined, the event is ignored.
 
@@ -212,13 +232,17 @@ The event pairs are added by the bind function as conses: (event . #'handler).
 An event should be bound to the pre-defined function exit-event-loop."
   (flet ((ev (event)
            (let ((keymap (typecase (keymap object)
+                           ;; the keymap can be a keymap object directly
                            (keymap (keymap object))
+                           ;; or a symbol as the name of the keymap
                            (symbol (find-keymap (keymap object))))))
              ;; object-local bindings override the external keymap
              ;; an event is checked in the bindings first, then in the external keymap.
              (if (bindings object)
                  (if (assoc event (bindings object))
                      (assoc event (bindings object))
+                     ;; if there is no handler in the local bindings,
+                     ;; check if there is a keymap
                      (if (and keymap (bindings keymap))
                          (assoc event (bindings keymap))
                          nil))
