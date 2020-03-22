@@ -519,14 +519,7 @@ The initial purpose of this function is to be used as the equality test for alex
     :type          (or null cons)
     :documentation
     "Style of menu items: :foreground, :background, :selected-foreground, :selected-background.
-    The default style of the selected item is the attribute :reverse, and nil for other items.")
-
-   (window
-    :initarg       :window
-    :initform      nil
-    :type          (or null window)
-    :accessor      window
-    :documentation "Window created separately and then associated with the menu."))
+    The default style of the selected item is the attribute :reverse, and nil for other items."))
 
   (:documentation  "A menu is a list of items that can be selected by the user."))
 

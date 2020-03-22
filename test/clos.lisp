@@ -1933,7 +1933,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                            :selected-foreground (list :fgcolor :yellow :attributes (list :bold))))
 
            (m1 (make-instance 'checklist :name :m1 :title "checklist" :items (list 'a 'b 'c 'd 'e 'f) :layout (list 2 3)
-                              :max-item-length 6 :position (list 11 20) :window scr :style m1-style))
+                              :max-item-length 6 :position (list 11 20) :style m1-style))
 
            (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :position (list 3 1)))
            (label2 (make-instance 'label :name :l2 :reference :f2 :width 18 :position (list 5 1)))
