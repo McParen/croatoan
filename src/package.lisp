@@ -322,6 +322,7 @@
 
    ;; util / miscellaneous curses utility routines
    char-to-string
+   string-to-char
    key-to-string
    flush-input
 
