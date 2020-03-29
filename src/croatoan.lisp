@@ -174,10 +174,15 @@ Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
   (with-accessors ((bindings bindings)) object
     (cond ((or (null event)
                (atom event))
-           (setf bindings (acons event handler bindings)))
+           (if (stringp event)
+               ;; when event is a control char in caret notation, i.e. "^A"
+               (setf bindings (acons (string-to-char event) handler bindings))
+               (setf bindings (acons event handler bindings))))
           ((listp event)
            (dolist (e event)
-             (setf bindings (acons e handler bindings)))))))
+             (if (stringp e)
+                 (setf bindings (acons (string-to-char e) handler bindings))
+                 (setf bindings (acons e handler bindings))))))))
 
 (defun unbind (object event)
   "Remove the event and the handler function from object's bindings alist.
@@ -186,10 +191,15 @@ If event is a list of events, remove each event separately from the alist."
   (with-accessors ((bindings bindings)) object
     (cond ((or (null event)
                (atom event))
-           (setf bindings (remove event bindings :key #'car)))
+           (if (stringp event)
+               ;; when event is a control char in caret notation, i.e. "^A"
+               (setf bindings (remove (string-to-char event) bindings :key #'car))
+               (setf bindings (remove event bindings :key #'car))))
           ((listp event)
            (dolist (e event)
-             (setf bindings (remove e bindings :key #'car)))))))
+             (if (stringp e)
+                 (setf bindings (remove (string-to-char e) bindings :key #'car))
+                 (setf bindings (remove e bindings :key #'car))))))))
 
 (defparameter *keymaps* nil "An alist of available keymaps.")
 
