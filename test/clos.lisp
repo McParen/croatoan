@@ -37,23 +37,22 @@
     (let* ((body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
            (head (car body))
            (tail (car (last body)))
-           ;; initial direction = right
-           (dir '(0 1)))
+           ;; initial direction
+           (dir (get-direction :right)))
       (flet ((draw-snake (win body)
-               (mapc (lambda (pos) (add win #\* :position pos)) body)))
-        (bind scr #\q    'exit-event-loop)
-        (bind scr :right (lambda (w e) (setq dir '( 0  1))))
-        (bind scr :left  (lambda (w e) (setq dir '( 0 -1))))
-        (bind scr :down  (lambda (w e) (setq dir '( 1  0))))
-        (bind scr :up    (lambda (w e) (setq dir '(-1  0))))
-        (bind scr nil    (lambda (w e)
-                           ;; snake moves = erase last body pair by overwriting it with space
-                           (add scr #\space :position tail)
-                           (setq body (cons (mapcar #'+ head dir) (butlast body)))
-                           (setq head (car body))
-                           (setq tail (car (last body)))
-                           (draw-snake scr body)
-                           (refresh scr)))
+               (mapc (lambda (pos) (add win #\* :position pos)) body))
+             (set-dir (win event)
+               (setq dir (get-direction event))))
+        (bind scr #\q 'exit-event-loop)
+        (bind scr '(:right :left :up :down) #'set-dir)
+        (bind scr nil (lambda (w e)
+                        ;; snake moves = erase last body pair by overwriting it with space
+                        (add scr #\space :position tail)
+                        (setq body (cons (mapcar #'+ head dir) (butlast body)))
+                        (setq head (car body))
+                        (setq tail (car (last body)))
+                        (draw-snake scr body)
+                        (refresh scr)))
         (clear scr)
         (setf (frame-rate scr) 20)
         (run-event-loop scr)))))
@@ -2975,16 +2974,19 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     ;; a and s add a string to the window.
     (bind scr #\a (lambda (win event) (format win "Hello there.~%")))
-    (bind scr #\s (lambda (win event) (format win "Dear John.~%")))
+    (bind scr #\b (lambda (win event) (format win "Dear John.~%")))
 
+    (bind scr '("^a" "^b" "^d") (lambda (w e) (format w "Control char: ~A~%" e)))
+    
     ;; d clears the window.
     (bind scr #\d (lambda (win event) (clear win)))
 
-    ;; u unbinds a
-    (bind scr #\u (lambda (win event) (unbind scr #\a)))
+    ;; u unbinds all keys other than q
+    (bind scr #\u (lambda (win event) (unbind scr '(#\a #\b #\d "^a" "^b" "^d"))))
 
     (clear scr)
-    (add-string scr "Type a, s or d. Type q to quit.")
+    (add-string scr "Type a, b or d. Type q to quit.")
+    (terpri scr)
     (refresh scr)
 
     (run-event-loop scr)))
