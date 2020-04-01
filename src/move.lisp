@@ -12,11 +12,11 @@ If relative is t, move the cursor by y rows and x columns."
         (%wmove winptr y x))))
 
 (defun goto (win &rest positions)
-  "Move the cursor to the position given as a two-element list (y x).
+  "Move cursor to the window position given as a two-element list (y x).
 
-If more than one position is given, add the coordinates before moving the cursor.
+If more than one position is given, add their coordinates before moving the cursor.
 
-This allows to address sub-coordinates or cursor movement to a
+This allows to address element-relative coordinates or cursor movement to a
 different position."
   (if positions
       (if (cdr positions)
@@ -26,6 +26,18 @@ different position."
           (apply #'move win (car positions)))
       ;; if no position is given, move to the home position, the top left corner.
       (move win 0 0)))
+
+(defun get-direction (direction-name)
+  "Take a keyword name of a direction, get a direction given as a two-element list."
+  (case direction-name
+    (:up-left    '(-1 -1))
+    (:up         '(-1  0))
+    (:up-right   '(-1  1))
+    (:left       '( 0 -1))
+    (:right      '( 0  1))
+    (:down-left  '( 1 -1))
+    (:down       '( 1  0))
+    (:down-right '( 1  1))))
 
 (defun move-direction (window direction &optional (n 1))
   "Move cursor in the given direction by n cells."

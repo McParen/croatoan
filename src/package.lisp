@@ -273,6 +273,7 @@
    ;; move / move curses window cursor
    move
    goto
+   get-direction
    move-direction
    move-window
 
