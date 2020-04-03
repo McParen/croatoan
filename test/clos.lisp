@@ -735,7 +735,7 @@
          (refresh scr)
          (get-char scr)
 
-         (let ((win (make-instance 'window :height 15 :width 50 :location '(5 5))))
+         (let ((win (make-instance 'window :height 15 :width 50 :position '(5 5))))
            (setf (background win) (make-instance 'complex-char :color-pair '(:red :blue)))
            (add-string win "Window 1")
            (refresh win)
@@ -759,7 +759,7 @@
            (refresh scr)
            (get-char scr)
 
-           (let ((win (make-instance 'window :height 15 :width 50 :location '(5 5) :draw-border t)))
+           (let ((win (make-instance 'window :height 15 :width 50 :position '(5 5) :draw-border t)))
              (setf (background win) (make-instance 'complex-char :simple-char #\: :color-pair '(nil :blue)))
              (add-string win "Window 1" :y 2 :x 4 :fgcolor :red :bgcolor :yellow)
              (refresh win)
@@ -854,7 +854,7 @@ Test whether a window (stream) was closed."
            (get-char scr)
 
            ;; temporarily bind *standard-output* to a window.
-           (let* ((win (make-instance 'window :height 15 :width 50 :location '(5 5)))
+           (let* ((win (make-instance 'window :height 15 :width 50 :position '(5 5)))
                   (*standard-output* win))
              (setf (background win) (make-instance 'complex-char :color-pair '(:white :black)))
              (format t "~r" 1985)
@@ -910,9 +910,9 @@ Test whether a window (stream) was closed."
 
            (refresh scr)
 
-           (let ((w1 (make-instance 'window :height 10 :width 30 :location '(3 5)))
-                 (w2 (make-instance 'window :height 10 :width 30 :location '(6 10)))
-                 (w3 (make-instance 'window :height 10 :width 30 :location '(9 15))))
+           (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)))
+                 (w2 (make-instance 'window :height 10 :width 30 :position '(6 10)))
+                 (w3 (make-instance 'window :height 10 :width 30 :position '(9 15))))
 
              (setf (background w1) (make-instance 'complex-char :color-pair '(:white :black)))
              (setf (background w2) (make-instance 'complex-char :color-pair '(:black :white)))
@@ -944,7 +944,7 @@ Test whether a window (stream) was closed."
 
              ;; move the whole window 3. note that this doesnt refresh the windows below,
              ;; they have to be refreshed separately.
-             (setf (location w3) '(9 20))
+             (setf (window-position w3) '(9 20))
              (refresh w3)
              (get-char w3)
 
@@ -971,9 +971,9 @@ Test whether a window (stream) was closed."
            (refresh scr)
 
            ;; the default value for width or height is "to the end of the screen".
-           (let ((w1 (make-instance 'window :height 10 :width 30 :location '(3 5)))
-                 (w2 (make-instance 'window            :width 30 :location '(6 10)))
-                 (w3 (make-instance 'window :height 10           :location '(9 15))))
+           (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)))
+                 (w2 (make-instance 'window            :width 30 :position '(6 10)))
+                 (w3 (make-instance 'window :height 10           :position '(9 15))))
 
              (box w1)
              (box w2)
@@ -1017,9 +1017,9 @@ Test whether a window (stream) was closed."
     (box scr)
     (refresh scr)
 
-    (let ((w1 (make-instance 'window :height 10 :width 30 :location '(3 5)  :draw-border t))
-          (w2 (make-instance 'window            :width 30 :location '(6 10) :draw-border t))
-          (w3 (make-instance 'window :height 10           :location '(9 15) :draw-border t)))
+    (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)  :draw-border t))
+          (w2 (make-instance 'window            :width 30 :position '(6 10) :draw-border t))
+          (w3 (make-instance 'window :height 10           :position '(9 15) :draw-border t)))
 
       (setf (background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black))
             (background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
@@ -1054,7 +1054,7 @@ Test whether a window (stream) was closed."
       ;; create 8 windows (with 8 different background colors),
       ;; add them to the local winlist and to the global stack
       (loop for i from 0 to 7 do
-           (push (make-instance 'window :height 10 :width 30 :location (list (+ 3 (* i 1)) (+ 3 (* i 3))) :draw-border t :stacked t)
+           (push (make-instance 'window :height 10 :width 30 :position (list (+ 3 (* i 1)) (+ 3 (* i 3))) :draw-border t :stacked t)
                  winlst))
       ;; number them and set the background colors
       (loop for i from 0 to 7 do
@@ -1593,14 +1593,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (progn
                (sleep 0.1)))))))
 
-;; resize event: arrange window _locations_ relative to the screen size.
+;; resize event: arrange window _positions_ relative to the screen size.
 (defun t15a ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil :enable-colors t)
     (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
     (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (let ((time 0)
           ;; place a window in the center of the screen.
-          (win (make-instance 'window :height 5 :width 10 :location (list (round (/ (height scr) 2))
+          (win (make-instance 'window :height 5 :width 10 :position (list (round (/ (height scr) 2))
                                                                           (round (/ (width scr) 2))))))
       (loop
          (let ((event (get-event scr)))
@@ -1632,7 +1632,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
     (let ((time 0)
           ;; make the window slightly smaller than the standard screen.
-          (win (make-instance 'window :height (- (height scr) 4) :width (- (width scr) 6) :location '(2 3))))
+          (win (make-instance 'window :height (- (height scr) 4) :width (- (width scr) 6) :position '(2 3))))
       (loop
          (let ((event (get-event scr)))
            (if event
@@ -1675,8 +1675,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; evaluate it and print the result to the output window above.
 (defun t16a ()
   (with-screen (scr :input-echoing t :input-blocking t :enable-function-keys t :cursor-visible nil :enable-colors nil)
-    (let ((out (make-instance 'window :height (1- (height scr)) :width (width scr) :location '(0 0)))
-          (in (make-instance 'window :height 1 :width (width scr) :location (list (1- (height scr)) 0))))
+    (let ((out (make-instance 'window :height (1- (height scr)) :width (width scr) :position '(0 0)))
+          (in (make-instance 'window :height 1 :width (width scr) :position (list (1- (height scr)) 0))))
 
       (print (eval (read-from-string (get-string in 30))) out)
       (refresh out)
@@ -1691,8 +1691,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; add a loop to the input, making it a simple repl.
 (defun t16b ()
   (with-screen (scr :input-echoing t :input-blocking t :enable-function-keys t :cursor-visible t :enable-colors nil)
-    (let ((out (make-instance 'window :height (1- (height scr)) :width (width scr) :location '(0 0)))
-          (in (make-instance 'window :height 1 :width (width scr) :location (list (1- (height scr)) 0))))
+    (let ((out (make-instance 'window :height (1- (height scr)) :width (width scr) :position '(0 0)))
+          (in (make-instance 'window :height 1 :width (width scr) :position (list (1- (height scr)) 0))))
       (loop
          (let ((str (get-string in 30)))
            ;; if the input line is empty (length = 0), do nothing.
@@ -1710,9 +1710,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; extend the functionality of the input line of the simple repl.
 (defun t16c ()
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t)
-    (let* ((wout (make-instance 'window :height (1- (height scr)) :width (width scr) :location '(0 0) :enable-scrolling t))
+    (let* ((wout (make-instance 'window :height (1- (height scr)) :width (width scr) :position '(0 0) :enable-scrolling t))
            ;; input blocking is a property of every single window, not just of the global screen.
-           (win (make-instance 'window :height 1 :width (width scr) :location (list (1- (height scr)) 0)
+           (win (make-instance 'window :height 1 :width (width scr) :position (list (1- (height scr)) 0)
                                :enable-function-keys t :input-blocking t))
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
@@ -1773,8 +1773,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t16d ()
   "Use an input buffer instead of extracting the string from the window. Create windows using the with-windows macro."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t)
-    (with-windows ((wout :height (1- (height scr)) :width (width scr) :location '(0 0) :enable-scrolling t)
-                   (win  :height 1                  :width (width scr) :location (list (1- (height scr)) 0) :enable-function-keys t :input-blocking t))
+    (with-windows ((wout :height (1- (height scr)) :width (width scr) :position '(0 0) :enable-scrolling t)
+                   (win  :height 1                  :width (width scr) :position (list (1- (height scr)) 0) :enable-function-keys t :input-blocking t))
       (let ((*standard-output* wout)
             (inbuf nil) ; input buffer character list
             (inptr 0))  ; position of the next character in the buffer
@@ -2005,7 +2005,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
            (form (make-instance 'form-window :elements (list field1 field2 field3 button1 button2 button3)
                                 :style style3 :enable-function-keys t :input-blocking t :title "form window"
-                                :draw-border t :height 15 :width 50 :location (list 5 15))))
+                                :draw-border t :height 15 :width 50 :position (list 5 15))))
 
       (setf (background scr) (make-instance 'complex-char :simple-char #\space))
       (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
@@ -2074,7 +2074,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
              (form (make-instance 'form-window :elements (list field1 field2 label1 label2 button1 button2 button3)
                                   :style style4 :enable-function-keys t :input-blocking t :title "form window"
-                                  :draw-border t :height 10 :width 50 :location (list 5 15))))
+                                  :draw-border t :height 10 :width 50 :position (list 5 15))))
 
         (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
         (refresh scr)
@@ -2179,9 +2179,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
-    (let* ((win1 (make-instance 'window :location '(2 2) :draw-border t))
-           (win2 (make-instance 'sub-window :parent win1 :height 5 :width 20 :location '(4 4) :draw-border t))
-           (win3 (make-instance 'sub-window :parent win1           :width 20 :location '(4 4) :draw-border t :relative t)))
+    (let* ((win1 (make-instance 'window :position '(2 2) :draw-border t))
+           (win2 (make-instance 'sub-window :parent win1 :height 5 :width 20 :position '(4 4) :draw-border t))
+           (win3 (make-instance 'sub-window :parent win1           :width 20 :position '(4 4) :draw-border t :relative t)))
       (princ "win1" win1)
       (princ "win2" win2)
       (princ "win3 relative" win3)
@@ -2194,11 +2194,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (close win1) )))
 
 ;; by default, the sub-window displays the part of the parent window it overlaps with.
-;; we can change which part of the parent is displayed by changing the sub-windows source-location
-;; we can change where it is displayed by changing the sub-windows location.
+;; we can change which part of the parent is displayed by changing the sub-windows source-position
+;; we can change where it is displayed by changing the sub-windows position.
 (defun t17a ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
-    (let ((win (make-instance 'sub-window :parent scr :height 5 :width 20 :location '(2 2) :draw-border t :relative t)))
+    (let ((win (make-instance 'sub-window :parent scr :height 5 :width 20 :position '(2 2) :draw-border t :relative t)))
       ;; initial content written to subwin and thus to scr.
       (move win 1 1) (princ "subwin" win)
 
@@ -2218,33 +2218,33 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
-      ;; map area1 to subwin location
+      ;; map area1 to subwin position
       ;; the mapping only _displays_ the content from the source area.
       ;; the mapping it doesnt _write_ it onto the displayed area of scr.
-      (setf (source-location win) '(2 25)) ; (%mvderwin (winptr win) 2 25)
+      (setf (source-position win) '(2 25)) ; (%mvderwin (winptr win) 2 25)
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
-      ;; map area2 to subwin location
-      (setf (source-location win) '(2 50))
+      ;; map area2 to subwin position
+      (setf (source-position win) '(2 50))
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
-      ;;; now move subwin location
-      ;; it still maps area2, but now to the new location.
+      ;;; now move subwin position
+      ;; it still maps area2, but now to the new position.
       ;; the original content written to the subwin (and thus to scr because they share memory)
       ;; is now visible in scr, since the subwin overlay has moved.
-      (setf (location win) '(10 2))
+      (setf (window-position win) '(10 2))
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
-      ;; map area1 again, but now to the new location.
-      (setf (source-location win) '(2 25))
+      ;; map area1 again, but now to the new position.
+      (setf (source-position win) '(2 25))
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
-      ;; writing to a sub-window writes to the _mapped_ location of the parent window
-      ;; _not_ to the parent location below the subwindow.
+      ;; writing to a sub-window writes to the _mapped_ position of the parent window
+      ;; _not_ to the parent position below the subwindow.
       (clear win)
       (move win 0 0) (princ "writing to sub-win" win)
       (move win 1 0) (princ "writes to parent win" win)
@@ -2365,7 +2365,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   "Use the menu class, draw-menu and select functions."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (menu (make-instance 'menu-window :items choices :location (list 0 20) :title "t19b"
+           (menu (make-instance 'menu-window :items choices :position (list 0 20) :title "t19b"
                                 :cyclic-selection t :draw-border t :enable-function-keys t)))
       (let ((result (select menu)))
         (format scr "You chose ~A" result)
@@ -2402,7 +2402,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                              :background (list :fgcolor :yellow)
                              :selected-foreground (list :attributes (list :reverse))
                              :selected-background (list :attributes (list :reverse))))
-           (menu (make-instance 'menu-window :items choices :location (list 0 25) :scrolled-layout (list 6 1)
+           (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
                                 :title "t19c" :draw-border t :enable-function-keys t :style menu-style)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
@@ -2421,10 +2421,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (choices (list "Choice 0" 'choice11 fun1 "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                           "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            ;; First, create a menu
-           ;; TODO: how to determine the location of the sub-menu depending on the parent menu?
+           ;; TODO: how to determine the position of the sub-menu depending on the parent menu?
            (sub-menu2 (make-instance 'menu-window
                                      :items choices ;; here we only have strings
-                                     :location (list 2 57) :scrolled-layout (list 6 1)
+                                     :position (list 2 57) :scrolled-layout (list 6 1)
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
                                      :bgcolor :red
@@ -2432,14 +2432,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
-                                     :location (list 1 41) :scrolled-layout (list 6 1)
+                                     :position (list 1 41) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #x999999)
                                      :fgcolor :green
                                      :name "submenu1" :title nil :draw-border t :enable-function-keys t :visible nil))
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
-                                     :location (list 0 25) :scrolled-layout (list 6 1)
+                                     :position (list 0 25) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #xcccccc)
                                      :fgcolor :blue :bgcolor :yellow
                                      :name "menu" :title nil :draw-border nil :enable-function-keys t :visible nil)))
@@ -2474,7 +2474,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (menu (make-instance 'menu-window :items choices :location (list 0 25) :scrolled-layout (list 6 1)
+           (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
                                 :title "t19c" :draw-border t :enable-function-keys t
                                 :menu-type :checklist
                                 :max-item-length 20
@@ -2494,7 +2494,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items (loop for i below 200 collect (format nil "Item ~A" i)))
            (menu (make-instance 'menu-window
-                                :items items :location (list 0 0) :layout (list 20 10) :scrolled-layout (list 10 4)
+                                :items items :position (list 0 0) :layout (list 20 10) :scrolled-layout (list 10 4)
                                 :cyclic-selection nil :max-item-length 9 :title "t19d" :draw-border t :enable-function-keys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
@@ -2510,7 +2510,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   "A one-line menu without a title and border resembling a menu bar."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
-           (menu (make-instance 'menu-window :input-blocking t :items items :location (list 0 0)
+           (menu (make-instance 'menu-window :input-blocking t :items items :position (list 0 0)
                                 :layout (list 1 (length items))
                                 :scrolled-layout (list 1 6)
                                 ;;:color-pair (list :black :yellow)
@@ -2531,13 +2531,13 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items1 (list "Choice 0" "Choice11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                           "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (sub-menu1 (make-instance 'menu-window :items items1 :location (list 2 30) :scrolled-layout (list 6 1)
+           (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :scrolled-layout (list 6 1)
                                      :title nil :name "submenu1" :draw-border t :enable-function-keys t :visible nil :menu-type :selection))
-           (sub-menu2 (make-instance 'menu-window :items items1 :location (list 2 45) :scrolled-layout (list 6 1)
+           (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :scrolled-layout (list 6 1)
                                      :title nil :name "submenu2" :draw-border t :enable-function-keys t :visible nil :menu-type :checklist))
            (fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
-           (menu (make-instance 'menu-window :input-blocking t :items items2 :location (list 0 0) :layout (list 1 (length items2))
+           (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :layout (list 1 (length items2))
                                 :max-item-length 15 :width (width scr) :draw-border t :enable-function-keys t)))
       (setf (stackedp scr) t
             (stackedp menu) t
@@ -2561,8 +2561,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (menu (make-instance 'dialog-window
                                 :input-blocking t
                                 :items items
-                                ;; when center is t for a dialog window, we do not need to pass the location explicitely.
-                                ;;:location (list 5 15)
+                                ;; when center is t for a dialog window, we do not need to pass the position explicitely.
+                                ;;:position (list 5 15)
                                 :center t
                                 :layout (list 1 4)
                                 :max-item-length 12
@@ -2876,7 +2876,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
   "Test initialisation and refreshing of pads and sub-pads."
   (with-screen (scr :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((p (make-instance 'pad :height 100 :width 100))
-          (sp (make-instance 'sub-pad :parent p :height 5 :width 10 :location (list 10 10))))
+          (sp (make-instance 'sub-pad :parent p :height 5 :width 10 :position (list 10 10))))
 
       ;; populate the pad with numbers.
       (loop for j from 0 to 99
@@ -2926,9 +2926,9 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       (close sp))))
 
 (defun t26 ()
-  "Test accessors of window and cursor locations."
+  "Test accessors of window and cursor positions."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible t :enable-colors t :stacked t)
-    (let ((win (make-instance 'window :height 5 :width 20 :location (list 0 0) :stacked t)))
+    (let ((win (make-instance 'window :height 5 :width 20 :position (list 0 0) :stacked t)))
 
       (setf (background scr) (make-instance 'complex-char :color-pair '(:white :red))
             (background win) (make-instance 'complex-char :color-pair '(:black :yellow)))
@@ -2936,15 +2936,15 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       (refresh-stack)
       (get-char scr)
 
-      (setf (location win) (list 2 4))
+      (setf (window-position win) (list 2 4))
       (refresh-stack)
       (get-char scr)
 
-      (setf (location-y win) 4)
+      (setf (position-y win) 4)
       (refresh-stack)
       (get-char scr)
 
-      (setf (location-x win) 8)
+      (setf (position-x win) 8)
       (refresh-stack)
       (get-char scr)
 
@@ -3080,9 +3080,9 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 (defun t30 ()
   "Test color pair completion for style parameters."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
-    (with-windows ((w1 :height 5 :width 5 :location '(0 0))
-                   (w2 :height 5 :width 5 :location '(0 5))
-                   (w3 :height 5 :width 5 :location '(0 10)))
+    (with-windows ((w1 :height 5 :width 5 :position '(0 0))
+                   (w2 :height 5 :width 5 :position '(0 5))
+                   (w3 :height 5 :width 5 :position '(0 10)))
       (setf (background w1) (make-instance 'complex-char :color-pair '(:black :cyan))
             (background w2) (make-instance 'complex-char :color-pair '(:black :magenta))
             (background w3) (make-instance 'complex-char :color-pair '(:black :white)))

@@ -50,9 +50,9 @@
    complex-char-array
    width
    height
-   location
-   location-y
-   location-x
+   window-position
+   position-y
+   position-x
    cursor-position
    cursor-position-y
    cursor-position-x
@@ -73,7 +73,7 @@
    process-control-chars-p
    newline-translation-enabled-p
    cursor-visible-p
-   source-location
+   source-position
    center-position
 
    ;; Predicates
