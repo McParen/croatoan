@@ -42,4 +42,4 @@ unused, generated keycode."
     ;; add name and code to the croatoan database
     (add-function-key key-name code)
     ;; add control sequence and code to the underlying ncurses database.
-    (%define-key control-string code)))
+    (ncurses:define-key control-string code)))

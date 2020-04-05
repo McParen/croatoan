@@ -11,12 +11,12 @@ The window from which the char is read is automatically refreshed.
 If the second returned value is t, the char is a function key, nil otherwise."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
-  (cffi:with-foreign-object (ptr 'wint_t)
+  (cffi:with-foreign-object (ptr 'ncurses:wint_t)
     ;; #define KEY_CODE_YES    0400            /* A wchar_t contains a key code */
     ;; if the char is a function key, return t as a second value, otherwise nil.
-    (if (= 256 (%wget-wch (winptr window) ptr))
-        (values (cffi:mem-ref ptr 'wint_t) t)
-        (values (cffi:mem-ref ptr 'wint_t) nil))))
+    (if (= 256 (ncurses:wget-wch (winptr window) ptr))
+        (values (cffi:mem-ref ptr 'ncurses:wint_t) t)
+        (values (cffi:mem-ref ptr 'ncurses:wint_t) nil))))
 
 (defun get-wide-event (window)
   "Return a single user input event and its code as a second value.

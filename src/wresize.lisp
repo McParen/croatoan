@@ -2,4 +2,4 @@
 
 (defun resize (window height width)
   (let ((winptr (winptr window)))
-    (%wresize winptr height width)))
+    (ncurses:wresize winptr height width)))

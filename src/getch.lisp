@@ -9,19 +9,19 @@ the cursor to the destination first and then read a single byte.
 The window from which the char is read is automatically refreshed."
   (let ((winptr (winptr window)))
     (cond ((and y x)
-           (%mvwgetch winptr y x))
+           (ncurses:mvwgetch winptr y x))
           (t
-           (%wgetch winptr)))))
+           (ncurses:wgetch winptr)))))
 
 ;; takes a simple C chtype and puts it back into the read buffer.
 ;; it will be read with the next get-char.
 (defun unget-char (chtype)
-  (%ungetch chtype))
+  (ncurses:ungetch chtype))
 
 ;; takes an C int denoting a key. returns t or nil.
 ;; checks whether a function key is supported by the current terminal.
 (defun key-supported-p (key-char)
-  (%has-key key-char))
+  (ncurses:has-key key-char))
 
 ;;; NOTES
 

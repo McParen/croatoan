@@ -25,7 +25,7 @@
                      (t color-name)))
          ;; generate an alist of colors in the form ((:terminal . -1) (:black . 0) ...)
          ;; depending on whether we use 8 or 256 colors, we have different names for the same color numbers.
-         (alist (if (<= %colors 8)
+         (alist (if (<= ncurses:colors 8)
                     (loop
                        for i from -1 to 7
                        for j in (cons :terminal *ansi-color-list*)
@@ -100,7 +100,7 @@
   (setf (slot-value screen 'use-terminal-colors-p) flag)
   (if flag
       (progn
-          (%use-default-colors)
+          (ncurses:use-default-colors)
           (setf (default-color-pair screen) (list :terminal :terminal)))
       (setf (default-color-pair screen) (list :white :black))))
 
@@ -117,8 +117,8 @@ The ncurses default color pair is white on black.
 
 If the terminal can set its own colors, they are named :terminal."
   (setf *default-color-pair* color-pair)
-  (%assume-default-colors (color-name-to-number (car color-pair))
-                          (color-name-to-number (cadr color-pair))))
+  (ncurses:assume-default-colors (color-name-to-number (car color-pair))
+                                 (color-name-to-number (cadr color-pair))))
 
 ;; called from initialize-instance :after ((scr screen)
 ;; test with t09a
@@ -127,7 +127,7 @@ If the terminal can set its own colors, they are named :terminal."
   (setf *color-pair-alist* nil)
   (if use-terminal-colors-p
       (progn
-        (%use-default-colors)
+        (ncurses:use-default-colors)
         (setf *default-color-pair* (list :terminal :terminal)))
       (setf *default-color-pair* (list :white :black)))
   ;; we cant make :white :black be pair 0, because pair 0 is ignored on several occasions
@@ -164,7 +164,7 @@ Example:
               ;; then add it to ncurses.
               (let ((fg (car pair))
                     (bg (cadr pair)))
-                (%init-pair new-pair-number (color-to-number fg) (color-to-number bg)))
+                (ncurses:init-pair new-pair-number (color-to-number fg) (color-to-number bg)))
               ;; return the newly added pair number.
               new-pair-number)))
       ;; If pair is nil, return the default color number, 0.
@@ -252,18 +252,18 @@ Try to complete the missing colors in the following order:
          (t
           (list (car (number-to-pair 0)) bg)))) )))
 
-;; TODO: use %wattr_on instead of %wattron, also for get and set
+;; TODO: use ncurses:wattr_on instead of ncurses:wattron, also for get and set
 (defun add-attributes (win attributes)
   "Takes a list of keywords and turns the appropriate attributes on."
   (dolist (i attributes)
     (setf (attributes win) (adjoin i (attributes win)))
-    (%wattron (winptr win) (get-bitmask i))))
+    (ncurses:wattron (winptr win) (get-bitmask i))))
 
 (defun remove-attributes (win attributes)
   "Takes a list of keywords and turns the appropriate attributes off."
   (dolist (i attributes)
     (setf (attributes win) (remove i (attributes win)))
-    (%wattroff (winptr win) (get-bitmask i))))
+    (ncurses:wattroff (winptr win) (get-bitmask i))))
 
 ;; (set-attributes scr '(:bold :underline))
 ;; set-attributes overwrites color settings because it treats color as an attribute.
@@ -272,10 +272,12 @@ Try to complete the missing colors in the following order:
   "Takes a list of keywords and sets the appropriate attributes.
 
 Overwrites any previous attribute settings including the color."
-  (%wattrset winptr
-             (apply #'logior (loop for i in attributes collect (get-bitmask i)))))
+  (ncurses:wattrset winptr
+                    (apply #'logior (loop for i in attributes collect (get-bitmask i)))))
 
-;; (%wchgat (winptr win) 9 #x00040000 0 (cffi:null-pointer))
+;; (ncurses:wchgat (winptr win) 9 #x00040000 0 (cffi:null-pointer))
+;; TODO: make attributes also a key
+;; TODO: separate into: change-attributes, change-color, change-style
 (defun change-attributes (win n attributes &key color-pair y x position)
   "Change the attributes of n chars starting at the current cursor position.
 
@@ -287,13 +289,23 @@ from the given point without moving the cursor position."
   (when position (apply #'move win position))
   (let ((attrs (attrs2chtype attributes))
         (pair-number (pair-to-number (complete-pair win color-pair))))
-    (%wchgat (winptr win) n attrs pair-number (cffi:null-pointer))))
+    (ncurses:wchgat (winptr win) n attrs pair-number (cffi:null-pointer))))
+
+;; (set-color window '(:black :white))
+;; TODO: is there a wcolor-get where we check the color of the window?
+;; if the window has no color, use the default color 0
+;;(defun set-color-pair (winptr color-pair)
+;;  "Sets the color attribute only."
+;;  (if color-pair
+;;      (ncurses:wcolor-set winptr (pair-to-number color-pair) (null-pointer))
+;;      ;; if color-pair is nil, set the color pair 0 (white black) or (default default).
+;;      (ncurses:wcolor-set winptr 0 (null-pointer))))
 
 (defun set-color-pair (winptr color-pair)
   "Sets the color attribute of the window only."
-  (%wcolor-set winptr
-               (pair-to-number (complete-default-pair color-pair))
-               (cffi:null-pointer)))
+  (ncurses:wcolor-set winptr
+                      (pair-to-number (complete-default-pair color-pair))
+                      (cffi:null-pointer)))
 
 (defparameter *bitmask-alist*
   ;; the first four are not attributes, but bitmasks used to extract parts of the chtype.

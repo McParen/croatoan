@@ -6,7 +6,7 @@
 
 If any parameter is nil or zero, the default ACS char will be used."
   (let ((winptr (winptr window)))
-    (%box winptr hline-char vline-char)))
+    (ncurses:box winptr hline-char vline-char)))
 
 (defun draw-border (window &key left right top bottom                        ;; lines
                                 top-left top-right bottom-left bottom-right) ;; corners
@@ -14,7 +14,7 @@ If any parameter is nil or zero, the default ACS char will be used."
 
 If no border chars are given, the default ncurses ACS chars will be used."
   (let ((winptr (winptr window)))
-    (apply #'%wborder
+    (apply #'ncurses:wborder
            winptr
            ;; if the argument is not nil, convert it to chtype first, the pass it to wborder.
            ;; if the argument is nil, pass 0 to wborder, then the default ACS char will be used.

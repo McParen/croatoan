@@ -21,8 +21,8 @@ whole window, it has to be explicitely touched or marked for redraw."
              ;; all 6 arguments have to be given, we dont have default arguments.
              (unless (and pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
                (error "One of the arguments for pad refreshing is missing."))
-             (%prefresh winptr pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)))
-      (window (%wrefresh winptr)))))
+             (ncurses:prefresh winptr pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)))
+      (window (ncurses:wrefresh winptr)))))
 
 ;; call refresh-marked after this.
 (defun mark-for-refresh (win &optional pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
@@ -37,13 +37,13 @@ refreshes."
       (pad (progn
              (unless (and pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
                (error "One of the arguments for pad refreshing is missing."))
-             (%prefresh winptr pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)))
-      (window (%wnoutrefresh winptr)))))
+             (ncurses:prefresh winptr pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)))
+      (window (ncurses:wnoutrefresh winptr)))))
 
 ;; call this after several windows have been marked for refresh.
 (defun refresh-marked ()
   "Refresh windows marked for refresh."
-  (%doupdate))
+  (ncurses:doupdate))
 
 ;; does not redraw, only marks for redrawing by refresh.
 ;; It assumes that the display on the terminal has been corrupted.
@@ -52,5 +52,5 @@ refreshes."
   "Mark a whole window or a number of lines to be completely redrawn on the next refresh."
   (let ((winptr (winptr window)))
     (if (and first-line no-of-lines)
-        (%wredrawln winptr first-line no-of-lines)
-        (%redrawwin winptr))))
+        (ncurses:wredrawln winptr first-line no-of-lines)
+        (ncurses:redrawwin winptr))))

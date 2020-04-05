@@ -8,6 +8,7 @@
 ;; because of that, we cant use alternate chars as background chars, since
 ;; :altcharset is an attribute.
 
+;; TODO: add test whether xchar is nil
 (defun set-background-char (winptr xchar &optional (apply t))
   "Set a complex single-byte character as the background of a window.
 
@@ -21,12 +22,12 @@ Otherwise, it is applied only to newly added simple characters."
   (let ((chtype (xchar2chtype xchar)))
     (if apply
         ;; the background char is applied to every cell in the window by default.
-        (%wbkgd    winptr chtype)
+        (ncurses:wbkgd    winptr chtype)
         ;; if apply is nil, the background is combined only with new characters.
-        (%wbkgdset winptr chtype))))
+        (ncurses:wbkgdset winptr chtype))))
 
 (defun get-background-char (window)
   "Return the complex char that is the background character of the window."
   (let* ((winptr (winptr window))
-         (chtype (%getbkgd winptr)))
+         (chtype (ncurses:getbkgd winptr)))
     (chtype2xchar chtype)))

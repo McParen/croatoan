@@ -11,4 +11,4 @@ cursor to the position first and then add the character.
 The position can also be passed in form of a two-element list."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
-  (funcall-get-cchar_t #'%win-wch window))
+  (funcall-get-cchar_t #'ncurses:win-wch window))

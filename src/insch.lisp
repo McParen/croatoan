@@ -25,4 +25,4 @@ If n is given, insert n chars."
                           ((or fgcolor bgcolor)
                            (list fgcolor bgcolor))
                           (t color-pair))))
-    (funcall-make-chtype #'%winsch window char attributes color-pair n)))
+    (funcall-make-chtype #'ncurses:winsch window char attributes color-pair n)))

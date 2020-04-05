@@ -60,7 +60,7 @@ Example: (add-char scr #\a :attributes '(:bold) :color-pair '(:red :yellow))"
                           ((or fgcolor bgcolor)
                            (list fgcolor bgcolor))
                           (t color-pair))))
-    (funcall-make-chtype #'%waddch window char attributes color-pair n)))
+    (funcall-make-chtype #'ncurses:waddch window char attributes color-pair n)))
 
 ;; At the moment, echo is just a wrapper for echo-wide-char.
 (defun echo (window char &rest keys &key &allow-other-keys)
@@ -95,8 +95,8 @@ character."
   (let ((count 1)
         (fn (typecase window
               ;; a pad is a subclass of window, therefore we have to check pad first.
-              (pad #'%pechochar)
-              (window #'%wechochar)))
+              (pad #'ncurses:pechochar)
+              (window #'ncurses:wechochar)))
         (attributes (if style
                         (getf style :attributes)
                         attributes))
@@ -227,4 +227,4 @@ extern NCURSES_EXPORT_VAR(chtype) acs_map[];
 ;; Example: (acs 'ULCORNER)
 (defun acs (char-name)
   "Take a symbol, return the integer representing the acs char."
-  (cffi:mem-aref acs-map-array 'chtype (char-code (cdr (assoc char-name acs-alist)))))
+  (cffi:mem-aref acs-map-array 'ncurses:chtype (char-code (cdr (assoc char-name acs-alist)))))

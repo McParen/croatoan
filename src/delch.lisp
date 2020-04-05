@@ -9,6 +9,6 @@ with a blank. The cursor position does not change after moving
 to (y,x), if specified."
   (let ((winptr (winptr window)))
     (cond ((and y x)
-           (%mvwdelch winptr y x))
+           (ncurses:mvwdelch winptr y x))
           (t
-           (%wdelch winptr)))))
+           (ncurses:wdelch winptr)))))

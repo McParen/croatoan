@@ -1,7 +1,6 @@
-(defpackage #:de.anvi.croatoan.test
-  (:documentation "Tests and examples for the low-level ncurses CFFI bindings and high-level CLOS API.")
-  (:use #:common-lisp #:cffi #:de.anvi.ncurses #:de.anvi.croatoan)
-  (:shadowing-import-from #:de.anvi.croatoan callback)
+(defpackage #:de.anvi.ncurses.test
+  (:documentation "Tests and examples for the low-level ncurses CFFI bindings.")
+  (:use #:common-lisp #:de.anvi.ncurses)
   (:export
 
    ;; ncurses.lisp
@@ -10,6 +9,9 @@
    #:nctest3
    #:nctest4
    #:nctest5
+   #:nctest6
+   #:nctest7
+   #:nctest8
 
    ;; unicode.lisp
    #:ut01
@@ -17,7 +19,14 @@
    #:ut02b
    #:ut03
    #:ut04
+   ;; Minimal example of creating a cchar and setting it as a window background.
+   #:ut05))
 
+(defpackage #:de.anvi.croatoan.test
+  (:documentation "Tests and examples for the high-level CLOS API.")
+  (:use #:common-lisp #:de.anvi.croatoan)
+  (:export
+   
    ;; clos.lisp
    #:t00
    #:t01

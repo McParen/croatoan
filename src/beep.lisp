@@ -2,8 +2,8 @@
 
 (defun alert (&optional (type :beep))
   (case type
-    (:beep (%beep))
-    (:flash (%flash))
+    (:beep (ncurses:beep))
+    (:flash (ncurses:flash))
     (otherwise (error "Available alert types: :beep :flash"))))
 
 ;;; TODOs

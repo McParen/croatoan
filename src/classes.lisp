@@ -568,7 +568,7 @@ The initial purpose of this function is to be used as the equality test for alex
         (unless height (setf height (+ (* 2 padding) (car (or scrolled-layout layout)))))
         (unless width  (setf width  (+ (* 2 padding) (* (cadr (or scrolled-layout layout))
                                                         (+ (length current-item-mark) max-item-length)))))
-        (setf winptr (%newwin height width (car position) (cadr position)))
+        (setf winptr (ncurses:newwin height width (car position) (cadr position)))
         (setf sub-window
               (make-instance 'sub-window
                              :parent win :height (car (or scrolled-layout layout))
@@ -636,10 +636,10 @@ The initial purpose of this function is to be used as the equality test for alex
         (unless width (setf width (+ (* 2 padding) (* (cadr layout) (+ (length current-item-mark) max-item-length)))))
 
         ;; if the key center was given, calculate position automatically, even if it was explicitely given.
-        (when center (setf position (list (- (round (/ %LINES 2)) (round (/ height 2)))
-                                          (- (round (/ %COLS  2)) (round (/ width  2))))))
+        (when center (setf position (list (- (round (/ ncurses:LINES 2)) (round (/ height 2)))
+                                          (- (round (/ ncurses:COLS  2)) (round (/ width  2))))))
 
-        (setf winptr (%newwin height width (car position) (cadr position)))
+        (setf winptr (ncurses:newwin height width (car position) (cadr position)))
         (setf sub-window
               (make-instance 'sub-window
                              :parent win :height (car layout)
@@ -1043,7 +1043,7 @@ If there is no window asociated with the element, return the window associated w
   (with-slots (winptr height width position sub-window draw-border-p window) win
     ;; only for form windows
     (when (eq (type-of win) 'form-window)
-      (setf winptr (%newwin height width (car position) (cadr position)))
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
       (setf sub-window (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2)
                                       :position (list 1 1) :relative t :enable-function-keys t))
       ;; set the sub of the decorated window to be the associated window of the form
@@ -1060,7 +1060,7 @@ If there is no window asociated with the element, return the window associated w
   (with-slots (winptr height width) win
     ;; just for a pad window
     (when (eq (type-of win) 'pad)
-      (setf winptr (%newpad height width)))))
+      (setf winptr (ncurses:newpad height width)))))
 
 (defclass sub-pad (pad)
   ((parent
@@ -1075,7 +1075,7 @@ If there is no window asociated with the element, return the window associated w
   (with-slots (winptr parent height width position) win
     ;; just for a sub-pad window
     (when (eq (type-of win) 'sub-pad)
-      (setf winptr (%subpad (slot-value parent 'winptr) height width (car position) (cadr position))))))
+      (setf winptr (ncurses:subpad (slot-value parent 'winptr) height width (car position) (cadr position))))))
 
 #|
 ;; this will be called for both window and screen.
@@ -1085,25 +1085,25 @@ If there is no window asociated with the element, return the window associated w
                       input-blocking function-keys-enabled-p scrolling-enabled-p height width position) win
 
     ;; different initialisations depending on the window type.
-    ;; %initscr initializes a screen, %newwin initializes a window.
+    ;; ncurses:initscr initializes a screen, ncurses:newwin initializes a window.
     ;; TODO: subwin, derwin, pad...
     ;; CAUTION: these initializations have to be done _before_ any other commands.
     ;; because of that we cant use call-next-method.
     (case (type-of win)
       ;; a screen is initialized when we start ncurses.
       (screen (progn
-                (setf winptr (%initscr))
-                (when colors-enabled-p (%start-color))
-                (if input-echoing-p (%echo) (%noecho))
+                (setf winptr (ncurses:initscr))
+                (when colors-enabled-p (ncurses:start-color))
+                (if input-echoing-p (ncurses:echo) (ncurses:noecho))
                 (set-input-reading winptr input-reading)
                 (set-cursor-visibility cursor-visible-p))) ;kernel.lisp
       ;; a window is initialized when we create a new window.
-      (window (setf winptr (%newwin height width (car position) (cadr position)))))
+      (window (setf winptr (ncurses:newwin height width (car position) (cadr position)))))
 
     ;; the following settings have to be executed for all window types.
     (set-input-blocking winptr input-blocking)
-    (%scrollok winptr scrolling-enabled-p)
-    (%keypad winptr function-keys-enabled-p)))
+    (ncurses:scrollok winptr scrolling-enabled-p)
+    (ncurses:keypad winptr function-keys-enabled-p)))
 |#
 
 ;; We cant do this because _all_ auxiliary methods are always used and combined.
@@ -1114,7 +1114,7 @@ If there is no window asociated with the element, return the window associated w
     (when (eq (type-of win) 'window)
       (unless width (setf width 0))
       (unless height (setf height 0))
-      (setf winptr (%newwin height width (car position) (cadr position)))
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
 
       ;; fg/bg should not be passed together with the color-pair keyword.
       (cond ((or fgcolor bgcolor)
@@ -1131,11 +1131,11 @@ If there is no window asociated with the element, return the window associated w
                       scrolling-enabled-p background input-buffering-p process-control-chars-p) scr
     ;; just for screen window types.
     (when (eq (type-of scr) 'screen)
-      (setf winptr (%initscr))
+      (setf winptr (ncurses:initscr))
       (when colors-enabled-p
-        (if (%has-colors)
+        (if (ncurses:has-colors)
             (progn
-              (%start-color)
+              (ncurses:start-color)
               (set-default-color-pair use-terminal-colors-p))
             (error "initialize-instance screen: This terminal does not support colors.")))
 
@@ -1146,8 +1146,8 @@ If there is no window asociated with the element, return the window associated w
              (setf (color-pair scr) color-pair)))
 
       (when background (setf (background scr) background))
-      (if newline-translation-enabled-p (%nl) (%nonl))
-      (if input-echoing-p (%echo) (%noecho))
+      (if newline-translation-enabled-p (ncurses:nl) (ncurses:nonl))
+      (if input-echoing-p (ncurses:echo) (ncurses:noecho))
       (set-input-mode input-buffering-p process-control-chars-p)
       (set-cursor-visibility cursor-visible-p))))
 
@@ -1163,19 +1163,19 @@ If there is no window asociated with the element, return the window associated w
     ;; just for SUB-WINDOW types
     (when (eq (type-of win) 'sub-window)
       (if relativep
-          ;;(setf winptr (%derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
-          (setf winptr (let ((val (%derwin (slot-value parent 'winptr) height width (car position) (cadr position))))
+          ;;(setf winptr (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
+          (setf winptr (let ((val (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position))))
                          (if (cffi:null-pointer-p val)
                              ;; may also be null if the parent window passed is null
                              (error "Subwindow could not be created. Probably too big and not contained in the parent window.")
                              val)))
-          (setf winptr (%subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
+          (setf winptr (ncurses:subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
 
 (defmethod initialize-instance :after ((win decorated-window) &key)
   (with-slots (winptr width height position sub-window) win
     ;; only for decorated window types
     (when (eq (type-of win) 'decorated-window)
-      (setf winptr (%newwin height width (car position) (cadr position)))
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
       (setf sub-window
             (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
 
@@ -1187,9 +1187,9 @@ If there is no window asociated with the element, return the window associated w
     ;; after :before, :after and primary.
     (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p draw-border-p stackedp) win
       (set-input-blocking winptr input-blocking)
-      (%scrollok winptr scrolling-enabled-p)
-      (when draw-border-p (%box winptr 0 0))
-      (%keypad winptr function-keys-enabled-p)
+      (ncurses:scrollok winptr scrolling-enabled-p)
+      (when draw-border-p (ncurses:box winptr 0 0))
+      (ncurses:keypad winptr function-keys-enabled-p)
       (when stackedp (push win *window-stack*)))
 
     ;; why do we have to return the result in :around aux methods?
@@ -1199,48 +1199,48 @@ If there is no window asociated with the element, return the window associated w
 
 (defgeneric window-position (window))
 (defmethod window-position ((window window))
-  (list (%getbegy (slot-value window 'winptr)) (%getbegx (slot-value window 'winptr))))
+  (list (ncurses:getbegy (slot-value window 'winptr)) (ncurses:getbegx (slot-value window 'winptr))))
 (defmethod window-position ((win sub-window))
   (with-slots (winptr relativep) win
     (if relativep
-        (list (%getpary winptr) (%getparx winptr))
-        (list (%getbegy winptr) (%getbegx winptr)))))
+        (list (ncurses:getpary winptr) (ncurses:getparx winptr))
+        (list (ncurses:getbegy winptr) (ncurses:getbegx winptr)))))
 (defgeneric (setf window-position) (coordinates window))
 (defmethod (setf window-position) (coordinates (w window))
   (setf (slot-value w 'position) coordinates)
-  (%mvwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
+  (ncurses:mvwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
 ;; The slots position-y and position-x dont exist, these accessors exist for convenience.
 
 (defgeneric position-y (window))
 (defmethod position-y ((win window))
-  (%getbegy (slot-value win 'winptr)))
+  (ncurses:getbegy (slot-value win 'winptr)))
 (defmethod position-y ((win sub-window))
   (with-slots (winptr relativep) win
     (if relativep
-        (%getpary winptr)
-        (%getbegy winptr))))
+        (ncurses:getpary winptr)
+        (ncurses:getbegy winptr))))
 
 (defgeneric position-x (window))
 (defmethod position-x ((win window))
-  (%getbegx (slot-value win 'winptr)))
+  (ncurses:getbegx (slot-value win 'winptr)))
 (defmethod position-x ((win sub-window))
   (with-slots (winptr relativep) win
     (if relativep
-        (%getparx winptr)
-        (%getbegx winptr))))
+        (ncurses:getparx winptr)
+        (ncurses:getbegx winptr))))
 
 (defgeneric (setf position-y) (y window))
 (defmethod (setf position-y) (y (win window))
   (let ((x (cadr (slot-value win 'position))))
     (setf (slot-value win 'position) (list y x))
-    (%mvwin (slot-value win 'winptr) y x)))
+    (ncurses:mvwin (slot-value win 'winptr) y x)))
 
 (defgeneric (setf position-x) (x window))
 (defmethod (setf position-x) (x (win window))
   (let ((y (car (slot-value win 'position))))
     (setf (slot-value win 'position) (list y x))
-    (%mvwin (slot-value win 'winptr) y x)))
+    (ncurses:mvwin (slot-value win 'winptr) y x)))
 
 ;; "The screen-relative parameters of the window are not changed. 
 ;; This routine is used to display different parts of the parent 
@@ -1253,50 +1253,50 @@ If there is no window asociated with the element, return the window associated w
 (defgeneric (setf source-position) (coordinates sub-window))
 (defmethod (setf source-position) (coordinates (w sub-window))
   (setf (slot-value w 'source-position) coordinates)
-  (%mvderwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
+  (ncurses:mvderwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
 (defgeneric width (window))
 (defmethod width ((window window))
-  (%getmaxx (slot-value window 'winptr)))
+  (ncurses:getmaxx (slot-value window 'winptr)))
 
 (defgeneric height (window))
 (defmethod height ((window window))
-  (%getmaxy (slot-value window 'winptr)))
+  (ncurses:getmaxy (slot-value window 'winptr)))
 
 (defgeneric cursor-position (window))
 (defmethod cursor-position ((window window))
-  (list (%getcury (slot-value window 'winptr)) (%getcurx (slot-value window 'winptr))))
+  (list (ncurses:getcury (slot-value window 'winptr)) (ncurses:getcurx (slot-value window 'winptr))))
 
 ;; we can move the cursor by doing this, or by calling "move". 
-;; both will use %wmove in the background.
+;; both will use ncurses:wmove in the background.
 ;; note that incd and decf dont work.
 (defgeneric (setf cursor-position) (coordinates window))
 (defmethod (setf cursor-position) (coordinates (w window))
   (setf (slot-value w 'cursor-position) coordinates)
-  (%wmove (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
+  (ncurses:wmove (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
 
 ;; The slots position-y and position-x dont exist, but the pseudo accessors
 ;; exist for convenience.
 
 (defgeneric cursor-position-y (window))
 (defmethod cursor-position-y ((win window))
-  (%getcury (slot-value win 'winptr)))
+  (ncurses:getcury (slot-value win 'winptr)))
 
 (defgeneric cursor-position-x (window))
 (defmethod cursor-position-x ((win window))
-  (%getcurx (slot-value win 'winptr)))
+  (ncurses:getcurx (slot-value win 'winptr)))
 
 (defgeneric (setf cursor-position-y) (y window))
 (defmethod (setf cursor-position-y) (y (win window))
   (let ((x (cadr (slot-value win 'cursor-position))))
     (setf (slot-value win 'cursor-position) (list y x))
-    (%wmove (slot-value win 'winptr) y x)))
+    (ncurses:wmove (slot-value win 'winptr) y x)))
 
 (defgeneric (setf cursor-position-x) (x window))
 (defmethod (setf cursor-position-x) (x (win window))
   (let ((y (car (slot-value win 'cursor-position))))
     (setf (slot-value win 'cursor-position) (list y x))
-    (%wmove (slot-value win 'winptr) y x)))
+    (ncurses:wmove (slot-value win 'winptr) y x)))
 
 (defgeneric cursor-visible-p (window))
 (defmethod cursor-visible-p ((screen screen))
@@ -1320,7 +1320,7 @@ If there is no window asociated with the element, return the window associated w
 (defgeneric (setf function-keys-enabled-p) (status window))
 (defmethod (setf function-keys-enabled-p) (status (window window))
   (setf (slot-value window 'function-keys-enabled-p) status)
-  (%keypad (slot-value window 'winptr) status))
+  (ncurses:keypad (slot-value window 'winptr) status))
 
 (defgeneric scrolling-enabled-p (window))
 (defmethod scrolling-enabled-p ((window window))
@@ -1328,7 +1328,7 @@ If there is no window asociated with the element, return the window associated w
 (defgeneric (setf scrolling-enabled-p) (status window))
 (defmethod (setf scrolling-enabled-p) (status (window window))
   (setf (slot-value window 'scrolling-enabled-p) status)
-  (%scrollok (slot-value window 'winptr) status))
+  (ncurses:scrollok (slot-value window 'winptr) status))
 
 (defgeneric scrolling-region (window))
 (defmethod scrolling-region ((window window))
@@ -1336,7 +1336,7 @@ If there is no window asociated with the element, return the window associated w
 (defgeneric (setf scrolling-region) (list window))
 (defmethod (setf scrolling-region) (list (window window))
   (setf (slot-value window 'scrolling-region) list)
-  (%wsetscrreg (slot-value window 'winptr)
+  (ncurses:wsetscrreg (slot-value window 'winptr)
                (first  (slot-value window 'scrolling-region))
                (second (slot-value window 'scrolling-region))))
 ;; TODO: setf only when scrolling is enabled.
@@ -1348,7 +1348,7 @@ If there is no window asociated with the element, return the window associated w
 (defmethod (setf input-echoing-p) (status (screen screen))
   (setf (slot-value screen 'input-echoing-p) status)
   ;;(set-input-echoing status))
-  (if status (%echo) (%noecho)))
+  (if status (ncurses:echo) (ncurses:noecho)))
 
 (defgeneric input-buffering-p (screen))
 (defmethod input-buffering-p ((screen screen))
@@ -1370,7 +1370,7 @@ If there is no window asociated with the element, return the window associated w
       ;; only call ncurses when buffering is nil.
       (unless input-buffering-p
         ;; before we switch the unbuffered mode, we switch to the default cooked mode.
-        (if process-control-chars-p (%nocbreak) (%noraw))
+        (if process-control-chars-p (ncurses:nocbreak) (ncurses:noraw))
         ;; then make a "clean" switch back to the new unbuffered mode.
         (set-input-mode input-buffering-p status))
       ;; then save the new status.
@@ -1382,7 +1382,7 @@ If there is no window asociated with the element, return the window associated w
 (defgeneric (setf newline-translation-enabled-p) (status screen))
 (defmethod (setf newline-translation-enabled-p) (status (screen screen))
   (setf (slot-value screen 'newline-translation-enabled-p) status)
-  (if status (%nl) (%nonl)))
+  (if status (ncurses:nl) (ncurses:nonl)))
 
 (defgeneric background (window))
 (defmethod background ((win window))
@@ -1409,7 +1409,7 @@ If there is no window asociated with the element, return the window associated w
     (add-attributes window added)
     (remove-attributes window removed)))
 |#
-;; TODO use %wattron and %wattroff here.
+;; TODO use ncurses:wattron and ncurses:wattroff here.
 
 (defmethod (setf attributes) (attributes (win window))
   (with-slots ((win-attributes attributes)) win
@@ -1506,7 +1506,7 @@ If there is no window asociated with the element, return the window associated w
 
 ;; print simple strings to a ncurses widow.
 (defmethod print-object ((str string) (stream window))
-  (%waddstr (winptr stream) str))
+  (ncurses:waddstr (winptr stream) str))
 
 ;; print complex strings to a ncurses window.
 (defmethod print-object ((cstr complex-string) (stream window))
@@ -1519,8 +1519,8 @@ If there is no window asociated with the element, return the window associated w
      do (princ (simple-char ch) stream)))
 
 ;; methods to close streams, and thus screen _and_ windows, since they are now gray streams.
-;; end-screen = %endwin
-;; delete-window = %delwin
+;; end-screen = ncurses:endwin
+;; delete-window = ncurses:delwin
 ;; see t07a
 ;; remember we cant use open to open a window. it works only for file streams.
 ;; we have to make-instance of a window or a screen.
@@ -1530,39 +1530,39 @@ If there is no window asociated with the element, return the window associated w
   ;; if by time of closing, the window is still on the stack, remove it first.
   (if (member stream *window-stack* :test #'eq)
       (setf *window-stack* (remove stream *window-stack* :test #'eq)))
-  (%delwin (winptr stream))
+  (ncurses:delwin (winptr stream))
   ;; The default method provided by class FUNDAMENTAL-STREAM sets a flag for OPEN-STREAM-P.
   (call-next-method))
 
 (defmethod close ((stream sub-window) &key abort)
   (declare (ignore abort))
-  (%delwin (winptr stream)))
+  (ncurses:delwin (winptr stream)))
 
 (defmethod close ((stream screen) &key abort)
   (declare (ignore abort))
-  (%endwin))
+  (ncurses:endwin))
 
 (defmethod close ((stream decorated-window) &key abort)
   (declare (ignore abort))
-  (%delwin (winptr (sub-window stream)))
-  (%delwin (winptr stream)))
+  (ncurses:delwin (winptr (sub-window stream)))
+  (ncurses:delwin (winptr stream)))
 
 ;; although it is not a stream, we will abuse close to close a menu's window and subwindow, which _are_ streams.
 (defmethod close ((stream menu-window) &key abort)
   (declare (ignore abort))
-  (%delwin (winptr (sub-window stream)))
-  (%delwin (winptr stream)))
+  (ncurses:delwin (winptr (sub-window stream)))
+  (ncurses:delwin (winptr stream)))
 
 (defmethod close ((stream dialog-window) &key abort)
   (declare (ignore abort))
-  (%delwin (winptr (message-pad stream)))
-  (%delwin (winptr (sub-window stream)))
-  (%delwin (winptr stream)))
+  (ncurses:delwin (winptr (message-pad stream)))
+  (ncurses:delwin (winptr (sub-window stream)))
+  (ncurses:delwin (winptr stream)))
 
 (defmethod close ((stream form-window) &key abort)
   (declare (ignore abort))
-  (%delwin (winptr (sub-window stream)))
-  (%delwin (winptr stream)))
+  (ncurses:delwin (winptr (sub-window stream)))
+  (ncurses:delwin (winptr stream)))
 
 ;; SBCL bug when specializing close on gray streams:
 ;; STYLE-WARNING:

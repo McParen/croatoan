@@ -10,5 +10,5 @@ The position can also be passed in form of a two-element list."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
   (let* ((winptr (winptr window))
-         (chtype (%winch winptr)))
+         (chtype (ncurses:winch winptr)))
     (chtype2xchar chtype)))

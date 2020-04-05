@@ -26,55 +26,55 @@
 (defun set-input-mode (input-buffering process-control-chars)
   (if input-buffering
       ;; to turn on buffering, turn off cbreak or raw
-      (if process-control-chars (%nocbreak) (%noraw))
+      (if process-control-chars (ncurses:nocbreak) (ncurses:noraw))
       ;; to turn off buffering, turn on cbreak or raw
-      (if process-control-chars (%cbreak) (%raw))))
+      (if process-control-chars (ncurses:cbreak) (ncurses:raw))))
 
 ;; Ported to clos, used in clos.
 (defun set-input-blocking (window status)
   "Set window input blocking behavior.
 
 Possible values are t, nil and a blocking duration in (positive integer) miliseconds."
-  (cond ((eq status t) (%wtimeout window -1))
-        ((eq status nil) (%wtimeout window 0))
+  (cond ((eq status t) (ncurses:wtimeout window -1))
+        ((eq status nil) (ncurses:wtimeout window 0))
         ((and (typep status 'integer) (plusp status))
-         (%wtimeout window status))
+         (ncurses:wtimeout window status))
         (t (error "possible blocking states: t, nil, delay in miliseconds"))))
 
 ;; Not used in clos because too simple. obsolete.
 (defun set-input-echoing (flag)
   "Set whether chars will be echoed on input."
   (if flag
-      (%echo)
-      (%noecho)))
+      (ncurses:echo)
+      (ncurses:noecho)))
 
 ;; Not used in clos because too simple. obsolete.
 (defun set-enable-fkeys (window flag)
   "If flag is t, bind function keys to known codes when returned by get-char.
 
 If flag is nil, F keys will be system-dependent multi-character escape codes."
-  (%keypad (winptr window) flag))
+  (ncurses:keypad (winptr window) flag))
 
 ;; Obscure functions I never used before:
 
 (defun flush-on-interrupt (window flag)
-  (%intrflush window flag))
+  (ncurses:intrflush window flag))
 
 (defun enable-8bit-char-input (window flag)
-  (%meta window flag))
+  (ncurses:meta window flag))
 
 (defun io-queue-flush (flag)
   (if flag
-      (%qiflush)
-      (%noqiflush)))
+      (ncurses:qiflush)
+      (ncurses:noqiflush)))
 
 ;; if it would work at all, which it doesnt,
 ;; it would work only for (function-keys win t)
 (defun escape-sequence-delay (window flag)
-  (%notimeout window flag))
+  (ncurses:notimeout window flag))
 
 (defun type-ahead-fd (fd)
-  (%typeahead fd))
+  (ncurses:typeahead fd))
 
 ;;; TODOs
 

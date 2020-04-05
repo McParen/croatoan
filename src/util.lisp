@@ -14,7 +14,7 @@
   (char-to-string (char-code char)))
 
 (defmethod char-to-string ((char integer))
-  (%unctrl char))
+  (ncurses:unctrl char))
 
 (defun string-to-char (str)
   "Take a string representing a character, return the corresponding character.
@@ -61,7 +61,7 @@ See: https://en.wikipedia.org/wiki/Control_character#How_control_characters_map_
   (key-to-string (char-code key)))
 
 (defmethod key-to-string ((key integer))
-  (%keyname key))
+  (ncurses:keyname key))
 
 (defun flush-input ()
   "Throw away any typeahead that has been input by the user and has
@@ -73,11 +73,11 @@ progrem even after the key is released. (That form of intertia can
 happen in games.)
 
 This ncurses function has the same purpose as cl:clear-input."
-  (%flushinp))
+  (ncurses:flushinp))
 
 ;;; NOTES
 
-;; Also see %use-legacy-coding in legacy_coding.lisp.
+;; Also see ncurses:use-legacy-coding in legacy_coding.lisp.
 
 ;;; TODOs
 

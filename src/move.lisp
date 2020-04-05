@@ -8,8 +8,8 @@ If relative is t, move the cursor by y rows and x columns."
     (if relative
         (let ((pos-y (car  (cursor-position window)))
               (pos-x (cadr (cursor-position window))))
-          (%wmove winptr (+ pos-y y) (+ pos-x x)))
-        (%wmove winptr y x))))
+          (ncurses:wmove winptr (+ pos-y y) (+ pos-x x)))
+        (ncurses:wmove winptr y x))))
 
 (defun goto (win &rest positions)
   "Move cursor to the window position given as a two-element list (y x).
@@ -56,5 +56,5 @@ If relative is t, move the window by y rows and x columns."
     (if relative
         (let ((pos-y (car  (window-position window)))
               (pos-x (cadr (window-position window))))
-          (%mvwin winptr (+ pos-y y) (+ pos-x x)))
-        (%mvwin winptr y x))))
+          (ncurses:mvwin winptr (+ pos-y y) (+ pos-x x)))
+        (ncurses:mvwin winptr y x))))

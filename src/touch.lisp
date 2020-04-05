@@ -5,7 +5,7 @@
 
 Makes it possible to raise unchanged overlapping windows by refreshing."
   (let ((winptr (winptr window)))
-    (%touchwin winptr)))
+    (ncurses:touchwin winptr)))
 
 ;;; TODOs
 

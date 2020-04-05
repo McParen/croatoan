@@ -3,17 +3,16 @@
   :author "Anton Vidovic <anton.vidovic@gmx.de>"
   :licence "MIT"
   :version "0.0.1"
-  :depends-on (:cffi :croatoan-ncurses :trivial-gray-streams :bordeaux-threads)
+  :depends-on (:croatoan-ncurses :trivial-gray-streams :bordeaux-threads)
   :pathname "src/"
   :components
-  
+
   ((:file "package")
    (:file "classes")
    (:file "queue")            ; simple thread-safe queue
    (:file "croatoan")         ; macros, event handling
    (:file "gray_streams")
    (:file "utf8")
-   (:file "util")             ; miscellaneous utils
 
    ;; Ncurses core functions
    (:file "addch")
@@ -49,6 +48,7 @@
    (:file "panel")
    (:file "refresh")
    (:file "touch")
+   (:file "util")             ; miscellaneous utils
    (:file "wresize")
    
    ;; Extension libraries

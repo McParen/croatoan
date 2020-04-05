@@ -14,6 +14,6 @@ there first."
   (let ((winptr (winptr window)))
     (cffi:with-foreign-pointer-as-string (string n)
       (cond ((and y x)
-             (%mvwgetnstr winptr y x string n))
+             (ncurses:mvwgetnstr winptr y x string n))
             (t
-             (%wgetnstr winptr string n))))))
+             (ncurses:wgetnstr winptr string n))))))

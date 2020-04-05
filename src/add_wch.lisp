@@ -38,12 +38,12 @@ as will fit on the line."
 
 cchar_t is a C struct representing a wide complex-char in ncurses.
 
-This function is a wrapper around %setcchar and should not be used elsewhere."
-  (cffi:with-foreign-objects ((ptr '(:struct cchar_t))
-                              (wch 'wchar_t 5))
-    (dotimes (i 5) (setf (cffi:mem-aref wch 'wchar_t i) 0))
-    (setf (cffi:mem-aref wch 'wchar_t) char)
-    (%setcchar ptr wch attr_t color-pair-number (cffi:null-pointer))
+This function is a wrapper around setcchar and should not be used elsewhere."
+  (cffi:with-foreign-objects ((ptr '(:struct ncurses:cchar_t))
+                              (wch 'ncurses:wchar_t 5))
+    (dotimes (i 5) (setf (cffi:mem-aref wch 'ncurses:wchar_t i) 0))
+    (setf (cffi:mem-aref wch 'ncurses:wchar_t) char)
+    (ncurses:setcchar ptr wch attr_t color-pair-number (cffi:null-pointer))
     (if (= count 1)
         (funcall fn winptr ptr)
         (dotimes (i count) (funcall fn winptr ptr)) )))
@@ -90,8 +90,8 @@ If char is a complex char, attributes and color-pair are ignored."
         ;; we just need the pair number here, NOT the bit-shifted color attribute.
         ;; we need the color attribute for chtypes.
         (color-pair-number
-         (if (or (eq fn #'%wbkgrnd)
-                 (eq fn #'%wbkgrndset))
+         (if (or (eq fn #'ncurses:wbkgrnd)
+                 (eq fn #'ncurses:wbkgrndset))
              ;; when setting the background, do not complete using the windows color pair and background
              ;; just complete from the default pair
              (pair-to-number (complete-default-pair (typecase char
@@ -107,7 +107,7 @@ If char is a complex char, attributes and color-pair are ignored."
                        n)
                    1)))
     ;; After the parameters are assembled, call the lower-level function that actually
-    ;; uses %setcchar to create a cchar_t pointer and passes it to fn.
+    ;; uses setcchar to create a cchar_t pointer and passes it to fn.
     (funcall-make-cchar_t-ptr fn winptr ch attr_t color-pair-number count)))
 
 (defun add-wide-char (window char &key attributes fgcolor bgcolor color-pair style y x position n)
@@ -134,7 +134,7 @@ If a style is passed, it overrides attributes and color-pair."
                           ((or fgcolor bgcolor)
                            (list fgcolor bgcolor))
                           (t color-pair))))
-    (funcall-make-cchar_t #'%wadd-wch window char attributes color-pair n)))
+    (funcall-make-cchar_t #'ncurses:wadd-wch window char attributes color-pair n)))
 
 (defun echo-wide-char (window char &key attributes fgcolor bgcolor color-pair style y x position)
   "Add one wide (multi-byte) character to the window, then refresh the window.
@@ -152,8 +152,8 @@ character."
   (let ((count 1)
         ;; for some reason, there is a special echo function for pads.
         (fn (typecase window
-              (pad #'%pecho-wchar)
-              (window #'%wecho-wchar)))
+              (pad #'ncurses:pecho-wchar)
+              (window #'ncurses:wecho-wchar)))
         (attributes (if style
                         (getf style :attributes)
                         attributes))

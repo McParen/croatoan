@@ -76,7 +76,7 @@ CL-USER>
 
 ;; Returns the column number where the next character would be written, i.e. the current x position
 (defmethod stream-line-column ((stream window))
-  (%getcurx (winptr stream)))
+  (ncurses:getcurx (winptr stream)))
 
 ;;; Non-mandatory methods
 
@@ -87,9 +87,9 @@ CL-USER>
 (defmethod stream-write-string ((stream window) (str-orig string) &optional (start 0) (end nil))
   ;; TODO: either do something with start and end, or (declare (ignore start end))
   (let ((str (subseq str-orig start end)))
-    ;; TODO: we can not combine %wadd-wch and %waddstr
+    ;; TODO: we can not combine ncurses:wadd-wch and ncurses:waddstr
     ;; TODO: writing a normal string waddstr on a wide cchar background causes an SB-KERNEL::CONTROL-STACK-EXHAUSTED-ERROR
-    (%waddstr (winptr stream) str)))
+    (ncurses:waddstr (winptr stream) str)))
 |#
 
 ;;; Character Input Stream
@@ -100,7 +100,7 @@ CL-USER>
   (code-char (get-wide-char stream)))
 
 (defmethod stream-unread-char ((stream window) (ch character))
-  (%unget-wch (char-code ch)))
+  (ncurses:unget-wch (char-code ch)))
 
 ;;;; libncurses, non-wide IO 
 
@@ -114,18 +114,18 @@ CL-USER>
 ;;        (winptr (winptr stream)))
 ;;    (if (insert-mode-p stream)
 ;;        (progn
-;;          (%winsch winptr code)
+;;          (ncurses:winsch winptr code)
 ;;          ;; move the cursor after the inserted character.
 ;;          (move-to stream :right))
-;;        (%waddch winptr code))))
+;;        (ncurses:waddch winptr code))))
 
 ;; write-char, format ~C
 ;;(defmethod stream-write-char ((stream window) (ch complex-char))
-;;  (%waddch (winptr stream) (x2c ch)))
+;;  (ncurses:waddch (winptr stream) (x2c ch)))
 
 ;; print, prin1, princ, format ~A, ~S
 ;;(defmethod print-object ((ch complex-char) (stream window))
-;;  (%waddch (winptr stream) (x2c ch)))
+;;  (ncurses:waddch (winptr stream) (x2c ch)))
 ;;
 ;;(defmethod print-object ((cstr complex-string) stream)
 ;;  (loop for ch across (complex-char-array cstr)
@@ -137,25 +137,25 @@ CL-USER>
 
 ;; Returns the column number where the next character would be written, i.e. the current y position
 ;;(defmethod stream-line-column ((stream window))
-;;  (%getcurx (winptr stream)))
+;;  (ncurses:getcurx (winptr stream)))
 
 ;;; Non-mandatory methods
 
 ;; Default method uses repeated calls to stream-write-char
 ;;(defmethod stream-write-string ((stream window) (str string) &optional (start 0) (end nil))
 ;;  ;; TODO: either do something with start and end, or (declare (ignore start end))
-;;  (%waddstr (winptr stream) str))
+;;  (ncurses:waddstr (winptr stream) str))
 
 ;;; Character Input Stream
 
 ;;(defmethod stream-read-char ((stream window))
-;;  (code-char (%wgetch (winptr stream))))
+;;  (code-char (ncurses:wgetch (winptr stream))))
 
 ;;(defmethod stream-read-char-no-hang ((stream window))
-;; %wgetch wie bei read-char, nur muss input-blocking nil sein.
+;; ncurses:wgetch wie bei read-char, nur muss input-blocking nil sein.
 
 ;;(defmethod stream-unread-char ((stream window) (ch character))
-;;  (%ungetch (char-code ch)))
+;;  (ncurses:ungetch (char-code ch)))
 
 ;; listen = read-char-no-hang + unread
 ;;(defmethod stream-listen ((stream window))

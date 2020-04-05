@@ -1498,8 +1498,8 @@ Tested with xterm, gnome-terminal, st. Doesn't work in the linux console, aterm,
 Only the chars 33 to 126 are graphic, and not all are accessible through the
 keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr)
-    (let* ((ptr (foreign-symbol-pointer "acs_map"))
-           (code (mem-aref ptr :unsigned-int (char-code #\l))))
+    (let* ((ptr (cffi:foreign-symbol-pointer "acs_map"))
+           (code (cffi:mem-aref ptr :unsigned-int (char-code #\l))))
       (format scr "~A ~A ~A ~A " #\l (char-code #\l) (acs :upper-left-corner) code)
       ;; l 108 4194412 4194412 ***
       ;; 4194412 is nothing more than 108 with the A_ALTCHARSET bit turned on.
@@ -1514,7 +1514,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (add-char scr #\space))
       (terpri scr)
       (loop for i from 33 to 126 do
-           (add-char scr (mem-aref ptr :unsigned-int i))
+           (add-char scr (cffi:mem-aref ptr :unsigned-int i))
            (add-char scr #\space))
       (refresh scr)
       (get-char scr))))
@@ -1539,11 +1539,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (let ((scr (make-instance 'screen :input-echoing nil :input-blocking t :enable-function-keys t)))
     (unwind-protect
          (progn
-           (%mousemask #b00000111111111111111111111111111 (null-pointer)) ; activate all mouse events.
+           (ncurses:mousemask #b00000111111111111111111111111111 (cffi:null-pointer)) ; activate all mouse events.
            (get-char scr) ; here you have to click to generate a mouse event.
-           (with-foreign-object (me '(:struct mevent)) ; create a pointer to the struct mevent.
-             (%getmouse me) ; save the mouse event struct to the pointed position.
-             (princ (mem-ref me '(:struct mevent)) scr) ; dereference the pointer, return a plist of the struct.
+           (cffi:with-foreign-object (me '(:struct ncurses:mevent)) ; create a pointer to the struct mevent.
+             (ncurses:getmouse me) ; save the mouse event struct to the pointed position.
+             (princ (cffi:mem-ref me '(:struct ncurses:mevent)) scr) ; dereference the pointer, return a plist of the struct.
              (get-char scr)))
       (close scr))))
 
@@ -1571,7 +1571,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t14c ()
   "Print all mouse events."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
-    (%mousemask #b00000111111111111111111111111111 (null-pointer))
+    (ncurses:mousemask #b00000111111111111111111111111111 (cffi:null-pointer))
     (event-case (scr event y x)
       (#\q (return-from event-case))
       (t (format scr "~3A ~3A ~A~%" y x event)) )))
@@ -1587,7 +1587,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                (:resize (move scr 1 0)
                         (format scr "~A Y lines x ~A X columns." (height scr) (width scr))
                         ;; the environment variables get updated on a resize event too.
-                        (format scr "~%~A Y lines x ~A X cols." %LINES %COLS)
+                        (format scr "~%~A Y lines x ~A X cols." ncurses:LINES ncurses:COLS)
                         (refresh scr))
                (#\q (return)))
              (progn
@@ -2270,14 +2270,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (format scr "Software version (OS)        ~A~%" (software-version))
     (format scr "Machine instance (hostname)  ~A~%" (machine-instance))
     (format scr "User HOME                    ~A~%" (user-homedir-pathname))
-    (format scr "Ncurses version:             ~A~%" (de.anvi.ncurses:%curses-version))
-    (format scr "Terminal:                    ~A~%" (%termname))
-    (format scr "Colors supported:            ~A~%" (%has-colors))
-    (format scr "Color change supported:      ~A~%" (%can-change-color))
-    (format scr "No of supported colors:      ~A~%" %colors)
-    (format scr "No of supported color pairs  ~A~%" %color-pairs)
-    (format scr "Can insert/delete chars:     ~A~%" (%has-ic))
-    (format scr "Can insert/delete lines:     ~A~%" (%has-il))
+    (format scr "Ncurses version:             ~A~%" (ncurses:curses-version))
+    (format scr "Ncurses name:                ~A~%" ncurses:*library-name*)
+    (format scr "Ncurses file name:           ~A~%" ncurses:*library-file-name*)
+    (format scr "Terminal:                    ~A~%" (ncurses:termname))
+    (format scr "Colors supported:            ~A~%" (ncurses:has-colors))
+    (format scr "Color change supported:      ~A~%" (ncurses:can-change-color))
+    (format scr "No of supported colors:      ~A~%" ncurses:colors)
+    (format scr "No of supported color pairs  ~A~%" ncurses:color-pairs)
+    (format scr "Can insert/delete chars:     ~A~%" (ncurses:has-ic))
+    (format scr "Can insert/delete lines:     ~A~%" (ncurses:has-il))
     #+sbcl
     (progn
       (format scr "Terminal:                    ~A~%" (sb-ext:posix-getenv "TERM"))

@@ -25,7 +25,7 @@ If n is given, insert n chars."
                           ((or fgcolor bgcolor)
                            (list fgcolor bgcolor))
                           (t color-pair))))
-    (funcall-make-cchar_t #'%wins-wch window char attributes color-pair n)))
+    (funcall-make-cchar_t #'ncurses:wins-wch window char attributes color-pair n)))
 
 ;; TODO: (defmethod insert (obj character))
 ;;       (defmethod insert (obj string)) etc.

@@ -70,7 +70,7 @@
   "Take a list of mouse events, activate tracking of those events.
 
 Returns an integer bitmask. An empty list turns off mouse tracking."
-  (%mousemask (keyword-to-bitmask keyword-list) (cffi:null-pointer)))
+  (ncurses:mousemask (keyword-to-bitmask keyword-list) (cffi:null-pointer)))
 
 ;; decode and return the mouse event struct as multiple values:
 ;; mouse event keyword, y coordinate integer, x coordinate integer
@@ -79,9 +79,9 @@ Returns an integer bitmask. An empty list turns off mouse tracking."
            ;; mem-ref returns a struct as a symbol plist.
            ;; we have to convert the symbols to keywords to transport them across packages.
            (loop for i in plist collect (if (symbolp i) (values (intern (symbol-name i) "KEYWORD")) i))))
-    (cffi:with-foreign-object (ptr '(:struct mevent))
-      (%getmouse ptr)
-      (let* ((struct (plist-symbols-to-keywords (cffi:mem-ref ptr '(:struct mevent))))
+    (cffi:with-foreign-object (ptr '(:struct ncurses:mevent))
+      (ncurses:getmouse ptr)
+      (let* ((struct (plist-symbols-to-keywords (cffi:mem-ref ptr '(:struct ncurses:mevent))))
              (x (getf struct :x))
              (y (getf struct :y))
              (b (getf struct :bstate))
