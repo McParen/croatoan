@@ -13,7 +13,7 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("ins_wch"    %ins-wch)    :int                                (wch (:pointer (:struct cchar_t))))
-(cffi:defcfun ("wins_wch"   %wins-wch)   :int (win window)                   (wch (:pointer (:struct cchar_t))))
-(cffi:defcfun ("mvins_wch"  %mvins-wch)  :int              (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
-(cffi:defcfun ("mvwins_wch" %mvwins-wch) :int (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("ins_wch"    ins-wch)    :int                                (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("wins_wch"   wins-wch)   :int (win window)                   (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("mvins_wch"  mvins-wch)  :int              (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("mvwins_wch" mvwins-wch) :int (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))))

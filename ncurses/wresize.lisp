@@ -10,4 +10,4 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("wresize" %wresize) :int (win window) (lines :int) (columns :int))
+(cffi:defcfun ("wresize" wresize) :int (win window) (lines :int) (columns :int))

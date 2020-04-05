@@ -23,7 +23,7 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("border_set" %border-set) :int 
+(cffi:defcfun ("border_set" border-set) :int 
   (ls (:pointer (:struct cchar_t))) 
   (rs (:pointer (:struct cchar_t))) 
   (ts (:pointer (:struct cchar_t))) 
@@ -33,7 +33,7 @@
   (bl (:pointer (:struct cchar_t))) 
   (br (:pointer (:struct cchar_t))))
 
-(cffi:defcfun ("wborder_set" %wborder-set) :int 
+(cffi:defcfun ("wborder_set" wborder-set) :int 
   (win window)
   (ls (:pointer (:struct cchar_t)))
   (rs (:pointer (:struct cchar_t)))
@@ -44,17 +44,17 @@
   (bl (:pointer (:struct cchar_t)))
   (br (:pointer (:struct cchar_t))))
 
-(cffi:defcfun ("box_set" %box-set) :int
+(cffi:defcfun ("box_set" box-set) :int
   (win window)
   (verch (:pointer (:struct cchar_t)))
   (horch (:pointer (:struct cchar_t))))
 
-(cffi:defcfun ("hline_set"    %hline-set)    :int                                (wch (:pointer (:struct cchar_t))) (n :int))
-(cffi:defcfun ("whline_set"   %whline-set)   :int (win window)                   (wch (:pointer (:struct cchar_t))) (n :int))
-(cffi:defcfun ("mvhline_set"  %mvhline-set)  :int              (y :int) (x :int) (wch (:pointer (:struct cchar_t))) (n :int))
-(cffi:defcfun ("mvwhline_set" %mvwhline-set) :int (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))) (n :int))
+(cffi:defcfun ("hline_set"    hline-set)    :int                                (wch (:pointer (:struct cchar_t))) (n :int))
+(cffi:defcfun ("whline_set"   whline-set)   :int (win window)                   (wch (:pointer (:struct cchar_t))) (n :int))
+(cffi:defcfun ("mvhline_set"  mvhline-set)  :int              (y :int) (x :int) (wch (:pointer (:struct cchar_t))) (n :int))
+(cffi:defcfun ("mvwhline_set" mvwhline-set) :int (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))) (n :int))
 
-(cffi:defcfun ("vline_set"    %vline-set)    :int                                (wch (:pointer (:struct cchar_t))) (n :int))
-(cffi:defcfun ("wvline_set"   %wvline-set)   :int (win window)                   (wch (:pointer (:struct cchar_t))) (n :int))
-(cffi:defcfun ("mvvline_set"  %mvvline-set)  :int              (y :int) (x :int) (wch (:pointer (:struct cchar_t))) (n :int))
-(cffi:defcfun ("mvwvline_set" %mvwvline-set) :int (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))) (n :int))
+(cffi:defcfun ("vline_set"    vline-set)    :int                                (wch (:pointer (:struct cchar_t))) (n :int))
+(cffi:defcfun ("wvline_set"   wvline-set)   :int (win window)                   (wch (:pointer (:struct cchar_t))) (n :int))
+(cffi:defcfun ("mvvline_set"  mvvline-set)  :int              (y :int) (x :int) (wch (:pointer (:struct cchar_t))) (n :int))
+(cffi:defcfun ("mvwvline_set" mvwvline-set) :int (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))) (n :int))

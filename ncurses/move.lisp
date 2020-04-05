@@ -12,5 +12,5 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("move"  %move)  :int              (y :int) (x :int))
-(cffi:defcfun ("wmove" %wmove) :int (win window) (y :int) (x :int))
+(cffi:defcfun ("move"  move)  :int              (y :int) (x :int))
+(cffi:defcfun ("wmove" wmove) :int (win window) (y :int) (x :int))

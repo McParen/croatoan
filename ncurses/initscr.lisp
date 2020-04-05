@@ -16,9 +16,9 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("initscr"   %initscr)   window)
-(cffi:defcfun ("endwin"    %endwin)    :int)
-(cffi:defcfun ("isendwin"  %isendwin)  :boolean)
-(cffi:defcfun ("newterm"   %newterm)   screen    (type :string) (outfd file) (infd file))
-(cffi:defcfun ("set_term"  %set-term)  screen    (new screen))
-(cffi:defcfun ("delscreen" %delscreen) :void     (sp screen))
+(cffi:defcfun ("initscr"   initscr)   window)
+(cffi:defcfun ("endwin"    endwin)    :int)
+(cffi:defcfun ("isendwin"  isendwin)  :boolean)
+(cffi:defcfun ("newterm"   newterm)   screen    (type :string) (outfd file) (infd file))
+(cffi:defcfun ("set_term"  set-term)  screen    (new screen))
+(cffi:defcfun ("delscreen" delscreen) :void     (sp screen))

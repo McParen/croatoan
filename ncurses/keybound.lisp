@@ -10,4 +10,4 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("keybound" %keybound) :string (keycode :int) (count :int))
+(cffi:defcfun ("keybound" keybound) :string (keycode :int) (count :int))

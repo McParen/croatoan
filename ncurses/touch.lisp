@@ -16,10 +16,10 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("touchwin"       %touchwin)       :int     (win window))
-(cffi:defcfun ("touchline"      %touchline)      :int     (win window) (start :int) (count :int))
-(cffi:defcfun ("untouchwin"     %untouchwin)     :int     (win window))
-(cffi:defcfun ("wtouchln"       %wtouchln)       :int     (win window) (y :int) (n :int) (changed :int))
+(cffi:defcfun ("touchwin"       touchwin)       :int     (win window))
+(cffi:defcfun ("touchline"      touchline)      :int     (win window) (start :int) (count :int))
+(cffi:defcfun ("untouchwin"     untouchwin)     :int     (win window))
+(cffi:defcfun ("wtouchln"       wtouchln)       :int     (win window) (y :int) (n :int) (changed :int))
 
-(cffi:defcfun ("is_linetouched" %is-linetouched) :boolean (win window) (line :int))
-(cffi:defcfun ("is_wintouched"  %is-wintouched)  :boolean (win window))
+(cffi:defcfun ("is_linetouched" is-linetouched) :boolean (win window) (line :int))
+(cffi:defcfun ("is_wintouched"  is-wintouched)  :boolean (win window))

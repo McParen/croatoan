@@ -15,10 +15,10 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("add_wch"     %add-wch)     :int                                 (wch (:pointer (:struct cchar_t))))
-(cffi:defcfun ("wadd_wch"    %wadd-wch)    :int  (win window)                   (wch (:pointer (:struct cchar_t))))
-(cffi:defcfun ("mvadd_wch"   %mvadd-wch)   :int               (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
-(cffi:defcfun ("mvwadd_wch"  %mvwadd-wch)  :int  (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("add_wch"     add-wch)     :int                                 (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("wadd_wch"    wadd-wch)    :int  (win window)                   (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("mvadd_wch"   mvadd-wch)   :int               (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("mvwadd_wch"  mvwadd-wch)  :int  (win window) (y :int) (x :int) (wch (:pointer (:struct cchar_t))))
 
-(cffi:defcfun ("echo_wchar"  %echo-wchar)  :int                                 (wch (:pointer (:struct cchar_t))))
-(cffi:defcfun ("wecho_wchar" %wecho-wchar) :int  (win window)                   (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("echo_wchar"  echo-wchar)  :int                                 (wch (:pointer (:struct cchar_t))))
+(cffi:defcfun ("wecho_wchar" wecho-wchar) :int  (win window)                   (wch (:pointer (:struct cchar_t))))

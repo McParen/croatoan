@@ -13,7 +13,7 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("delch"     %delch)    :int)
-(cffi:defcfun ("wdelch"    %wdelch)   :int (win window))
-(cffi:defcfun ("mvdelch"   %mvdelch)  :int              (y :int) (x :int))
-(cffi:defcfun ("mvwdelch"  %mvwdelch) :int (win window) (y :int) (x :int))
+(cffi:defcfun ("delch"     delch)    :int)
+(cffi:defcfun ("wdelch"    wdelch)   :int (win window))
+(cffi:defcfun ("mvdelch"   mvdelch)  :int              (y :int) (x :int))
+(cffi:defcfun ("mvwdelch"  mvwdelch) :int (win window) (y :int) (x :int))

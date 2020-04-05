@@ -11,5 +11,5 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("use_default_colors"    %use-default-colors)    :int)
-(cffi:defcfun ("assume_default_colors" %assume-default-colors) :int (fg :int) (bg :int))
+(cffi:defcfun ("use_default_colors"    use-default-colors)    :int)
+(cffi:defcfun ("assume_default_colors" assume-default-colors) :int (fg :int) (bg :int))

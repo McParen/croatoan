@@ -17,11 +17,11 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("getstr"     %getstr)     :int                                (str :string))
-(cffi:defcfun ("getnstr"    %getnstr)    :int                                (str :string) (n :int))
-(cffi:defcfun ("wgetstr"    %wgetstr)    :int (win window)                   (str :string))
-(cffi:defcfun ("wgetnstr"   %wgetnstr)   :int (win window)                   (str :string) (n :int))
-(cffi:defcfun ("mvgetstr"   %mvgetstr)   :int              (y :int) (x :int) (str :string))
-(cffi:defcfun ("mvgetnstr"  %mvgetnstr)  :int              (y :int) (x :int) (str :string) (n :int))
-(cffi:defcfun ("mvwgetstr"  %mvwgetstr)  :int (win window) (y :int) (x :int) (str :string))
-(cffi:defcfun ("mvwgetnstr" %mvwgetnstr) :int (win window) (y :int) (x :int) (str :string) (n :int))
+(cffi:defcfun ("getstr"     getstr)     :int                                (str :string))
+(cffi:defcfun ("getnstr"    getnstr)    :int                                (str :string) (n :int))
+(cffi:defcfun ("wgetstr"    wgetstr)    :int (win window)                   (str :string))
+(cffi:defcfun ("wgetnstr"   wgetnstr)   :int (win window)                   (str :string) (n :int))
+(cffi:defcfun ("mvgetstr"   mvgetstr)   :int              (y :int) (x :int) (str :string))
+(cffi:defcfun ("mvgetnstr"  mvgetnstr)  :int              (y :int) (x :int) (str :string) (n :int))
+(cffi:defcfun ("mvwgetstr"  mvwgetstr)  :int (win window) (y :int) (x :int) (str :string))
+(cffi:defcfun ("mvwgetnstr" mvwgetnstr) :int (win window) (y :int) (x :int) (str :string) (n :int))

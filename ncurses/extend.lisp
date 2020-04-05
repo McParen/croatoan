@@ -11,5 +11,5 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("curses_version"     %curses-version)     :string)
-(cffi:defcfun ("use_extended_names" %use-extended-names) :int (enable :boolean))
+(cffi:defcfun ("curses_version"     curses-version)     :string)
+(cffi:defcfun ("use_extended_names" use-extended-names) :int (enable :boolean))

@@ -20,12 +20,12 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("baudrate"   %baudrate)    :int)
-(cffi:defcfun ("erasechar"  %erasechar)   :char)
-(cffi:defcfun ("has_ic"     %has-ic)      :boolean)
-(cffi:defcfun ("has_il"     %has-il)      :boolean)
-(cffi:defcfun ("killchar"   %killchar)    :char)
-(cffi:defcfun ("longname"   %longname)    :string)
-(cffi:defcfun ("term_attrs" %term-attrs)  attr)
-(cffi:defcfun ("termattrs"  %termattrs)   chtype)
-(cffi:defcfun ("termname"   %termname)    :string)
+(cffi:defcfun ("baudrate"   baudrate)    :int)
+(cffi:defcfun ("erasechar"  erasechar)   :char)
+(cffi:defcfun ("has_ic"     has-ic)      :boolean)
+(cffi:defcfun ("has_il"     has-il)      :boolean)
+(cffi:defcfun ("killchar"   killchar)    :char)
+(cffi:defcfun ("longname"   longname)    :string)
+(cffi:defcfun ("term_attrs" term-attrs)  attr)
+(cffi:defcfun ("termattrs"  termattrs)   chtype)
+(cffi:defcfun ("termname"   termname)    :string)

@@ -15,11 +15,11 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("addch"     %addch)     :int (ch chtype))
-(cffi:defcfun ("waddch"    %waddch)    :int (win window) (ch chtype))
+(cffi:defcfun ("addch"     addch)     :int (ch chtype))
+(cffi:defcfun ("waddch"    waddch)    :int (win window) (ch chtype))
 
-(cffi:defcfun ("mvaddch"   %mvaddch)   :int (y :int) (x :int) (ch chtype))
-(cffi:defcfun ("mvwaddch"  %mvwaddch)  :int (win window) (y :int) (x :int) (ch chtype))
+(cffi:defcfun ("mvaddch"   mvaddch)   :int (y :int) (x :int) (ch chtype))
+(cffi:defcfun ("mvwaddch"  mvwaddch)  :int (win window) (y :int) (x :int) (ch chtype))
 
-(cffi:defcfun ("echochar"  %echochar)  :int (ch chtype))
-(cffi:defcfun ("wechochar" %wechochar) :int (win window) (ch chtype))
+(cffi:defcfun ("echochar"  echochar)  :int (ch chtype))
+(cffi:defcfun ("wechochar" wechochar) :int (win window) (ch chtype))

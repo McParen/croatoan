@@ -11,5 +11,5 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("beep"  %beep)  :int)
-(cffi:defcfun ("flash" %flash) :int)
+(cffi:defcfun ("beep"  beep)  :int)
+(cffi:defcfun ("flash" flash) :int)

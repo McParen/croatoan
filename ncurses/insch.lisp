@@ -13,7 +13,7 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("insch"    %insch)    :int                                (ch chtype))
-(cffi:defcfun ("winsch"   %winsch)   :int (win window)                   (ch chtype))
-(cffi:defcfun ("mvinsch"  %mvinsch)  :int              (y :int) (x :int) (ch chtype))
-(cffi:defcfun ("mvwinsch" %mvwinsch) :int (win window) (y :int) (x :int) (ch chtype))
+(cffi:defcfun ("insch"    insch)    :int                                (ch chtype))
+(cffi:defcfun ("winsch"   winsch)   :int (win window)                   (ch chtype))
+(cffi:defcfun ("mvinsch"  mvinsch)  :int              (y :int) (x :int) (ch chtype))
+(cffi:defcfun ("mvwinsch" mvwinsch) :int (win window) (y :int) (x :int) (ch chtype))
