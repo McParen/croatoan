@@ -115,18 +115,27 @@
     (wgetch scr)
     (endwin)))
 
-(defun ut05 ()
+;; 126 works 7bit
+;; 161 doesn't work 8bit
+;; #x2592 doesn't work wide char
+(defun ut05 (&optional (n #x2592))
   "Minimal example of creating a cchar and setting it as a window background."
+
+  ;; char* setlocale (int category, const char* locale);
+  (cffi:defcfun ("setlocale" setlocale) :string (category :int) (locale :string))
+
+  ;; call setlocale explicitly even though it is called by sbcl_main in
+  ;; sbcl-2.0.2/src/runtime/runtime.c 
+  (setlocale 6 "")
+  
   (let ((scr (initscr)))
+
     (cffi:with-foreign-objects ((ptr '(:struct cchar_t))
                                 (wch 'wchar_t 5))
       (dotimes (i 5)
         (setf (cffi:mem-aref wch 'wchar_t i) 0))
 
-      ;; 126 works 7bit
-      ;; 161 doesnt work 8bit
-      ;;(setf (cffi:mem-aref wch 'wchar_t 0) #x2592)
-      (setf (cffi:mem-aref wch 'wchar_t 0) 126)
+      (setf (cffi:mem-aref wch 'wchar_t 0) n)
       
       (setcchar ptr wch 0 0 (cffi:null-pointer))
 
