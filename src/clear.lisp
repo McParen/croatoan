@@ -21,7 +21,7 @@ of the current line.
 If target is :bottom, clear the window from the cursor to the end of
 the current line and all lines below."
   (let ((winptr (winptr window)))
-    (case target
+    (ecase target
       (:window (if redraw (ncurses:wclear winptr) (ncurses:werase winptr)))
       (:end-of-line (ncurses:wclrtoeol winptr))
       (:bottom (ncurses:wclrtobot winptr)))))
