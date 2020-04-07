@@ -60,4 +60,6 @@
    (:file "util")             ; miscellaneous curses utility routines
    (:file "variables")        ; curses global variables
    (:file "window")           ; create curses windows
-   (:file "wresize")))        ; resize a curses window
+   (:file "wresize")          ; resize a curses window
+
+   (:file "libc")))           ; setlocale

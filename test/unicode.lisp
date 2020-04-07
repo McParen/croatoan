@@ -121,27 +121,23 @@
 (defun ut05 (&optional (n #x2592))
   "Minimal example of creating a cchar and setting it as a window background."
 
-  ;; char* setlocale (int category, const char* locale);
-  (cffi:defcfun ("setlocale" setlocale) :string (category :int) (locale :string))
+  ;; call setlocale explicitly because it is not called any more by SBCL
+  ;; sbcl-2.0.3/src/runtime/runtime.c 
+  (setlocale +LC-ALL+ "")
 
-  ;; call setlocale explicitly even though it is called by sbcl_main in
-  ;; sbcl-2.0.2/src/runtime/runtime.c 
-  (setlocale 6 "")
-  
   (let ((scr (initscr)))
-
     (cffi:with-foreign-objects ((ptr '(:struct cchar_t))
                                 (wch 'wchar_t 5))
       (dotimes (i 5)
         (setf (cffi:mem-aref wch 'wchar_t i) 0))
-
       (setf (cffi:mem-aref wch 'wchar_t 0) n)
-      
       (setcchar ptr wch 0 0 (cffi:null-pointer))
 
-      ;; TODO 200404 works with ncurses 6.1 but not with 6.2, why???
-      ;; manually replacing wbkgrnd in ~/apps/ncurses-6.2-20200328/ncurses/base/lib_bkgd.c
-      ;; with the 6.1 definition works.      
+      ;; TODO 200404 works with ncurses 6.1 but not with 6.2
+      ;; manually replacing line 209: SetChar2(*cp, CharOf(new_char));
+      ;; with: win->_line[y].text[x] = win->_nc_bkgd;
+      ;; from ncurses 6.1 is an ugly, but working solution for wbkgrnd
+      ;; in ncurses-6.2-20200404/ncurses/base/lib_bkgd.c.
       (wbkgrnd scr ptr)
       
       (wrefresh scr)

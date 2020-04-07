@@ -1131,6 +1131,9 @@ If there is no window asociated with the element, return the window associated w
                       scrolling-enabled-p background input-buffering-p process-control-chars-p) scr
     ;; just for screen window types.
     (when (eq (type-of scr) 'screen)
+      ;; pass the environment locale to the ncurses C library
+      ;; has to be done explicitely since sbcl 2.0.3.
+      (ncurses:setlocale ncurses:+LC-ALL+ "")
       (setf winptr (ncurses:initscr))
       (when colors-enabled-p
         (if (ncurses:has-colors)
