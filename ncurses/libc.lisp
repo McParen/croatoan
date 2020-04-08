@@ -20,4 +20,17 @@
 
 ;; (cffi:defcvar ("LC_ALL" +LC-ALL+ :read-only t) :int)
 ;; ERROR: Trying to access undefined foreign variable "LC_ALL".
-(defconstant +LC-ALL+ 6)
+
+(defconstant +LC-CTYPE+           0)
+(defconstant +LC-NUMERIC+         1)
+(defconstant +LC-TIME+            2)
+(defconstant +LC-COLLATE+         3)
+(defconstant +LC-MONETARY+        4)
+(defconstant +LC-MESSAGES+        5)
+(defconstant +LC-ALL+             6)
+(defconstant +LC-PAPER+           7)
+(defconstant +LC-NAME+            8)
+(defconstant +LC-ADDRESS+         9)
+(defconstant +LC-TELEPHONE+      10)
+(defconstant +LC-MEASUREMENT+    11)
+(defconstant +LC-IDENTIFICATION+ 12)

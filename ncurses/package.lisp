@@ -470,4 +470,19 @@
    ;; wresize / resize a curses window
    wresize
 
+   ;; libc
+   setlocale
+   +LC-CTYPE+
+   +LC-NUMERIC+
+   +LC-TIME+
+   +LC-COLLATE+
+   +LC-MONETARY+      
+   +LC-MESSAGES+
+   +LC-ALL+
+   +LC-PAPER+
+   +LC-NAME+
+   +LC-ADDRESS+
+   +LC-TELEPHONE+
+   +LC-MEASUREMENT+
+   +LC-IDENTIFICATION+
    ))
