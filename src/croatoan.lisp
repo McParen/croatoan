@@ -126,27 +126,28 @@ The main window event loop name is hard coded to event-case to be
 used with return-from.
 
 Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
-  (if (and mouse-y mouse-x)
-      `(loop :named event-case do
-          (multiple-value-bind (,event ,mouse-y ,mouse-x)
-              ;; depending on which version of ncurses is loaded, decide which event reader to use.
-              #+(or sb-unicode unicode openmcl-unicode-strings) (get-wide-event ,window)
-              #-(or sb-unicode unicode openmcl-unicode-strings) (get-event ,window)
+  ;; depending on which version of ncurses is loaded, decide which event reader to use.
+  (let ((get-event-function
+         #+(or sb-unicode unicode openmcl-unicode-strings) ''get-wide-event
+         #-(or sb-unicode unicode openmcl-unicode-strings) ''get-event))
+    (if (and mouse-y mouse-x)
+        ;; when the variables y and x are passed, bind them to the mouse coordinates
+        `(loop :named event-case do
+            (multiple-value-bind (,event ,mouse-y ,mouse-x) (funcall ,get-event-function ,window)
               ;;(print (list ,event mouse-y mouse-x) ,window)
               (when (null ,event)
                 ;; process the contents of the job queue (ncurses access from other threads)
-                (process))          
+                (process))
               (case ,event
                 ,@body)))
-      `(loop :named event-case do
-          ;; depending on which version of ncurses is loaded, decide which event reader to use.
-          (let ((,event #+(or sb-unicode unicode openmcl-unicode-strings) (get-wide-event ,window)
-                        #-(or sb-unicode unicode openmcl-unicode-strings) (get-event ,window)))
-            (when (null ,event)
-              ;; process the contents of the job queue (ncurses access from other threads)
-              (process))
-            (case ,event
-              ,@body)))))
+        ;; default case, no mouse used
+        `(loop :named event-case do
+            (let ((,event (funcall ,get-event-function ,window)))
+              (when (null ,event)
+                ;; process the contents of the job queue (ncurses access from other threads)
+                (process))
+              (case ,event
+                ,@body))))))
 
 (defun bind (object event handler)
   "Bind the handler function to the event in the bindings alist of the object.
