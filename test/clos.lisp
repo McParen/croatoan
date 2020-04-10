@@ -3227,6 +3227,7 @@ Press C-j, C-m, C-i, C-h to see the difference."
                     :input-blocking        t
                     :enable-function-keys  t
                     :cursor-visible        nil)
+    (bind scr "^Q" 'exit-event-loop)
     (bind scr t (lambda (win event)
                   (clear win)
                   (add win "Press C-q to exit." :y 0 :x 0)
@@ -3234,13 +3235,12 @@ Press C-j, C-m, C-i, C-h to see the difference."
                   (cond ((characterp event)
                          (let ((key-decoded  (key-to-string  event))
                                (char-decoded (char-to-string event)))
-                           (format win "event ~a key decoded ~a char decoded ~a" event key-decoded char-decoded)
-                           (when (and char-decoded (string= key-decoded "^Q"))
-                             (exit-event-loop win nil))))
+                           (format win "event ~a key decoded ~a char decoded ~a" event key-decoded char-decoded)))
                         ((function-key-p (key-name-to-code event event))
                          (let ((key-decoded  (key-to-string (key-name-to-code event)))
                                ;; decoding a char when taking a function key returns no useful result
                                (char-decoded (char-to-string (key-name-to-code event))))
+                           (move win 2 0)
                            (format win "event ~a key decoded ~a char decoded ~a" event key-decoded char-decoded)))
                         ((numberp event)
                          (format win "Unknown keycode ~a" event))
