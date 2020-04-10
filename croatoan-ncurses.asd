@@ -3,11 +3,13 @@
   :author "Anton Vidovic <anton.vidovic@gmx.de>"
   :licence "MIT"
   :version "0.0.1"
+  :defsystem-depends-on ("cffi-grovel")
   :depends-on (:cffi)
   :pathname "ncurses/"
   :components
 
   ((:file "package")
+   (:cffi-grovel-file "grovel")
    (:file "ncurses")          ; library file names, ncurses file types
 
    (:file "addch")            ; add a character (with attributes) to a curses window, then advance the cursor
