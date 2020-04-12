@@ -3048,6 +3048,39 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     (run-event-loop scr)))
 
+(defun t28b-show-bindings (win event)
+  (format win "~S" (bindings (find-keymap (keymap win)))))
+
+;; defines and centrally registers a keymap
+(define-keymap t28b-map
+  (#\q 'exit-event-loop)
+  (#\a 't28-hello)
+  (#\d 't28-clear)
+  ("^B" 't28b-show-bindings))
+
+(defun t28b ()
+  "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
+  (with-screen (scr :input-echoing nil :input-blocking t)
+    ;; add the separately defined keymap to the window object.
+    (setf (keymap scr) 't28b-map)
+
+    ;; add another event handler to the window not to the external keymap
+    ;; Object-local bindings override the external keymap. The local bindings
+    ;; are checked first for a handler, then the external keymap.
+    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
+    
+    ;; t is the default handler for all events without defined handlers.
+    ;; The default event handler should not be used to handle the nil event when input-blocking is nil
+    (bind (find-keymap 't28b-map) t (lambda (win event) (format win "Default event handler ~A~%" event)))
+
+    (clear scr)
+    (add-string scr "Type a, s or d. Type q to quit.")
+    (refresh scr)
+
+    ;; see waiting (input-blocking t) vs polling (input-blocking nil)
+    ;; http://www.meandmark.com/sdlopenglpart6.html
+    (run-event-loop scr)))
+
 (defun draw-t29-shapes (window shapes &optional squarify)
   "Draw a list of shapes to window."
   (clear window)

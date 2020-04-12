@@ -152,6 +152,8 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
 (defun bind (object event handler)
   "Bind the handler function to the event in the bindings alist of the object.
 
+The object can be a croatoan object (like window or form) or a keymap.
+
 If event is a list of events, bind the handler to each event separately.
 
 The handlers will be called by the run-event-loop when keyboard or mouse events occur.
@@ -204,10 +206,36 @@ If event is a list of events, remove each event separately from the alist."
 
 (defparameter *keymaps* nil "An alist of available keymaps.")
 
-(defun define-keymap (name plist)
-  "Register a keymap given by a name and a plist of keys and functions."
-  (let ((keymap (make-instance 'keymap :bindings-plist plist)))
-    (setf *keymaps* (acons name keymap *keymaps*))))
+(defmacro define-keymap (name &body body)
+  "A convenience macro to register a keymap given its name and (key function) pairs.
+
+As with bind, the keys can be characters, two-char strings in caret notation for
+control chars and keywords for function keys."
+  `(progn
+     (setf *keymaps* (acons ',name (make-instance 'keymap) *keymaps*))
+     (%defcdr (bindings (cdr (assoc ',name *keymaps*))) ,@body)))
+
+;; take an alist and populate it with key-value pairs given in the body
+(defmacro %defcdr (alist &body body)
+  (when (car body)
+    `(progn
+       (%defcar ,alist ,(car body))
+       (%defcdr ,alist ,@(cdr body)))))
+
+;; add a single key-value cons to the alist
+;; convert symbols to function objects
+;; convert caret notation strings to control chars
+(defmacro %defcar (alist (k v))
+  `(cond ((and (symbolp ,v) (fboundp ,v))
+          (if (stringp ,k)
+              (push (cons (string-to-char ,k) (fdefinition ,v)) ,alist)
+              (push (cons ,k (fdefinition ,v)) ,alist)))
+         ((functionp ,v)
+          (if (stringp ,k)
+              (push (cons (string-to-char ,k) ,v) ,alist)
+              (push (cons ,k ,v) ,alist)))
+         (t
+          (error "binding neither symbol nor function"))))
 
 (defun find-keymap (keymap-name)
   "Return a keymap given by its name from the global keymap alist."

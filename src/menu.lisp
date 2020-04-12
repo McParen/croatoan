@@ -309,21 +309,19 @@ At the third position, display the item given by item-number."
   (draw menu))
 
 ;; all of these take two arguments: menu event
-(define-keymap 'menu-map
-  (list
-   ;; q doesnt return a value, just nil, i.e. in the case of a checklist, an empty list.
-   #\q       'exit-menu-event-loop
-   #\x       'toggle-item-checkbox
+;; there is no :default action, all other events are ignored for menus.
+(define-keymap menu-map
+  ;; q doesnt return a value, just nil, i.e. in the case of a checklist, an empty list.
+  (#\q 'exit-menu-event-loop)
+  (#\x 'toggle-item-checkbox)
 
-   :up       'update-redraw-menu
-   :down     'update-redraw-menu
-   :left     'update-redraw-menu
-   :right    'update-redraw-menu
+  (:up    'update-redraw-menu)
+  (:down  'update-redraw-menu)
+  (:left  'update-redraw-menu)
+  (:right 'update-redraw-menu)
 
-   ;; there is no :default action, all other events are ignored for menus.
-
-   ;; return the selected item or all checked items, then exit the menu like q.
-   #\newline 'accept-selection))
+  ;; return the selected item or all checked items, then exit the menu as with #\q.
+  (#\newline 'accept-selection))
 
 (defun select (menu)
   "Display the menu, let the user select an item, return the selected item.

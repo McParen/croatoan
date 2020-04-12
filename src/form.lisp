@@ -456,40 +456,43 @@ This allows to specify by which button or event the form was accepted."
                     dptr 0))))
     (draw form)))
 
-(define-keymap 'form-map
-  (list
-   ;; C-a = ^A = #\soh = 1 = start of heading
-   ;; exit the edit loop, return t
-   #\soh      'accept
-   ;; C-x = cancel = CAN = #\can
-   ;; exit the edit loop, return nil
-   #\can      'cancel
-   ;; C-r = reset = DC2 = #\dc2
-   ;; reset editable elements of the form (fields, checkboxes)
-   #\dc2      'reset-form
+(define-keymap form-map
+  ;; C-a = ^A = #\soh = 1 = start of heading
+  ;; exit the edit loop, return t
+  (#\soh 'accept)
+  ;; C-x = cancel = CAN = #\can
+  ;; exit the edit loop, return nil
+  (#\can 'cancel)
+  ;; C-r = reset = DC2 = #\dc2
+  ;; reset editable elements of the form (fields, checkboxes)
+  (#\dc2 'reset-form)
+  (:btab 'select-previous-element)
+  (#\tab 'select-next-element))
 
-   :btab      'select-previous-element
-   #\tab      'select-next-element))
+(define-keymap field-map
+  ;; C-a = ^A = #\soh = 1 = start of heading
+  ;; exit the edit loop, return t
+  ;; we need this in the field keymap in case a field is used alone outside of a form.
+  (#\soh 'accept)
+  ;; C-x = cancel = CAN = #\can
+  ;; exit the edit loop, return nil
+  (#\can 'cancel)
 
-(define-keymap 'field-map
-  (list
-   ;; C-a = ^A = #\soh = 1 = start of heading
-   ;; exit the edit loop, return t
-   #\soh      'accept
-   ;; C-x = cancel = CAN = #\can
-   ;; exit the edit loop, return nil
-   #\can      'cancel
-   ;; C-r = reset = DC2 = #\dc2
-   ;; reset the field
-   #\dc2      'reset-field
+  ;; TODO: use C-a to get to the start of the field
+  (#\l 'move-start-of-line)
+  (#\k 'move-end-of-line)
+  
+  ;; C-r = reset = DC2 = #\dc2
+  ;; reset the field
+  (#\dc2 'reset-field)
 
-   :left      'move-previous-char
-   :right     'move-next-char
-   :backspace 'delete-previous-char
-   :dc        'delete-next-char
-   :ic        (lambda (field event &rest args)
-                (setf (insert-mode-p (window field)) (not (insert-mode-p (window field)))))
-   t          'field-add-char))
+  (:left 'move-previous-char)
+  (:right 'move-next-char)
+  (:backspace 'delete-previous-char)
+  (:dc 'delete-next-char)
+  (:ic  (lambda (field event &rest args)
+          (setf (insert-mode-p (window field)) (not (insert-mode-p (window field))))))
+  (t 'field-add-char))
 
 (defun call-button-function (button event &rest args)
   (declare (ignore event))
@@ -504,15 +507,14 @@ This allows to specify by which button or event the form was accepted."
 ;; How to automatically bind a hotkey to every button?
 ;; that hotkey would have to be added to the form keymap, not to that of a button.
 ;; that would be like a global keymap, in contrast to an elements local keymap.
-(define-keymap 'button-map
-  (list
-   #\space     'call-button-function
-   #\newline   'call-button-function))
 
-(define-keymap 'checkbox-map
-  (list
-   #\space     'toggle-checkbox
-   #\x         'toggle-checkbox))
+(define-keymap button-map
+  (#\space 'call-button-function)
+  (#\newline 'call-button-function))
+
+(define-keymap checkbox-map
+  (#\space 'toggle-checkbox)
+  (#\x 'toggle-checkbox))
 
 (defun edit (object &rest args)
   (draw object)
