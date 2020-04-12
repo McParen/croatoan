@@ -142,4 +142,7 @@
 
    ;; evolution.lisp
    #:evolve5
-   #:evolve6))
+   #:evolve6
+
+   ;; game-of-life.lisp
+   #:gol))

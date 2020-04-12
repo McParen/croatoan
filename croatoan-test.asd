@@ -17,4 +17,5 @@
    ;; high-level clos api
    (:file "clos")
    (:file "tetris")
-   (:file "evolution")))
+   (:file "evolution")
+   (:file "game-of-life")))
