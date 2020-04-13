@@ -41,12 +41,12 @@ different position."
 
 (defun move-direction (window direction &optional (n 1))
   "Move cursor in the given direction by n cells."
-  (case direction
-    (:left  (move window        0 (* n -1) :relative t))
-    (:right (move window        0 (* n  1) :relative t))
-    (:up    (move window (* n -1)        0 :relative t))
-    (:down  (move window (* n  1)        0 :relative t))
-    (otherwise (error "Valid cursor movement directions: :left, :right, :up, :down"))))
+  (flet ((multiply (x) (* n x)))
+    (let* ((dir (get-direction direction))
+           (offset (if (> n 1)
+                       (mapcar #'multiply dir)
+                       dir)))
+      (move window (car offset) (cadr offset) :relative t))))
 
 (defun move-window (window y x &key relative)
   "Move top left corner of the window to row y and column x.
