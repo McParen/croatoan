@@ -1042,61 +1042,41 @@ Test whether a window (stream) was closed."
 ;; https://www.gnu.org/software/guile-ncurses/manual/html_node/The-curses-panel-library.html
 (defun t09c ()
   "Use a window stack to manage overlapping windows."
-  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :enable-function-keys t :cursor-visible nil :stacked t)
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :enable-function-keys t :cursor-visible nil)
     (box scr)
-    (setf (background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
-    ;; we have to stack scr because the event loop runs on scr, and this refreshes scr implicitely every time
-    ;; and overlaps the other windows
-    ;;(setf (stackedp scr) t)
-
-    (let ((winlst nil)
-          (n 0))
-      ;; create 8 windows (with 8 different background colors),
-      ;; add them to the local winlist and to the global stack
-      (loop for i from 0 to 7 do
-           (push (make-instance 'window :height 10 :width 30 :position (list (+ 3 (* i 1)) (+ 3 (* i 3))) :draw-border t :stacked t)
-                 winlst))
-      ;; number them and set the background colors
-      (loop for i from 0 to 7 do
-           (setf (attributes (nth i winlst)) (list :reverse))
-           (format (nth i winlst) "~A" i)
-           (setf (background (nth i winlst))
-                 (make-instance 'complex-char :simple-char #\space :color-pair (list :black (nth i *ansi-color-list*)))))
-           ;;(setf (stackedp (nth i winlst)) t)
-      (refresh-stack)
-
+    (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:black :white)))
+    (refresh scr)
+    (let ((n 0) ; current position in the stack
+          (stack (make-instance 'stack)))
+      ;; create 8 windows (with 8 different background colors), push them to the stack
+      (dotimes (i 8)
+        (stack-push (make-instance 'window :height 10 :width 30 :position (list (+ 3 (* i 1)) (+ 3 (* i 3))) :draw-border t :visible t
+                                   :background (make-instance 'complex-char :fgcolor :black :bgcolor (list :number i)))
+                    stack))
+      (refresh stack)
       (event-case (scr event)
         ;; type 0-7 to pick a window
         ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7)
-         ;; show the picked window number in the upper right screen corner
+         ;; show the chosen window number in the upper right screen corner
          (add-char scr event :y 1 :x 78 :color-pair (list :white :black))
          (setf n (- (char-code event) 48)))
-        ;; to raise a window to the top of the stack
-        (#\t
-         (raise-to-top (nth n winlst))
-         (refresh-stack))
-        (#\r
-         (raise (nth n winlst))
-         (refresh-stack))
-        (#\l
-         (lower (nth n winlst))
-         (refresh-stack))
-        (#\b
-         (lower-to-bottom (nth n winlst))
-         (refresh-stack))
+        ;; move the chosen window in the stack
+        (#\t (stack-move n :top stack)    (setq n 0)                (refresh stack)) ; raise a window to the top
+        (#\r (stack-move n :up stack)     (when (> n 0) (decf n))   (refresh stack)) ; raise window n one position
+        (#\l (stack-move n :down stack)   (when (< n 7) (incf n))   (refresh stack)) ; lower window n one position
+        (#\b (stack-move n :bottom stack) (setq n 7)                (refresh stack)) ; lower window n to the bottom
         ;; type v to toggle window visibility
-        (#\v
-         ;; toggle visibility for window n
-         (setf (visiblep (nth n winlst)) (not (visiblep (nth n winlst))))
-         (refresh-stack))
-        (#\q (return-from event-case))
-        (otherwise nil))
-
-      ;; before closing them, remove all windows from the stack, so they can be GCd.
-      (empty-stack)
-      (mapc #'close winlst)
-      ;; return nil explicitely, so it doesnt return the window list.
-      nil)))
+        (#\v (setf (visiblep (nth n (items stack)))
+                   (not (visiblep (nth n (items stack)))))
+             ;; this is the equivalent of (refresh *main-stack*), but only if scr is on the main stack, i.e. :stacked t
+             (touch scr) (refresh scr)
+             (refresh stack))
+        (#\q (return-from event-case)))
+      ;; close the ncurses windows, then empty the stack
+      (mapc #'close (items stack))
+      (empty-stack stack))
+    ;; return nil explicitely, so it doesnt return the window list.
+    nil))
 
 ;; port of kletva/test05.
 ;; print the screen size.
@@ -2418,7 +2398,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 
 (defun t19c2 ()
   "Test the menu-item class for submenus."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :stacked t)
     (let* ((fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr))))
            (choices (list "Choice 0" 'choice11 fun1 "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                           "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
@@ -2430,41 +2410,30 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
                                      :bgcolor :red
-                                     :name "submenu2" :title t :draw-border t :enable-function-keys t :visible nil))
+                                     :name "submenu2" :title t :draw-border t :enable-function-keys t))
            ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
                                      :position (list 1 41) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #x999999)
                                      :fgcolor :green
-                                     :name "submenu1" :title nil :draw-border t :enable-function-keys t :visible nil))
+                                     :name "submenu1" :title nil :draw-border t :enable-function-keys t))
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
                                      :position (list 0 25) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #xcccccc)
                                      :fgcolor :blue :bgcolor :yellow
-                                     :name "menu" :title nil :draw-border nil :enable-function-keys t :visible nil)))
-      ;; add the menus and submenus to a window stack
-      ;; scr has to be stacked too so we can make the menus disappear.
-      (setf (stackedp scr) t
-            (stackedp menu) t
-            (stackedp sub-menu1) t
-            (stackedp sub-menu2) t)
-
+                                     :name "menu" :title nil :draw-border nil :enable-function-keys t)))
       (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
+      (refresh scr)
 
-      (refresh-stack)
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop by calling select
         (#\a (let ((result (select menu)))
                (format scr "You chose ~A~%" result)
                (format scr "~A~%" (color-pair menu))
-               (format scr "Stack ~A~%" (length de.anvi.croatoan::*window-stack*))
-               (refresh-stack) ))
-        ;; TODO: doesnt repaint the border, because the border already has attributes.
-        ;; setting a background doesnt change existing attributes, only existing backgrounds.
-        (#\b (setf (color-pair menu) (list :red :black)))
+               (format scr "Stack ~A~%" (length (items *main-stack*)))))
         ;; "q" exits the function and all menus and submenus.
         (#\q (return-from event-case)))
       (close menu)
@@ -2531,30 +2500,26 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t19e2 ()
   "A menu bar and submenus."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
-    (let* ((items1 (list "Choice 0" "Choice11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
-                          "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
+    (let* ((items1 (list "Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+                         "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :scrolled-layout (list 6 1)
                                      :title nil :name "submenu1" :draw-border t :enable-function-keys t :visible nil :menu-type :selection))
            (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :scrolled-layout (list 6 1)
                                      :title nil :name "submenu2" :draw-border t :enable-function-keys t :visible nil :menu-type :checklist))
-           (fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr))))
+           (fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr) (move scr 4 0))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
            (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :layout (list 1 (length items2))
                                 :max-item-length 15 :width (width scr) :draw-border t :enable-function-keys t)))
-      (setf (stackedp scr) t
-            (stackedp menu) t
-            (stackedp sub-menu1) t
-            (stackedp sub-menu2) t)
       (move scr 4 0) ;; start the output at line 4, below the menu bar.
-      (refresh-stack)
+      (refresh scr)
+      ;; add the screen to the main window stack to ensure that it is updated when the menu is exited.
+      (setf (stackedp scr) t)
       (loop named menu-case
          do (let ((result (select menu)))
               (unless result (return-from menu-case))
               (format scr "You chose ~A~%" result)
-              (refresh-stack)))
-      (close menu)
-      (close sub-menu1)
-      (close sub-menu2) )))
+              (refresh scr)))
+      (mapc #'close (list menu sub-menu1 sub-menu2)))))
 
 (defun t19f ()
   "A more fancy version of t19a, a yes-no dialog using the class dialog-window."
@@ -2929,41 +2894,60 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
 (defun t26 ()
   "Test accessors of window and cursor positions."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible t :enable-colors t :stacked t)
-    (let ((win (make-instance 'window :height 5 :width 20 :position (list 0 0) :stacked t)))
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible t :enable-colors t)
+    (let* ((win (make-instance 'window :height 5 :width 20 :position (list 0 0)))
+           (stack (make-instance 'stack :items (list win scr))))
 
       (setf (background scr) (make-instance 'complex-char :color-pair '(:white :red))
             (background win) (make-instance 'complex-char :color-pair '(:black :yellow)))
 
-      (refresh-stack)
+      (refresh stack)
       (get-char scr)
 
       (setf (window-position win) (list 2 4))
-      (refresh-stack)
+      (refresh stack)
       (get-char scr)
 
       (setf (position-y win) 4)
-      (refresh-stack)
+      (refresh stack)
       (get-char scr)
 
       (setf (position-x win) 8)
-      (refresh-stack)
+      (refresh stack)
       (get-char scr)
 
       (setf (cursor-position win) (list 0 0))
       (princ "a" win)
-      (refresh-stack)
+      (refresh stack)
       (get-char scr)
 
       (setf (cursor-position-y win) 2)
       (princ "b" win)
-      (refresh-stack)
+      (refresh stack)
       (get-char scr)
 
       (setf (cursor-position-x win) 4)
       (princ "c" win)
-      (refresh-stack)
+      (refresh stack)
       (get-char scr))))
+
+(defun t26a ()
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible t :enable-colors t)
+    (let* ((windows (mapcar (lambda (pos c)
+                              (make-instance 'window :height 5 :width 20 :position pos :background (make-instance 'complex-char :bgcolor c)))
+                            '((0 0) (2 4) (4 8) (0 40) (2 44) (4 48))
+                            '(:red :yellow :cyan :red :yellow :cyan)))
+           ;; the stack items can be passed as a list, order: 0 1 2
+           (st1 (make-instance 'stack :items (subseq windows 0 3)))
+           (st2 (make-instance 'stack)))
+
+      ;; or stacked (pushed) individually, order: 5 4 3
+      (loop for w in (subseq windows 3 6)
+         do (stack-push w st2))
+      
+      (refresh st1)
+      (refresh st2)
+      (get-char (car windows)))))
 
 (defun t27 ()
   "Use run-event-loop and bind instead of event-case to handle keyboard events."
