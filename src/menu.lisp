@@ -235,17 +235,15 @@ At the third position, display the item given by item-number."
     (when (eq menu-type :checklist)
       (loop for i in items if (checkedp i) do (setf (checkedp i) nil)))))
 
+(defparameter *menu-stack* (make-instance 'stack))
+
 (defun return-from-menu (menu return-value)
-  "Set menu window to invisible, refresh the window stack, return the value from select."
-  (when *window-stack*
-    ;; change visibility only when there is an active stack.
-    (typecase menu
-      (menu-window (setf (visiblep menu) nil))
-      (menu (setf (visiblep (window menu)) nil)))
-    (refresh-stack))
+  "Pop the menu from the menu stack, refresh the remaining menu stack, return the value from select."
+  (stack-pop *menu-stack*)
   (reset-menu menu)
   (throw menu return-value))
 
+;; #\q returns nil
 (defun exit-menu-event-loop (menu event)
   "Associate this function with an event to exit the menu event loop."
   (declare (ignore event))
@@ -323,24 +321,35 @@ At the third position, display the item given by item-number."
   ;; return the selected item or all checked items, then exit the menu as with #\q.
   (#\newline 'accept-selection))
 
-(defun select (menu)
+(defgeneric select (obj))
+
+(defmethod select ((menu menu))
+  (draw menu)
+  (run-event-loop menu))
+
+(defmethod select ((menu menu-window))
   "Display the menu, let the user select an item, return the selected item.
 
-If the item is a menu object, recursively display the sub menu."
-  (typecase menu
+If the selected item is a menu object, recursively display the sub menu."
+  ;; when the menu is selected, push it to the menu stack.
+  (stack-push menu *menu-stack*)
 
-    (menu-window
-     (when *window-stack*
-       (setf (visiblep menu) t)
-       (refresh-stack))
-     (draw menu)
+  (draw menu)
+  
+  ;; here we can pass the menu to run-event-loop because it is a menu-window.
+  ;; all handler functions have to accept window and event as arguments.
+  (let ((val (run-event-loop menu)))
 
-     ;; here we can pass the menu to run-event-loop because it is a menu-window.
-     ;; all handler functions have to accept window and event as arguments.
-     ;; the return value of select is the return value of run-event-loop
-     ;; is the value thrown to the catch tag 'event-loop.
-     (run-event-loop menu))
+    ;; when we return from a menu, the menu is closed and we have to repaint the windows below the menu.
+    ;; this can be done manually or by adding them to the main stack with :stacked t
+    (unless (stack-empty-p *main-stack*)
+      (refresh *main-stack*))
 
-    (menu
-     (draw menu)
-     (run-event-loop menu))))
+    ;; when we return from a menu, we pop the menu from the menu stack, then repain the remaining stack
+    ;; that way a stack of open sub-menus is cleanly displayed
+    (unless (stack-empty-p *menu-stack*)
+      (refresh *menu-stack*))
+
+    ;; the return value of select is the return value of run-event-loop
+    ;; is the value thrown to the catch tag 'event-loop.
+    val))

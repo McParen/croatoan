@@ -265,25 +265,37 @@ The initial purpose of this function is to be used as the equality test for alex
   (:documentation "A curses window object as returned by newwin."))
 
 ;; also see source/panel.lisp
-(defparameter *window-stack* nil)
+(defclass stack ()
+  ((items
+    :initarg       :items
+    :initform      nil
+    :type          (or null cons)
+    :accessor      items
+    :documentation "List containing the items."))
+  (:documentation "Stack implementation of ncurses panels, allows management of overlapping windows."))
 
-;; ":stacked t" or "(setf (stackedp win) t)" adds a new window to the stack
-;; "(setf (hidden win) t)" prevents the window from being refreshed.
+(defparameter *main-stack* (make-instance 'stack)
+  "Global window stack. Windows can be added upon initialization with :stacked t or (setf (stackedp win) t).
+
+(setf (visiblep win) nil) prevents a stacked window from being refreshed and thus displayed.")
+
 (defmethod stackedp ((win window))
   (slot-value win 'stackedp))
+
 (defmethod (setf stackedp) (stackedp (win window))
+  "Add or remove the window to the global window stack."
   (if stackedp
-      ;; t:   check if in stack, if not, add to stack, if yes, error
-      (if (member win *window-stack* :test #'eq)
+      ;; t: check if in stack, if not, add to stack, if yes, error
+      (if (member win (items *main-stack*) :test #'eq)
           (error "setf stackedp t: window already on stack")
           (progn
-            (push win *window-stack*)
+            (stack-push win *main-stack*)
             (setf (slot-value win 'stackedp) t)))
       ;; nil: check if in stack, if yes, remove from stack, if not, error
-      (if (member win *window-stack* :test #'eq)
+      (if (member win (items *main-stack*) :test #'eq)
           (progn
-            (setf *window-stack* (remove win *window-stack* :test #'eq))
-            (setf (slot-value win 'stackedp) t))
+            (setf (items *main-stack*) (remove win (items *main-stack*) :test #'eq))
+            (setf (slot-value win 'stackedp) nil))
           (error "setf stackedp nil: window not on stack"))))
 
 (defclass screen (window)
@@ -1193,7 +1205,7 @@ If there is no window asociated with the element, return the window associated w
       (ncurses:scrollok winptr scrolling-enabled-p)
       (when draw-border-p (ncurses:box winptr 0 0))
       (ncurses:keypad winptr function-keys-enabled-p)
-      (when stackedp (push win *window-stack*)))
+      (when stackedp (stack-push win *main-stack*)))
 
     ;; why do we have to return the result in :around aux methods?
     result))
@@ -1531,8 +1543,8 @@ If there is no window asociated with the element, return the window associated w
 (defmethod close ((stream window) &key abort)
   (declare (ignore abort))
   ;; if by time of closing, the window is still on the stack, remove it first.
-  (if (member stream *window-stack* :test #'eq)
-      (setf *window-stack* (remove stream *window-stack* :test #'eq)))
+  (if (member stream (items *main-stack*) :test #'eq)
+      (setf (items *main-stack*) (remove stream (items *main-stack*) :test #'eq)))
   (ncurses:delwin (winptr stream))
   ;; The default method provided by class FUNDAMENTAL-STREAM sets a flag for OPEN-STREAM-P.
   (call-next-method))

@@ -4,47 +4,71 @@
 ;; panel stack extension for curses
 ;; http://invisible-island.net/ncurses/man/panel.3x.html
 
-;; defined in source/classes.lisp
-;; (defparameter *window-stack* nil)
+(defun stack-push (obj stack)
+  "Add the object or objects on top of the stack."
+  (with-slots (items) stack
+    (push obj items)))
 
-(defun raise (win)
-  "Raise window one position in the stack."
-  (when (not (eq win (car *window-stack*)))
-    (let ((pos (position win *window-stack*)))
-      (rotatef (nth (1- pos) *window-stack*)
-               (nth     pos  *window-stack*)))))
+(defun stack-pop (stack)
+  "Remove and return the top item off the stack."
+  (with-slots (items) stack
+    (pop items)))
 
-(defun raise-to-top (win)
-  "Raise window to the top of the window stack."
-  (setf *window-stack* (cons win (remove win *window-stack*))))
+(defun stack-move (obj-or-n pos-or-dir stack)
+  "Move an object in the stack.
 
-(defun lower (win)
-  "Lower window one position in the stack."
-  (when (not (eq win (car (last *window-stack*))))
-    (let ((pos (position win *window-stack*)))
-      (rotatef (nth (1+ pos) *window-stack*)
-               (nth     pos  *window-stack*)))))
+The object can be passed directly and is the compared by eq, or by its
+position in the stack.
 
-(defun lower-to-bottom (win)
-  "Lower window to the bottom of the window stack."
-  (when (not (eq win (car (last *window-stack*))))
-    (setf *window-stack* (append (remove win *window-stack*) (list win)))))
+Valid movement directions are :up :down :top and :bottom."
+  (with-slots (items) stack
+    (let* ((n (typecase obj-or-n
+                (integer obj-or-n)
+                (otherwise (position obj-or-n items)))))
+      (case pos-or-dir
+        (:up
+         (unless (= n 0)
+           (rotatef (nth (1- n) items)
+                    (nth     n  items))))
+        (:down
+         (unless (= n (1- (length items)))
+           (rotatef (nth (1+ n) items)
+                    (nth     n  items))))
+        (:top
+         (unless (= n 0)
+           (setf items (cons (nth n items)
+                             (remove (nth n items) items)))))
+        (:bottom
+         (unless (= n (1- (length items)))
+           (setf items (append (remove (nth n items) items)
+                               (list (nth n items))))))))))
 
-(defun empty-stack ()
-  "Remove all windows from the stack."
-  (setf *window-stack* nil))
+(defun empty-stack (stack)
+  "Remove all items from the stack."
+  (with-slots (items) stack
+    (setf items nil)))
 
-(defun refresh-stack ()
-  "Touch and refresh visible windows in the window stack."
-  (if *window-stack*
+(defun stack-empty-p (stack)
+  "Return t if there are no items on the stack, nil otherwise."
+  (null (items stack)))
+
+(defmethod refresh ((stack stack) &rest args)
+  "Touch and refresh visible windows in the window stack.
+
+The windows are refreshed in the order they are added, so that if the windows overlap,
+the window added last will be displayed on top."
+  (with-slots (items) stack
+    (when items
       (progn
         (mapc #'(lambda (w)
                   (when (visiblep w)
+                    ;; touch marks the windows as changed so that they are completely
+                    ;; redrawn upon the refresh.
+                    ;; this is necessary to remove remnants of overlapping windows.
                     (touch w)
                     (mark-for-refresh w)))
-              (reverse *window-stack*))
-        (refresh-marked))
-      (error "refresh stack: stack empty")))
+              (reverse items))
+        (refresh-marked)))))
 
 ;; https://www.informatimago.com/develop/lisp/l99/p19.lisp
 ;; todo: what if count is longer than a list? use mod

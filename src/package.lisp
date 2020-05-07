@@ -284,12 +284,13 @@
    ;; pad / create and display curses pads
 
    ;; panel / panel stack extension for curses
-   raise
-   raise-to-top
-   lower
-   lower-to-bottom
+   *main-stack*
+   stack
+   stack-push
+   stack-pop
+   stack-move
    empty-stack
-   refresh-stack
+   stack-empty-p
 
    ;; refresh / refresh curses windows and lines
    refresh
