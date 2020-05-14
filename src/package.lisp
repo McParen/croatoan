@@ -33,6 +33,7 @@
    pad
    sub-pad
    field
+   textarea
    form
    form-window
    button

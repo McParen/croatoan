@@ -995,7 +995,7 @@ If there is no window asociated with the element, return the window associated w
    ;; has to be updated every time the current element number is updated.
    (current-element
     :initform      nil
-    :type          (or null field button label checkbox menu checklist)
+    :type          (or null field button label checkbox menu checklist textarea)
     :accessor      current-element
     :documentation "Currently selected element object.")
 
