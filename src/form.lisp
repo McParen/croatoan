@@ -479,8 +479,8 @@ This allows to specify by which button or event the form was accepted."
   (#\can 'cancel)
 
   ;; TODO: use C-a to get to the start of the field
-  (#\l 'move-start-of-line)
-  (#\k 'move-end-of-line)
+  ;;(#\l 'move-start-of-line)
+  ;;(#\k 'move-end-of-line)
   
   ;; C-r = reset = DC2 = #\dc2
   ;; reset the field

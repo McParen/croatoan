@@ -1836,6 +1836,42 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       ;; wait for keypress, then exit
       (get-char scr) )))
 
+(defun t16e1 ()
+  "Set the background color to the value read from a field.
+
+Adding hex values requires 256color support in the terminal."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let ((s1 (list :attributes '(:underline)))
+          (s2 (list :simple-char #\.))
+          (field (make-instance 'field :position (list 3 20) :width 10 :window scr)))
+      (setf (style field) (list :foreground s1 :background s2))
+      ;; read a color (keyword or hex) from the field then set the background
+      (bind field #\newline (lambda (w e)
+                              (setf (background scr) (make-instance 'complex-char :simple-char #\space :bgcolor (read-from-string (value field))))
+                              (refresh scr)))
+      (edit field))))
+
+(defun t16e2 ()
+  "Display a textarea (a multiline field) without a parent form.
+
+Supported control keys: left, right, newline
+
+Scrolling is enabled by default and the buffer is unlimited.
+
+C-a (^A) accepts the entry and exits the edit loop returning the
+contents of the area as a single string."
+  (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
+    (let* ((win (make-instance 'window :height 8 :width 17 :position (list 5 5) :draw-border t :enable-function-keys t))
+           (area (make-instance 'textarea :position (list 1 1) :height 6 :width 15 :window win)))
+      (setf (background win) (make-instance 'complex-char :attributes '(:reverse)))
+      (refresh win)
+      ;; add some optional initial content to the input buffer
+      (setf (value area) "hello there")
+      (edit area)
+      (close win)
+      ;; return the edited contents of the area as a string (including newlines)
+      (value area))))
+
 (defun t16f ()
   "Group several input fields and buttons to a form."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
