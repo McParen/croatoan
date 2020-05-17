@@ -210,7 +210,12 @@ Try to complete the missing colors in the following order:
 
 1. window color pair.
 2. window background character color pair.
-3. ncurses default color pair 0 (white on black or the terminal default color pair)."
+3. ncurses default color pair 0 (white on black or the terminal default color pair).
+
+If both colors are missing, they are substituted in the following order:
+
+1. window color pair.
+2. ncurses default color pair 0 (white on black or the terminal default color pair)."
   (let ((fg (car  pair))
         (bg (cadr pair)))
     (cond
@@ -225,11 +230,18 @@ Try to complete the missing colors in the following order:
           ;; if color pair exists, but is not complete, complete it recursively in a second step.
           ;; if we have fg from color pair, and a bg from background, they will be combined.
           (complete-pair window (color-pair window)))
-         ((and (background window)
-               (color-pair (background window)))
-          (complete-pair window (color-pair (background window))))
+
+         ;; 200517
+         ;; if we complete colors for a simple char, the colors become a property of the char.
+         ;; combining a simple char with the background should be done by ncurses, not here.
+         ;; adding a simple space to a window with a background char should display the background
+         ;; char, not a space, which would be the case if we complete both colors from the background.
+         ;;((and (background window)
+         ;;      (color-pair (background window)))
+         ;; (complete-pair window (color-pair (background window))))
+         
          (t (number-to-pair 0))))
-      
+
       ;; when only the bg is missing, complete the bg
       ((null bg)
        (cond
