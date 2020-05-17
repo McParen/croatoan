@@ -286,3 +286,33 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (getch)
     
     (endwin)))
+
+;; 200517
+(defun nctest9 ()
+  "Test precedence of the background char. Compare with t02d."
+  (let ((scr (initscr)))
+    (noecho)
+    (start-color)
+    (init-pair 1 1 3) ; red(1) on yellow(3)
+    (init-pair 2 2 7) ; green(2) on white(7)
+
+    (bkgd (logior (char-code #\.) (color-pair 1)))
+    (refresh)
+    (getch)
+
+    ;; trying to write space will actually write the background char #\.
+    (addch (char-code #\space))
+    (refresh)
+    (getch)
+
+    ;; but when the char has a color, the space is written instead of the background char.
+    (addch (logior (char-code #\space) (color-pair 2)))
+    (refresh)
+    (getch)
+
+    ;; the screen is cleared using the background char.
+    (clear)
+    (refresh)
+    (getch)
+
+    (endwin)))

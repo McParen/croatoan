@@ -12,6 +12,7 @@
    #:nctest6
    #:nctest7
    #:nctest8
+   #:nctest9
 
    ;; unicode.lisp
    #:ut01
@@ -34,6 +35,7 @@
    #:t02a
    #:t02b
    #:t02c
+   #:t02d
    #:t03
    #:t03a
    #:t03a2

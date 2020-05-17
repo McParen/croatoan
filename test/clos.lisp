@@ -389,6 +389,29 @@
     (format scr "I'm sorry, Dave.")
     (fresh-line scr) (refresh scr) (get-char scr)))
 
+(defun t02d ()
+  "Test precedence of the background char. Compare with nctest9."
+  (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
+    (let* ((win1 (make-instance 'window :height 10 :width 20 :position (list 3  5) :draw-border t))
+           (win2 (make-instance 'window :height 10 :width 20 :position (list 3 40) :draw-border t)))
+      (setf (background win1) (make-instance 'complex-char :simple-char :board :fgcolor :yellow)
+            (background win2) (make-instance 'complex-char :simple-char #\.    :bgcolor :red))
+      ;; the background char is displayed instead of space
+      (add-wide-char win1 #\space                  :y 1 :x 1 :n 10)
+      ;; the background color is used
+      (add-wide-char win1 #\.                      :y 3 :x 1 :n 10)
+      ;; the space character is displayed when used with a fgcolor
+      (add-wide-char win1 #\space :fgcolor :red    :y 5 :x 1 :n 10)
+      ;; the fgcolor overrides the background color
+      (add-wide-char win1 #\.     :fgcolor :red    :y 7 :x 1 :n 10)
+      ;; the space character is displayed when used with a fgcolor
+      (add-wide-char win2 #\space :bgcolor :yellow :y 1 :x 1 :n 10)
+      (refresh win1)
+      (refresh win2)
+      (get-char win1)
+      (close win1)
+      (close win2))))
+
 ;; read and display chars until a q is pressed, blocking version.
 (defun t03 ()
   (with-screen (scr :input-echoing nil :input-blocking t)
