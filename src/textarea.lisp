@@ -18,7 +18,16 @@
     :accessor      height
     :documentation
     "The height (number of visible lines) of the textarea. The area can be scrolled vertically.")
-   
+
+   (insert-mode-p
+    :initarg       :insert-mode
+    :initform      t
+    :type          boolean
+    :accessor      insert-mode-p
+    :documentation
+    "Printing a new char will insert (t, default) it before the character under the cursor
+    instead of overwriting it (nil).")
+
    (bindings
     :initarg       :bindings
     :initform      nil
@@ -86,17 +95,19 @@
   (setf (slot-value area 'buffer) (coerce new-value 'list)))
 
 (defmethod clear ((area textarea) &key)
-  "Clear the textarea by overwriting it with the background char.
+  "Clear the textarea by overwriting the underlying window with #\space.
 
-The default background char is #\space."
+If the underlying window has a background char, the background will
+be used to clear the window."
   (with-accessors ((pos element-position) (width width) (height height) (win window)) area
     (setf (cursor-position win) pos)
     ;; return to the start of the area after the clearing
     (save-excursion win
       (loop for i from 0 to (1- height) do
-           (loop for j from 0 to (1- width) do
-                (apply #'move win (mapcar #'+ pos (list i j)))
-                (add win #\space))))))
+        (loop for j from 0 to (1- width) do
+          (goto win pos (list i j))
+          ;; adding a simple space inherits the attributes and colors from the background char of the window.
+          (add win #\space))))))
 
 (defmethod update-cursor-position ((area textarea))
   (with-accessors ((pos element-position) (win window) (dptr display-pointer)
@@ -217,13 +228,17 @@ return the number of chars between the pointer and the first newline before the 
             (setf y (1+ y) x 0)
             (when (> (- y dptr) (1- height)) (incf dptr)))
           (incf x))
-      (setf inbuf (replace-nth inptr char inbuf))
+      (if (insert-mode-p area)
+          (setf inbuf (insert-nth inptr char inbuf))
+          (setf inbuf (replace-nth inptr char inbuf)))
       (incf inptr)))
   (draw area))
 
 (define-keymap textarea-map
   (:left 'move-previous-char)
   (:right 'move-next-char)
+  (:ic  (lambda (area event &rest args)
+          (toggle-insert-mode area)))
   (#\soh 'accept)
   (#\can 'cancel)
   (t 'textarea-add-char))

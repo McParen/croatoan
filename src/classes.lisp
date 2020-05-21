@@ -463,7 +463,7 @@ The initial purpose of this function is to be used as the equality test for alex
     :accessor      current-item-position
     :type          (or null cons)
     :documentation
-    "(y x) position of the current item in the window.
+    "Position (y x) of the current item in the window.
     This information is useful for positioning the cursor on the current item after displaying the menu.")
 
    (current-item-mark
@@ -906,6 +906,15 @@ If there is no window asociated with the element, return the window associated w
     :initform      nil
     :type          (or null cons)
     :documentation "A plist of four complex-chars (or nil): :foreground, :background, :selected-foreground, :selected-background.")
+
+   (insert-mode-p
+    :initarg       :insert-mode
+    :initform      nil
+    :type          boolean
+    :accessor      insert-mode-p
+    :documentation
+    "Printing a new char will insert (t) it before the character under the cursor
+    instead of overwriting it (nil, default).")
 
    (bindings
     :initarg       :bindings
@@ -1503,6 +1512,14 @@ If there is no window asociated with the element, return the window associated w
           (if (oddp w)
               (ceiling w 2)
               (/ w 2)))))
+
+(defun toggle-insert-mode (object)
+  "Toggle the insert mode boolean property of the object.
+
+This applies to window, field and textarea objects, for example."
+  (if (slot-exists-p object 'insert-mode-p)
+      (setf (insert-mode-p object) (not (insert-mode-p object)))
+      (error "toggle-insert-mode: the object does not have an insert-mode-p property.")))
 
 ;;; print, prin1, princ, format ~A, ~S
 

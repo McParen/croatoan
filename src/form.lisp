@@ -320,7 +320,7 @@ Place the cursor between the brackets [_] of the current item."
     (draw field)))
 
 (defun field-add-char (field char &rest args)
-  "Add char to the current cursor position in the field.
+  "Add char to the current cursor position in the field, then move the cursor forward.
 
 The buffer can be longer than the displayed field width, horizontal scrolling is enabled."
   (if (and (characterp char) (graphic-char-p char))
@@ -328,7 +328,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
         (with-accessors ((width width) (inbuf buffer) (mlen max-buffer-length) (inptr input-pointer)
                          (dptr display-pointer) (win window)) field
           (let ((len (length inbuf)))
-            (if (insert-mode-p win)
+            (if (insert-mode-p field)
 
                 ;; insert mode
                 (progn
@@ -491,7 +491,7 @@ This allows to specify by which button or event the form was accepted."
   (:backspace 'delete-previous-char)
   (:dc 'delete-next-char)
   (:ic  (lambda (field event &rest args)
-          (setf (insert-mode-p (window field)) (not (insert-mode-p (window field))))))
+          (toggle-insert-mode field)))
   (t 'field-add-char))
 
 (defun call-button-function (button event &rest args)
@@ -517,6 +517,10 @@ This allows to specify by which button or event the form was accepted."
   (#\x 'toggle-checkbox))
 
 (defun edit (object &rest args)
+  "Modify a form or form element. Return t if the edit was accepted, nil of it was canceled.
+
+The return values of the event handler are the return values of the event loop and thus
+also returned by edit."
   (draw object)
   ;; since we have args passed to run-event-loop, all handler functions have to accept
   ;; a &rest args argument.

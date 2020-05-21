@@ -67,6 +67,7 @@
    scrolling-enabled-p
    scrolling-region
    insert-mode-p
+   toggle-insert-mode
    bindings
    background
    input-echoing-p
