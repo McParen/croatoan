@@ -2,6 +2,10 @@
 
 (defun t01 ()
   (erase)
+  (cursor-position 0 0)
+  (princ "0")
+  (cursor-position 2 2)
+  (princ "1")
   (cursor-position 5 15)
   (princ "test")
   (cursor-position 10 15)
@@ -31,3 +35,15 @@
   (print "normal")
   (force-output))
 
+(defun t03 ()
+  "Display the 256 color palette."
+  (loop for i from 0 to 255 do
+    (sgr 48 5 i)
+    (princ #\space))
+  (terpri)
+  (sgr 0)
+  (loop for i from 0 to 255 do
+    (sgr 38 5 i)
+    (princ "X"))
+  (sgr 0)
+  (force-output))
