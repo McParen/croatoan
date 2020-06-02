@@ -37,6 +37,7 @@
 
 (defun t03 ()
   "Display the 256 color palette."
+  (clear)
   (loop for i from 0 to 255 do
     (sgr 48 5 i)
     (princ #\space))
@@ -46,4 +47,8 @@
     (sgr 38 5 i)
     (princ "X"))
   (sgr 0)
+  (force-output)
+
+  (sleep 3)
+  (ris)
   (force-output))

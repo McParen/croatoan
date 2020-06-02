@@ -7,11 +7,21 @@
   (:export
 
    ;; ansi.lisp
+   ;; ESC sequences
+   #:ris #:reset-to-initial-state
+
+   ;; CSI sequences
+   ;; Cursor control
    #:cuu #:cursor-up
    #:cud #:cursor-down
-   #:cuf #:cursor-right
-   #:cub #:cursor-left
+   #:cuf #:cursor-forward
+   #:cub #:cursor-backward
+   #:cnl #:cursor-next-line
+   #:cpl #:cursor-preceding-line
+   #:cha #:cursor-horizontal-absolute
    #:cup #:cursor-position
+   #:scosc #:save-cursor-position
+   #:scorc #:restore-cursor-position
 
    #:ed #:erase-in-display #:erase-below #:erase-above #:erase #:erase-saved-lines
    #:el #:erase-in-line #:erase-right #:erase-left #:erase-line

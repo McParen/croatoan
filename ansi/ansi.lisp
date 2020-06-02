@@ -14,18 +14,18 @@
 ;; http://ascii-table.com/ansi-escape-sequences.php
 ;; https://www.man7.org/linux/man-pages/man4/console_codes.4.html
 ;; https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+;; http://www.xfree86.org/current/ctlseqs.html
+;; http://man7.org/linux/man-pages/man4/console_codes.4.html
 ;; https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 ;; https://vt100.net/docs/vt510-rm/chapter4.html
 ;; https://www.gnu.org/software/screen/manual/html_node/Control-Sequences.html
 ;; http://bitsavers.trailing-edge.com/pdf/tektronix/410x/070-4526-01_4105_PgmrRef_Sep83.pdf
 ;; https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
 
-;; http://man7.org/linux/man-pages/man4/console_codes.4.html
 ;; Based initially on http://en.wikipedia.org/wiki/ANSI_escape_code,
 ;; but it doesn't have very many definitions; this page, however, is
 ;; comprehensive and excellent:
 ;; http://bjh21.me.uk/all-escapes/all-escapes.txt
-;; http://www.xfree86.org/current/ctlseqs.html
 
 ;; ECMA-6: 7bit character set 0-127
 ;; ECMA-35: Bit notation 01/07
@@ -91,15 +91,40 @@
 ;; Ps  A single numeric parameter
 ;; Pm  Several numeric parameters Ps separated by a semicolon ;
 
-;;; 8.2.7 Cursor control functions
+;;; ESC sequences ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Name:       Reset to initial state
+;; Mnemonic:   RIS
+;; Final char: c
+;; Final byte: 06/03
+;; Sequence:   ESC c
+;; Parameters: none
+;; Default:    none
+;; Reference:  ANSI 5.72, ECMA 8.3.105
+(defun reset-to-initial-state ()
+  "Reset the terminal to its initial state.
+
+In particular, turn on cooked and echo modes and newline translation,
+turn off raw and cbreak modes, reset any unset special characters.
+
+A reset is useful after a program crashes and leaves the terminal in
+an undefined, unusable state."
+  (esc "c"))
+
+(setf (fdefinition 'ris) #'reset-to-initial-state)
+
+;;; CSI sequences ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; Cursor control functions
 
 ;; Name:       Cursor up
 ;; Mnemonic:   CUU
 ;; Final char: A
 ;; Final byte: 04/01
 ;; Sequence:   CSI Pn A
-;; Parameters: Pn = n
+;; Parameters: Pn = m
 ;; Default:    Pn = 1
+;; Reference:  ANSI 5.17, ECMA 8.3.22
 (defun cursor-up (&optional (m 1))
   "Move the cursor m rows up."
   (csi "A" m))
@@ -111,39 +136,87 @@
 ;; Final char: B
 ;; Final byte: 04/02
 ;; Sequence:   CSI Pn B
-;; Parameters: Pn = n
+;; Parameters: Pn = m
 ;; Default:    Pn = 1
+;; Reference:  ANSI 5.14, ECMA 8.3.19
 (defun cursor-down (&optional (m 1))
   "Move the cursor m rows down."
   (csi "B" m))
 
 (setf (fdefinition 'cud) #'cursor-down)
 
-;; Name:       Cursor right
+;; Name:       Cursor forward
 ;; Mnemonic:   CUF
 ;; Final char: C
 ;; Final byte: 04/03
 ;; Sequence:   CSI Pn C
 ;; Parameters: Pn = n
 ;; Default:    Pn = 1
-(defun cursor-right (&optional (n 1))
-  "Move the cursor n columns to the right."
+;; Reference:  ANSI 5.15, ECMA 8.3.20
+;; Notice:     ECMA name: Cursor right
+(defun cursor-forward (&optional (n 1))
+  "Move the cursor n columns in the forward direction (to the right)."
   (csi "C" n))
 
-(setf (fdefinition 'cuf) #'cursor-right)
+(setf (fdefinition 'cuf) #'cursor-forward)
 
-;; Name:       Cursor left
+;; Name:       Cursor backward
 ;; Mnemonic:   CUB
 ;; Final char: D
 ;; Final byte: 04/04
 ;; Sequence:   CSI Pn D
 ;; Parameters: Pn = n
 ;; Default:    Pn = 1
-(defun cursor-left (&optional (n 1))
-  "Move the cursor n columns to the left."
+;; Reference:  ANSI 5.13, ECMA 8.3.18
+;; Notice:     ECMA name: Cursor left
+(defun cursor-backward (&optional (n 1))
+  "Move the cursor n columns in the backward direction (to the left)."
   (csi "D" n))
 
-(setf (fdefinition 'cub) #'cursor-left)
+(setf (fdefinition 'cub) #'cursor-backward)
+
+;; Name:       Cursor next line
+;; Mnemonic:   CNL
+;; Final char: E
+;; Final byte: 04/05
+;; Sequence:   CSI Pn E
+;; Parameters: Pn = m
+;; Default:    Pn = 1
+;; Reference:  ANSI 5.7, ECMA 8.3.12
+(defun cursor-next-line (&optional (m 1))
+  "Move the cursor m columns down to column 1."
+  (csi "E" m))
+
+(setf (fdefinition 'cnl) #'cursor-next-line)
+
+;; Name:       Cursor preceding line
+;; Mnemonic:   CPL
+;; Final char: F
+;; Final byte: 04/06
+;; Sequence:   CSI Pn F
+;; Parameters: Pn = m
+;; Default:    Pn = 1
+;; Reference:  ANSI 5.8, ECMA 8.3.13
+(defun cursor-preceding-line (&optional (m 1))
+  "Move the cursor m columns up to column 1."
+  (csi "F" m))
+
+(setf (fdefinition 'cpl) #'cursor-preceding-line)
+
+;; Name:       Cursor horizontal absolute
+;; Mnemonic:   CHA
+;; Final char: G
+;; Final byte: 04/07
+;; Sequence:   CSI Pn G
+;; Parameters: Pn = n
+;; Default:    Pn = 1
+;; Reference:  ANSI 5.5, ECMA 8.3.9
+;; Notice:     ECMA name: Cursor character absolute
+(defun cursor-horizontal-absolute (&optional (n 1))
+  "Move the cursor to the n-th column in the current line."
+  (csi "G" n))
+
+(setf (fdefinition 'cha) #'cursor-horizontal-absolute)
 
 ;; Name:       Cursor position
 ;; Mnemonic:   CUP
@@ -152,13 +225,29 @@
 ;; Sequence:   CSI Pn1 ; Pn2 H
 ;; Parameters: Pn1 = m line, Pn2 = n column
 ;; Defaults:   Pn1 = 1; Pn2 = 1
+;; Reference:  ANSI 5.16, ECMA 8.3.21
 (defun cursor-position (&optional (line 1) (column 1))
   "Move the cursor to m-th line and n-th column of the screen.
 
-The line and column numbering is one-based."
+The line and column numbering is one-based.
+
+Without arguments, the cursor is placed in the home position (1 1),
+the top left corner."
   (csi "H" line column))
 
 (setf (fdefinition 'cup) #'cursor-position)
+
+(defun save-cursor-position ()
+  "Save cursor position. Move cursor to the saved position using restore-cursor-position."
+  (csi "s"))
+
+(setf (fdefinition 'scosc) #'save-cursor-position)
+
+(defun restore-cursor-position ()
+  "Move cursor to the position saved using save-cursor-position."
+  (csi "u"))
+
+(setf (fdefinition 'scorc) #'restore-cursor-position)
 
 ;; Name:       Erase in display
 ;; Mnemonic:   ED
@@ -167,6 +256,8 @@ The line and column numbering is one-based."
 ;; Sequence:   CSI Ps J
 ;; Parameters: Ps = mode
 ;; Defaults:   Ps = 0
+;; Reference:  ANSI 5.29, ECMA 8.3.39
+;; Notice:     ECMA name: Erase in page
 (defun erase-in-display (&optional (mode 0))
   "Erase some or all characters on the screen depending on the selected mode.
 
@@ -207,6 +298,7 @@ including the scrollback buffer."
 ;; Sequence:   CSI Ps K
 ;; Parameters: Ps = mode
 ;; Defaults:   Ps = 0
+;; Reference:  ANSI 5.31, ECMA 8.3.41
 (defun erase-in-line (&optional (mode 0))
   "Erase some or all characters on the current line depending on the selected mode.
 
@@ -222,12 +314,15 @@ Mode 2 (erase-line) erases all characters on the line."
 (setf (fdefinition 'el) #'erase-in-line)
 
 (defun erase-right ()
+  "Erases all characters from the cursor to the end of the line."
   (erase-in-line 0))
 
 (defun erase-left ()
+  "Erases all characters from the beginning of the line to the cursor."
   (erase-in-line 1))
 
 (defun erase-line ()
+  "Erases all characters on the current line."
   (erase-in-line 2))
 
 ;; Name:        Select Graphic Rendition
@@ -237,6 +332,7 @@ Mode 2 (erase-line) erases all characters on the line."
 ;; Sequence:    CSI Pm m
 ;; Parameters:  See documentation string. 
 ;; Defaults:    Pm = 0
+;; Reference:   ANSI 5.77, ECMA 8.3.117
 (defun select-graphic-rendition (&rest params)
   "Set character attributes and foreground and background colors.
 
