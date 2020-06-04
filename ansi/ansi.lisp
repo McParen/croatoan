@@ -14,13 +14,23 @@
 ;; http://ascii-table.com/ansi-escape-sequences.php
 ;; https://www.man7.org/linux/man-pages/man4/console_codes.4.html
 ;; https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+;; http://terminals-wiki.org/wiki/index.php/CodeChart:ANSI/ESC/CSI
 ;; http://www.xfree86.org/current/ctlseqs.html
 ;; http://man7.org/linux/man-pages/man4/console_codes.4.html
 ;; https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 ;; https://vt100.net/docs/vt510-rm/chapter4.html
+;; https://terminalguide.namepad.de/seq/
+;; https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
+;; https://docs.microsoft.com/en-us/windows/console/console-screen-buffers
 ;; https://www.gnu.org/software/screen/manual/html_node/Control-Sequences.html
 ;; http://bitsavers.trailing-edge.com/pdf/tektronix/410x/070-4526-01_4105_PgmrRef_Sep83.pdf
 ;; https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
+;; https://real-world-systems.com/docs/ANSIcode.html
+;; https://github.com/fidian/ansi
+;; https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
+;; https://bluesock.org/~willkg/dev/ansi.html
+;; https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+;; https://godoc.org/github.com/pborman/ansi
 
 ;; Based initially on http://en.wikipedia.org/wiki/ANSI_escape_code,
 ;; but it doesn't have very many definitions; this page, however, is
@@ -42,8 +52,8 @@
 ;; ESC     #\esc      27     #o33   #x1b        01/11
 ;; SP      #\space    32     #o40   #x20        02/00
 
-;; code x/y = column/row
-;; 7bit code table = x-column 0-7 / y-row 0-15
+;; code x/y = column/line
+;; 7bit code table = x-column 0-7 / y-line 0-15
 
 ;; x/y:        x       y 
 ;; Bit:    7 6 5 4 3 2 1
@@ -126,7 +136,7 @@ an undefined, unusable state."
 ;; Default:    Pn = 1
 ;; Reference:  ANSI 5.17, ECMA 8.3.22
 (defun cursor-up (&optional (m 1))
-  "Move the cursor m rows up."
+  "Move the cursor m lines up."
   (csi "A" m))
 
 (setf (fdefinition 'cuu) #'cursor-up)
@@ -140,7 +150,7 @@ an undefined, unusable state."
 ;; Default:    Pn = 1
 ;; Reference:  ANSI 5.14, ECMA 8.3.19
 (defun cursor-down (&optional (m 1))
-  "Move the cursor m rows down."
+  "Move the cursor m lines down."
   (csi "B" m))
 
 (setf (fdefinition 'cud) #'cursor-down)
@@ -213,7 +223,7 @@ an undefined, unusable state."
 ;; Reference:  ANSI 5.5, ECMA 8.3.9
 ;; Notice:     ECMA name: Cursor character absolute
 (defun cursor-horizontal-absolute (&optional (n 1))
-  "Move the cursor to the n-th column in the current line."
+  "Set the cursor horizontal position to the n-th column in the current line."
   (csi "G" n))
 
 (setf (fdefinition 'cha) #'cursor-horizontal-absolute)
@@ -236,6 +246,55 @@ the top left corner."
   (csi "H" line column))
 
 (setf (fdefinition 'cup) #'cursor-position)
+
+;; Name:       Vertical position absolute
+;; Mnemonic:   VPA
+;; Final char: d
+;; Final byte: 06/04
+;; Sequence:   CSI Pn d
+;; Parameters: Pn = m
+;; Default:    Pn = 1
+;; Reference:  ANSI 5.96, ECMA 8.3.158
+;; Notice:     ECMA name: Line position absolute
+(defun vertical-position-absolute (&optional (m 1))
+  "Set the cursor vertical position to the m-th line in the current column."
+  (csi "d" m))
+
+(setf (fdefinition 'vpa) #'vertical-position-absolute)
+
+;; Name:       Vertical position relative
+;; Mnemonic:   VPR
+;; Final char: e
+;; Final byte: 06/05
+;; Sequence:   CSI Pn e
+;; Parameters: Pn = m
+;; Default:    Pn = 1
+;; Reference:  ANSI 5.97, ECMA 8.3.160
+;; Notice:     ECMA name: Line position forward
+(defun vertical-position-relative (&optional (m 1))
+  "Move the cursor vertical position down by m lines in the current column.
+
+This has the same effect as cursor-down (cud)."
+  (csi "e" m))
+
+(setf (fdefinition 'vpr) #'vertical-position-relative)
+
+;; Name:       Vertical position backward
+;; Mnemonic:   VPB
+;; Final char: k
+;; Final byte: 06/11
+;; Sequence:   CSI Pn k
+;; Parameters: Pn = m
+;; Default:    Pn = 1
+;; Reference:  ECMA 8.3.159
+;; Notice:     ECMA name: Line position backward
+(defun vertical-position-backward (&optional (m 1))
+  "Move the cursor vertical position up by m lines in the current column.
+
+This has the same effect as cursor-up (cuu)."
+  (csi "k" m))
+
+(setf (fdefinition 'vpb) #'vertical-position-backward)
 
 (defun save-cursor-position ()
   "Save cursor position. Move cursor to the saved position using restore-cursor-position."
@@ -394,3 +453,38 @@ Background colors:
 ;; as if we read it through read-line
 (defun device-status-report ()
   (csi "6n"))
+
+;;; DEC private mode
+
+;; Set (enable, turn on) 
+
+(defun dec-private-mode-set (mode)
+  "Set (turn on, enable) a DEC private mode.
+
+Implemented modes:
+
+  25 show or hide the cursor
+1047 alternate or normal screen buffer"
+  (csi "h" "?" mode))
+
+(setf (fdefinition 'decset) #'dec-private-mode-set)
+
+(defun show-cursor ()
+  (decset 25))
+
+(defun use-alternate-screen-buffer ()
+  (decset 1047))
+
+;; Reset (disable, turn off)
+
+(defun dec-private-mode-reset (mode)
+  "Reset (turn off, disable) a DEC private mode."
+  (csi "l" "?" mode))
+
+(setf (fdefinition 'decrst) #'dec-private-mode-reset)
+
+(defun hide-cursor ()
+  (decrst 25))
+
+(defun use-normal-screen-buffer ()
+  (decrst 1047))

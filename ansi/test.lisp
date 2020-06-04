@@ -48,7 +48,41 @@
     (princ "X"))
   (sgr 0)
   (force-output)
-
   (sleep 3)
   (ris)
   (force-output))
+
+(defun t04 ()
+  "Hide and show the cursor."
+  (princ "Cursor visible:")
+  (force-output)
+  (sleep 2)
+  (terpri)
+  (princ "Cursor invisible:")
+  (hide-cursor)
+  (force-output)
+  (sleep 2)
+  (terpri)
+  (princ "Cursor visible:")
+  (show-cursor)
+  (force-output)
+  (sleep 2))
+
+(defun t05 ()
+  "Switch to and back from the alternate screen buffer."
+  (princ "Normal screen buffer. ")
+  (force-output)
+  (sleep 2)
+
+  (save-cursor-position)
+  (use-alternate-screen-buffer)
+  (clear)
+  (princ "Alternate screen buffer.")
+  (force-output)
+  (sleep 2)
+
+  (use-normal-screen-buffer)
+  (restore-cursor-position)
+  (princ "Back to Normal screen buffer.")
+  (force-output)
+  (sleep 1))
