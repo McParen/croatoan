@@ -39,7 +39,10 @@
    
    ;; common.lisp
    #:clear
-   #:home))
+   #:home
+
+   ;; stty.lisp
+   #:set-tty-mode))
 
 (defpackage #:de.anvi.ansi-escape.test
   (:documentation "Tests and examples for the ANSI escape sequences.")
@@ -52,4 +55,7 @@
    #:t02
    #:t03
    #:t04
-   #:t05))
+   #:t05
+   #:t06
+   #:t07
+   #:t08))

@@ -1,5 +1,5 @@
 (in-package :de.anvi.ansi-escape.test)
-
+  
 (defun t01 ()
   (erase)
   (cursor-position 0 0)
@@ -86,3 +86,72 @@
   (princ "Back to Normal screen buffer.")
   (force-output)
   (sleep 1))
+
+(defun t06 ()
+  "Set individual termios flags to enable raw and disable echo mode.
+
+Enabling raw mode allows read-char to return immediately after a key is pressed.
+
+In the default cooked mode, the entry has to be confirmed by pressing enter."
+  (set-tty-mode t :ignbrk nil
+                  :brkint nil
+                  :parmrk nil
+                  :istrip nil
+                  :inlcr  nil
+                  :igncr  nil
+                  :icrnl  nil
+                  :ixon   nil
+                  :opost  nil
+                  :echo   nil
+                  :echonl nil
+                  :icanon nil
+                  :isig   nil
+                  :iexten nil
+                  :csize  nil
+                  :parenb nil
+                  :vmin 1
+                  :vtime 0)  
+  (erase)
+  (cursor-position 1 1)
+  (force-output)
+  (let ((a (read-char)))
+    (cursor-position 3 1)
+    (princ a)
+    (force-output))
+  
+  (set-tty-mode t :echo t
+                  :brkint t
+                  :ignpar t
+                  :istrip t
+                  :icrnl t
+                  :ixon t
+                  :opost t
+                  :isig t
+                  :icanon t
+                  :veol 0))
+
+(defun t07 ()
+  "Use combination modes that consist of several individual flags.
+
+Cooked and raw are opposite modes. Enabling cooked disbles raw and vice versa."
+  (set-tty-mode t :cooked nil)
+  (erase)
+  (cursor-position 1 1)
+  (force-output)
+  (let ((a (read-char)))
+    (cursor-position 3 1)
+    (princ a)
+    (force-output))
+  (set-tty-mode t :raw nil))
+
+(defun t08 ()
+  "Why doesnt calling the stty utility work?"
+  (uiop:run-program "stty raw -echo" :ignore-error-status t)
+  (erase)
+  (cursor-position 1 1)
+  (force-output)
+  (let ((a (read-char)))
+    (cursor-position 2 1)
+    (princ a)
+    (force-output))
+  (uiop:run-program "stty -raw echo" :ignore-error-status t))

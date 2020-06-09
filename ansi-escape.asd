@@ -8,4 +8,5 @@
   
   ((:file "package")
    (:file "ansi")
-   (:file "common")))
+   (:file "common")
+   (:file "stty")))
