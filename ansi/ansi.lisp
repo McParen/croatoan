@@ -470,10 +470,10 @@ Implemented modes:
 (setf (fdefinition 'decset) #'dec-private-mode-set)
 
 (defun show-cursor ()
-  (decset 25))
+  (dec-private-mode-set 25))
 
 (defun use-alternate-screen-buffer ()
-  (decset 1047))
+  (dec-private-mode-set 1047))
 
 ;; Reset (disable, turn off)
 
@@ -484,7 +484,7 @@ Implemented modes:
 (setf (fdefinition 'decrst) #'dec-private-mode-reset)
 
 (defun hide-cursor ()
-  (decrst 25))
+  (dec-private-mode-reset 25))
 
 (defun use-normal-screen-buffer ()
-  (decrst 1047))
+  (dec-private-mode-reset 1047))
