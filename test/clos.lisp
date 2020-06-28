@@ -935,7 +935,7 @@ Test whether a window (stream) was closed."
 
            (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)))
                  (w2 (make-instance 'window :height 10 :width 30 :position '(6 10)))
-                 (w3 (make-instance 'window :height 10 :width 30 :position '(9 15))))
+                 (w3 (make-instance 'window :dimensions '(10 30) :position '(9 15))))
 
              (setf (background w1) (make-instance 'complex-char :color-pair '(:white :black)))
              (setf (background w2) (make-instance 'complex-char :color-pair '(:black :white)))
@@ -2217,16 +2217,22 @@ contents of the area as a single string."
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
+  "Show how to creating sub-windows and how they share memory with the parent window."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    ;; Leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3).
     (let* ((win1 (make-instance 'window :position '(2 2) :draw-border t))
-           (win2 (make-instance 'sub-window :parent win1 :height 5 :width 20 :position '(4 4) :draw-border t))
+           (win2 (make-instance 'sub-window :parent win1 :dimensions '(5 20) :position '(4 4) :draw-border t))
            (win3 (make-instance 'sub-window :parent win1           :width 20 :position '(4 4) :draw-border t :relative t)))
       (princ "win1" win1)
       (princ "win2" win2)
       (princ "win3 relative" win3)
-      (mapc #'(lambda (w) (refresh w)) (list win1 win2 win3))
+      (move scr 0 0) (format scr "Dimensions: scr ~A win1 ~A win2 ~A win3 ~A"
+                             (dimensions scr) (dimensions win1) (dimensions win2) (dimensions win3))
+      (move scr 1 0) (format scr "Positions:  scr ~A win1 ~A win2 ~A win3 ~A"
+                             (window-position scr) (window-position win1) (window-position win2) (window-position win3))
+      (mapc #'refresh (list scr win1 win2 win3))
       (get-char win3)
-      (mapc #'(lambda (w) (close w)) (list win2 win3))
+      (mapc #'close (list win2 win3))
       (refresh win1)
       ;; observe that the content from win 2 and 3 is still in win1 after they have been closed.
       (get-char win1)
