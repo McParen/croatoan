@@ -51,6 +51,7 @@
    complex-char-array
    width
    height
+   dimensions
    window-position
    position-y
    position-x

@@ -1129,10 +1129,16 @@ If there is no window asociated with the element, return the window associated w
 
 ;; We cant do this because _all_ auxiliary methods are always used and combined.
 
-(defmethod initialize-instance :after ((win window) &key color-pair)
+(defmethod initialize-instance :after ((win window) &key color-pair dimensions)
   (with-slots (winptr height width position fgcolor bgcolor background) win
+    ;; for ALL window types
+    ;; the keyword dimensions overrides width and height
+    (when dimensions
+      (setf height (car dimensions)
+            width (cadr dimensions)))
     ;; just for WINDOW types
     (when (eq (type-of win) 'window)
+      ;; the default value 0 for width or height is "to the end of the screen".
       (unless width (setf width 0))
       (unless height (setf height 0))
       (setf winptr (ncurses:newwin height width (car position) (cadr position)))
@@ -1143,7 +1149,6 @@ If there is no window asociated with the element, return the window associated w
             (color-pair
              ;; set fg and bg, pass to ncurses
              (setf (color-pair win) color-pair)))
-
       (when background (setf (background win) background)) )))
 
 (defmethod initialize-instance :after ((scr screen) &key color-pair)
@@ -1181,11 +1186,11 @@ If there is no window asociated with the element, return the window associated w
 ;; Subwindows must be deleted before the main window can be deleted.
 (defmethod initialize-instance :after ((win sub-window) &key)
   (with-slots (winptr parent height width position relativep) win
-    ;; leaving out the size of a window maxes it out to the right and to the bottom
-    (unless width (setf width 0))
-    (unless height (setf height 0))
     ;; just for SUB-WINDOW types
     (when (eq (type-of win) 'sub-window)
+      ;; the default value 0 for width or height is "to the end of the screen".
+      (unless width (setf width 0))
+      (unless height (setf height 0))
       (if relativep
           ;;(setf winptr (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
           (setf winptr (let ((val (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position))))
@@ -1286,6 +1291,11 @@ If there is no window asociated with the element, return the window associated w
 (defgeneric height (window))
 (defmethod height ((window window))
   (ncurses:getmaxy (slot-value window 'winptr)))
+
+(defgeneric dimensions (object)
+  (:documentation "Return a two-element list with the height and width of the object.")
+  (:method (object)
+    (list (height object) (width object))))
 
 (defgeneric cursor-position (window))
 (defmethod cursor-position ((window window))
