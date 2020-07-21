@@ -1261,13 +1261,13 @@ If there is no window asociated with the element, return the window associated w
 
 (defgeneric (setf position-y) (y window))
 (defmethod (setf position-y) (y (win window))
-  (let ((x (cadr (slot-value win 'position))))
+  (let ((x (position-x win)))
     (setf (slot-value win 'position) (list y x))
     (ncurses:mvwin (slot-value win 'winptr) y x)))
 
 (defgeneric (setf position-x) (x window))
 (defmethod (setf position-x) (x (win window))
-  (let ((y (car (slot-value win 'position))))
+  (let ((y (position-y win)))
     (setf (slot-value win 'position) (list y x))
     (ncurses:mvwin (slot-value win 'winptr) y x)))
 
@@ -1278,7 +1278,6 @@ If there is no window asociated with the element, return the window associated w
 ;; "The mvderwin() function specifies a mapping of characters.
 ;; The function identifies a mapped area of the parent of the specified window"
 
-;; TODO: rename to source-position
 (defgeneric (setf source-position) (coordinates sub-window))
 (defmethod (setf source-position) (coordinates (w sub-window))
   (setf (slot-value w 'source-position) coordinates)
@@ -1322,13 +1321,13 @@ If there is no window asociated with the element, return the window associated w
 
 (defgeneric (setf cursor-position-y) (y window))
 (defmethod (setf cursor-position-y) (y (win window))
-  (let ((x (cadr (slot-value win 'cursor-position))))
+  (let ((x (cursor-position-x win)))
     (setf (slot-value win 'cursor-position) (list y x))
     (ncurses:wmove (slot-value win 'winptr) y x)))
 
 (defgeneric (setf cursor-position-x) (x window))
 (defmethod (setf cursor-position-x) (x (win window))
-  (let ((y (car (slot-value win 'cursor-position))))
+  (let ((y (cursor-position-y win)))
     (setf (slot-value win 'cursor-position) (list y x))
     (ncurses:wmove (slot-value win 'winptr) y x)))
 
