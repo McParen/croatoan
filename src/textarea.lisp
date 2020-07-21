@@ -86,12 +86,20 @@
    "A textarea is a multiline field for display and editing of texts including newlines.
    For now, control characters other than newline are not interpreted."))
 
+(defmethod initialize-instance :after ((area textarea) &key dimensions)
+  (with-slots (width height) area
+    ;; the keyword dimensions overrides width and height
+    (when dimensions
+      (setf height (car dimensions)
+            width (cadr dimensions)))))
+
 (defmethod value ((area textarea))
   "If the buffer is empty, return nil, otherwise return the buffer as a string."
   (when (slot-value area 'buffer)
     (coerce (slot-value area 'buffer) 'string)))
 
 (defmethod (setf value) (new-value (area textarea))
+  "Set the buffer of the area to the string new-value."
   (setf (slot-value area 'buffer) (coerce new-value 'list)))
 
 (defmethod clear ((area textarea) &key)

@@ -1884,8 +1884,8 @@ Scrolling is enabled by default and the buffer is unlimited.
 C-a (^A) accepts the entry and exits the edit loop returning the
 contents of the area as a single string."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
-    (let* ((win (make-instance 'window :height 8 :width 17 :position (list 5 5) :draw-border t :enable-function-keys t))
-           (area (make-instance 'textarea :position (list 1 1) :height 6 :width 15 :window win)))
+    (let* ((win  (make-instance 'window   :position '(5 5) :dimensions '(8 21) :draw-border t :enable-function-keys t))
+           (area (make-instance 'textarea :position '(1 1) :dimensions '(6 19) :window win)))
       (setf (background win) (make-instance 'complex-char :attributes '(:reverse)))
       (refresh win)
       ;; add some optional initial content to the input buffer
