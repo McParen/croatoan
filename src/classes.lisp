@@ -636,16 +636,17 @@ The initial purpose of this function is to be used as the equality test for alex
                       fgcolor bgcolor message-pad message-text message-height message-pad-coordinates) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
-
-      ;; dialog windows should always have borders
-      (let ((padding 1))
-        ;; if no layout was given, use a vertical list (n 1)
+      (let ((padding (if draw-border-p 1 0))
+            (item-length (+ (length current-item-mark) max-item-length)))
+        ;; if no layout was given, use a horizontal list (1 n).
         (unless layout (setf layout (list (length items) 1)))
 
         ;; if height and width are not given as initargs, they will be calculated,
-        ;; according to no of rows +/- border, and _not_ maximized like normal windows.
-        (unless height (setf height (+ 2 message-height (* 2 padding) (car layout))))
-        (unless width (setf width (+ (* 2 padding) (* (cadr layout) (+ (length current-item-mark) max-item-length)))))
+        ;; according to the number of rows +/- border, and _not_ maximized like normal windows.
+        (unless height
+          (setf height (+ (if (zerop padding) 3 2) message-height (* 2 padding) (car layout))))
+        (unless width
+          (setf width (+ (if (zerop padding) 2 4) (* (cadr layout) item-length))))
 
         ;; if the key center was given, calculate position automatically, even if it was explicitely given.
         (when center (setf position (list (- (round (/ ncurses:LINES 2)) (round (/ height 2)))
@@ -655,23 +656,23 @@ The initial purpose of this function is to be used as the equality test for alex
         (setf sub-window
               (make-instance 'sub-window
                              :parent win :height (car layout)
-                             :width (* (cadr layout) (+ (length current-item-mark) max-item-length))
+                             :width (* (cadr layout) item-length)
                              :position (list (+ 2 message-height padding) (+ padding 1)) :relative t))
 
         ;; if there is space reserved for a message, and the message is provided,
         ;; initialize a pad and set the background color.
         (when (and message-text (> message-height 0))
-          (setf message-pad (make-instance 'pad :height message-height :width (- width 4)))
+          (setf message-pad (make-instance 'pad :height message-height :width (* (cadr layout) item-length)))
           (setf message-pad-coordinates
-                (list (+ 2 (car position)) ;screen-min-y
-                      (+ 2 (cadr position)) ;screen-min-x
+                (list (+ (1+ padding) (car position))  ;screen-min-y
+                      (+ (1+ padding) (cadr position)) ;screen-min-x
                       (+ (+ 2 (car position)) message-height) ;screen-max-y
                       (+ (+ 2 (cadr position) (- width 4))))) ;screen-max-x
           (when color-pair
             (setf (background message-pad) (make-instance 'complex-char :color-pair color-pair)))
           (format message-pad message-text))
 
-        ;; TODO: do this once for all menus and dialogs, at the moment it is duplicated
+        ;; TODO: do this once for all decorated windows, at the moment it is duplicated
         (cond ((or fgcolor bgcolor)
                (set-color-pair winptr (color-pair win))
                (setf (color-pair sub-window) (color-pair win)

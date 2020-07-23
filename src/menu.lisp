@@ -122,20 +122,22 @@ At the third position, display the item given by item-number."
 (defun draw-menu-item (win menu item-number i j)
   "Draw the item given by item-number at item position (i j) in the window."
   (with-accessors ((current-item-number current-item-number)
+                   (current-item-mark current-item-mark)
                    (current-item-position current-item-position)
                    (max-item-length max-item-length)
                    (element-position element-position)
                    (style style)) menu
     (let* (pos-y
            pos-x
-           (item-selected-p (= item-number current-item-number)))
+           (item-selected-p (= item-number current-item-number))
+           (len (+ (length current-item-mark) max-item-length)))
       (if element-position
           ;; add an offset when element-position is given
-          (setq pos-y (+ i                     (car  element-position))
-                pos-x (+ (* j max-item-length) (cadr element-position)))
+          (setq pos-y (+ i         (car  element-position))
+                pos-x (+ (* j len) (cadr element-position)))
           ;; if a position is not given, display the menu starting at 0,0
           (setq pos-y i
-                pos-x (* j max-item-length)))
+                pos-x (* j len)))
       (move win pos-y pos-x)
       ;; save the position of the current item, to be used in update-cursor-position.
       (when item-selected-p
@@ -149,7 +151,7 @@ At the third position, display the item given by item-number."
                           ;; default background style
                           (if item-selected-p (list :attributes (list :reverse)) nil))))
         ;; write an empty string as the background.
-        (save-excursion win (add win #\space :style bg-style :n max-item-length))
+        (save-excursion win (add win #\space :style bg-style :n len))
         ;; display it in the window associated with the menu
         (add win (format-menu-item menu item-number) :style fg-style)))))
 
