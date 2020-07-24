@@ -1228,17 +1228,20 @@ If there is no window asociated with the element, return the window associated w
 ;; Accessors
 
 (defgeneric window-position (window))
-(defmethod window-position ((window window))
-  (list (ncurses:getbegy (slot-value window 'winptr)) (ncurses:getbegx (slot-value window 'winptr))))
+(defmethod window-position ((win window))
+  (with-slots (winptr) win
+    (list (ncurses:getbegy winptr)
+          (ncurses:getbegx winptr))))
 (defmethod window-position ((win sub-window))
   (with-slots (winptr relativep) win
     (if relativep
         (list (ncurses:getpary winptr) (ncurses:getparx winptr))
         (list (ncurses:getbegy winptr) (ncurses:getbegx winptr)))))
-(defgeneric (setf window-position) (coordinates window))
-(defmethod (setf window-position) (coordinates (w window))
-  (setf (slot-value w 'position) coordinates)
-  (ncurses:mvwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
+(defgeneric (setf window-position) (position window))
+(defmethod (setf window-position) (pos (win window))
+  (with-slots (winptr position) win
+    (setf position pos)
+    (apply #'ncurses:mvwin winptr pos)))
 
 ;; The slots position-y and position-x dont exist, these accessors exist for convenience.
 
@@ -1279,10 +1282,10 @@ If there is no window asociated with the element, return the window associated w
 ;; "The mvderwin() function specifies a mapping of characters.
 ;; The function identifies a mapped area of the parent of the specified window"
 
-(defgeneric (setf source-position) (coordinates sub-window))
-(defmethod (setf source-position) (coordinates (w sub-window))
-  (setf (slot-value w 'source-position) coordinates)
-  (ncurses:mvderwin (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
+(defgeneric (setf source-position) (position sub-window))
+(defmethod (setf source-position) (position (w sub-window))
+  (setf (slot-value w 'source-position) position)
+  (ncurses:mvderwin (slot-value w 'winptr) (car position) (cadr position)))
 
 (defgeneric width (window))
 (defmethod width ((window window))
@@ -1298,16 +1301,18 @@ If there is no window asociated with the element, return the window associated w
     (list (height object) (width object))))
 
 (defgeneric cursor-position (window))
-(defmethod cursor-position ((window window))
-  (list (ncurses:getcury (slot-value window 'winptr)) (ncurses:getcurx (slot-value window 'winptr))))
+(defmethod cursor-position ((win window))
+  (list (ncurses:getcury (slot-value win 'winptr))
+        (ncurses:getcurx (slot-value win 'winptr))))
 
 ;; we can move the cursor by doing this, or by calling "move". 
 ;; both will use ncurses:wmove in the background.
-;; note that incd and decf dont work.
-(defgeneric (setf cursor-position) (coordinates window))
-(defmethod (setf cursor-position) (coordinates (w window))
-  (setf (slot-value w 'cursor-position) coordinates)
-  (ncurses:wmove (slot-value w 'winptr) (car coordinates) (cadr coordinates)))
+;; note that incf and decf dont work.
+(defgeneric (setf cursor-position) (position window))
+(defmethod (setf cursor-position) (pos (win window))
+  (with-slots (winptr cursor-position) win
+    (setf cursor-position pos)
+    (apply #'ncurses:wmove winptr pos)))
 
 ;; The slots position-y and position-x dont exist, but the pseudo accessors
 ;; exist for convenience.
