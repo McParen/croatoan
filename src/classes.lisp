@@ -662,7 +662,7 @@ The initial purpose of this function is to be used as the equality test for alex
         ;; if there is space reserved for a message, and the message is provided,
         ;; initialize a pad and set the background color.
         (when (and message-text (> message-height 0))
-          (setf message-pad (make-instance 'pad :height message-height :width (* (cadr layout) item-length)))
+          (setf message-pad (make-instance 'pad :height message-height :width (- width (+ 2 (* 2 padding)))))
           (setf message-pad-coordinates
                 (list (+ (1+ padding) (car position))  ;screen-min-y
                       (+ (1+ padding) (cadr position)) ;screen-min-x
