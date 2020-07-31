@@ -58,6 +58,14 @@
       ;; add a glider
       (bind scr #\g (lambda (w e) (loop for pos in init do (setf (apply #'aref world pos) t))))
 
+      ;; add an acorn
+      (bind scr #\f
+            (lambda (w e)
+              (let* ((offset '(10 20))
+                     (acorn (mapcar (lambda (pos) (mapcar #'+ pos offset))
+                                   '((0 1) (1 3) (2 0) (2 1) (2 4) (2 5) (2 6)))))
+                (loop for pos in acorn do (setf (apply #'aref world pos) t)))))
+
       ;; accelerate
       (bind scr #\a (lambda (w e) (setf (frame-rate scr) (* 2 (frame-rate scr)))))
       ;; decelerate
