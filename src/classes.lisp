@@ -1356,39 +1356,31 @@ If there is no window asociated with the element, return the window associated w
 ;;   (setf (slot-value window 'attributes) attributes)
 ;;   (set-attributes window attributes))
 
-(defmethod color-pair ((win window))
-  (with-slots (fgcolor bgcolor) win
-    (if (or fgcolor bgcolor)
-        (list fgcolor bgcolor)
-        ;; when both colors are nil, do not return (nil nil) but nil
-        nil)))
+(defgeneric color-pair (object)
+  (:documentation "")
+  (:method (object)
+    (with-slots (fgcolor bgcolor) object
+      (if (or fgcolor bgcolor)
+          (list fgcolor bgcolor)
+          ;; when both colors are nil, do not return (nil nil) but nil
+          nil))))
+
+(defgeneric (setf color-pair) (color-pair object)
+  (:documentation "")
+  (:method (color-pair object)
+    (with-slots (fgcolor bgcolor) object
+      (if color-pair
+          (setf fgcolor (car color-pair)
+                bgcolor (cadr color-pair))
+          ;; when color-pair is nil, both fg and bg are set to nil
+          (setf fgcolor nil
+                bgcolor nil)))))
 
 (defmethod (setf color-pair) (color-pair (win window))
-  (with-slots (fgcolor bgcolor) win
-    (if color-pair
-        (setf fgcolor (car color-pair)
-              bgcolor (cadr color-pair))
-        ;; when color-pair is nil, both fg and bg are set to nil
-        (setf fgcolor nil
-              bgcolor nil)))
+  ;; calls the default method
+  (call-next-method)
   ;; after the slots are set, pass the new pair to ncurses
   (set-color-pair (slot-value win 'winptr) (color-pair win)))
-
-(defmethod color-pair ((xch complex-char))
-  (with-slots (fgcolor bgcolor) xch
-    (if (or fgcolor bgcolor)
-        (list fgcolor bgcolor)
-        ;; when both colors are nil, do not return (nil nil) but nil
-        nil)))
-
-(defmethod (setf color-pair) (color-pair (xch complex-char))
-  (with-slots (fgcolor bgcolor) xch
-    (if color-pair
-        (setf fgcolor (car color-pair)
-              bgcolor (cadr color-pair))
-        ;; when color-pair is nil, both fg and bg are set to nil
-        (setf fgcolor nil
-              bgcolor nil))))
 
 (defmethod fgcolor ((win window))
   (slot-value win 'fgcolor))
