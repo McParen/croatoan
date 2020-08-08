@@ -21,6 +21,7 @@
    ;; classes
    complex-char
    complex-string
+   widget
    window
    screen
    sub-window

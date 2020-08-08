@@ -13,14 +13,47 @@
 ;; initialize instance takes a plist initarg and converts it to an alist.
 (defmethod initialize-instance :after ((keymap keymap) &key bindings-plist)
   (with-slots (bindings) keymap
+    ;; when the alist is not provided, but the plist, convert the plist to an alist
+    ;; the plist is easier to provide when there is a large number of bindings.
     (when (and (null bindings) bindings-plist)
       (setf bindings (plist2alist bindings-plist)))))
 
-(defclass window (fundamental-character-input-stream fundamental-character-output-stream)
+(defclass widget ()
+  ((name
+    :initarg       :name
+    :initform      nil
+    :reader        name
+    :type          (or null symbol keyword string)
+    :documentation
+    "Optional unique name by which the widget can be identified and accessed.
+    If the title is t, the name is displayed instead of the title.")
+
+   (title
+    :initarg       :title
+    :initform      nil
+    :accessor      title
+    :type          (or boolean string)
+    :documentation
+    "Title of the widget to be displayed to the user. 
+    If the title is t, the name should be displayed.")
+
+   (bindings
+    :initarg       :bindings
+    :initform      nil
+    :type          (or null cons)
+    :accessor      bindings
+    :documentation
+    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
+    Used by the run-event-loop function."))
+
+  (:documentation "Base class for all widgets like windows, form elements, etc."))
+
+(defclass window (widget fundamental-character-input-stream fundamental-character-output-stream)
   ((position
     :initarg       :position
     :initform      '(0 0)
     :type          (or null cons)
+    ;;:accessor    window-position
     :documentation "The (y=row x=column) coordinate of the top left corner of the window.")
 
    (width
@@ -36,8 +69,12 @@
     :documentation "The height (first, vertical, y dimension) of the window.")
 
    ;; has to be a 2el-list so we can use 1 arg with setf.
+   ;; TODO 200724 we actually do not need this slot.
+   ;; we only need accessors which access ncurses functions getcuryx and move.
+   ;; we need other slots like width and heght for after methods
    (cursor-position
     :type          cons
+    :initform      '(0 0)
     :documentation "The current cursor position coordinates in the form (y x).")
 
    (input-blocking
@@ -80,16 +117,6 @@
     :type          boolean
     :accessor      insert-mode-p
     :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting it (nil, default).")
-
-   ;; we need instance-local bindings so we dont have to create a keymap for every window and every program
-   (bindings
-    :initarg       :bindings
-    :initform      nil
-    :type          (or null cons)
-    :accessor      bindings
-    :documentation
-    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
-    Used by the run-event-loop function.")
 
    ;; if using an instance-local binding isnt sufficient, we can create a keymap and reference it in the object.
    (keymap
@@ -275,51 +302,16 @@
     :initform      nil
     :type          (or null sub-window)
     :reader        sub-window
-    :documentation "Active content window, for example for menu items.")
+    :documentation "Active content window, for example for menu items."))
 
-   (title
-    :initarg       :title
-    :initform      nil
-    :accessor      title
-    :type          (or boolean string)
-    :documentation "If t, a title of the window will be displayed over the top border."))
-
-  (:documentation  "A decorated-window is a window consisting of a background window for a border, a title and a content sub-window."))
-
-(defclass menu-item ()
-  ((name
-    :initarg       :name
-    :initform      nil
-    :reader        name
-    :type          (or null string symbol)
-    :documentation "Short name of a menu item displayed in the menu.")
-
-   (checkedp
-    :initarg       :checked
-    :initform      nil
-    :accessor      checkedp
-    :type          boolean
-    :documentation "t if the item has been checked, nil if it hasn't.")
-
-   (value
-    :initarg       :value
-    :initform      nil
-    :reader        value
-    :type          (or symbol string menu menu-window function)
-    :documentation "Object associated with and returned upon selection of the item."))
-  
-  (:documentation  "A menu consists of a list of menu items."))
+  (:documentation
+   "A decorated-window is a window consisting of a background window with a border, 
+   a title displayed over the top border and a sub-window where the content should
+   be displayed."))
 
 ;; default size of ncurses menus is 16 rows, 1 col.
 (defclass menu (element)
-  ((name
-    :initarg       :name
-    :initform      nil
-    :reader        name
-    :type          (or null string symbol)
-    :documentation "Name of the menu. (For example for setting the menu-window title, if title is t.)")
-
-   (items
+  ((items
     :initarg       :items
     :initform      nil
     :accessor      items
@@ -337,7 +329,7 @@
     :initform      0
     :accessor      current-item-number
     :type          integer
-    :documentation "Number of the currently selected item.")
+    :documentation "Number (row-major mode) of the currently selected item.")
 
    (current-item
     :initform      nil
@@ -394,16 +386,6 @@
     :accessor      scrolled-region-start
     :type          (or null cons)
     :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region.")
-
-   ;; we need instance-local bindings so we dont have to create a keymap for every window and every program
-   (bindings
-    :initarg       :bindings
-    :initform      nil
-    :type          (or null cons)
-    :accessor      bindings
-    :documentation
-    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
-    Used by the run-event-loop function.")
 
    ;; if using an instance-local binding isnt sufficient, we can create a keymap and reference it in the object.
    (keymap
@@ -574,26 +556,12 @@
                      (background win) (make-instance 'complex-char :color-pair color-pair)
                      (background sub-window) (make-instance 'complex-char :color-pair color-pair)))) ))))
 
-(defclass element ()
-  ((name
-    :initarg       :name
-    :initform      nil
-    :reader        name
-    :type          (or null symbol keyword string)
-    :documentation "Optional unique name by which the element can be identified and accessed.")
-
-   (title
-    :initarg       :title
-    :initform      nil
-    :accessor      title
-    :type          (or boolean string)
-    :documentation "Title of the element to be displayed at an position depending on the element type.")
-
-   (value
+(defclass element (widget)
+  ((value
     :initarg       :value
     :initform      nil
     :accessor      value
-    :type          (or symbol keyword string number)
+    ;;:type          (or symbol keyword string number)
     :documentation "Value of the element, mostly the result of the form editing.")
 
    (element-position
@@ -602,15 +570,6 @@
     :type          (or null cons)
     :accessor      element-position
     :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element within its associated window.")
-
-   (bindings
-    :initarg       :bindings
-    :initform      nil
-    :type          (or null cons)
-    :accessor      bindings
-    :documentation
-    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
-    Used by the run-event-loop function.")
 
    (keymap
     :initarg       :keymap
@@ -723,15 +682,6 @@ If there is no window asociated with the element, return the window associated w
     :type          (or null cons)
     :documentation "A plist of two complex-chars (or nil): :foreground and :selected-foreground.")
 
-   (bindings
-    :initarg       :bindings
-    :initform      nil
-    :type          (or null cons)
-    :accessor      bindings
-    :documentation
-    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
-    Used by the run-event-loop function.")
-
    (keymap
     :initarg       :keymap
     :initform      'button-map
@@ -754,15 +704,6 @@ If there is no window asociated with the element, return the window associated w
     :accessor      checkedp
     :type          boolean
     :documentation "t if the checkbox has been checked, nil if it hasn't.")
-   
-   (bindings
-    :initarg       :bindings
-    :initform      nil
-    :type          (or null cons)
-    :accessor      bindings
-    :documentation
-    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
-    Used by the run-event-loop function.")
 
    (keymap
     :initarg       :keymap
@@ -772,6 +713,13 @@ If there is no window asociated with the element, return the window associated w
     :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings."))
 
   (:documentation "A boolean element that can be checked (t) or unchecked (nil)"))
+
+(defclass menu-item (checkbox)
+  ((value
+    :type         (or symbol keyword string menu menu-window function)
+    :documentation "The value of an item can be a name, a sub menu or a function to be called when the item is selected."))
+
+  (:documentation  "A menu contains of a list of menu items."))
 
 (defclass checklist (menu)
   ((menu-type
@@ -804,15 +752,6 @@ If there is no window asociated with the element, return the window associated w
     :documentation
     "Printing a new char will insert (t) it before the character under the cursor
     instead of overwriting it (nil, default).")
-
-   (bindings
-    :initarg       :bindings
-    :initform      nil
-    :type          (or null cons)
-    :accessor      bindings
-    :documentation
-    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
-    Used by the run-event-loop function.")
 
    (keymap
     :initarg       :keymap
@@ -867,15 +806,8 @@ If there is no window asociated with the element, return the window associated w
 (defmethod (setf value) (new-value (field field))
   (setf (slot-value field 'buffer) (reverse (coerce new-value 'list))))
 
-(defclass form ()
-  ((name
-    :initarg       :name
-    :initform      nil
-    :reader        name
-    :type          (or null symbol keyword string)
-    :documentation "Name of the form.")
-
-   (elements
+(defclass form (widget)
+  ((elements
     :initarg       :elements
     ;; Make sure we already have fields when we initialize a form.
     :initform      nil
@@ -903,15 +835,6 @@ If there is no window asociated with the element, return the window associated w
     :type          (or null cons)
     :accessor      style
     :documentation "A plist of default styles for each form element type.")
-
-   (bindings
-    :initarg       :bindings
-    :initform      nil
-    :type          (or null cons)
-    :accessor      bindings
-    :documentation
-    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
-    Used by the run-event-loop function.")
 
    (keymap
     :initarg       :keymap
