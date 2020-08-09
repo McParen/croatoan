@@ -43,8 +43,18 @@
     :type          (or null cons)
     :accessor      bindings
     :documentation
-    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
-    Used by the run-event-loop function."))
+    "Alist of events (characters, keywords or integers) as keys and
+    handler functions as values. Used by the run-event-loop function.")
+ 
+   (keymap
+    :initarg       :keymap
+    :initform      nil
+    :type          (or null symbol keyword keymap)
+    :accessor      keymap
+    :documentation
+    "Keymap containing the key bindings to be used by run-event-loop instead
+    of the object's own bindings. If using an instance-local binding isn't sufficient, 
+    we can create an external keymap and reference it in the object."))
 
   (:documentation "Base class for all widgets like windows, form elements, etc."))
 
@@ -117,14 +127,6 @@
     :type          boolean
     :accessor      insert-mode-p
     :documentation "Printing a new char will insert (t) it before the character under the cursor instead of overwriting it (nil, default).")
-
-   ;; if using an instance-local binding isnt sufficient, we can create a keymap and reference it in the object.
-   (keymap
-    :initarg       :keymap
-    :initform      nil
-    :type          (or null symbol keyword keymap)
-    :accessor      keymap
-    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
 
    (background
     :initarg       :background
@@ -387,14 +389,6 @@
     :type          (or null cons)
     :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region.")
 
-   ;; if using an instance-local binding isnt sufficient, we can create a keymap and reference it in the object.
-   (keymap
-    :initarg       :keymap
-    :initform      'menu-map
-    :type          (or null symbol keyword keymap)
-    :accessor      keymap
-    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
-
    (style
     :initarg       :style
     :initform      nil
@@ -403,6 +397,7 @@
     "Style of menu items: :foreground, :background, :selected-foreground, :selected-background.
     The default style of the selected item is the attribute :reverse, and nil for other items."))
 
+  (:default-initargs :keymap 'menu-map)
   (:documentation  "A menu is a list of items that can be selected by the user."))
 
 (defclass menu-window (menu decorated-window)
@@ -570,13 +565,6 @@
     :type          (or null cons)
     :accessor      element-position
     :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element within its associated window.")
-
-   (keymap
-    :initarg       :keymap
-    :initform      nil
-    :type          (or null symbol keyword keymap)
-    :accessor      keymap
-    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
    
    ;; we need this to draw selected and other elements with different styles.
    ;; this has to be toggled at the same time as current-element of a form
@@ -680,15 +668,9 @@ If there is no window asociated with the element, return the window associated w
     :initarg       :style
     :initform      nil
     :type          (or null cons)
-    :documentation "A plist of two complex-chars (or nil): :foreground and :selected-foreground.")
+    :documentation "A plist of two complex-chars (or nil): :foreground and :selected-foreground."))
 
-   (keymap
-    :initarg       :keymap
-    :initform      'button-map
-    :type          (or null symbol keyword keymap)
-    :accessor      keymap
-    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings."))
-
+  (:default-initargs :keymap 'button-map)
   (:documentation "An element that can call a function by pressing enter (or in future, with a mouse click)."))
 
 (defclass checkbox (element)
@@ -703,15 +685,9 @@ If there is no window asociated with the element, return the window associated w
     :initform      nil
     :accessor      checkedp
     :type          boolean
-    :documentation "t if the checkbox has been checked, nil if it hasn't.")
+    :documentation "t if the checkbox has been checked, nil if it hasn't."))
 
-   (keymap
-    :initarg       :keymap
-    :initform      'checkbox-map
-    :type          (or null symbol keyword keymap)
-    :accessor      keymap
-    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings."))
-
+  (:default-initargs :keymap 'checkbox-map)
   (:documentation "A boolean element that can be checked (t) or unchecked (nil)"))
 
 (defclass menu-item (checkbox)
@@ -722,12 +698,8 @@ If there is no window asociated with the element, return the window associated w
   (:documentation  "A menu contains of a list of menu items."))
 
 (defclass checklist (menu)
-  ((menu-type
-    :initarg       :menu-type
-    :initform      :checklist
-    :type          keyword
-    :documentation "The type of the menu is set to :checklist"))
-
+  ()
+  (:default-initargs :menu-type :checklist)
   (:documentation "A checklist is a multi-selection menu with checkable items."))
 
 (defclass field (element)
@@ -752,13 +724,6 @@ If there is no window asociated with the element, return the window associated w
     :documentation
     "Printing a new char will insert (t) it before the character under the cursor
     instead of overwriting it (nil, default).")
-
-   (keymap
-    :initarg       :keymap
-    :initform      'field-map
-    :type          (or null symbol keyword keymap)
-    :accessor      keymap
-    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
 
    (buffer
     :initform      nil
@@ -790,6 +755,7 @@ If there is no window asociated with the element, return the window associated w
     :accessor      input-pointer
     :documentation "The position in the input buffer to which the next character will be written."))
 
+  (:default-initargs :keymap 'field-map)
   (:documentation "A field is an editable part of the screen for user input. Can be part of a form."))
 
 (defmethod initialize-instance :after ((field field) &key)
@@ -836,13 +802,6 @@ If there is no window asociated with the element, return the window associated w
     :accessor      style
     :documentation "A plist of default styles for each form element type.")
 
-   (keymap
-    :initarg       :keymap
-    :initform      'form-map
-    :type          (or null symbol keyword keymap)
-    :accessor      keymap
-    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
-
    (window
     :initarg       :window
     :initform      nil
@@ -850,7 +809,9 @@ If there is no window asociated with the element, return the window associated w
     :accessor      window
     :documentation "Window created separately and then associated with the form."))
 
-  (:documentation "A form is a list of fields."))
+  (:default-initargs :keymap 'form-map)
+  (:documentation
+   "A form is a list of elements like fields, textareas, checkboxes and buttons."))
 
 (defmethod initialize-instance :after ((form form) &key)
   (with-slots (elements current-element bindings keymap) form

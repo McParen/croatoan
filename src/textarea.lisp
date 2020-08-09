@@ -28,22 +28,6 @@
     "Printing a new char will insert (t, default) it before the character under the cursor
     instead of overwriting it (nil).")
 
-   (bindings
-    :initarg       :bindings
-    :initform      nil
-    :type          (or null cons)
-    :accessor      bindings
-    :documentation
-    "Alist of events (characters, keywords or integers) as keys and handler functions as values. 
-    Used by the run-event-loop function.")
-
-   (keymap
-    :initarg       :keymap
-    :initform      'textarea-map
-    :type          (or null symbol keyword keymap)
-    :accessor      keymap
-    :documentation "Keymap containing the key bindings to be used by run-event-loop instead of the object's own bindings.")
-
    ;; we use one large continous buffer instead of a list of lists/strings.
    ;; reason: easier to implement, we also can use emacs concepts of point and mark more easily
    ;; inefficient, but sufficient for our small textarea sizes.
@@ -82,6 +66,8 @@
     :accessor      cursor-position-x
     :documentation "X position (column) in the textarea where the next character will be added."))
 
+  (:default-initargs :keymap 'textarea-map)
+  
   (:documentation
    "A textarea is a multiline field for display and editing of texts including newlines.
    For now, control characters other than newline are not interpreted."))
