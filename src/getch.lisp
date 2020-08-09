@@ -436,7 +436,25 @@ get-wide-char/event has a different way to check for function keys."
 ;; events can be handled with case.
 ;; events can be nil (no key pressed), characters #\a and function keys like :up, :down, etc.
 ;; todo: mouse, resizekey
+
 (defun get-event (window)
+  "Read a single-byte char from window, return it and its integer code as a second value.
+
+The following chars can be returned:
+
+1. Regular single-byte control and graphic characters with codes 0-255
+   are returned as lisp characters.
+   Multi-byte characters are returned as a sequence of chars/integers.
+   To return a multi-byte char as a single char, use get-wide-event.
+
+2. If input-blocking of the window is set to nil, non-events (idle
+   time when no real events occur) are returned as nil with the code -1.
+
+3. If enable-fkeys is set to t, function keys are converted by ncurses
+   from an escape sequence to an integer >255 and returned by
+   get-event as a lisp keyword name.
+   If enable-fkeys is nil, the whole sequence is read and returned."
+
   ;; doesnt really get a "char", but a single byte, which can be a char.
   (let ((ch (get-char window)))
     (cond
@@ -446,12 +464,14 @@ get-wide-char/event has a different way to check for function keys."
       ;; 0-255 are regular chars, whch can be converted to lisp chars with code-char.
       ((and (>= ch 0) (<= ch 255))
        (values (code-char ch) ch))
-      ;; if the code belongs to a known function key, return a keyword symbol.
+      ;; if the code belongs to a registered function key, return a keyword symbol.
       ((function-key-p ch)
        (let ((ev (key-code-to-name ch ch)))
          (if (eq ev :mouse)
+             ;; a mouse event returns 3 values, see mouse.lisp
              (multiple-value-bind (mev y x) (get-mouse-event)
-               (values mev y x)) ; returns 3 values, see mouse.lisp
+               (values mev y x))
+             ;; for normal function keys, return a keyword and the code.
              (values ev ch))))
       ;; todo: unknown codes, like mouse, resize and unknown function keys.
       (t
