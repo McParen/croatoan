@@ -368,17 +368,13 @@ color of the last element of `a'."
                    (vector-push-extend i inner-array-res))
               res))))))
 
-(defun complex-char->char (complex-char)
-  "Convert a `complex-char' to a `char'"
-  (simple-char complex-char))
-
 (defun complex-string->chars-string (complex-string)
   "Convert a `complex-string' to a `string'."
   (with-accessors ((complex-char-array complex-char-array)) complex-string
     (let ((res (make-array 0 :element-type 'character :fill-pointer 0 :adjustable t)))
       (with-output-to-string (stream res)
         (loop for i across complex-char-array do
-             (format stream "~a" (complex-char->char i)))
+             (format stream "~a" (simple-char i)))
         res))))
 
 (defgeneric text-ellipsize (object len &key truncate-string)

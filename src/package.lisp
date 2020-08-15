@@ -350,7 +350,6 @@
    text-slice
    nconcat-complex-string
    concat-complex-string
-   complex-char->char
    complex-string->chars-string
    text-ellipsize
    text-right-pad
