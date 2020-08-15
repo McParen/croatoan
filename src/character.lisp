@@ -125,18 +125,6 @@ The initial purpose of this function is to be used as the equality test for alex
                                  (list color-fg color-bg)
                                  (list color-bg color-bg))))
 
-(defun make-complex-char (char
-                          &key
-                            (attributes nil)
-                            (fgcolor    nil)
-                            (bgcolor    nil))
-  "Make a `complex-char'"
-  (make-instance 'complex-char
-                 :simple-char char
-                 :attributes  attributes
-                 :fgcolor     fgcolor
-                 :bgcolor     bgcolor))
-
 (defun make-complex-string (string
                             &key
                               (attributes nil)
@@ -259,9 +247,10 @@ as argument `complex-string'."))
 (defun copy-complex-char-array (a)
   "Make a (non deep) copy of `complex-char' array `a'"
   (let ((res (make-array (length a)
-                         :element-type 'complex-char
-                         :fill-pointer (length a)
-                         :adjustable   t)))
+                         :element-type    'complex-char
+                         :fill-pointer    (length a)
+                         :adjustable      t
+                         :initial-element (make-instance 'complex-char))))
     (loop
        for i from 0 below (length a)
        for char across a
@@ -316,11 +305,12 @@ the color and attributes of `a'."
             (complex-string-last-char-attributes a)
           (map nil
                (lambda (a)
-                 (vector-push-extend (make-complex-char (simple-char a)
-                                                        :attributes new-attributes
-                                                        :fgcolor    new-fg
-                                                        :bgcolor    new-bg)
-                                     inner-array-res))
+                 (let ((new-char (make-instance 'complex-char
+                                                    :simple-char (simple-char a)
+                                                    :attributes  new-attributes
+                                                    :fgcolor     new-fg
+                                                    :bgcolor     new-bg)))
+                 (vector-push-extend new-char res)))
                (complex-char-array b))))
       res)))
 
