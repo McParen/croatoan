@@ -27,7 +27,7 @@
   (:documentation "Tests and examples for the high-level CLOS API.")
   (:use #:common-lisp #:de.anvi.croatoan)
   (:export
-   
+
    ;; clos.lisp
    #:t00
    #:t01
@@ -134,6 +134,7 @@
    #:t31b
    #:t31c
    #:t32
+   #:t33
 
    ;; clos.lisp
    #:matrix

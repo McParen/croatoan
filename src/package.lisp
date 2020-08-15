@@ -339,4 +339,19 @@
    ;; wresize / resize a curses window
    resize
 
+   ;; complex-string/char utility-functions
+
+   make-background
+   make-complex-char
+   make-complex-string
+   complex-string-format
+   complex-string-length
+   text-width
+   text-slice
+   nconcat-complex-string
+   concat-complex-string
+   complex-char->char
+   complex-string->chars-string
+   text-ellipsize
+   text-right-pad
    ))
