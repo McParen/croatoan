@@ -132,10 +132,11 @@ The initial purpose of this function is to be used as the equality test for alex
                         (bgcolor    nil))
   "Use `control-string' to  build a `complex-string' with  the help of
 `format' function"
-  `(make-tui-string (apply #'format nil ,control-string ,@args)
-                    :attributes  ,attributes
-                    :fgcolor     ,fgcolor
-                    :bgcolor     ,bgcolor))
+  `(make-instance 'complex-string
+                  :string      (apply #'format nil ,control-string ,@args)
+                  :attributes  ,attributes
+                  :fgcolor     ,fgcolor
+                  :bgcolor     ,bgcolor))
 
 (defun complex-string-length (complex-string)
   "Returns the length (in characters  units) of a complex string passed
