@@ -85,20 +85,15 @@ The initial purpose of this function is to be used as the equality test for alex
                                :slot-names '(simple-char attributes color-pair)
                                :environment environment))
 
-(defun init-complex-char-array-slot (size &key (fill-pointer 0))
-  "Returns an array of length `size' that can be used to initialize
-the slot: `complex-char-array' of the class `complex-string'."
-  (make-array size
-              :element-type 'complex-char
-              :fill-pointer fill-pointer
-              :adjustable   t))
-
 ;; TODO: do not use an array, use a simple list.
 ;; rename complex-char-array to chars, which is a list.
 (defclass complex-string ()
   ((complex-char-array
     :initarg       :complex-char-array
-    :initform      (init-complex-char-array-slot 0)
+    :initform      (make-array 0
+                               :element-type 'complex-char
+                               :fill-pointer 0
+                               :adjustable   t)
     :type          vector
     :accessor      complex-char-array
     :documentation "Lisp primitive string type."))
@@ -263,7 +258,10 @@ as argument `complex-string'."))
 
 (defun copy-complex-char-array (a)
   "Make a (non deep) copy of `complex-char' array `a'"
-  (let ((res (init-complex-char-array-slot (length a) :fill-pointer (length a))))
+  (let ((res (make-array (length a)
+                         :element-type 'complex-char
+                         :fill-pointer (length a)
+                         :adjustable   t)))
     (loop
        for i from 0 below (length a)
        for char across a
