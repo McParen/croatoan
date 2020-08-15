@@ -125,18 +125,6 @@ The initial purpose of this function is to be used as the equality test for alex
                                  (list color-fg color-bg)
                                  (list color-bg color-bg))))
 
-(defun make-complex-string (string
-                            &key
-                              (attributes nil)
-                              (fgcolor    nil)
-                              (bgcolor    nil))
-  "Make a `complex-string' using `string' for text contents"
-  (make-instance 'complex-string
-                 :string      string
-                 :attributes  attributes
-                 :fgcolor     fgcolor
-                 :bgcolor     bgcolor))
-
 (defmacro complex-string-format ((control-string &rest args)
                       &key
                         (attributes nil)
