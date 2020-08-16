@@ -121,9 +121,9 @@ The initial purpose of this function is to be used as the equality test for alex
 `char'."
   (make-instance 'complex-char
                  :simple-char char
-                 :color-pair (if color-fg
-                                 (list color-fg color-bg)
-                                 (list color-bg color-bg))))
+                 :color-pair  (if color-fg
+                                  (list color-fg color-bg)
+                                  (list color-bg color-bg))))
 
 (defmacro complex-string-format ((control-string &rest args)
                       &key
@@ -283,24 +283,24 @@ attributes, background color and foreground color"
                 last-char-fg)))))
 
 
-(defun concat-complex-string-with-contagion (a b)
-  "Concatenate two  `complex-strings': the args `b' does not inherit
-the color and attributes of `a'."
-  (with-accessors ((inner-array-a complex-char-array)) a
+(defun concat-complex-string-with-contagion (string-1 string-2)
+  "Concatenate two  `complex-strings': the args `string-2' does not inherit
+the color and attributes of `string-1'."
+  (with-accessors ((inner-array-a complex-char-array)) string-1
     (let* ((res (make-instance 'complex-string
                                :complex-char-array (copy-complex-char-array inner-array-a))))
       (with-accessors ((inner-array-res complex-char-array)) res
         (multiple-value-bind (new-attributes new-bg new-fg)
-            (complex-string-last-char-attributes a)
+            (complex-string-last-char-attributes string-1)
           (map nil
                (lambda (a)
                  (let ((new-char (make-instance 'complex-char
-                                                    :simple-char (simple-char a)
-                                                    :attributes  new-attributes
-                                                    :fgcolor     new-fg
-                                                    :bgcolor     new-bg)))
-                 (vector-push-extend new-char res)))
-               (complex-char-array b))))
+                                                :simple-char (simple-char a)
+                                                :attributes  new-attributes
+                                                :fgcolor     new-fg
+                                                :bgcolor     new-bg)))
+                   (vector-push-extend new-char (complex-char-array res))))
+               (complex-char-array string-2))))
       res)))
 
 (defmethod concat-complex-string ((a complex-string) (b sequence)

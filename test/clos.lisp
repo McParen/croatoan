@@ -3342,12 +3342,14 @@ Press C-j, C-m, C-i, C-h to see the difference."
     (flet ((add-xy (text x y)
              (add scr text :x x :y y)))
       (let ((bg       (make-background :black))
-            (string-1 (make-complex-string "hello"
-                                           :attributes '(:bold)
-                                           :fgcolor :yellow))
-            (string-2 (make-complex-string "world!"
-                                           :attributes '(:underline)
-                                           :fgcolor :red)))
+            (string-1 (make-instance 'complex-string
+                                     :string "hello"
+                                     :attributes '(:bold)
+                                     :fgcolor :yellow))
+            (string-2 (make-instance 'complex-string
+                                     :string     "world!"
+                                     :attributes '(:underline)
+                                     :fgcolor    :red)))
         (setf (background scr) bg)
         (setf (fgcolor scr)    :white)
         (add-xy "Two strings with different attributes" 0 0)
@@ -3356,7 +3358,7 @@ Press C-j, C-m, C-i, C-h to see the difference."
         (add-xy (concatenate 'string
                              "The same two strings concatenated with a space between. "
                              "The second string "
-                             "ihnerit the attributes of the first")
+                             "ihnerits the attributes of the first")
                 0 4)
         (add-xy (concat-complex-string (concat-complex-string string-1 " ")
                                        string-2
