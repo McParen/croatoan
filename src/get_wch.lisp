@@ -18,7 +18,20 @@ If the second returned value is t, the char is a function key, nil otherwise."
         (values (cffi:mem-ref ptr 'ncurses:wint_t) t)
         (values (cffi:mem-ref ptr 'ncurses:wint_t) nil))))
 
-(defun get-wide-event (window)
+(defgeneric get-wide-event (object)
+  (:documentation
+   "Return a single user input event and its code as a second value.
+
+If the object is not a window, the event is read from the object's associated window.
+
+An event can be a lisp character or a keyword representing a function or mouse key.
+
+If input-blocking is nil for the window, return nil if no key was typed.")
+  (:method (object)
+    "Default method: Read an event from the window associated with object."
+    (get-wide-event (window object))))
+
+(defmethod get-wide-event ((window window))
   "Return a single user input event and its code as a second value.
 
 An event can be a lisp character or a keyword representing a function or mouse key.
@@ -41,6 +54,10 @@ If input-blocking is nil for the window, return nil if no key was typed."
       ;; return the lisp character and its corresponding code.
       (t
        (values (code-char ch) ch)))))
+
+;; we have to getch from the sub in order to move the cursor there and not on the parent window border.
+(defmethod get-wide-event ((object form-window))
+  (get-wide-event (sub-window object)))
 
 (defun wait-for-event (win)
   "Wait till a valid event (keyboard, mouse or resize) occurs, then return.
