@@ -207,7 +207,7 @@ If event is a list of events, remove each event separately from the alist."
 (defparameter *keymaps* nil "An alist of available keymaps.")
 
 (defmacro define-keymap (name &body body)
-  "A convenience macro to register a keymap given its name and (key function) pairs.
+  "Register a keymap given its name and (key function) pairs.
 
 As with bind, the keys can be characters, two-char strings in caret notation for
 control chars and keywords for function keys."
@@ -215,22 +215,40 @@ control chars and keywords for function keys."
      (setf *keymaps* (acons ',name (make-instance 'keymap) *keymaps*))
      (%defcdr (bindings (cdr (assoc ',name *keymaps*))) ,@body)))
 
-;; take an alist and populate it with key-value pairs given in the body
+;; CL-USER> (%defcdr a (:a 'cdr) (:b #'car) (:c (lambda () 1)))
+;; ((:C . #<FUNCTION (LAMBDA ()) {52C8868B}>)
+;;  (:B . #<FUNCTION CAR>)
+;;  (:A . #<FUNCTION CDR>))
 (defmacro %defcdr (alist &body body)
+  "Take an alist and populate it with key-value pairs given in the body."
   (when (car body)
     `(progn
+       ;; add the first key-value pair to the alist
        (%defcar ,alist ,(car body))
+       ;; recursively add the rest of the body
        (%defcdr ,alist ,@(cdr body)))))
 
-;; add a single key-value cons to the alist
-;; convert symbols to function objects
-;; convert caret notation strings to control chars
+;; CL-USER> (defparameter a ())
+;; CL-USER> (%defcar a (:a 'car))
+;; ((:A . #<FUNCTION CAR>))
 (defmacro %defcar (alist (k v))
+  "Push a single key-value list to the alist.
+
+If value v is a symbol, first convert it to a function object.
+
+The key can be a lisp character, a two-char string in caret notation for
+control chars and a keyword for function keys.
+
+If the key is given as a caret notation string, first convert it to
+the corresponding control char."
   `(cond ((and (symbolp ,v) (fboundp ,v))
+          ;; if the function is given as a symbol and is fbound
           (if (stringp ,k)
+              ;; when the event is given as a 2-char string: "^A"
               (push (cons (string-to-char ,k) (fdefinition ,v)) ,alist)
               (push (cons ,k (fdefinition ,v)) ,alist)))
          ((functionp ,v)
+          ;; if the function is given as a function object
           (if (stringp ,k)
               (push (cons (string-to-char ,k) ,v) ,alist)
               (push (cons ,k ,v) ,alist)))
@@ -248,6 +266,22 @@ control chars and keywords for function keys."
     (do ((lst plist (cddr lst)))
         ((endp lst) (nreverse alist))
       (push (cons (car lst) (cadr lst)) alist))))
+
+(defun assoc-unique (alist)
+  "Return a copy of alist with duplicate entries removed."
+  (let ((result nil)
+        (rest alist))
+    (loop while rest do
+      (let* ((pair (car rest))
+             (key (car pair)))
+        (unless (assoc key result)
+          (push pair result)))
+      (setq rest (cdr rest)))
+    (nreverse result)))
+
+(defun assoc-merge (&rest alists)
+  "Merge alists then return an alist with duplicate entries removed."
+  (assoc-unique (apply #'append alists)))
 
 (defun get-event-handler (object event)
   "Take an object and an event, return the object's handler for that event.
@@ -270,25 +304,17 @@ The event pairs are added by the bind function as conses: (event . #'handler).
 
 An event should be bound to the pre-defined function exit-event-loop."
   (flet ((ev (event)
-           (let ((keymap (typecase (keymap object)
-                           ;; the keymap can be a keymap object directly
-                           (keymap (keymap object))
-                           ;; or a symbol as the name of the keymap
-                           (symbol (find-keymap (keymap object))))))
-             ;; object-local bindings override the external keymap
-             ;; an event is checked in the bindings first, then in the external keymap.
-             (if (bindings object)
-                 (if (assoc event (bindings object))
-                     (assoc event (bindings object))
-                     ;; if there is no handler in the local bindings,
-                     ;; check if there is a keymap
-                     (if (and keymap (bindings keymap))
-                         (assoc event (bindings keymap))
-                         nil))
-                 ;; if there are no local bindings, check the external keymap
-                 (if (and keymap (bindings keymap))
-                     (assoc event (bindings keymap))
-                     nil)))))
+           "Take an event, return the cons (event . handler)."
+           (let* ((keymap (typecase (keymap object)
+                            ;; the keymap can be a keymap object
+                            (keymap (keymap object))
+                            ;; or a symbol as the name of the keymap
+                            (symbol (find-keymap (keymap object)))))
+                  ;; object-local bindings override the external keymap
+                  ;; an event is checked in the bindings first, then in the external keymap.
+                  (bindings (assoc-merge (bindings object)
+                                         (when (and keymap (bindings keymap)) (bindings keymap)))))
+             (assoc event bindings))))
     (cond
       ;; Event occured and event handler is defined.
       ((and event (ev event)) (cdr (ev event)))
