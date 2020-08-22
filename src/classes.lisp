@@ -45,7 +45,7 @@
     :documentation
     "Alist of events (characters, keywords or integers) as keys and
     handler functions as values. Used by the run-event-loop function.")
- 
+
    (keymap
     :initarg       :keymap
     :initform      nil
@@ -54,7 +54,18 @@
     :documentation
     "Keymap containing the key bindings to be used by run-event-loop instead
     of the object's own bindings. If using an instance-local binding isn't sufficient, 
-    we can create an external keymap and reference it in the object."))
+    we can create an external keymap and reference it in the object.")
+
+   (frame-rate
+    :initarg       :frame-rate
+    :initform      nil
+    :type          (or null integer)
+    :accessor      frame-rate
+    :documentation
+    "Set the frame rate in fps (frames per second). When input-blocking is nil, 
+    sleep for 1/frame-rate seconds between event loop cycles. 
+    This has the same effect as setting input-blocking duration for a window, 
+    and should thus not be used simultaneously."))
 
   (:documentation "Base class for all widgets like windows, form elements, etc."))
 
@@ -92,13 +103,6 @@
     :initform      t
     :type          (or boolean integer)
     :documentation "Input mode: blocking (t), non-blocking (nil) or blocking duration in (positive integer) miliseconds.")
-
-   (frame-rate
-    :initarg       :frame-rate
-    :initform      nil
-    :type          (or null integer)
-    :accessor      frame-rate
-    :documentation "Set the frame rate in fps (frames per second). When input-blocking is nil, sleep for 1/frame-rate seconds between event loop cycles. Has the same effect as setting input-blocking duration, and should thus not be used simultaneously.")
 
    (function-keys-enabled-p
     :initarg       :enable-function-keys

@@ -328,33 +328,28 @@ An event should be bound to the pre-defined function exit-event-loop."
       (t nil))))
 
 (defun run-event-loop (object &rest args)
-  "Read events from the window, then call predefined event handler functions on the events.
+  "Read events from the object, then call predefined event handler functions on the events.
+
+The object has to be a ncurses window or have an associated ncurses window.
 
 The handlers can be added by the bind function, or by directly setting a predefined keymap
-to the window's bindings slot.
+to the object's bindings slot.
 
-Args is one or more additional arguments passed to the handlers.
+Args is one or more additional arguments that can be passed to the handlers.
 
 Provide a non-local exit point so we can exit the loop from an event handler. 
 
-One of the events must provide a way to exit the event loop by throwing 'event-loop.
+One of the events must provide a way to exit the event loop by 'throwing' the object.
 
 The function exit-event-loop is pre-defined to perform this non-local exit."
   (catch object
     (loop
-       (let* ((window (typecase object
-                        (form-window (sub-window object))
-                        ;; if the object is a window
-                        (window object)
-                        ;; if the object isnt a window, it should have an associated window.
-                        (otherwise (window object))))
-              (event (get-wide-event window)))
+       (let ((event (get-wide-event object)))
          (handle-event object event args)
          ;; process the contents of the job queue (ncurses access from other threads)
          (process)
-         ;; should a frame rate be a property of the window or of the object?
-         (when (and (null event) (frame-rate window))
-           (sleep (/ 1.0 (frame-rate window)))) ))))
+         (when (and (null event) (frame-rate object))
+           (sleep (/ 1.0 (frame-rate object))))))))
 
 (defgeneric handle-event (object event args)
   ;; the default method applies to window, field, button, menu.
@@ -375,7 +370,7 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
 
 (defun exit-event-loop (object event &rest args)
   "Associate this function with an event to exit the event loop."
-  (declare (ignore win event args))
+  (declare (ignore event args))
   (throw object :exit-event-loop))
 
 (defmacro save-excursion (window &body body)
