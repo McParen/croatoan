@@ -56,6 +56,14 @@
     of the object's own bindings. If using an instance-local binding isn't sufficient, 
     we can create an external keymap and reference it in the object.")
 
+   (current-keymap
+    :initform      nil
+    :type          (or null keymap)
+    :documentation
+    "If not nil, this is a pointer to the keymap that should be used for the
+    lookup of the next event handler instead of the widgets bindings and keymap.
+    Used as an utility only in the handle-event method.")
+
    (frame-rate
     :initarg       :frame-rate
     :initform      nil
@@ -402,7 +410,7 @@
     The default style of the selected item is the attribute :reverse, and nil for other items."))
 
   (:default-initargs :keymap 'menu-map)
-  (:documentation  "A menu is a list of items that can be selected by the user."))
+  (:documentation "A menu is a list of items that can be selected by the user."))
 
 (defclass menu-window (menu decorated-window)
   ()
@@ -696,7 +704,7 @@ If there is no window asociated with the element, return the window associated w
 
 (defclass menu-item (checkbox)
   ((value
-    :type         (or symbol keyword string menu menu-window function)
+    :type          (or symbol keyword string menu menu-window function)
     :documentation "The value of an item can be a name, a sub menu or a function to be called when the item is selected."))
 
   (:documentation  "A menu contains of a list of menu items."))

@@ -150,30 +150,37 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
                 ,@body))))))
 
 (defun bind (object event handler)
-  "Bind the handler function to the event in the bindings alist of the object.
+  "Bind the handler to the event in the bindings alist of the object.
 
 The object can be a croatoan object (like window or form) or a keymap.
 
 If event is a list of events, bind the handler to each event separately.
 
-The handlers will be called by the run-event-loop when keyboard or mouse events occur.
+The handler can be a function object, a fbound symbol or a keymap.
 
-The handler functions have two mandatory arguments, window and event.
+The handler function will be called by the run-event-loop when
+keyboard or mouse events occur. The functions have two mandatory
+arguments, object and event.
 
-For every event-loop, at least an event to exit the event loop should be assigned,
-by associating it with the predefined function exit-event-loop.
+If a keymap is bound to a key, this allows keys to be defined as
+prefix keys, so event sequences like '^X a' can be chained together
+and handled like a single event.
 
-If a handler for the default event t is defined, it will handle all events for which
-no specific event handler has been defined.
+For every event-loop, at least an event to exit the event loop should
+be assigned, by associating it with the predefined function
+exit-event-loop.
 
-If input-blocking of the window is set to nil, a handler for the nil event
-can be defined, which will be called at a specified frame-rate between keypresses.
-Here the main application state can be updated.
+If a handler for the default event t is defined, it will handle all
+events for which no specific event handler has been defined.
 
-Alternatively, to achieve the same effect, input-blocking can be set to a specific
-delay in miliseconds.
+If input-blocking of the window is set to nil, a handler for the nil
+event can be defined, which will be called at a specified frame-rate
+between keypresses. Here the main application state can be updated.
 
-Example use: (bind scr #\q  (lambda (win event) (throw 'event-loop :quit)))"
+Alternatively, to achieve the same effect, input-blocking can be set
+to a specific delay in miliseconds.
+
+Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
   (with-accessors ((bindings bindings)) object
     (cond ((or (null event)
                (atom event))
@@ -252,8 +259,12 @@ the corresponding control char."
           (if (stringp ,k)
               (push (cons (string-to-char ,k) ,v) ,alist)
               (push (cons ,k ,v) ,alist)))
+         ((typep ,v 'keymap)
+          (if (stringp ,k)
+              (push (cons (string-to-char ,k) ,v) ,alist)
+              (push (cons ,k ,v) ,alist)))
          (t
-          (error "binding neither symbol nor function"))))
+          (error "DEFINE-KEYMAP: Invalid binding type. Supported types: symbol, function, keymap."))))
 
 (defun find-keymap (keymap-name)
   "Return a keymap given by its name from the global keymap alist."
@@ -305,11 +316,13 @@ The event pairs are added by the bind function as conses: (event . #'handler).
 An event should be bound to the pre-defined function exit-event-loop."
   (flet ((ev (event)
            "Take an event, return the cons (event . handler)."
-           (let* ((keymap (typecase (keymap object)
-                            ;; the keymap can be a keymap object
-                            (keymap (keymap object))
-                            ;; or a symbol as the name of the keymap
-                            (symbol (find-keymap (keymap object)))))
+           (let* ((keymap (typecase object
+                            (keymap object)
+                            (t (typecase (keymap object)
+                                 ;; the keymap can be a keymap object
+                                 (keymap (keymap object))
+                                 ;; or a symbol as the name of the keymap
+                                 (symbol (find-keymap (keymap object)))))))
                   ;; object-local bindings override the external keymap
                   ;; an event is checked in the bindings first, then in the external keymap.
                   (bindings (assoc-merge (bindings object)
@@ -342,31 +355,67 @@ Provide a non-local exit point so we can exit the loop from an event handler.
 One of the events must provide a way to exit the event loop by 'throwing' the object.
 
 The function exit-event-loop is pre-defined to perform this non-local exit."
+  ;; throw object value specified the return value of the run-event-loop.
   (catch object
     (loop
-       (let ((event (get-wide-event object)))
-         (handle-event object event args)
-         ;; process the contents of the job queue (ncurses access from other threads)
-         (process)
-         (when (and (null event) (frame-rate object))
-           (sleep (/ 1.0 (frame-rate object))))))))
+      (handle-events object args)
+      (process))))
+
+(defun handle-events (object args)
+  "Read a single event from the user, lookup a handler and apply it.
+
+Set the frame rate for the idle (nil) event generated when input-blocking is nil."
+  (let* ((event (get-wide-event object)))
+    (if event
+        ;; t
+        (handle-event object event args)
+        ;; The nil (idle) event should be defined directly in the object's bindings/keymap.
+        ;; It has to be handled separately to allow handling of chained events.
+        (let ((handler (get-event-handler object event)))
+          (when handler
+            (apply handler object event args))
+          (when (frame-rate object)
+            (sleep (/ 1.0 (frame-rate object))))))))
 
 (defgeneric handle-event (object event args)
-  ;; the default method applies to window, field, button, menu.
-  (:method (object event args)
-    "Default method for all objects without a specialized method."
-    (let ((handler (get-event-handler object event)))
-      (when handler
-        ;; if args is nil, apply will call the handler with just object and event
-        ;; this means that if we dont need args, we can define most handlers as two-argument functions.
-        (apply handler object event args)))))
+  (:documentation
+   "Get the event handler from the object, then apply it to the object.
 
-(defmethod handle-event ((form form) event args)
-  "If a form can't handle an event, let the current form element try to handle it."
-  (let ((handler (get-event-handler form event)))
-    (if handler
-        (apply handler form event args)
-        (handle-event (current-element form) event args))))
+If the handler for an event is a keymap object, the handler for the
+next event will be looked up from that keymap. This allows for several
+events to be chained together."))
+
+(defmethod handle-event (object event args)
+  "Default method. If the current keymap is not nil, lookup from that keymap."
+  (with-slots ((map current-keymap)) object
+    (let ((handler (get-event-handler (if map map object) event)))
+      (when handler
+        (cond ((typep handler 'keymap)
+               ;; when the handler is another keymap, lookup the next event from that keymap.
+               (setf map handler))
+              ((or (functionp handler) (symbolp handler))
+               ;; when the handler is a function, lookup the next event from the object's bindings/keymap.
+               (setf map nil)
+               ;; if args is nil, apply will call the handler with just object and event
+               ;; this means that if we dont need args, we can define most handlers as two-argument functions.
+               (apply handler object event args)))))))
+
+(defmethod handle-event ((object form) event args)
+  "If a form can't handle an event, let the current element try to handle it."
+  (with-slots ((map current-keymap)) object
+    (let ((handler (get-event-handler (if map map object) event)))
+      (if handler
+        (cond ((typep handler 'keymap)
+               ;; when the handler is another keymap, lookup the next event from that keymap.
+               (setf map handler))
+              ((or (functionp handler) (symbolp handler))
+               ;; when the handler is a function, lookup the next event from the object's bindings/keymap.
+               (setf map nil)
+               ;; if args is nil, apply will call the handler with just object and event
+               ;; this means that if we dont need args, we can define most handlers as two-argument functions.
+               (apply handler object event args)))
+        ;; if there is no handler in the form keymap, pass the event to the current element.
+        (handle-event (current-element object) event args)))))
 
 (defun exit-event-loop (object event &rest args)
   "Associate this function with an event to exit the event loop."
