@@ -3036,7 +3036,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (bind scr #\u (lambda (win event) (unbind scr '(#\a #\b #\d "^a" "^b" "^d"))))
 
     (clear scr)
-    (add-string scr "Type a, b or d. Type q to quit.")
+    (add-string scr "Type a, b or d with or without Ctrl. Type q to quit.")
     (terpri scr)
     (refresh scr)
 
@@ -3053,9 +3053,18 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
   (make-instance 'keymap :bindings-plist
     (list
      #\q  'exit-event-loop
-     #\a  't28-hello
+     #\a  #'t28-hello
      #\d  't28-clear))
-  "Define a keymap separately and then set it as a window's event handlers before running the event loop.")
+  "Define a keymap separately and then set it as a window's event handler before running the event loop.")
+
+(defparameter *t28-ctrl-x-map*
+  (make-instance 'keymap :bindings-plist
+    (list
+     t    (lambda (win event) (format win "^X map: Default event handler ~A~%" event))
+     #\k  (lambda (win event) (format win "^X map: ~A~%" event))
+     ;; ^T is another prefix key, so the keys in that map can be reached via "^X ^T".
+     "^T" *t28-map*))
+  "A separately defined keymap bound to the prefix key ^X.")
 
 (defun t28 ()
   "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
@@ -3063,15 +3072,20 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     ;; add the separately defined keymap to the window object.
     (setf (keymap scr) *t28-map*)
 
-    ;; add another event handler
+    ;; add another event handler to the window instead of the external keymap
+    ;; Object-local bindings override the external keymap. The local bindings
+    ;; are checked first for a handler, then the external keymap.
     (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
 
     ;; t is the default handler for all events without defined handlers.
     ;; The default event handler should not be used to handle the nil event when input-blocking is nil
     (bind *t28-map* t (lambda (win event) (format win "Default event handler ~A~%" event)))
 
+    ;; Defining a keymap as a hander for ^X makes it the prefix key for that keymap.
+    (bind scr "^X" *t28-ctrl-x-map*)
+
     (clear scr)
-    (add-string scr "Type a, s or d. Type q to quit.")
+    (format scr "Type a, s or d. Type ^X k. Type q to quit.~%")
     (refresh scr)
 
     (run-event-loop scr)))
@@ -3085,13 +3099,16 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
 
     ;; The handler function for the nil event will be called between keyboard events.
-    (bind scr nil (lambda (win event) (format win "sleep ~A " event)))
+    (bind scr nil (lambda (win event) (format win "." event)))
+
+    ;; Defining a keymap as a hander for ^X makes it the prefix key for that keymap.
+    (bind scr "^X" *t28-ctrl-x-map*)
 
     (clear scr)
-    (add-string scr "Type a, s or d. Type q to quit.")
+    (format scr "Type a, s or d. Type ^X k. Type q to quit.~%")
     (refresh scr)
 
-    ;; Set the rate at which the nil event will be handled in fps (frames per second).
+    ;; When input-blocking is nil, set the rate at which the nil event will be handled in fps (frames per second).
     ;; For the same effect as frame-rate of 1, you can set :input-blocking to 1000 ms.
     (setf (frame-rate scr) 1)
 
@@ -3105,6 +3122,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
   (#\q 'exit-event-loop)
   (#\a 't28-hello)
   (#\d 't28-clear)
+  ("^X" *t28-ctrl-x-map*)
   ("^B" 't28b-show-bindings))
 
 (defun t28b ()
