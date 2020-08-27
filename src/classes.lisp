@@ -16,7 +16,7 @@
     ;; when the alist is not provided, but the plist, convert the plist to an alist
     ;; the plist is easier to provide when there is a large number of bindings.
     (when (and (null bindings) bindings-plist)
-      (setf bindings (plist2alist bindings-plist)))))
+      (setf bindings (plist2alist (convert-strings bindings-plist))))))
 
 (defclass widget ()
   ((name
@@ -826,7 +826,7 @@ If there is no window asociated with the element, return the window associated w
    "A form is a list of elements like fields, textareas, checkboxes and buttons."))
 
 (defmethod initialize-instance :after ((form form) &key)
-  (with-slots (elements current-element bindings keymap) form
+  (with-slots (elements current-element keymap) form
     (if elements
         (progn
           ;; Initialize the current element as the first element from the passed elements list.

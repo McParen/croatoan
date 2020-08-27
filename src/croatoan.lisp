@@ -278,6 +278,16 @@ the corresponding control char."
         ((endp lst) (nreverse alist))
       (push (cons (car lst) (cadr lst)) alist))))
 
+(defun check-string-char (char)
+  "If char is a string convert it to a character."
+  (if (stringp char)
+      (string-to-char char)
+      char))
+
+(defun convert-strings (bindings-plist)
+  "Loop over a bindings plist, convert strings to characters."
+  (mapcar #'check-string-char bindings-plist))
+
 (defun assoc-unique (alist)
   "Return a copy of alist with duplicate entries removed."
   (let ((result nil)
