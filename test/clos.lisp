@@ -16,12 +16,14 @@
          (loop
             (let ((event (get-event scr)))
               (if event
+                  ;; when the event is different from nil
                   (case event
                     (:up    (setf dir #c( 0  1)))
                     (:down  (setf dir #c( 0 -1)))
                     (:right (setf dir #c( 1  0)))
                     (:left  (setf dir #c(-1  0)))
                     (#\q    (return)))
+                  ;; when event is nil because of input-blocking nil
                   (progn
                     (sleep 0.1)
                     (add-char scr (char-code #\space) :y (caar (last body)) :x (cadar (last body)))
@@ -467,7 +469,7 @@
 
 ;; 200119
 (defun t03b1 ()
-  "Show the second return value (key code) of get-event."
+  "Show the second return value (integer key code) of get-event and the event type."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-scrolling t)
     (clear scr)
     (format scr "get-char:~%")
@@ -477,8 +479,7 @@
          (when event
            (case event
              (#\q (return))
-             (otherwise (format scr "~A ~A~%" event code))))))
-
+             (otherwise (format scr "~A ~A ~A~%" event code (type-of event)))))))
     (clear scr)
     (format scr "get-wide-char:~%")
     (refresh scr)
@@ -487,7 +488,7 @@
          (when event
            (case event
              (#\q (return))
-             (otherwise (format scr "~A ~A~%" event code)))))) ))
+             (otherwise (format scr "~A ~A ~A~%" event code (type-of event)))))))))
 
 ;; using the event-case macro to simplify the event loop.
 ;; do not use ((nil) nil) with input-blocking nil, it leads to 100% CPU usage.
@@ -1084,14 +1085,15 @@ Test whether a window (stream) was closed."
          (add-char scr event :y 1 :x 78 :color-pair (list :white :black))
          (setf n (- (char-code event) 48)))
         ;; move the chosen window in the stack
-        (#\t (stack-move n :top stack)    (setq n 0)                (refresh stack)) ; raise a window to the top
-        (#\r (stack-move n :up stack)     (when (> n 0) (decf n))   (refresh stack)) ; raise window n one position
-        (#\l (stack-move n :down stack)   (when (< n 7) (incf n))   (refresh stack)) ; lower window n one position
-        (#\b (stack-move n :bottom stack) (setq n 7)                (refresh stack)) ; lower window n to the bottom
+        (#\t (stack-move n :top stack)    (setq n 0)              (refresh stack)) ; raise a window to the top
+        (#\r (stack-move n :up stack)     (when (> n 0) (decf n)) (refresh stack)) ; raise window n one position
+        (#\l (stack-move n :down stack)   (when (< n 7) (incf n)) (refresh stack)) ; lower window n one position
+        (#\b (stack-move n :bottom stack) (setq n 7)              (refresh stack)) ; lower window n to the bottom
         ;; type v to toggle window visibility
         (#\v (setf (visiblep (nth n (items stack)))
                    (not (visiblep (nth n (items stack)))))
              ;; this is the equivalent of (refresh *main-stack*), but only if scr is on the main stack, i.e. :stacked t
+             ;; if it isnt, we have to manually touch+refresh scr to prevent partial redraws.
              (touch scr) (refresh scr)
              (refresh stack))
         (#\q (return-from event-case)))
@@ -1109,14 +1111,25 @@ Test whether a window (stream) was closed."
 ;; enable-function-keys t: fkeys have codes 255+
 ;; enable-function-keys nil: fkeys are multi-char escape codes.
 (defun t10 ()
+  "Print the screen size. Print the char and code of every narrow char pressed.
+
+enable-function-keys t: fkeys have codes 255+
+
+Here, function keys are translated by ncurses to integers but not
+given keyword names by get-char, that is done by get-event.
+
+enable-function-keys nil: fkeys are printed as multi-char escape codes.
+
+Wide chars are not recognized and are displayed byte by byte.
+
+When the end of the screen is reached, the ~% directive doesnt print
+newlines any more and the screen doesnt scroll."
   (let ((scr (make-instance 'screen :input-echoing nil :enable-function-keys t)))
     (unwind-protect
          (progn
            (clear scr)
-
            (format scr "~A lines high, ~A columns wide.~%~%" (height scr) (width scr))
            (refresh scr)
-
            (loop
               ;; act only on events, do nothing on non-events.
               (when (key-pressed-p scr)
@@ -1126,18 +1139,42 @@ Test whether a window (stream) was closed."
                           (t (format scr "Code: ~A, Char: ~A~%" ch (code-char ch))))))))
       (close scr))))
 
-;; cleaner key printing.
-;; prints key names instead of numeric char codes.
+;; https://rosettacode.org/wiki/Keyboard_input/Keypress_check#Common_Lisp
+(defun t10a1 ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :input-buffering nil :enable-function-keys t)
+    (loop
+      ;; Determine if a key has been pressed ...
+      (if (key-pressed-p scr)
+          ;; ... and store this in a variable.
+          (let ((ch (get-char scr)))
+            ;; exit the loop by pressing q.
+            (if (eql (code-char ch) #\q)
+                (return)
+                (princ (code-char ch) scr)))
+          (progn
+            ;; If no key has been pressed, the program should continue without waiting.
+            (princ #\. scr)
+            (refresh scr)
+            ;; we wait anyway to spare the CPU.
+            (sleep 0.15))))))
+
 (defun t10a ()
+  "Print the screen size. Scrolling is enabled.
+
+get-event recognizes the function key codes and returns their keyword
+names.
+
+get-event returns only single bytes, so multibyte characters are
+returned byte by byte as with get-char."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t
                     :input-buffering nil :process-control-chars nil :enable-newline-translation t)
     (setf (scrolling-enabled-p scr) t)
     (format scr "~A lines high, ~A columns wide.~%~%" (height scr) (width scr))
+    ;; get-event explicitely gets single-byte events, not wide events.
     (loop (let ((event (get-event scr)))
             (when event
               (case event
                 (#\q (return))
-
                 ;; non-printable ascii chars. (#\space and #\newline are standard, all others non-standard)
                 (#\escape (format scr "escape char ESC ^[ \e~%"))
                 (#\tab (format scr "horizontal tab char HT \t~%"))
@@ -1155,12 +1192,18 @@ Test whether a window (stream) was closed."
                      (if (newline-translation-enabled-p scr)
                          (format scr "%nl newline translation enabled: RET => NL (= LF)~%")
                          (format scr "%nonl newline translation disabled: RET => CR~%")))
+                ;; DEL, ^?, delete char 127
+                (#\rubout (format scr "rubout char ^?~%"))
+                ;; BS, \b, ^H, code 8, not the same as the :backspace key
+                (#\backspace (format scr "backspace char ^H~%"))
 
-                (#\rubout (format scr "rubout char ^?~%")) ;; DEL, ^?, delete char 127
-                (#\backspace (format scr "backspace char ^H~%")) ;; BS, \b, ^H, code 8, not the same as the :backspace key
-
-                (:backspace (format scr "backspace key <--~%"))
-                (otherwise (format scr "Event: ~A~%" event))))))))
+                ;; function keys, the same as #\rubout, but different code.
+                ;; ncurses bug: :backspace is returned for windows, #\rubout for stdscr.
+                (:backspace (format scr "backspace key <--~%"))                
+                ;; printable chars (graphic and control chars)
+                (otherwise
+                 (add-string scr (format nil "~A ~S~%" event event))
+                 (format scr "Event: ~A ~S ~A~%" event event (type-of event)))))))))
 
 (defun t10b ()
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :enable-scrolling t
@@ -2979,21 +3022,17 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
   "Test initialisation and refreshing of pads and sub-pads."
   (with-screen (scr :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((p (make-instance 'pad :height 100 :width 100))
-          (sp (make-instance 'sub-pad :parent p :height 5 :width 10 :position (list 10 10))))
-
+           (sp (make-instance 'sub-pad :parent p :height 5 :width 10 :position (list 10 10))))
       ;; populate the pad with numbers.
-      (loop for j from 0 to 99
-         do (loop for i from 0 to 99
-               do
-                 (move p j i)
-                 (format p "~D" (mod (* i j) 10))))
-
+      (loop for j from 0 to 99 do
+        (loop for i from 0 to 99 do
+          (move p j i)
+          (format p "~D" (mod (* i j) 10))))
       ;; populate the sub-pad with letters.
-      (loop for j from 0 to 4
-         do (loop for i from 0 to 9
-               do
-                 (move sp j i)
-                 (add-char sp #\X) ))
+      (loop for j from 0 to 4 do
+        (loop for i from 0 to 9 do
+          (move sp j i)
+          (add-char sp #\X) ))
 
       ;; we have to modify the sub-window attributes first because apparently once
       ;; chars have attributes, they can not be changed by subsequent background changes.
@@ -3006,25 +3045,23 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
             (screen-min-x  0)
             (screen-max-y  5)
             (screen-max-x 10))
+        ;; the background screen has to be touched and refreshed on every move,
+        ;; otherwise we will see parts of the previously displayed pad still there.
+        (touch scr)
+        (refresh scr)
+        (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
 
-      ;; the background screen has to be touched and refreshed on every move,
-      ;; otherwise we will see parts of the previously displayed pad still there.
-      (touch scr)
-      (refresh scr)
-      (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
-
-      (event-case (scr event)
-        (:up    (decf pad-min-y) (decf screen-min-y) (decf screen-max-y) (touch scr) (refresh scr)
-                (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-        (:down  (incf pad-min-y) (incf screen-min-y) (incf screen-max-y) (touch scr) (refresh scr)
-                (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-        (:left  (decf pad-min-x) (decf screen-min-x) (decf screen-max-x) (touch scr) (refresh scr)
-                (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-        (:right  (incf pad-min-x) (incf screen-min-x) (incf screen-max-x) (touch scr) (refresh scr)
-                 (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-        (#\q   (return-from event-case))
-        (otherwise nil)))
-
+        (event-case (scr event)
+          (:up    (decf pad-min-y) (decf screen-min-y) (decf screen-max-y) (touch scr) (refresh scr)
+                  (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
+          (:down  (incf pad-min-y) (incf screen-min-y) (incf screen-max-y) (touch scr) (refresh scr)
+                  (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
+          (:left  (decf pad-min-x) (decf screen-min-x) (decf screen-max-x) (touch scr) (refresh scr)
+                  (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
+          (:right (incf pad-min-x) (incf screen-min-x) (incf screen-max-x) (touch scr) (refresh scr)
+                  (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
+          (#\q   (return-from event-case))
+          (otherwise nil)))
       (close p)
       (close sp))))
 
