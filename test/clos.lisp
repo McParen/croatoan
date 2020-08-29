@@ -1895,6 +1895,77 @@ contents of the area as a single string."
       ;; return the edited contents of the area as a string (including newlines)
       (value area))))
 
+(defun t16e3 ()
+  "Show a textarea, test how the window background char interacts with space characters."
+  (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
+    (let* ((win  (make-instance 'window   :position '(5 5)  :dimensions '(8 17) :draw-border t :enable-function-keys t))
+           (win1 (make-instance 'window   :position '(5 50) :dimensions '(8 17) :draw-border t))
+           (area (make-instance 'textarea :position '(1 1)  :dimensions '(6 15) :window win)))
+      (setf (background win)  (make-instance 'complex-char :simple-char :board :fgcolor :yellow))
+      (setf (background win1) (make-instance 'complex-char :simple-char #\. :bgcolor :red ))
+
+      ;; adding a simple space to a window with a background char only displays the background char.
+      (add-wide-char win1 #\space                                   :y 1 :x 1 :n 10)
+      ;; adding a complex character with either a foreground...
+      (add-wide-char win1 #\space :fgcolor :yellow                  :y 2 :x 1 :n 10)
+      ;; ...or background character actually overwrites the background char with a visible space char.
+      (add-wide-char win1 #\space                  :bgcolor :yellow :y 3 :x 1 :n 10)
+
+      (refresh win)
+      (refresh win1)
+      ;; add some optional initial content to the input buffer
+      (setf (value area) "hello there")
+      (edit area)
+      (close win)
+      (close win1)
+      ;; return the edited contents of the area as a string (including newlines)
+      (value area))))
+
+(defun t16e4 ()
+  "Initially, the buffer of the textarea is just a list of characters.
+
+For smll buffer sizes, this is sufficient, but at some later point, it
+will be more efficient to use a character array, a string."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let ((area (make-instance 'textarea :position '(5 5) :dimensions '(3 20) :window scr
+                               :buffer (concatenate 'list
+                                                    (coerce "Voy bien, Camilo?" 'list)
+                                                    (list #\newline)
+                                                    (coerce "Vas bien, Fidel!" 'list)
+                                                    (list #\newline)
+                                                    (coerce "Hello there" 'list)
+                                                    (list #\newline)
+                                                    (coerce "Dear john" 'list)
+                                                    (list #\newline)
+                                                    (coerce "Open the pod bay door." 'list)
+                                                    (list #\newline)
+                                                    (coerce "Will you stop, Dave?" 'list)))))
+      (edit area)
+      ;; Return the buffer contents as a string.
+      ;; This is done more conveniently by the value accessor.
+      (coerce (buffer area) 'string))))
+
+(defun t16e5 ()
+  "Textarea embedded in a form."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let* ((s1 (list :attributes '(:underline)))
+           (s2 (list :simple-char #\.))
+           (s3 (list :attributes '(:underline) :fgcolor :yellow))
+           (s4 (list :simple-char #\. :fgcolor :red))
+           (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
+           (fs (list 'field s5 'textarea s5))
+           (field1 (make-instance 'field :position (list 3 5) :width 10))
+           (area (make-instance 'textarea :position '(8 5) :dimensions '(6 15)))
+           (button (make-instance 'button :position '(16 5) :name "Accept" :callback 'accept))
+           (form (make-instance 'form :elements (list field1 area button) :style fs :window scr)))
+      (refresh scr)
+      (if (prog1 (edit form) (clear scr))
+          (loop for el in (elements form)
+             do (format scr "~A~%" (value el)))
+          (format scr "nil")))
+    (refresh scr)
+    (get-char scr)))
+
 (defun t16f ()
   "Group several input fields and buttons to a form."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
