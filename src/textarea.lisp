@@ -19,6 +19,13 @@
     :documentation
     "The height (number of visible lines) of the textarea. The area can be scrolled vertically.")
 
+   (style
+    :initarg       :style
+    :initform      nil
+    :type          (or null cons)
+    :documentation
+    "A plist containing four styles: :foreground, :background, :selected-foreground, :selected-background.")
+
    (insert-mode-p
     :initarg       :insert-mode
     :initform      t
@@ -58,13 +65,15 @@
     :initform      0
     :type          (or null integer)
     :accessor      cursor-position-y
-    :documentation "Y position (row) in the textarea where the next character will be added.")
+    :documentation
+    "Y position (row) in the textarea window where the next character will be added.")
 
    (cursor-position-x
     :initform      0
     :type          (or null integer)
     :accessor      cursor-position-x
-    :documentation "X position (column) in the textarea where the next character will be added."))
+    :documentation
+    "X position (column) in the textarea window where the next character will be added."))
 
   (:default-initargs :keymap 'textarea-map)
   
@@ -91,17 +100,23 @@
 (defmethod clear ((area textarea) &key)
   "Clear the textarea by overwriting the underlying window with #\space.
 
-If the underlying window has a background char, the background will
-be used to clear the window."
-  (with-accessors ((pos element-position) (width width) (height height) (win window)) area
-    (setf (cursor-position win) pos)
-    ;; return to the start of the area after the clearing
-    (save-excursion win
-      (loop for i from 0 to (1- height) do
-        (loop for j from 0 to (1- width) do
-          (goto win pos (list i j))
-          ;; adding a simple space inherits the attributes and colors from the background char of the window.
-          (add win #\space))))))
+The char can be set by setting the :background and :selected-background style.
+
+If the underlying window has a background char, that will be used to
+clear the window."
+  (with-accessors ((pos element-position) (width width) (height height)
+                   (win window) (selected selectedp) (style style)) area
+    (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
+           (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
+      (setf (cursor-position win) pos)
+      ;; return to the start of the area after the clearing
+      (save-excursion win
+        (loop for i from 0 to (1- height) do
+          (loop for j from 0 to (1- width) do
+            (goto win pos (list i j))
+            ;; adding a simple space inherits the attributes and colors
+            ;; from the background char of the window.
+            (add win bg-char :style bg-style)))))))
 
 (defmethod update-cursor-position ((area textarea))
   (with-accessors ((pos element-position) (win window) (dptr display-pointer)
@@ -110,10 +125,11 @@ be used to clear the window."
     (refresh win)))
 
 (defmethod draw ((area textarea))
-  (with-accessors ((pos element-position) (width width) (height height)
-                   (inbuf buffer) (dptr display-pointer) (win window)) area
+  (with-accessors ((pos element-position) (width width) (height height) (inbuf buffer)
+                   (selected selectedp) (dptr display-pointer) (win window) (style style)) area
     (clear area)
-    (let ((y 0)
+    (let ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground)))
+          (y 0)
           (x 0))
       ;; start at (0 0)
       (goto win pos (list y x))
@@ -125,7 +141,7 @@ be used to clear the window."
             (progn
               ;; all other (graphic) chars
               (when (>= y dptr)
-                (add-char win (nth i inbuf)))
+                (add-char win (nth i inbuf) :style fg-style))
               (if (= x (1- width))
                   ;; if we're at the last column, set the next x to 0 and move downward.
                   (setq y (1+ y) x 0)
