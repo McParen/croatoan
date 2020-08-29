@@ -9,9 +9,13 @@ whereas the existing bindings clone the cryptic C API.
 As of now, the library is in an early, but hopefully usable stage. 
 Ncurses is old and huge and it will take a while to cover completely.
 
-The API is not yet stable.
+A second goal is to reimplement the extension libraries forms, menu
+and dialog in Lisp instead of wrapping the C libraries.
 
-It is developed and tested on Ubuntu 16.04 x86_64 and SBCL 2.0.0
+The API is not yet stable, but the already finished parts are not
+expected to change much.
+
+It is developed and tested on Ubuntu 20.04 x86_64 and SBCL 2.0.6.
 
 The only supported ncurses version is 6.x --with-abi-version=6.
 Version 5.9 mostly works, but I will focus new efforts on 6.x.
@@ -19,6 +23,10 @@ Version 5.9 mostly works, but I will focus new efforts on 6.x.
 Since many popular distributions ship ncurses --with-abi-version=5,
 for full compatibility (wide characters, 256 colors and extended
 mouse support), you will have to manually build ncurses 6.x.
+
+A third, distant goal is to provide direct bindings for ANSI escape
+sequences, so that basic terminal control functions can be used from
+Lisp on systems without terminfo and ncurses.
 
 The documentation is currently provided by the commented examples.
 
