@@ -3287,6 +3287,23 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       (draw-t29-shapes scr (list tree-trunk tree-crown ground sun) nil)
       (get-char scr) )))
 
+(defun t29a ()
+  "Draw a line using the Bresenham algorithm."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible t :enable-colors nil)
+    (let ((start (center-position scr))
+          (x2 0)
+          (y2 0))
+      ;; Draw a line from the center of the screen to the current cursor position.
+      (draw-line scr start (list y2 x2))
+      (refresh scr)
+      ;; Move the cursor which is the end of the line.
+      (event-case (scr event)
+        (#\q (return-from event-case))
+        (:up    (decf y2) (clear scr) (draw-line scr start (list y2 x2)) (refresh scr))
+        (:down  (incf y2) (clear scr) (draw-line scr start (list y2 x2)) (refresh scr))
+        (:left  (decf x2) (clear scr) (draw-line scr start (list y2 x2)) (refresh scr))
+        (:right (incf x2) (clear scr) (draw-line scr start (list y2 x2)) (refresh scr))))))
+
 (defun t30 ()
   "Test color pair completion for style parameters."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
