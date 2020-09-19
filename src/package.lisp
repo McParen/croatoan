@@ -318,6 +318,7 @@
    quadrilateral
    rectangle
    circle
+   draw-line
 
    ;; slk / curses soft label routines
 

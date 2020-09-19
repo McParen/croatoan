@@ -5,8 +5,7 @@
 ;; author: Daniel Vedder <daniel@terranostra.one>
 
 (defclass shape ()
-  (;; TODO: merge -x and -y into one location in form of a list to correspond to the position/location slot of other elements.
-   (origin-x
+  ((origin-x
     :initform       0
     :initarg        :x0
     :type           integer
@@ -191,3 +190,56 @@
     (when squarify (setf x (* 2 x)))
     (unless (or (minusp y) (minusp x) (>= y (height window)) (>= x (width window)))
       (add window (simple-char c) :y y :x x :attributes (attributes c) :color-pair (color-pair c)))))
+
+(defun draw-line (win start end &optional (char #\*))
+  "Draw a line in window from start (y1 x1) to end (y2 x2) position using the Bresenham algorithm."
+  (destructuring-bind ((y1 x1) (y2 x2)) (list start end)
+    (let* ((dx (- x2 x1))
+           (dy (- y2 y1))
+           (abs-dx (abs dx))
+           (abs-dy (abs dy))
+           (sig-dx (signum dx))
+           (sig-dy (signum dy))
+           (x x1)
+           (y y1)
+           ;; start value for the error term
+           (eps 0)
+           ;; The following values are set depending on the octant in which the line lies,
+           ;; determining the fast and the slow axis.
+           dfast
+           dslow
+           step-fast-x
+           step-fast-y
+           step-slow-x
+           step-slow-y)
+      ;; decide to which octant we are drawing
+      (if (> abs-dx abs-dy)
+          ;; x is the fast direction => y step in the fast direction is 0
+          (setq dfast abs-dx 
+                dslow abs-dy
+                step-fast-x sig-dx
+                step-fast-y 0
+                step-slow-x sig-dx
+                step-slow-y sig-dy)
+          ;; y is the fast direction => x step in the fast direction is 0
+          (setq dfast abs-dy
+                dslow abs-dx
+                step-fast-x 0
+                step-fast-y sig-dy
+                step-slow-x sig-dx
+                step-slow-y sig-dy))
+      ;; draw a char, then decide in which direction we make the next step
+      (dotimes (i dfast)
+        (move win y x)
+        (add-char win char)
+        (if (< (* 2 (+ eps dslow)) dfast)
+            ;; fast step
+            (progn
+              (incf x step-fast-x)
+              (incf y step-fast-y)
+              (incf eps dslow))
+            ;; slow step
+            (progn
+              (incf x step-slow-x)
+              (incf y step-slow-y)
+              (incf eps (- dslow dfast))))))))
