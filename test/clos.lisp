@@ -3126,6 +3126,26 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
   "Use run-event-loop and bind instead of event-case to handle keyboard events."
   (with-screen (scr :input-echoing nil :input-blocking t)
 
+    (let ((a 0) (b 0))
+      (hook scr 'before-event-hook
+            (lambda (win)
+              (save-excursion win
+                (incf a)
+                (move win 0 60)
+                (format win "   ")
+                (move win 0 60)
+                (format win "~A" a)
+                (refresh win))))
+      (hook scr 'after-event-hook
+            (lambda (win)
+              (save-excursion win
+                (incf b)
+                (move win 1 60)
+                (format win "   ")
+                (move win 1 60)
+                (format win "~A" b)
+                (refresh win)))))
+
     ;; q ends the loop.
     (bind scr #\q 'exit-event-loop)
 
@@ -3293,16 +3313,21 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (let ((start (center-position scr))
           (x2 0)
           (y2 0))
+      ;; Perform the actions before and after every non-nil event is handled in event-case.
+      (hook scr 'before-event-hook (lambda (win) (clear win)))
+      (hook scr 'after-event-hook (lambda (win) (draw-line win start (list y2 x2)) (refresh win)))
+
       ;; Draw a line from the center of the screen to the current cursor position.
       (draw-line scr start (list y2 x2))
       (refresh scr)
+
       ;; Move the cursor which is the end of the line.
       (event-case (scr event)
         (#\q (return-from event-case))
-        (:up    (decf y2) (clear scr) (draw-line scr start (list y2 x2)) (refresh scr))
-        (:down  (incf y2) (clear scr) (draw-line scr start (list y2 x2)) (refresh scr))
-        (:left  (decf x2) (clear scr) (draw-line scr start (list y2 x2)) (refresh scr))
-        (:right (incf x2) (clear scr) (draw-line scr start (list y2 x2)) (refresh scr))))))
+        (:up     (decf y2))
+        (:down   (incf y2))
+        (:left   (decf x2))
+        (:right  (incf x2))))))
 
 (defun t30 ()
   "Test color pair completion for style parameters."
