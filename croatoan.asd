@@ -10,6 +10,7 @@
   ((:file "package")
    (:file "character")        ; complex character and string
    (:file "classes")
+   (:file "hook")
    (:file "queue")            ; simple thread-safe queue
    (:file "croatoan")         ; macros, event handling
    (:file "gray_streams")

@@ -138,16 +138,26 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
               (when (null ,event)
                 ;; process the contents of the job queue (ncurses access from other threads)
                 (process))
+              (when ,event
+                (run-hook ,window 'before-event-hook))
               (case ,event
-                ,@body)))
+                ,@body)
+              (when ,event
+                (run-hook ,window 'after-event-hook))))
         ;; default case, no mouse used
         `(loop :named event-case do
             (let ((,event (funcall ,get-event-function ,window)))
               (when (null ,event)
-                ;; process the contents of the job queue (ncurses access from other threads)
+                ;; while idle, process the contents of the job queue (ncurses access from other threads)
                 (process))
+              ;; run the hook only for non-nil events.
+              (when ,event
+                (run-hook ,window 'before-event-hook))
+              ;; handle the actual events.
               (case ,event
-                ,@body))))))
+                ,@body)
+              (when ,event
+                (run-hook ,window 'after-event-hook)))))))
 
 (defun bind (object event handler)
   "Bind the handler to the event in the bindings alist of the object.
@@ -378,7 +388,10 @@ Set the frame rate for the idle (nil) event generated when input-blocking is nil
   (let* ((event (get-wide-event object)))
     (if event
         ;; t
-        (handle-event object event args)
+        (progn
+          (run-hook object 'before-event-hook)
+          (handle-event object event args)
+          (run-hook object 'after-event-hook))
         ;; The nil (idle) event should be defined directly in the object's bindings/keymap.
         ;; It has to be handled separately to allow handling of chained events.
         (let ((handler (get-event-handler object event)))

@@ -8,6 +8,12 @@
    with-screen
    with-window
    with-windows
+
+   hook
+   hooks
+   before-event-hook
+   after-event-hook
+   
    event-case
    keymap
    define-keymap

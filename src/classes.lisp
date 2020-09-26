@@ -53,8 +53,8 @@
     :accessor      keymap
     :documentation
     "Keymap containing the key bindings to be used by run-event-loop instead
-    of the object's own bindings. If using an instance-local binding isn't sufficient, 
-    we can create an external keymap and reference it in the object.")
+    of the object's own bindings. If using an instance-local binding isn't 
+    sufficient, we can create an external keymap and reference it in the object.")
 
    (current-keymap
     :initform      nil
@@ -63,6 +63,13 @@
     "If not nil, this is a pointer to the keymap that should be used for the
     lookup of the next event handler instead of the widgets bindings and keymap.
     Used as an utility only in the handle-event method.")
+
+   (hooks
+    :initform      nil
+    :type          (or null cons)
+    :accessor      hooks
+    :documentation
+    "Alist of hooks registered with the object.")
 
    (frame-rate
     :initarg       :frame-rate
@@ -1253,7 +1260,8 @@ If there is no window asociated with the element, return the window associated w
 ;;   (set-attributes window attributes))
 
 (defgeneric color-pair (object)
-  (:documentation "")
+  (:documentation
+   "Return the color pair of the object as a 2-element list (fg bg).")
   (:method (object)
     (with-slots (fgcolor bgcolor) object
       (if (or fgcolor bgcolor)
@@ -1262,7 +1270,8 @@ If there is no window asociated with the element, return the window associated w
           nil))))
 
 (defgeneric (setf color-pair) (color-pair object)
-  (:documentation "")
+  (:documentation
+   "Set the color pair of the object by setting the fgcolor and bgcolor properties.")
   (:method (color-pair object)
     (with-slots (fgcolor bgcolor) object
       (if color-pair
