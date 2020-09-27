@@ -44,10 +44,12 @@
       (flet ((draw-snake (win body)
                (mapc (lambda (pos) (add win #\* :position pos)) body))
              (set-dir (win event)
+               (declare (ignore win))
                (setq dir (get-direction event))))
         (bind scr #\q 'exit-event-loop)
         (bind scr '(:right :left :up :down) #'set-dir)
         (bind scr nil (lambda (w e)
+                        (declare (ignore w e))
                         ;; snake moves = erase last body pair by overwriting it with space
                         (add scr #\space :position tail)
                         (setq body (cons (mapcar #'+ head dir) (butlast body)))
@@ -140,6 +142,7 @@
         (bind scr #\q 'exit-event-loop)
         (bind scr nil
           (lambda (win event)
+            (declare (ignore event))
             ;; generate a random ascii char
             (loop for column from 0 to (1- width) do
                  (loop repeat (nth column speeds) do
@@ -176,10 +179,12 @@
         (bind scr #\q 'exit-event-loop)
         (bind scr #\r
           (lambda (win event)
+            (declare (ignore win event))
             (setf (getf s2 :fgcolor) :red
                   (getf s3 :fgcolor) :red)))
         (bind scr nil
           (lambda (win event)
+            (declare (ignore event))
             (loop for column from 0 to (1- width) do
                  (loop repeat (nth column speeds) do
                       (let ((pos (nth column positions)))
@@ -204,6 +209,7 @@
         (bind scr #\q 'exit-event-loop)
         (bind scr nil
           (lambda (win event)
+            (declare (ignore event))
             (loop for column from 0 to (1- width) do
                  (loop repeat (nth column speeds) do
                       (let ((pos (nth column positions)))
@@ -1913,6 +1919,7 @@ Adding hex values requires 256color support in the terminal."
       (setf (style field) (list :foreground s1 :background s2))
       ;; read a color (keyword or hex) from the field then set the background
       (bind field #\newline (lambda (w e)
+                              (declare (ignore w e))
                               (setf (background scr) (make-instance 'complex-char :simple-char #\space :bgcolor (read-from-string (value field))))
                               (refresh scr)))
       (edit field))))
@@ -2038,7 +2045,9 @@ will be more efficient to use a character array, a string."
       (bind (find-keymap 'field-map) :f3 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
-      (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
+      (setf (callback button1) (lambda (b e)
+                                 (declare (ignore b e))
+                                 (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
       (setf (callback button2) 'accept)
       (setf (callback button3) 'cancel)
 
@@ -2106,7 +2115,9 @@ will be more efficient to use a character array, a string."
       (bind form :f4 'crt::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
-      (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
+      (setf (callback button1) (lambda (b e)
+                                 (declare (ignore b e))
+                                 (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
       (setf (callback button2) 'accept)
       (setf (callback button3) 'cancel)
 
@@ -2165,7 +2176,9 @@ will be more efficient to use a character array, a string."
       (refresh scr)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
-      (setf (callback button1) (lambda (b e) (save-excursion scr (move scr 0 0) (format scr "Hello there") (refresh scr))))
+      (setf (callback button1) (lambda (b e)
+                                 (declare (ignore b e))
+                                 (save-excursion scr (move scr 0 0) (format scr "Hello there") (refresh scr))))
       (setf (callback button2) 'cancel)
       (setf (callback button3) 'accept)
 
@@ -2265,6 +2278,7 @@ will be more efficient to use a character array, a string."
 
       ;; a long-running function running in the main thread freezes the ncurses UI.
       (setf (callback b1) (lambda (b e)
+                            (declare (ignore b e))
                             (sleep 10)
                             (setf (value field3) (concatenate 'string (value field1) " " (value field2)))
                             (draw form)))
@@ -2273,6 +2287,7 @@ will be more efficient to use a character array, a string."
       ;; then return the result through a thread-safe queue
       ;; poll the queue within the nil event and handle the result returned by the worker.
       (setf (callback b2) (lambda (b e)
+                            (declare (ignore b e))
                             (setf (value field3) "Calculating...")
                             (draw form)
                             (let ((v1 (value field1))
@@ -2301,6 +2316,7 @@ will be more efficient to use a character array, a string."
 
       ;; how to set a timer that polls the queue also when blocking is t? (tkinter has the after function)
       (bind form nil (lambda (f e)
+                       (declare (ignore f e))
                        ;; pop an item off the queue and set it as the result of the worker thread calculation to field3.
                        ;; we do not need the loop here since we only have one item in the queue,
                        ;; but in general the polling of a longer queue should be done by a loop.
@@ -2792,6 +2808,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       (bind scr #\q 'exit-event-loop)
       (bind scr nil
             (lambda (win e)
+              (declare (ignore e))
               (echo win #\space
                     :y (random (height win))
                     :x (random (width win))
@@ -3152,16 +3169,16 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     ;; The event handler function has to take two arguments, the window and the event.
 
     ;; a and s add a string to the window.
-    (bind scr #\a (lambda (win event) (format win "Hello there.~%")))
-    (bind scr #\b (lambda (win event) (format win "Dear John.~%")))
+    (bind scr #\a (lambda (win event) (declare (ignore event)) (format win "Hello there.~%")))
+    (bind scr #\b (lambda (win event) (declare (ignore event)) (format win "Dear John.~%")))
 
     (bind scr '("^a" "^b" "^d") (lambda (w e) (format w "Control char: ~A~%" e)))
 
     ;; d clears the window.
-    (bind scr #\d (lambda (win event) (clear win)))
+    (bind scr #\d (lambda (win event) (declare (ignore event)) (clear win)))
 
     ;; u unbinds all keys other than q
-    (bind scr #\u (lambda (win event) (unbind scr '(#\a #\b #\d "^a" "^b" "^d"))))
+    (bind scr #\u (lambda (win event) (declare (ignore win event)) (unbind scr '(#\a #\b #\d "^a" "^b" "^d"))))
 
     (clear scr)
     (add-string scr "Type a, b or d with or without Ctrl. Type q to quit.")
@@ -3227,7 +3244,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
 
     ;; The handler function for the nil event will be called between keyboard events.
-    (bind scr nil (lambda (win event) (format win "." event)))
+    (bind scr nil (lambda (win event) (declare (ignore event)) (format win ".")))
 
     ;; Defining a keymap as a hander for ^X makes it the prefix key for that keymap.
     (bind scr "^X" *t28-ctrl-x-map*)
@@ -3243,6 +3260,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (run-event-loop scr)))
 
 (defun t28b-show-bindings (win event)
+  (declare (ignore event))
   (format win "~S" (bindings (find-keymap (keymap win)))))
 
 ;; defines and centrally registers a keymap
