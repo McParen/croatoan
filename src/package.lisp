@@ -43,6 +43,7 @@
    textarea
    form
    form-window
+   msgbox
    button
    label
    checkbox

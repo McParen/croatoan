@@ -191,16 +191,25 @@ Place the cursor between the brackets [_] of the current item."
     ;; after drawing the elements, reposition the cursor to the current element
     (update-cursor-position form)))
 
-(defmethod draw ((form form-window))
+(defmethod draw ((fwin form-window))
   "Draw the form by drawing the elements, then moving the cursor to the current element."
-  ;; update cursor position only refreshes the window associated with the form, which is the sub-window
-  ;; in order to see the border, we have to touch and refresh the parent border window.
-  ;; refreshing the parent window has to be done before refreshing the cursor position in the sub
-  ;; or the cursor will be moved to 0,0 of the parent window.
-  (touch form)
-  (refresh form)
-  ;; draw the form contents, the superclass of form-window is form (and decorated-window).
-  (call-next-method))
+  (with-accessors ((title title) (name name) (draw-border-p draw-border-p) (sub-win sub-window)) fwin
+    ;; update cursor position only refreshes the window associated with the form, which is the sub-window
+    ;; in order to see the border, we have to touch and refresh the parent border window.
+    ;; refreshing the parent window has to be done before refreshing the cursor position in the sub
+    ;; or the cursor will be moved to 0,0 of the parent window.
+    (touch fwin)
+    (when (and draw-border-p title)
+      (flet ((make-title-string (len)
+               (concatenate 'string "|~" (write-to-string (+ len 2)) ":@<~A~>|")))
+        ;; If there is a title string, take it, otherwise take the name.
+        ;; The name is displayed only if title is t.
+        (let* ((str (if (typep title 'string) title name))
+               (n (length str)))
+          (add fwin (format nil (make-title-string n) str) :y 0 :x 2))))
+    (refresh fwin)
+    ;; draw the form contents, the superclass of form-window is form (and decorated-window).
+    (call-next-method)))
 
 ;; previous-element and next-element are the only two elements where the current-element-number is changed.
 ;; here also current-element and selected has to be set.
@@ -412,7 +421,8 @@ This allows to specify why the form was canceled."
             (eq (type-of object) 'form-window))
     (reset-form object event))
   (throw (if (or (eq (type-of object) 'form)
-                 (eq (type-of object) 'form-window))
+                 (eq (type-of object) 'form-window)
+                 (eq (type-of object) 'msgbox))
              object
              (if (parent-form object)
                  (parent-form object)
@@ -430,7 +440,8 @@ This allows to specify by which button or event the form was accepted."
   ;; if the object has a parent-form, do not throw the object,
   ;; throw its parent form, otherwise throw the object.
   (throw (if (or (eq (type-of object) 'form)
-                 (eq (type-of object) 'form-window))
+                 (eq (type-of object) 'form-window)
+                 (eq (type-of object) 'msgbox))
              object
              (if (parent-form object)
                  (parent-form object)

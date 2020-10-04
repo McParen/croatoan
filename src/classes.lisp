@@ -594,6 +594,7 @@
     :documentation "Flag denoting whether the element is currently selected in a form.")
 
    (activep
+    :initarg       :active
     :initform      t
     :type          boolean
     :accessor      activep
@@ -623,6 +624,7 @@ If there is no window asociated with the element, return the window associated w
   (with-slots (window parent-form) element
     (if window
         window
+        ;; not every element (for example a menu) has a parent form.
         (if parent-form
             (if (slot-value parent-form 'window)
                 (slot-value parent-form 'window)
@@ -637,6 +639,7 @@ If there is no window asociated with the element, return the window associated w
   (with-slots (style parent-form) element
     (if style
         style
+        ;; not every element (for example a menu) has a parent form.
         (when parent-form
           (if (slot-value parent-form 'style)
               ;; get the default element style from the form style slot.
@@ -673,7 +676,7 @@ If there is no window asociated with the element, return the window associated w
     :initform      nil
     :documentation "Labels are by default not active and can not be selected when cycling through the elements."))
   
-  (:documentation "A string displayed at the specified position."))
+  (:documentation "A single-line string displayed at the specified position."))
 
 (defclass button (element)
   ((callback
@@ -836,9 +839,9 @@ If there is no window asociated with the element, return the window associated w
   (with-slots (elements current-element keymap) form
     (if elements
         (progn
-          ;; Initialize the current element as the first element from the passed elements list.
+          ;; Initialize the current element as the first active element from the passed elements list.
           ;; we have to set the current element before we can change it with select-previous-element and select-next-element
-          (setf current-element (car elements))
+          (setf current-element (find-if #'activep elements))
           ;; set the selected option of the initial current element.
           (setf (slot-value current-element 'selectedp) t)
           ;; set the parent form slot of every element.
@@ -862,6 +865,68 @@ If there is no window asociated with the element, return the window associated w
       ;; set the sub of the decorated window to be the associated window of the form
       ;; the form will be drawn to the associated window, i.e. to the sub
       (setf window sub-window) )))
+
+(defclass msgbox (form-window)
+  ((message
+    :initarg       :message
+    :initform      nil
+    :type          (or null string)
+    :documentation
+    "Message to display to the user.")
+
+   (msg-area
+    :initform      nil
+    :type          (or null textarea)
+    :documentation
+    "An inactive textarea containing the user message. Since the area is inactive, the
+    message can not be scrolled. The size is calculated automatically from the msgbox
+    dimensions.")
+
+   (ok-button
+    :initform      nil
+    :type          (or null button)
+    :documentation
+    "The OK button below the message allows the user to accept and exit the dialog."))
+
+  (:default-initargs
+   :enable-function-keys t
+   :input-blocking t
+   :draw-border t)
+  
+  (:documentation
+   "A msgbox is a dialog presenting the user a message and an OK button to accept it."))
+
+(defmethod initialize-instance :before ((msgbox msgbox) &key center)
+  (with-slots (elements msg-area ok-button) msgbox
+    (setf msg-area (make-instance 'textarea :position '(1 1) :active nil))
+    (setf ok-button (make-instance 'button :name :ok-button :title "  OK  "))
+    (setf (callback ok-button) 'accept)
+    ;; the elements list has to be assembled :before the primary form initialization method
+    ;; otherwise the :after method for form doesnt work
+    (setf elements (list msg-area ok-button))))
+
+(defmethod initialize-instance :after ((msgbox msgbox) &key center)
+  (with-slots (winptr height width position sub-window draw-border-p window elements current-element message msg-area ok-button) msgbox
+    (when (eq (type-of msgbox) 'msgbox)
+      ;; The default size of a msgbox is half the height, 2/3 the width of the screen
+      (unless height (setf height (round (/ ncurses:LINES 2))))
+      (unless width (setf width (round (* ncurses:COLS 2/3))))
+      ;; If the center keyword is t, it replaces the default window position '(0 0).
+      (when center
+        (setf position (list (- (round (/ ncurses:LINES 2)) (round (/ height 2)))
+                             (- (round (/ ncurses:COLS  2)) (round (/ width  2))))))
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (setf sub-window (make-instance 'sub-window :parent msgbox :height (- height 2) :width (- width 2)
+                                                  :position (list 1 1) :relative t :enable-function-keys t))
+      (setf window sub-window)
+      (setf (height msg-area) (- height 5))
+      (setf (width msg-area) (- width 4))
+      (setf (element-position ok-button) (list (- height 3)
+                                               (- (floor width 2)
+                                                  ;; why do we need 4 here?
+                                                  (floor (+ 4 (length (title ok-button))) 2))))
+      (when message
+        (setf (value msg-area) message)))))
 
 ;; if a window-position is given during make-instance, it can be simply ignored.
 ;; or we can check for position and signal an error.
