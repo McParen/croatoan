@@ -262,12 +262,13 @@ the color and attributes of `a'."
              b))
       res)))
 
+(defun vector-not-empty-p (v)
+  (/= (length v) 0))
+
 (defun complex-string-last-char-attributes (complex-string)
   "Returns the attributes of the last character of `complex-string' as three values:
 attributes, background color and foreground color"
-  (flet ((vector-not-empty-p (v)
-           (/= (length v) 0))
-         (last-element (a)
+  (flet ((last-element (a)
            (elt a (1- (length a)))))
     (with-accessors ((inner-array-a complex-char-array)) complex-string
       (let* ((last-complex-char    (and (vector-not-empty-p inner-array-a)
@@ -282,6 +283,23 @@ attributes, background color and foreground color"
                 last-char-bg
                 last-char-fg)))))
 
+(defun complex-string-first-char-attributes (complex-string)
+  "Returns the attributes of the first character of `complex-string' as three values:
+attributes, background color and foreground color."
+  (flet ((first-element (a)
+           (elt a 0)))
+    (with-accessors ((inner-array-a complex-char-array)) complex-string
+      (let* ((first-complex-char    (and (vector-not-empty-p inner-array-a)
+                                         (first-element inner-array-a)))
+             (first-char-attributes (and first-complex-char
+                                         (attributes first-complex-char)))
+             (first-char-fg         (and first-complex-char
+                                         (fgcolor first-complex-char)))
+             (first-char-bg         (and first-complex-char
+                                         (bgcolor first-complex-char))))
+        (values first-char-attributes
+                first-char-bg
+                first-char-fg)))))
 
 (defun concat-complex-string-with-contagion (string-1 string-2)
   "Concatenate two  `complex-strings': the args `string-2' does not inherit
@@ -328,6 +346,40 @@ color of the last element of `a'."
                                          inner-array-res))
                    b))
             res)))))
+
+(defmethod concat-complex-string ((a sequence) (b complex-string)
+                                  &key (color-attributes-contagion t))
+  "Return a  complex string  that is the  results of  concatenating of
+`a'    (a `complex-string') and `b' (a string). If
+`color-attributes-contagion' is non nil `b' will inherit all the attributes and
+color of the last element of `a'."
+  (with-accessors ((inner-array-b complex-char-array)) b
+    (multiple-value-bind (new-attributes new-bg new-fg)
+        (complex-string-first-char-attributes b)
+      (let* ((res-vector-length (+ (length a)
+                                   (length inner-array-b)))
+             (res               (make-instance 'complex-string
+                                               :complex-char-array
+                                               (make-array res-vector-length
+                                                           :element-type 'complex-char
+                                                           :fill-pointer res-vector-length
+                                                           :adjustable      t
+                                                           :initial-element
+                                                           (make-instance 'complex-char)))))
+        (with-accessors ((inner-array-res complex-char-array)) res
+          (loop for i from 0 below (length a) do
+               (let ((new-complex-char (if (not color-attributes-contagion)
+                                           (make-instance 'complex-char
+                                                          :simple-char (elt a i))
+                                           (make-instance 'complex-char
+                                                          :bgcolor     new-bg
+                                                          :fgcolor     new-fg
+                                                          :attributes  new-attributes
+                                                          :simple-char (elt a i)))))
+                 (setf (elt inner-array-res i) new-complex-char)))
+          (loop for i from 0 below (length inner-array-b) do
+               (setf (elt inner-array-res (+ i (length a))) (elt inner-array-b i)))
+          res)))))
 
 (defmethod concat-complex-string ((a complex-string) (b complex-string)
                                   &key (color-attributes-contagion nil))
