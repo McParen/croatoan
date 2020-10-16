@@ -352,7 +352,7 @@ color of the last element of `a'."
   "Return a  complex string  that is the  results of  concatenating of
 `a'    (a `string') and `b' (a `complex-string'). If
 `color-attributes-contagion' is non nil `a' will inherit all the attributes and
-color of the last element of `b'."
+color of the first element of `b'."
   (with-accessors ((inner-array-b complex-char-array)) b
     (multiple-value-bind (new-attributes new-bg new-fg)
         (complex-string-first-char-attributes b)
