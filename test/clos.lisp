@@ -8,33 +8,59 @@
              (xpos (cadar body))
              (ypos (caar body))
              (dir #c(1 0)))
-
         (clear scr)
         (display-snake scr body)
         (refresh scr)
-
-         (loop
-            (let ((event (get-event scr)))
-              (if event
-                  ;; when the event is different from nil
-                  (case event
-                    (:up    (setf dir #c( 0  1)))
-                    (:down  (setf dir #c( 0 -1)))
-                    (:right (setf dir #c( 1  0)))
-                    (:left  (setf dir #c(-1  0)))
-                    (#\q    (return)))
-                  ;; when event is nil because of input-blocking nil
-                  (progn
-                    (sleep 0.1)
-                    (add-char scr (char-code #\space) :y (caar (last body)) :x (cadar (last body)))
-                    (setf body (cons (list (incf ypos (- (imagpart dir)))
-                                           (incf xpos (realpart dir)))
-                                     (butlast body)))
-                    (display-snake scr body)
-                    (refresh scr)))))))))
+        (loop
+          (let ((event (get-event scr)))
+            (if event
+                ;; when the event is different from nil
+                (case event
+                  (:up    (setf dir #c( 0  1)))
+                  (:down  (setf dir #c( 0 -1)))
+                  (:right (setf dir #c( 1  0)))
+                  (:left  (setf dir #c(-1  0)))
+                  (#\q    (return)))
+                ;; when event is nil because of input-blocking nil
+                (progn
+                  (sleep 0.1)
+                  (add-char scr (char-code #\space) :y (caar (last body)) :x (cadar (last body)))
+                  (setf body (cons (list (incf ypos (- (imagpart dir)))
+                                         (incf xpos (realpart dir)))
+                                   (butlast body)))
+                  (display-snake scr body)
+                  (refresh scr)))))))))
 
 (defun snake2 ()
-  "Use bind and run-event-loop for event handling. Use lists instead of complex numbers for directions."
+  "Use event-case for event handling. Use lists instead of complex numbers for directions."  
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)
+    (let* ((body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
+           (head (car body))
+           (tail (car (last body)))
+           ;; initial direction
+           (dir (get-direction :right)))
+      (flet ((draw-snake (win body)
+               (mapc (lambda (pos) (add win #\* :position pos)) body)))
+        (clear scr)
+        (draw-snake scr body)
+        (refresh scr)
+        (event-case (scr event)
+          (#\q
+           (return-from event-case))
+          ((:right :left :up :down)
+           (setq dir (get-direction event)))
+          ((nil)
+           (sleep 0.05)
+           ;; snake moves = erase last body pair by overwriting it with space
+           (add scr #\space :position tail)
+           (setq body (cons (mapcar #'+ head dir) (butlast body)))
+           (setq head (car body))
+           (setq tail (car (last body)))
+           (draw-snake scr body)
+           (refresh scr)))))))
+
+(defun snake3 ()
+  "Use bind and run-event-loop for event handling."
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)
     (let* ((body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
            (head (car body))

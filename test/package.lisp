@@ -148,6 +148,7 @@
    #:matrix4
    #:snake
    #:snake2
+   #:snake3
    #:tetris
    #:pipes
 
