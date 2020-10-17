@@ -2370,6 +2370,34 @@ will be more efficient to use a character array, a string."
       ;; temporarily set blocking to t, then wait for a keypress
       (wait-for-event scr) )))
 
+(defun t16k ()
+  "An message-dialog featuring a inactive textarea and an OK button."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let* ((ch1 (list :fgcolor :black :bgcolor :white))
+           (ch3 (list :fgcolor :white :bgcolor :blue :attributes '(:bold)))
+           (style1 (list :foreground ch1 :background ch1 :selected-foreground ch1 :selected-background ch1))
+           (style2 (list :foreground ch1 :selected-foreground ch3))
+           (style4 (list 'textarea style1 'button style2))
+           (area1 (make-instance 'textarea :position '(1 1) :dimensions '(4 46) :active nil))
+           (button1 (make-instance 'button :name :b3 :title "  OK  "  :position (list 6 20)))
+           (form (make-instance 'form-window
+                                :elements (list area1 button1)
+                                :style style4 :enable-function-keys t :input-blocking t
+                                :title "Form window"
+                                :draw-border t :height 9 :width 50
+                                :position (list 1 1))))
+      (setf (value area1) (format nil
+                                  "This is my textarea. There are many like it,~%~
+                                  but this one is mine. My textarea is my best~%~
+                                  friend. It is my life. I must master it as I~%~
+                                  must master my life."))
+      (setf (crt::activep area1) nil)
+      (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
+      (refresh scr)
+      (setf (callback button1) 'accept)
+      (edit form)
+      (close form))))
+
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
