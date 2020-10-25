@@ -191,24 +191,48 @@ Place the cursor between the brackets [_] of the current item."
     ;; after drawing the elements, reposition the cursor to the current element
     (update-cursor-position form)))
 
+(defun make-title-string (widget &optional (beg "") (end ""))
+  "Make a title string for a decorated window containig a form or a menu.
+
+Use the title string of the widget if provided, otherwise use its symbol name."
+  (with-accessors ((title title) (name name)) widget
+    (let* ((str (if (typep title 'string) title name)))
+      (format nil
+              ;; format template for the title depending on its length.
+              ;; "12345" => "| 12345 |"
+              (concatenate 'string beg "~" (write-to-string (+ (length str) 2)) ":@<~A~>" end)
+              str))))
+
+(defun add-title (win)
+  "Draw a title to the first line of a window.
+
+Usually, this will be a decorated window with a border and the title on the top border.
+
+When title is t instead of a title string, display the symbol name of the widget."
+  (add-string win (make-title-string win) :y 0 :x 2))
+
+(defmethod draw ((win decorated-window))
+  "Draw the background window, and the title and the border if they are given."
+  (with-accessors ((title title)) win
+    (touch win)
+    (when title
+      (add-title win))
+    (refresh win)
+    ;; in multiple inheritance, a decorated-window should be the first superclass
+    ;; so we can first draw the border and title here and then
+    ;; call-next-method the second class here to draw the contents
+    ;; provided by the next superclass (for example menu or form)
+    ;; If there was a draw method for windows, it would be called before going to the next superclass
+    ;; but we do not have a draw method for simple windows.
+    (when (next-method-p)
+      (call-next-method))))
+
 (defmethod draw ((fwin form-window))
-  "Draw the form by drawing the elements, then moving the cursor to the current element."
-  (with-accessors ((title title) (name name) (draw-border-p draw-border-p) (sub-win sub-window)) fwin
-    ;; update cursor position only refreshes the window associated with the form, which is the sub-window
-    ;; in order to see the border, we have to touch and refresh the parent border window.
-    ;; refreshing the parent window has to be done before refreshing the cursor position in the sub
-    ;; or the cursor will be moved to 0,0 of the parent window.
-    (touch fwin)
-    (when (and draw-border-p title)
-      (flet ((make-title-string (len)
-               (concatenate 'string "|~" (write-to-string (+ len 2)) ":@<~A~>|")))
-        ;; If there is a title string, take it, otherwise take the name.
-        ;; The name is displayed only if title is t.
-        (let* ((str (if (typep title 'string) title name))
-               (n (length str)))
-          (add fwin (format nil (make-title-string n) str) :y 0 :x 2))))
-    (refresh fwin)
-    ;; draw the form contents, the superclass of form-window is form (and decorated-window).
+  "Draw the the border and the title, then the form."
+  ;; The draw method does nothng specific for a form-window
+  ;; first call next method to draw the decorated window (border and title)
+  ;; then from the decorated window call-next-method to draw the form contents
+  (when (next-method-p)
     (call-next-method)))
 
 ;; previous-element and next-element are the only two elements where the current-element-number is changed.

@@ -851,7 +851,7 @@ If there is no window asociated with the element, return the window associated w
         ;; if a list of elements was not passed, signal an error.
         (error "A list of elements is required to initialize a form."))))
 
-(defclass form-window (form decorated-window)
+(defclass form-window (decorated-window form)
   ()
   (:documentation ""))
 
