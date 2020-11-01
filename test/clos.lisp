@@ -2370,6 +2370,15 @@ will be more efficient to use a character array, a string."
       ;; temporarily set blocking to t, then wait for a keypress
       (wait-for-event scr) )))
 
+(defparameter *t16k-message*
+  (format nil
+;                                               50
+;1234567890123456789012345678901234567890123456789
+"This is my textarea. There are many like it,~%~
+but this one is mine. My textarea is my best~%~
+friend. It is my life. I must master it as I~%~
+must master my life."))
+
 (defun t16k ()
   "An message-dialog featuring a inactive textarea and an OK button."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
@@ -2386,17 +2395,34 @@ will be more efficient to use a character array, a string."
                                 :title "Form window"
                                 :draw-border t :height 9 :width 50
                                 :position (list 1 1))))
-      (setf (value area1) (format nil
-                                  "This is my textarea. There are many like it,~%~
-                                  but this one is mine. My textarea is my best~%~
-                                  friend. It is my life. I must master it as I~%~
-                                  must master my life."))
+      (setf (value area1) *t16k-message*)
       (setf (crt::activep area1) nil)
       (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
       (refresh scr)
       (setf (callback button1) 'accept)
       (edit form)
       (close form))))
+
+(defparameter *t16k1-style*
+  ;; default element styles, since the msgbox is a form
+  '(button   (:selected-foreground (:fgcolor :white :bgcolor :blue))
+    textarea (:foreground (:fgcolor :blue :bgcolor :white)
+              :background (:fgcolor :blue :bgcolor :green :simple-char #\.))
+    ;; but since it is also a decorated window, it has its own style properties
+    :title (:fgcolor :black :bgcolor :yellow :attributes (:bold))
+    :border (:fgcolor :yellow :bgcolor :red)
+    :background (:fgcolor :white :bgcolor :black :simple-char #\*)))
+
+(defun t16k1 ()
+  "Use the msgbox class directly."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let ((msgbox (make-instance 'msgbox :title "This is a msgbox dialog" :message *t16k-message*
+                                         :center t :height 10 :width 50
+                                         :style *t16k1-style*)))
+      (setf (cursor-visible-p scr) nil)
+      (edit msgbox)
+      (setf (cursor-visible-p scr) t)
+      (close msgbox))))
 
 ;; creating sub-windows and how they share memory with the parent window.
 ;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
