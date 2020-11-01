@@ -115,6 +115,14 @@ The initial purpose of this function is to be used as the equality test for alex
 
 ;;;; Some handy functions to manipulate complex-strings
 
+(defun style-char (style)
+  "Take a plist describing a character style, return a complex-char with the same properties.
+
+The supported properties are :simple-char, :fgcolor, :bgcolor and :attributes.
+
+The separate properties :fgcolor and :bgcolor can be passed together as a :color-pair."
+  (apply #'make-instance 'complex-char style))
+
 (defun make-background (color-bg &key (color-fg nil) (char #\Space))
   "Makes an object suitable as background for a window using `color-bg' as background color,
 `color-fg' as  foreground color (default to  `color-bg') and character

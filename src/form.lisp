@@ -196,7 +196,10 @@ Place the cursor between the brackets [_] of the current item."
 
 Use the title string of the widget if provided, otherwise use its symbol name."
   (with-accessors ((title title) (name name)) widget
-    (let* ((str (if (typep title 'string) title name)))
+    (let ((str (cond ((typep title 'string) title)
+                     ((typep name 'string) name)
+                     ((symbolp name) (symbol-name name))
+                     (t ""))))
       (format nil
               ;; format template for the title depending on its length.
               ;; "12345" => "| 12345 |"
@@ -209,15 +212,38 @@ Use the title string of the widget if provided, otherwise use its symbol name."
 Usually, this will be a decorated window with a border and the title on the top border.
 
 When title is t instead of a title string, display the symbol name of the widget."
-  (add-string win (make-title-string win) :y 0 :x 2))
+  (add-string win (make-title-string win) :y 0 :x 2
+                                          :style (getf (slot-value win 'style) :title)))
 
 (defmethod draw ((win decorated-window))
   "Draw the background window, and the title and the border if they are given."
   (with-accessors ((title title)) win
+    ;; update cursor position only refreshes the window associated with the form, which is the sub-window
+    ;; in order to see the border, we have to touch and refresh the parent border window.
+    ;; refreshing the parent window has to be done before refreshing the cursor position in the sub
+    ;; or the cursor will be moved to 0,0 of the parent window.
+
+    ;; TODO 201101: check ncurses:wsyncup, maybe we can avoid the explicit touch
     (touch win)
+
+    (when (slot-value win 'style)
+      (let ((border-style (getf (slot-value win 'style) :border))
+            (bg-style     (getf (slot-value win 'style) :background)))
+        (when bg-style
+          (setf (background (sub-window win)) (style-char bg-style)))
+        (when border-style
+          (setf (background win) (style-char border-style)))))
+
+    ;; we can add a title even when there is no border
+    ;; If a title is given as a string, it is displayed
+    ;; If the title is t, the name is displayed as the title.
+    ;; If the title is nil or the border is nil, no title is displayed.
     (when title
       (add-title win))
+    
+    ;; TODO do we have to refresh here?
     (refresh win)
+
     ;; in multiple inheritance, a decorated-window should be the first superclass
     ;; so we can first draw the border and title here and then
     ;; call-next-method the second class here to draw the contents
@@ -229,7 +255,7 @@ When title is t instead of a title string, display the symbol name of the widget
 
 (defmethod draw ((fwin form-window))
   "Draw the the border and the title, then the form."
-  ;; The draw method does nothng specific for a form-window
+  ;; The draw method does nothing specific for a form-window
   ;; first call next method to draw the decorated window (border and title)
   ;; then from the decorated window call-next-method to draw the form contents
   (when (next-method-p)
