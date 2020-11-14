@@ -36,6 +36,34 @@
     :documentation
     "Title of the widget to be displayed to the user. 
     If the title is t, the name should be displayed.")
+   
+   (style
+    :initarg       :style
+    :initform      nil
+    :type          (or null cons)
+    :accessor      style
+    :documentation
+    "A style is a plist corresponding to the properties of a complex char.
+
+In the plist the properties fgcolor, bgcolor, the attributes and a
+simple character can be specified.
+
+Currently, the styles for the following objects can be set:
+
+form:
+A plist of default styles for each form element type.
+
+menu (styles of the menu items)
+ :foreground, :background, :selected-foreground, :selected-background
+
+The default style of the selected item is the attribute :reverse,
+and nil for other items.
+
+button, checkbox:
+ :foreground and :selected-foreground.
+
+field, textarea:
+ :foreground, :background, :selected-foreground, :selected-background.")
 
    (bindings
     :initarg       :bindings
@@ -406,15 +434,7 @@
     :initform      (list 0 0)
     :accessor      scrolled-region-start
     :type          (or null cons)
-    :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region.")
-
-   (style
-    :initarg       :style
-    :initform      nil
-    :type          (or null cons)
-    :documentation
-    "Style of menu items: :foreground, :background, :selected-foreground, :selected-background.
-    The default style of the selected item is the attribute :reverse, and nil for other items."))
+    :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region."))
 
   (:default-initargs :keymap 'menu-map)
   (:documentation "A menu is a list of items that can be selected by the user."))
@@ -646,9 +666,6 @@ If there is no window asociated with the element, return the window associated w
               (getf (slot-value parent-form 'style) (type-of element))
               nil)))))
 
-(defmethod (setf style) (style (element element))
-  (setf (slot-value element 'style) style))
-
 (defclass label (element)
   ((reference
     :initarg       :reference
@@ -666,12 +683,6 @@ If there is no window asociated with the element, return the window associated w
     :accessor      width
     :documentation "The width of the label.")
 
-   (style
-    :initarg       :style
-    :initform      nil
-    :type          (or null cons)
-    :documentation "")
-
    (activep
     :initform      nil
     :documentation "Labels are by default not active and can not be selected when cycling through the elements."))
@@ -684,25 +695,13 @@ If there is no window asociated with the element, return the window associated w
     :initform      nil
     :accessor      callback
     :type          (or null symbol function)
-    :documentation "Callback function called when the button is activated.")
-
-   (style
-    :initarg       :style
-    :initform      nil
-    :type          (or null cons)
-    :documentation "A plist of two complex-chars (or nil): :foreground and :selected-foreground."))
+    :documentation "Callback function called when the button is activated."))
 
   (:default-initargs :keymap 'button-map)
   (:documentation "An element that can call a function by pressing enter (or in future, with a mouse click)."))
 
 (defclass checkbox (element)
-  ((style
-    :initarg       :style
-    :initform      nil
-    :type          (or null cons)
-    :documentation "A plist containing :foreground and :selected-foreground.")
-
-   (checkedp
+  ((checkedp
     :initarg       :checked
     :initform      nil
     :accessor      checkedp
@@ -731,12 +730,6 @@ If there is no window asociated with the element, return the window associated w
     :type          (or null integer)
     :accessor      width
     :documentation "The width of the field. The default buffer length is equal the width.")
-
-   (style
-    :initarg       :style
-    :initform      nil
-    :type          (or null cons)
-    :documentation "A plist of four complex-chars (or nil): :foreground, :background, :selected-foreground, :selected-background.")
 
    (insert-mode-p
     :initarg       :insert-mode
@@ -816,13 +809,6 @@ If there is no window asociated with the element, return the window associated w
     :type          (or null field button label checkbox menu checklist textarea)
     :accessor      current-element
     :documentation "Currently selected element object.")
-
-   (style
-    :initarg       :style
-    :initform      nil
-    :type          (or null cons)
-    :accessor      style
-    :documentation "A plist of default styles for each form element type.")
 
    (window
     :initarg       :window
@@ -954,37 +940,6 @@ If there is no window asociated with the element, return the window associated w
     ;; just for a sub-pad window
     (when (eq (type-of win) 'sub-pad)
       (setf winptr (ncurses:subpad (slot-value parent 'winptr) height width (car position) (cadr position))))))
-
-#|
-;; this will be called for both window and screen.
-;; create a curses window when an instance is created.
-(defmethod initialize-instance :after ((win window) &key)
-  (with-slots (winptr cursor-visible-p colors-enabled-p input-echoing-p input-reading 
-                      input-blocking function-keys-enabled-p scrolling-enabled-p height width position) win
-
-    ;; different initialisations depending on the window type.
-    ;; ncurses:initscr initializes a screen, ncurses:newwin initializes a window.
-    ;; TODO: subwin, derwin, pad...
-    ;; CAUTION: these initializations have to be done _before_ any other commands.
-    ;; because of that we cant use call-next-method.
-    (case (type-of win)
-      ;; a screen is initialized when we start ncurses.
-      (screen (progn
-                (setf winptr (ncurses:initscr))
-                (when colors-enabled-p (ncurses:start-color))
-                (if input-echoing-p (ncurses:echo) (ncurses:noecho))
-                (set-input-reading winptr input-reading)
-                (set-cursor-visibility cursor-visible-p))) ;kernel.lisp
-      ;; a window is initialized when we create a new window.
-      (window (setf winptr (ncurses:newwin height width (car position) (cadr position)))))
-
-    ;; the following settings have to be executed for all window types.
-    (set-input-blocking winptr input-blocking)
-    (ncurses:scrollok winptr scrolling-enabled-p)
-    (ncurses:keypad winptr function-keys-enabled-p)))
-|#
-
-;; We cant do this because _all_ auxiliary methods are always used and combined.
 
 (defmethod initialize-instance :after ((win window) &key color-pair dimensions)
   (with-slots (winptr height width position fgcolor bgcolor background) win

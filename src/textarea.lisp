@@ -19,13 +19,6 @@
     :documentation
     "The height (number of visible lines) of the textarea. The area can be scrolled vertically.")
 
-   (style
-    :initarg       :style
-    :initform      nil
-    :type          (or null cons)
-    :documentation
-    "A plist containing four styles: :foreground, :background, :selected-foreground, :selected-background.")
-
    (insert-mode-p
     :initarg       :insert-mode
     :initform      t
