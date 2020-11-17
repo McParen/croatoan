@@ -1333,6 +1333,11 @@ If there is no window asociated with the element, return the window associated w
               (ceiling w 2)
               (/ w 2)))))
 
+(defun random-position (win)
+  "Return a random valid position (y x) inside the window."
+  (list (random (height win))
+        (random (width win))))
+
 (defun toggle-insert-mode (object)
   "Toggle the insert mode boolean property of the object.
 

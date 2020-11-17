@@ -86,6 +86,7 @@
    cursor-visible-p
    source-position
    center-position
+   random-position
 
    ;; Predicates
    closed-p
