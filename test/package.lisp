@@ -144,15 +144,17 @@
    #:t33
 
    ;; clos.lisp
+   #:snake
+   #:snake2
+   #:snake3
+   #:pipes
    #:matrix
    #:matrix2
    #:matrix3
    #:matrix4
-   #:snake
-   #:snake2
-   #:snake3
+   #:robots
    #:tetris
-   #:pipes
+
 
    ;; evolution.lisp
    #:evolve5
