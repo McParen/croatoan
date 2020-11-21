@@ -340,6 +340,8 @@
    string-to-char
    key-to-string
    flush-input
+   split-string
+   wrap-string
 
    ;; variables / curses global variables
 

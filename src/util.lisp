@@ -54,13 +54,17 @@ In particular:
 See: https://en.wikipedia.org/wiki/Control_character#How_control_characters_map_to_keyboards"))
 
 (defmethod key-to-string ((key-name symbol))
-  "Function key name represented by a keyword."
+  "Take a keyword representing a croatoan function key name, return the corresponding ncurses/terminfo name as a string."
   (key-to-string (key-name-to-code key-name)))
 
 (defmethod key-to-string ((key character))
+  "Take a lisp character, return a string representing that character in ncurses/terminfo.
+
+Control characters are represented in caret notation, for example ^J."
   (key-to-string (char-code key)))
 
 (defmethod key-to-string ((key integer))
+  "Take the integer code representing a character, return a string representing that character in ncurses/terminfo."
   (ncurses:keyname key))
 
 (defun flush-input ()
@@ -74,6 +78,57 @@ happen in games.)
 
 This ncurses function has the same purpose as cl:clear-input."
   (ncurses:flushinp))
+
+;; Original source: Lisp cookbook, author unknown, license MIT.
+(defun split-string (str &optional (ch #\space))
+  "Split the string into a list of words separated by one or more chars."
+  (loop for i = 0 then (1+ j)
+        for j = (position ch str :start i)
+        for word = (subseq str i j)
+        unless (zerop (length word))
+        collect word
+        while j))
+
+(defun wrap-string (string width)
+  "Place newlines in a string so that no single line exceeds the given width.
+
+In this simple implementation, pre-existing newlines and multiple spaces are removed."
+  (let* (;; the first word is printed without a preceding space
+         (first t)
+         ;; character position in the current line
+         (pos 0)
+         ;; first, remove existing newlines from the string.
+         (str (substitute #\space #\newline string))
+         ;; then split the string into single words, ignoring multiple spaces
+         (words (split-string str)))
+    ;; output everything to a string instead of standard output
+    (with-output-to-string (*standard-output*)
+      (loop for word in words do
+        (if first
+            ;; the first word does not have a space before it
+            (progn
+              (incf pos (length word))
+              (if (<= pos width)
+                  (progn
+                    (setq first nil)
+                    (princ word))
+                  (progn
+                    (setq pos 0)
+                    (princ #\newline)
+                    (princ word)
+                    (incf pos (length word)))))
+            ;; second and subsequent words
+            (progn
+              (incf pos (1+ (length word))) ; space + word
+              (if (<= pos width)
+                  (progn
+                    (princ #\space)
+                    (princ word))
+                  (progn
+                    (setq pos 0)
+                    (princ #\newline)
+                    (princ word)
+                    (incf pos (length word))))))))))
 
 ;;; NOTES
 
