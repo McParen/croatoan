@@ -8,6 +8,7 @@
                                (process-control-chars t)
                                (enable-newline-translation t)
                                (input-blocking t)
+                               (frame-rate nil)
                                (input-echoing t)
                                (enable-function-keys t)
                                (enable-scrolling nil)
@@ -38,6 +39,7 @@ library. Do not run more than one screen at the same time."
                                       :process-control-chars ,process-control-chars
                                       :enable-newline-translation ,enable-newline-translation
                                       :input-blocking ,input-blocking
+                                      :frame-rate ,frame-rate
                                       :input-echoing ,input-echoing
                                       :enable-function-keys ,enable-function-keys
                                       :enable-scrolling ,enable-scrolling
@@ -382,9 +384,7 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
       (process))))
 
 (defun handle-events (object args)
-  "Read a single event from the user, lookup a handler and apply it.
-
-Set the frame rate for the idle (nil) event generated when input-blocking is nil."
+  "Read a single event from the user, lookup a handler and apply it."
   (let* ((event (get-wide-event object)))
     (if event
         ;; t
@@ -396,9 +396,7 @@ Set the frame rate for the idle (nil) event generated when input-blocking is nil
         ;; It has to be handled separately to allow handling of chained events.
         (let ((handler (get-event-handler object event)))
           (when handler
-            (apply handler object event args))
-          (when (frame-rate object)
-            (sleep (/ 1.0 (frame-rate object))))))))
+            (apply handler object event args))))))
 
 (defgeneric handle-event (object event args)
   (:documentation

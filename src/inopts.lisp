@@ -30,16 +30,15 @@
       ;; to turn off buffering, turn on cbreak or raw
       (if process-control-chars (ncurses:cbreak) (ncurses:raw))))
 
-;; Ported to clos, used in clos.
-(defun set-input-blocking (window status)
-  "Set window input blocking behavior.
+(defun set-input-blocking (winptr status)
+  "Set the window input blocking behavior.
 
 Possible values are t, nil and a blocking duration in (positive integer) miliseconds."
-  (cond ((eq status t) (ncurses:wtimeout window -1))
-        ((eq status nil) (ncurses:wtimeout window 0))
+  (cond ((eq status t) (ncurses:wtimeout winptr -1))
+        ((eq status nil) (ncurses:wtimeout winptr 0))
         ((and (typep status 'integer) (plusp status))
-         (ncurses:wtimeout window status))
-        (t (error "possible blocking states: t, nil, delay in miliseconds"))))
+         (ncurses:wtimeout winptr status))
+        (t (error "set-input-blocking error: possible blocking states: t, nil, delay in miliseconds"))))
 
 ;; Not used in clos because too simple. obsolete.
 (defun set-input-echoing (flag)

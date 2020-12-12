@@ -97,20 +97,18 @@ field, textarea:
     :type          (or null cons)
     :accessor      hooks
     :documentation
-    "Alist of hooks registered with the object.")
-
-   (frame-rate
-    :initarg       :frame-rate
-    :initform      nil
-    :type          (or null integer)
-    :accessor      frame-rate
-    :documentation
-    "Set the frame rate in fps (frames per second). When input-blocking is nil, 
-    sleep for 1/frame-rate seconds between event loop cycles. 
-    This has the same effect as setting input-blocking duration for a window, 
-    and should thus not be used simultaneously."))
+    "Alist of hooks registered with the object."))
 
   (:documentation "Base class for all widgets like windows, form elements, etc."))
+
+;; called first for all widgets other than windows
+;; if it is not a window (form or form element), set the timeout of its associated window
+;; we only init if the rate is not the default nil
+;; because the default window blocking already is t = rate nil
+(defmethod initialize-instance :after ((w widget) &key frame-rate)
+  (unless (typep w 'window)
+    (when frame-rate
+      (setf (frame-rate w) frame-rate))))
 
 (defclass window (widget fundamental-character-input-stream fundamental-character-output-stream)
   ((position
@@ -964,7 +962,7 @@ If there is no window asociated with the element, return the window associated w
       (when background (setf (background win) background)) )))
 
 (defmethod initialize-instance :after ((scr screen) &key color-pair)
-  (with-slots (winptr colors-enabled-p use-terminal-colors-p cursor-visible-p input-echoing-p input-blocking
+  (with-slots (winptr colors-enabled-p use-terminal-colors-p cursor-visible-p input-echoing-p
                       function-keys-enabled-p newline-translation-enabled-p fgcolor bgcolor
                       scrolling-enabled-p background input-buffering-p process-control-chars-p) scr
     ;; just for screen window types.
@@ -1021,13 +1019,19 @@ If there is no window asociated with the element, return the window associated w
             (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
 
 ;; called after _all_ :after aux methods.
-;; for all window types in the hierarchy.
-(defmethod initialize-instance :around ((win window) &key)
+;; for all window types in the hierarchy
+;; this has to be called after other aux methods because the windows have to be created first.
+(defmethod initialize-instance :around ((win window) &key frame-rate)
   ;; before :before, :after and primary.
   (let ((result (call-next-method)))
     ;; after :before, :after and primary.
     (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p draw-border-p stackedp) win
-      (set-input-blocking winptr input-blocking)
+      ;; the frame rate argument, if available, takes precedence over input blocking
+      ;; because they access the same ncurses timeout
+      ;; a non-nil frame-rate always implies non-blocking input with a delay
+      (if frame-rate
+          (setf (frame-rate win) frame-rate)
+          (set-input-blocking winptr input-blocking))
       (ncurses:scrollok winptr scrolling-enabled-p)
       (when draw-border-p (ncurses:box winptr 0 0))
       (ncurses:keypad winptr function-keys-enabled-p)
@@ -1162,7 +1166,78 @@ If there is no window asociated with the element, return the window associated w
 (defgeneric (setf input-blocking) (status window))
 (defmethod (setf input-blocking) (status (window window))
   (setf (slot-value window 'input-blocking) status)
-  (set-input-blocking (slot-value window 'winptr) status))
+  (set-input-blocking (slot-value window 'winptr) status)) ; see inopts.lisp
+
+(defgeneric frame-rate (obj)
+  (:documentation
+   "Set the frame rate of the event loop in fps (frames per second).
+
+If the widget is a window, this sets the input-blocking duration of the window.
+
+If the widget is not a window (for example a menu, form or element), setting
+the frame rate essentially sets the input-blocking duration of its associated
+window.
+
+We have the following relation between the frame rate and the blocking duration:
+
+If the frame rate is nil (default) or 0, input blocking is t (default).
+
+If the frame rate is an integer below 2000, the blocking is 1000/rate miliseconds.
+
+If the frame rate is greater or equal than 2000 fps, the blocking is nil."))
+
+(defmethod frame-rate (obj)
+  "If the object is not a window, return the frame rate of its underlying window."
+  (frame-rate (window obj)))
+
+(defmethod frame-rate ((win window))
+  "Return the frame-rate of a window from its input blocking delay.
+
+blocking  frame-rate
+t         nil
+nil       2000
+100       1000/100"
+  (with-slots (input-blocking) win
+    (cond ((eq input-blocking t)
+           nil)
+          ((eq input-blocking nil)
+           2000)
+          ((numberp input-blocking)
+           (round (/ 1000.0 input-blocking))))))
+
+(defgeneric (setf frame-rate) (frame-rate obj)
+  (:documentation
+   "Set the frame rate of a window or a widget.
+
+A non-nil frame rate implies non-blocking delayed input.
+
+Setting the frame rate sets the input-blocking delay of a window."))
+
+(defmethod (setf frame-rate) (frame-rate obj)
+  "If the widget is not a window, set the delay of its associated window."
+  (setf (input-blocking (window obj)) frame-rate))
+
+(defmethod (setf frame-rate) (frame-rate (win window))
+  "Set the input blocking by setting the frame rate in fps (frames per second).
+
+If the frame rate is nil or 0, input blocking is t.
+
+If the frame rate is a number below 2000, the blocking delay is 1000/rate ms.
+
+If the frame rate is greater or equal than 2000, the blocking is nil.
+
+frame-rate blocking
+nil,0      t
+<2000      1000/frame-rate
+>=2000     nil"
+  (setf (input-blocking win)
+        (cond ((or (null frame-rate)
+                   (zerop frame-rate))
+               t)
+              ((numberp frame-rate)
+               (if (< frame-rate 2000)
+                   (round (/ 1000.0 frame-rate))
+                   nil)))))
 
 (defgeneric function-keys-enabled-p (window))
 (defmethod function-keys-enabled-p ((window window))
