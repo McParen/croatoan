@@ -2414,13 +2414,8 @@ will be more efficient to use a character array, a string."
       (wait-for-event scr) )))
 
 (defparameter *t16k-message*
-  (format nil
-;                                               50
-;1234567890123456789012345678901234567890123456789
-"This is my textarea. There are many like it,~%~
-but this one is mine. My textarea is my best~%~
-friend. It is my life. I must master it as I~%~
-must master my life."))
+  "This is my textarea. There are many like it, but this one is mine. My textarea is my best
+friend. It is my life. I must master it as I must master my life.")
 
 (defun t16k ()
   "An message-dialog featuring a inactive textarea and an OK button."
@@ -2430,15 +2425,19 @@ must master my life."))
            (style1 (list :foreground ch1 :background ch1 :selected-foreground ch1 :selected-background ch1))
            (style2 (list :foreground ch1 :selected-foreground ch3))
            (style4 (list 'textarea style1 'button style2))
-           (area1 (make-instance 'textarea :position '(1 1) :dimensions '(4 46) :active nil))
-           (button1 (make-instance 'button :name :b3 :title "  OK  "  :position (list 6 20)))
+           (area1 (make-instance 'textarea :position '(1 1) :dimensions '(4 50) :active nil))
+           (area2 (make-instance 'textarea :position '(6 1) :dimensions '(4 50) :active nil))
+           (button1 (make-instance 'button :name :b3 :title "  OK  "  :position (list 10 20)))
            (form (make-instance 'form-window
-                                :elements (list area1 button1)
+                                :elements (list area1 area2 button1)
                                 :style style4 :enable-function-keys t :input-blocking t
                                 :title "Form window"
-                                :draw-border t :height 9 :width 50
+                                :draw-border t :height 13 :width 54
                                 :position (list 1 1))))
-      (setf (value area1) *t16k-message*)
+      ;; first area without string wrapping
+      (setf (value area1) *t16k-message*
+            ;; second area with string wrapping
+            (value area2) (wrap-string *t16k-message* 49))
       (setf (crt::activep area1) nil)
       (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
       (refresh scr)
@@ -2460,8 +2459,7 @@ must master my life."))
   "Use the msgbox class directly."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let ((msgbox (make-instance 'msgbox :title "This is a msgbox dialog" :message *t16k-message*
-                                         :center t :height 10 :width 50
-                                         :style *t16k1-style*)))
+                                         :center t :height 10 :width 50 :style *t16k1-style*)))
       (setf (cursor-visible-p scr) nil)
       (edit msgbox)
       (setf (cursor-visible-p scr) t)

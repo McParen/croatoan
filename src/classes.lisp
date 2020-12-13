@@ -889,7 +889,7 @@ If there is no window asociated with the element, return the window associated w
     ;; otherwise the :after method for form doesnt work
     (setf elements (list msg-area ok-button))))
 
-(defmethod initialize-instance :after ((msgbox msgbox) &key center)
+(defmethod initialize-instance :after ((msgbox msgbox) &key center (message-wrap t))
   (with-slots (winptr height width position sub-window draw-border-p window elements current-element message msg-area ok-button) msgbox
     (when (eq (type-of msgbox) 'msgbox)
       ;; The default size of a msgbox is half the height, 2/3 the width of the screen
@@ -910,7 +910,9 @@ If there is no window asociated with the element, return the window associated w
                                                   ;; why do we need 4 here?
                                                   (floor (+ 4 (length (title ok-button))) 2))))
       (when message
-        (setf (value msg-area) message)))))
+        (setf (value msg-area) (if message-wrap
+                                   (wrap-string message (1- (width msg-area)))
+                                   message))))))
 
 ;; if a window-position is given during make-instance, it can be simply ignored.
 ;; or we can check for position and signal an error.
