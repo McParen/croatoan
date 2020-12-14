@@ -1217,7 +1217,7 @@ Setting the frame rate sets the input-blocking delay of a window."))
 
 (defmethod (setf frame-rate) (frame-rate obj)
   "If the widget is not a window, set the delay of its associated window."
-  (setf (input-blocking (window obj)) frame-rate))
+  (setf (frame-rate (window obj)) frame-rate))
 
 (defmethod (setf frame-rate) (frame-rate (win window))
   "Set the input blocking by setting the frame rate in fps (frames per second).
