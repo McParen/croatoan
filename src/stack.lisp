@@ -59,16 +59,15 @@ The windows are refreshed in the order they are added, so that if the windows ov
 the window added last will be displayed on top."
   (with-slots (items) stack
     (when items
-      (progn
-        (mapc #'(lambda (w)
-                  (when (visiblep w)
-                    ;; touch marks the windows as changed so that they are completely
-                    ;; redrawn upon the refresh.
-                    ;; this is necessary to remove remnants of overlapping windows.
-                    (touch w)
-                    (mark-for-refresh w)))
-              (reverse items))
-        (refresh-marked)))))
+      (mapc #'(lambda (w)
+                (when (visiblep w)
+                  ;; touch marks the windows as changed so that they are completely
+                  ;; redrawn upon the refresh.
+                  ;; this is necessary to remove remnants of overlapping windows.
+                  (touch w)
+                  (mark-for-refresh w)))
+            (reverse items))
+      (refresh-marked))))
 
 ;; https://www.informatimago.com/develop/lisp/l99/p19.lisp
 ;; todo: what if count is longer than a list? use mod

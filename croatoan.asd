@@ -47,7 +47,7 @@
    (:file "kernel")
    (:file "mouse")
    (:file "move")
-   (:file "panel")
+   (:file "stack")            ; panel stack extension for curses
    (:file "refresh")
    (:file "touch")
    (:file "util")             ; miscellaneous utils
