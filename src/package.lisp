@@ -135,6 +135,7 @@
    submit
    process
    queue
+   simple-queue
    job-error
    enqueue
    dequeue

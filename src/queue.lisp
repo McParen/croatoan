@@ -1,6 +1,7 @@
 (in-package :de.anvi.croatoan)
 
-;; queue
+;;; thread-safe queue
+
 ;; support for cross-thread evaluation
 ;; authors: d4ryus <d4ryus@teknik.io>,
 ;;          Anton Vidovic <anton.vidovic@gmx.de>
@@ -42,13 +43,17 @@
     (with-slots (form error) obj
       (format stream "form: ~a ~_error: ~a" form error))))
 
-(defun enqueue (item queue)
+(defgeneric enqueue (item queue))
+
+(defgeneric dequeue (queue))
+
+(defmethod enqueue (item (queue queue))
   "Push a new item onto the tail of the queue, return the new item."
   (with-slots (tail lock) queue
     (bt:with-lock-held (lock)
       (car (setf tail (cdr (rplacd tail (list item))))))))
 
-(defun dequeue (queue)
+(defmethod dequeue ((queue queue))
   "Pop of the first element of queue and return it, returns NIL when queue is empty"
   (with-slots (head lock) queue
     (bt:with-lock-held (lock)
@@ -105,3 +110,28 @@ interfacing ncurses directly, and should be running in a terminal."
                   (skip-job-form ()
                     :report (lambda (stream)
                               (format stream "Skip job form"))))))))
+
+;;; Simple, non-thread-safe queue
+
+(defclass simple-queue ()
+  ((head
+    :documentation "Pointer to the first cons of the elements list.")
+   (tail
+    :documentation "Pointer to the last cons of the elements list."))
+  (:documentation  "A simple FIFO queue (not thread-safe)."))
+
+(defmethod initialize-instance :after ((queue simple-queue) &key)
+  (with-slots (head tail) queue
+    (setf head (cons nil nil)
+          tail (last head))))
+
+(defmethod enqueue (item (queue simple-queue))
+  "Push a new item onto the tail of the queue, return the new item."
+  (with-slots (tail) queue
+    (car (setf tail (cdr (rplacd tail (list item)))))))
+
+(defmethod dequeue ((queue simple-queue))
+  "Pop of the first element of queue and return it, returns NIL when queue is empty."
+  (with-slots (head) queue
+    (when (cdr head)
+      (car (setf head (cdr head))))))
