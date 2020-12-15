@@ -9,6 +9,7 @@
 
   ((:file "package")
    (:file "character")        ; complex character and string
+   (:file "stack")            ; panel stack extension for curses
    (:file "classes")
    (:file "hook")
    (:file "queue")            ; simple thread-safe queue
@@ -47,7 +48,6 @@
    (:file "kernel")
    (:file "mouse")
    (:file "move")
-   (:file "stack")            ; panel stack extension for curses
    (:file "refresh")
    (:file "touch")
    (:file "util")             ; miscellaneous utils

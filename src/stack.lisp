@@ -4,6 +4,20 @@
 ;; panel stack extension for curses
 ;; http://invisible-island.net/ncurses/man/panel.3x.html
 
+(defclass stack ()
+  ((items
+    :initarg       :items
+    :initform      nil
+    :type          (or null cons)
+    :accessor      items
+    :documentation "List containing the items."))
+  (:documentation "Stack implementation of ncurses panels, allows management of overlapping windows."))
+
+(defparameter *main-stack* (make-instance 'stack)
+  "Global window stack. Windows can be added upon initialization with :stacked t or (setf (stackedp win) t).
+
+(setf (visiblep win) nil) prevents a stacked window from being refreshed and thus displayed.")
+
 (defun stack-push (obj stack)
   "Add the object or objects on top of the stack."
   (with-slots (items) stack

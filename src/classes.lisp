@@ -226,21 +226,6 @@ field, textarea:
 
   (:documentation "A curses window object as returned by newwin."))
 
-;; also see source/panel.lisp
-(defclass stack ()
-  ((items
-    :initarg       :items
-    :initform      nil
-    :type          (or null cons)
-    :accessor      items
-    :documentation "List containing the items."))
-  (:documentation "Stack implementation of ncurses panels, allows management of overlapping windows."))
-
-(defparameter *main-stack* (make-instance 'stack)
-  "Global window stack. Windows can be added upon initialization with :stacked t or (setf (stackedp win) t).
-
-(setf (visiblep win) nil) prevents a stacked window from being refreshed and thus displayed.")
-
 (defmethod stackedp ((win window))
   (slot-value win 'stackedp))
 
