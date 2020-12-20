@@ -11,6 +11,7 @@
    (:file "character")        ; complex character and string
    (:file "stack")            ; panel stack extension for curses
    (:file "classes")
+   (:file "dialog")           ; misc dialog boxes
    (:file "hook")
    (:file "queue")            ; simple thread-safe queue
    (:file "croatoan")         ; macros, event handling
