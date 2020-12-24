@@ -122,6 +122,8 @@
    button-map
    accept
    cancel
+   return-element-value
+   return-form-values
    reset-field
    reset-form
    checkedp

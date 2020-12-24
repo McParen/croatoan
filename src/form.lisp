@@ -124,15 +124,15 @@ Place the cursor between the brackets [_] of the current item."
 
 (defmethod draw ((label label))
   (with-accessors ((pos element-position) (win window) (name name) (title title) (width width) (style style) (reference reference)
-                   (parent-form parent-form)) label
+                   (parent parent)) label
     ;; pick the string to write in the following order
     ;;   title of the label
     ;;   title of the referenced element
     ;;   name of the referenced element
     ;;   name of the label
     (let* ((text (or title
-                     (title (find-element parent-form reference))
-                     (name (find-element parent-form reference))
+                     (title (find-element parent reference))
+                     (name (find-element parent reference))
                      name))
            (string (when text (format nil "~A" text)))
            (fg-style (getf style :foreground))
@@ -459,44 +459,86 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
      (debug-print-field-buffer (current-element object) event)))
   (draw object))
 
-(defun cancel (object event &rest args)
-  "Associate this function with an event (key binding or button) to exit the event loop of a form or form element.
+(defun get-catch-tag (object)
+  "Sets the proper catch tag for exiting the event loop.
 
-The return value is nil, emphasizing that the user has canceled the form.
+If the object is an element in a form, use the form object as the catch tag.
 
-The second value is a list containing the object, the event that called the exit and the args passed.
-
-This allows to specify why the form was canceled."
-  (when (or (eq (type-of object) 'form)
-            (eq (type-of object) 'form-window))
-    (reset-form object event))
-  (throw (if (or (eq (type-of object) 'form)
-                 (eq (type-of object) 'form-window)
-                 (eq (type-of object) 'msgbox))
-             object
-             (if (parent-form object)
-                 (parent-form object)
-                 object))
-    (values nil (list object event args))))
+If the object is used outside a form, use the object itself as the catch tag."
+  (if (typep object 'form)
+      ;; the form is the tag
+      object
+      ;; if the object is a form element
+      (if (and (parent object)
+               (typep (parent object) 'form))
+          ;; if the element has a parent form,
+          ;; the parent form is the tag
+          (parent object)
+          ;; the object doesnt have a parent form,
+          ;; the event loop uses the element directly
+          object)))
 
 (defun accept (object event &rest args)
-  "Associate this function with an event (key binding or button) to exit the event loop of a form or form element.
+  "Exit the event loop of a form or form element.
 
 The first return value is t, emphasizing that the user has accepted the form.
 
-The second value is a list containing the object, the event that called the exit and the args passed.
+The element name is returned as a second value.
 
-This allows to specify by which button or event the form was accepted."
-  ;; if the object has a parent-form, do not throw the object,
-  ;; throw its parent form, otherwise throw the object.
-  (throw (if (or (eq (type-of object) 'form)
-                 (eq (type-of object) 'form-window)
-                 (eq (type-of object) 'msgbox))
+Bind this function to an event (key binding or button)."
+  (throw (get-catch-tag object)
+    (values t
+            (name object))))
+
+(defun cancel (object event &rest args)
+  "Exit the event loop of a form or form element.
+
+The return value is nil, emphasizing that the user has canceled the form.
+
+The element name is returned as a second value.
+
+As a consequence of the cancel, all elements are reset and the input content is discarded.
+
+Bind this function to an event (key binding or button)."
+  ;; TODO: should the reset upon a cancel be done by the routine or explicitely by the user?
+  ;; TODO: if we cancel with a button, object will be a button, so we wont cancel the form.
+  ;; so check that we have a form
+  (when (typep object 'form)
+    (reset-form object event))
+  (throw (get-catch-tag object)
+    (values nil
+            (name object))))
+
+(defun return-element-value (object event &rest args)
+  "Exit the event loop and return the value of the (current) element.
+
+The element name is returned as a second value.
+
+Instead of accept or cancel, which return t or nil, this function
+allows to exit the form event loop and return any value."
+  (throw (get-catch-tag object)
+    (if (typep object 'form)
+        ;; form
+        (values (value (current-element object))
+                (name (current-element object)))
+        ;; form element
+        (values (value object)
+                (name object)))))
+
+(defun return-form-values (object event &rest args)
+  "Return an alist with element names as keys and element values as values.
+
+It is supposed to resemble GET params fname=John&lname=Doe from html forms.
+
+Bind this to an event or element to exit the event loop of a form."
+  (throw (if (typep object 'form)
              object
-             (if (parent-form object)
-                 (parent-form object)
-                 object))
-    (values t (list object event args))))
+             (parent object))
+    (loop for element in (elements (if (typep object 'form)
+                                       object
+                                       (parent object)))
+          when (activep element)
+          collect (cons (name element) (value element)))))
 
 (defun reset-field (field event &rest args)
   "Clear the field and reset its internal buffers and pointers."
@@ -508,7 +550,7 @@ This allows to specify by which button or event the form was accepted."
   (declare (ignore event))
   (let ((form (typecase object
                 (form object)
-                (t (parent-form object)))))
+                (t (parent object)))))
     (loop for element in (elements form)
        do (when (and (typep element 'field) (activep element))
             (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) element

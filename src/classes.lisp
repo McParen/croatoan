@@ -516,10 +516,10 @@ field, textarea:
     :accessor      activep
     :documentation "If t (default), the element can be selected. Used to prevent labels from being selected.")
 
-   (parent-form
+   (parent
     :initform      nil
     :type          (or null form)
-    :accessor      parent-form
+    :accessor      parent
     :documentation "Parent form of the element. Added to every element upon the initialization of the form.")
 
    ;; elements do not necessarily have to have an associated window, only when they are used stand-alone.
@@ -532,18 +532,18 @@ field, textarea:
 
   (:documentation "An element of a form, like a field or button."))
 
-;; (window (if (window field) (window field) (window (parent-form field))))
+;; (window (if (window field) (window field) (window (parent field))))
 (defmethod window ((element element))
   "Return the window associated with an element, which can optionally be part of a form.
 
 If there is no window asociated with the element, return the window associated with the parent form."
-  (with-slots (window parent-form) element
+  (with-slots (window parent) element
     (if window
         window
         ;; not every element (for example a menu) has a parent form.
-        (if parent-form
-            (if (slot-value parent-form 'window)
-                (slot-value parent-form 'window)
+        (if parent
+            (if (slot-value parent 'window)
+                (slot-value parent 'window)
                 (error "(window element) ERROR: No window is associated with the parent form."))
             (error "(window element) ERROR: Neither a window nor a parent form are associated with the element.")))))
 
@@ -552,14 +552,14 @@ If there is no window asociated with the element, return the window associated w
 
 (defmethod style ((element element))
   "If the element's style slot is empty, check whether a default style has been defined in the parent form."
-  (with-slots (style parent-form) element
+  (with-slots (style parent) element
     (if style
         style
         ;; not every element (for example a menu) has a parent form.
-        (when parent-form
-          (if (slot-value parent-form 'style)
+        (when parent
+          (if (slot-value parent 'style)
               ;; get the default element style from the form style slot.
-              (getf (slot-value parent-form 'style) (type-of element))
+              (getf (slot-value parent 'style) (type-of element))
               nil)))))
 
 (defclass label (element)
@@ -728,7 +728,7 @@ If there is no window asociated with the element, return the window associated w
           (setf (slot-value current-element 'selectedp) t)
           ;; set the parent form slot of every element.
           (loop for element in elements
-             do (setf (slot-value element 'parent-form) form)))
+             do (setf (slot-value element 'parent) form)))
 
         ;; if a list of elements was not passed, signal an error.
         (error "A list of elements is required to initialize a form."))))
