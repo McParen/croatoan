@@ -2195,23 +2195,21 @@ will be more efficient to use a character array, a string."
             (value field3) "dear john")
 
       ;; Access fields by their name instead of looping through the elements list.
-      (if (edit form)
-          ;; edit returned t, which means the user accepted the form
-          (progn
-            (clear scr)
-            (mapc #'(lambda (name)
-                      (let ((element (find-element form name)))
-                        (format scr "~5A ~10A ~20A~%" name (title element) (value element))))
-                  (list :f1 :f2 :f3))
-            ;; display the state of the checkbox
-            (format scr "~5A ~10A ~20A~%" (name cb1) (title cb1) (checkedp cb1))
-            (format scr "~5A ~10A ~20A~%" (name m1) (title m1) (value m1)))
-
-          ;; edit returned nil, which means the user canceled the form
-          (progn
-            (clear scr)
+      (let ((val (edit form)))
+        (clear scr)
+        (format scr "~S~%" val)
+        (if val
+            ;; edit returned t, which means the user accepted the form
+            (progn
+              (mapc #'(lambda (name)
+                        (let ((element (find-element form name)))
+                          (format scr "~5A ~10A ~20A~%" name (title element) (value element))))
+                    (list :f1 :f2 :f3))
+              ;; display the state of the checkbox
+              (format scr "~5A ~10A ~20A~%" (name cb1) (title cb1) (checkedp cb1))
+              (format scr "~5A ~10A ~20A~%" (name m1) (title m1) (value m1)))
+            ;; edit returned nil, which means the user canceled the form
             (format scr "nil")))
-
       (refresh scr)
       ;; wait for keypress, then exit
       (get-char scr) )))
@@ -2412,6 +2410,28 @@ will be more efficient to use a character array, a string."
       (refresh scr)
       ;; temporarily set blocking to t, then wait for a keypress
       (wait-for-event scr) )))
+
+(defun t16j1 ()
+  "Test different callbacks to exit the event loop and return values from a form."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let* ((field1 (make-instance 'field  :name :f1 :title "Forename" :position (list 3 20) :width 15))
+           (field2 (make-instance 'field  :name :f2 :title "Surname"  :position (list 5 20) :width 15))
+           (field3 (make-instance 'field  :name :f3 :title "Nickname" :position (list 7 20) :width 15))
+           (l1     (make-instance 'label  :name :l1 :reference :f1    :position (list 3 1)  :width 18))
+           (l2     (make-instance 'label  :name :l2 :reference :f2    :position (list 5 1)  :width 18))
+           (l3     (make-instance 'label  :name :l3 :reference :f3    :position (list 7 1)  :width 18))
+           (b1     (make-instance 'button :name :b1 :title "Button1"  :position (list 9 1)  :callback 'return-element-value :value 1))
+           (b2     (make-instance 'button :name :b2 :title "Button2"  :position (list 9 14) :callback 'return-form-values   :value 2))
+           (b3     (make-instance 'button :name :b3 :title "Cancel"   :position (list 9 27) :callback 'cancel))
+           (b4     (make-instance 'button :name :b4 :title "Accept"   :position (list 9 39) :callback 'accept))
+           (form   (make-instance 'form :window scr :elements (list field1 field2 field3 l1 l2 l3 b1 b2 b3 b4)
+                                        :style '(field (:background (:attributes (:reverse))
+                                                        :selected-background (:bgcolor :blue))
+                                                 button (:foreground (:attributes (:reverse))
+                                                         :selected-foreground (:bgcolor :blue))))))
+      (format scr "Edit returned:~%~S" (prog1 (multiple-value-list (edit form)) (clear scr)))
+      (refresh scr)
+      (wait-for-event scr))))
 
 (defparameter *t16k-message*
   "This is my textarea. There are many like it, but this one is mine. My textarea is my best
