@@ -191,20 +191,37 @@ Place the cursor between the brackets [_] of the current item."
     ;; after drawing the elements, reposition the cursor to the current element
     (update-cursor-position form)))
 
-(defun make-title-string (widget &optional (beg "") (end ""))
-  "Make a title string for a decorated window containig a form or a menu.
+(defgeneric format-title (object &optional beg end)
+  (:documentation "Make a title string for a widget."))
 
-Use the title string of the widget if provided, otherwise use its symbol name."
-  (with-accessors ((title title) (name name)) widget
-    (let ((str (cond ((typep title 'string) title)
-                     ((typep name 'string) name)
-                     ((symbolp name) (symbol-name name))
-                     (t ""))))
-      (format nil
-              ;; format template for the title depending on its length.
-              ;; "12345" => "| 12345 |"
-              (concatenate 'string beg "~" (write-to-string (+ (length str) 2)) ":@<~A~>" end)
-              str))))
+(defmethod format-title ((item menu-item) &optional (beg "") (end ""))
+  "If neither the title nor the name are provided, print the object as a default title."
+  (with-accessors ((title title) (name name)) item
+    (let ((str (cond ((and title
+                           (stringp title))
+                      title)
+                     ((and name
+                           (symbolp name))
+                      (symbol-name name))
+                     (t
+                      (prin1-to-string item)))))
+      str)))
+
+(defmethod format-title ((win window) &optional (beg "") (end ""))
+  "If the title string is provided, use the title.
+
+If title is t, use the name. If title is nil, return an empty string."
+  (with-accessors ((title title) (name name)) win
+    (let ((str (cond ((and title
+                           (stringp title))
+                      title)
+                     ((and (eq title t)
+                           name
+                           (symbolp name))
+                      (symbol-name name))
+                     ((null title)
+                      ""))))
+      (concatenate 'string beg str end))))
 
 (defun add-title (win)
   "Draw a title to the first line of a window.
@@ -212,8 +229,8 @@ Use the title string of the widget if provided, otherwise use its symbol name."
 Usually, this will be a decorated window with a border and the title on the top border.
 
 When title is t instead of a title string, display the symbol name of the widget."
-  (add-string win (make-title-string win) :y 0 :x 2
-                                          :style (getf (slot-value win 'style) :title)))
+  (add-string win (format-title win "| " " |") :y 0 :x 2
+                                               :style (getf (slot-value win 'style) :title)))
 
 (defmethod draw ((win decorated-window))
   "Draw the background window, and the title and the border if they are given."

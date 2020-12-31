@@ -115,8 +115,8 @@ At the third position, display the item given by item-number."
                 current-item-mark
                 (make-string (length current-item-mark) :initial-element #\space))
             
-            ;; then add the item name
-            (name (nth item-number items)) )))
+            ;; then add the item title
+            (format-title (nth item-number items)) )))
 
 ;; this is the only function that actually positions items on the screen (using move)
 (defun draw-menu-item (win menu item-number i j)
@@ -190,7 +190,7 @@ At the third position, display the item given by item-number."
 
 (defmethod draw ((menu menu-window))
   "Draw the menu-window."
-  (with-accessors ((title title) (name name) (border draw-border-p) (sub-win sub-window)) menu
+  (with-accessors ((title title) (border draw-border-p) (sub-win sub-window)) menu
     ;; draw the menu to the sub-window
     (draw-menu sub-win menu)
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
@@ -271,7 +271,8 @@ At the third position, display the item given by item-number."
        (cond
          ;; if the item is a string or symbol, just return it.
          ((or (typep val 'string)
-              (typep val 'symbol))
+              (typep val 'symbol)
+              (typep val 'number))
           (return-from-menu menu val))
 
          ;; if the item is a function object, call it.

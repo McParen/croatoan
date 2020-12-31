@@ -23,7 +23,7 @@
     :initarg       :name
     :initform      nil
     :reader        name
-    :type          (or null symbol keyword string)
+    :type          (or null symbol keyword)
     :documentation
     "Optional unique name by which the widget can be identified and accessed.
     If the title is t, the name is displayed instead of the title.")
@@ -365,7 +365,7 @@ field, textarea:
 
    (current-item
     :initform      nil
-    :type          (or null string symbol menu-item)
+    :type          (or null string symbol menu-item number)
     :accessor      current-item
     :documentation "Pointer to the currently selected item object. The first item is initialized as the current item.")
 
@@ -428,24 +428,35 @@ field, textarea:
 
 ;; init for menus which aren't menu windows
 (defmethod initialize-instance :after ((menu menu) &key)
-  (with-slots (type items current-item layout) menu
+  (with-slots (items current-item layout) menu
     ;; Convert strings and symbols to item objects
-    (setf items (mapcar (lambda (x)
-                          (if (typep x 'menu-item)
+    (setf items (mapcar (lambda (item)
+                          (if (typep item 'menu-item)
                               ;; if an item object is given, just return it
-                              x
+                              item
                               ;; if we have strings, symbols or menus, convert them to menu-items
                               (make-instance 'menu-item
-                                             :name (typecase x
-                                                     (string x)
-                                                     (symbol (symbol-name x))
-                                                     (menu-window (name x))
-                                                     (menu (name x)))
-                                             :value x)))
+                                             :name (typecase item
+                                                     (string nil)
+                                                     (number nil)
+                                                     (symbol item)
+                                                     (menu (name item)))
+                                             :title (typecase item
+                                                      (string item)
+                                                      (symbol (symbol-name item))
+                                                      (number (princ-to-string item))
+                                                      ;; if there is a title string, take it,
+                                                      ;; otherwise use the menu name as the item title
+                                                      (menu (if (and (title item)
+                                                                     (stringp (title item)))
+                                                                (title item)
+                                                                (symbol-name (name item)))))
+                                             :value item)))
                         ;; apply the function to the init arg passed to make-instance.
                         items))
 
     ;; Initialize the current item as the first item from the items list.
+    ;; TODO: if initarg items is nil, signal an error.
     (setf current-item (car items))
 
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
@@ -609,8 +620,8 @@ If there is no window asociated with the element, return the window associated w
 
 (defclass menu-item (checkbox)
   ((value
-    :type          (or symbol keyword string menu menu-window function)
-    :documentation "The value of an item can be a name, a sub menu or a function to be called when the item is selected."))
+    :type          (or symbol keyword string menu menu-window function number)
+    :documentation "The value of an item can be a string, a number, a sub menu or a function to be called when the item is selected."))
 
   (:documentation  "A menu contains of a list of menu items."))
 

@@ -2073,14 +2073,15 @@ will be more efficient to use a character array, a string."
            (s4 (list :simple-char #\. :fgcolor :red))
            (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
            (fs (list 'field s5 'textarea s5))
-           (field1 (make-instance 'field :position (list 3 5) :width 10))
-           (area (make-instance 'textarea :position '(8 5) :dimensions '(6 15)))
-           (button (make-instance 'button :position '(16 5) :name "Accept" :callback 'accept))
+           (field1 (make-instance 'field  :position '(3 5)  :name :f1 :width 10))
+           (area (make-instance 'textarea :position '(8 5)  :name :a1 :dimensions '(6 15)))
+           (button (make-instance 'button :position '(16 5) :name :b1 :title "Accept" :callback 'accept))
            (form (make-instance 'form :elements (list field1 area button) :style fs :window scr)))
       (refresh scr)
       (if (prog1 (edit form) (clear scr))
           (loop for el in (elements form)
-             do (format scr "~A~%" (value el)))
+                when (activep el)
+                  do (format scr "~A ~A~%" (name el) (value el)))
           (format scr "nil")))
     (refresh scr)
     (get-char scr)))
@@ -2096,15 +2097,15 @@ will be more efficient to use a character array, a string."
            ;; a style is a plist interpreted by the element drawing functions.
            (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
 
-           (field1 (make-instance 'field :position (list 3 20) :width 10 :style s5 :max-buffer-length 5))
-           (field2 (make-instance 'field :position (list 5 20) :width 10 :style s5))
-           (field3 (make-instance 'field :position (list 7 20) :width 10 :style s5 :max-buffer-length 15))
+           (field1 (make-instance 'field :name :f1 :position (list 3 20) :width 10 :style s5 :max-buffer-length 5))
+           (field2 (make-instance 'field :name :f2 :position (list 5 20) :width 10 :style s5))
+           (field3 (make-instance 'field :name :f3 :position (list 7 20) :width 10 :style s5 :max-buffer-length 15))
 
            (s6 (list :foreground s1 :selected-foreground s4))
 
-           (button1 (make-instance 'button :position (list 10 10) :name "Hello"  :style s6))
-           (button2 (make-instance 'button :position (list 10 20) :name "Accept" :style s6))
-           (button3 (make-instance 'button :position (list 10 30) :name "Cancel" :style s6))
+           (button1 (make-instance 'button :position (list 10 10) :title "Hello"  :style s6))
+           (button2 (make-instance 'button :position (list 10 20) :title "Accept" :style s6))
+           (button3 (make-instance 'button :position (list 10 30) :title "Cancel" :style s6))
 
            ;; a window is associated with the parent form, and can be accessed by the elements.
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2 button3) :window scr)))
@@ -2127,7 +2128,7 @@ will be more efficient to use a character array, a string."
           ;; use field-buffer-to-string to get the contents of the field buffer as a string instead of a list of chars.
           (loop for el in (elements form)
              do (when (typep el 'field)
-                  (format scr "~A ~A ~%" (buffer el) (value el))))
+                  (format scr "~A ~A ~A ~%" (name el) (buffer el) (value el))))
           ;; user did not accept the form (default) or called cancel-form.
           (format scr "nil"))
 
@@ -2306,7 +2307,7 @@ will be more efficient to use a character array, a string."
              (button3 (make-instance 'button :name :b2 :title "Accept" :position (list 6 34)))
 
              (form (make-instance 'form-window :elements (list field1 field2 label1 label2 button1 button2 button3)
-                                  :style style4 :enable-function-keys t :input-blocking t :title "form window"
+                                  :style style4 :enable-function-keys t :input-blocking t :name :fw1 :title "form window"
                                   :draw-border t :height 10 :width 50 :position (list 5 15))))
 
         (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
@@ -2697,11 +2698,12 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items1 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555"
                      "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (menu1 (make-instance 'menu :items items1 :name "sub-menu 1" :max-item-length 50 :position (list 5 10)))
+           (menu1 (make-instance 'menu :items items1 :name :sm1 :title "sub-menu 1" :max-item-length 50 :position (list 5 10)
+                                       :menu-type :checklist))
            (items2 (list "Item 0" menu1 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
-           (menu2 (make-instance 'menu :items items2 :name "sub-menu 2" :max-item-length 50 :position (list 5 10)))
-           (items3 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
-           (menu3 (make-instance 'menu :items items3 :name "t19b2b" :max-item-length 50 :position (list 5 10))))
+           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 50 :position (list 5 10)))
+           (items3 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09"))
+           (menu3 (make-instance 'menu :items items3 :name :t19b2 :title "t19b2" :max-item-length 50 :position (list 5 10))))
       ;; associate the same window with all three menus.
       (setf (window menu1) scr
             (window menu2) scr
@@ -2735,8 +2737,8 @@ friend. It is my life. I must master it as I must master my life.")
 (defun t19c2 ()
   "Test the menu-item class for submenus."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :stacked t)
-    (let* ((fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr))))
-           (choices (list "Choice 0" 'choice11 fun1 "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
+    (let* ((fun1 (make-instance 'menu-item :name :func1 :title t :value (lambda () (clear scr))))
+           (choices (list "Choice 0" 'choice11 fun1 "Choice 222" "Choice 3333" "Choice 44444" 5
                           "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            ;; First, create a menu
            ;; TODO: how to determine the position of the sub-menu depending on the parent menu?
@@ -2746,21 +2748,21 @@ friend. It is my life. I must master it as I must master my life.")
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
                                      :bgcolor :red
-                                     :name "submenu2" :title t :draw-border t :enable-function-keys t))
+                                     :name :sub2 :title t :draw-border t :enable-function-keys t))
            ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
                                      :position (list 1 41) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #x999999)
                                      :fgcolor :green
-                                     :name "submenu1" :title nil :draw-border t :enable-function-keys t))
+                                     :name :sub1 :title nil :draw-border t :enable-function-keys t))
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
                                      :position (list 0 25) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #xcccccc)
                                      :fgcolor :blue :bgcolor :yellow
-                                     :name "menu" :title nil :draw-border nil :enable-function-keys t)))
+                                     :name :menu :title nil :draw-border nil :enable-function-keys t)))
       (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
       (refresh scr)
 
@@ -2839,14 +2841,15 @@ friend. It is my life. I must master it as I must master my life.")
     (let* ((items1 (list "Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                          "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :scrolled-layout (list 6 1)
-                                     :title nil :name "submenu1" :draw-border t :enable-function-keys t :visible nil :menu-type :selection))
+                                     :name :sm1 :title nil :draw-border t :enable-function-keys t :visible nil :menu-type :selection))
            (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :scrolled-layout (list 6 1)
-                                     :title nil :name "submenu2" :draw-border t :enable-function-keys t :visible nil :menu-type :checklist))
-           (fun1 (make-instance 'menu-item :name "fun1" :value (lambda () (clear scr) (move scr 4 0))))
+                                     :name :sm2 :title nil :draw-border t :enable-function-keys t :visible nil :menu-type :checklist))
+           (fun1 (make-instance 'menu-item :name :fun1 :title "fun1" :value (lambda () (clear scr) (move scr 4 0))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
            (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :layout (list 1 (length items2))
-                                :max-item-length 15 :width (width scr) :draw-border t :enable-function-keys t)))
-      (move scr 4 0) ;; start the output at line 4, below the menu bar.
+                                             :max-item-length 15 :width (width scr) :draw-border t :enable-function-keys t)))
+      ;; start the output at line 4, below the menu bar.
+      (move scr 4 0)
       (refresh scr)
       ;; add the screen to the main window stack to ensure that it is updated when the menu is exited.
       (setf (stackedp scr) t)
@@ -2874,7 +2877,7 @@ friend. It is my life. I must master it as I must master my life.")
                                 :width 60
                                 :draw-border t
                                 :enable-function-keys t
-                                :name "t19f"
+                                :name :t19f
                                 :title t
                                 ;; if the title is given as a string, it overrides the default title = name
                                 ;; :title "this is a selection dialog"

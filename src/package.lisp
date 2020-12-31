@@ -112,6 +112,7 @@
    buffer
    elements
    element-position
+   activep
    style
    max-buffer-length
    callback
