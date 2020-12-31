@@ -11,10 +11,14 @@
    (:file "character")        ; complex character and string
    (:file "stack")            ; panel stack extension for curses
    (:file "classes")
+   (:file "croatoan")         ; macros, event handling
    (:file "dialog")           ; misc dialog boxes
+   (:file "menu")             ; curses extension for programming menus
+   (:file "form")             ; curses extension for programming forms
+   (:file "field")
+   (:file "textarea")         ; form element textarea
    (:file "hook")
    (:file "queue")            ; simple thread-safe queue
-   (:file "croatoan")         ; macros, event handling
    (:file "gray_streams")
    (:file "utf8")
 
@@ -55,7 +59,5 @@
    (:file "wresize")
    
    ;; Extension libraries
-   (:file "form")             ; curses extension for programming forms
-   (:file "textarea")         ; form element textarea
-   (:file "menu")             ; curses extension for programming menus
-   (:file "shape")))          ; curses extension for plotting shapes
+   (:file "shape")            ; curses extension for plotting shapes
+))

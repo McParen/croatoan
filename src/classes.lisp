@@ -36,7 +36,7 @@
     :documentation
     "Title of the widget to be displayed to the user. 
     If the title is t, the name should be displayed.")
-   
+
    (style
     :initarg       :style
     :initform      nil
@@ -226,24 +226,51 @@ field, textarea:
 
   (:documentation "A curses window object as returned by newwin."))
 
-(defmethod stackedp ((win window))
-  (slot-value win 'stackedp))
+(defmethod initialize-instance :after ((win window) &key color-pair dimensions)
+  (with-slots (winptr height width position fgcolor bgcolor background) win
+    ;; for ALL window types
+    ;; the keyword dimensions overrides width and height
+    (when dimensions
+      (setf height (car dimensions)
+            width (cadr dimensions)))
+    ;; just for WINDOW types
+    (when (eq (type-of win) 'window)
+      ;; the default value 0 for width or height is "to the end of the screen".
+      (unless width (setf width 0))
+      (unless height (setf height 0))
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
 
-(defmethod (setf stackedp) (stackedp (win window))
-  "Add or remove the window to the global window stack."
-  (if stackedp
-      ;; t: check if in stack, if not, add to stack, if yes, error
-      (if (member win (items *main-stack*) :test #'eq)
-          (error "setf stackedp t: window already on stack")
-          (progn
-            (stack-push win *main-stack*)
-            (setf (slot-value win 'stackedp) t)))
-      ;; nil: check if in stack, if yes, remove from stack, if not, error
-      (if (member win (items *main-stack*) :test #'eq)
-          (progn
-            (setf (items *main-stack*) (remove win (items *main-stack*) :test #'eq))
-            (setf (slot-value win 'stackedp) nil))
-          (error "setf stackedp nil: window not on stack"))))
+      ;; fg/bg should not be passed together with the color-pair keyword.
+      (cond ((or fgcolor bgcolor)
+             (set-color-pair winptr (color-pair win)))
+            (color-pair
+             ;; set fg and bg, pass to ncurses
+             (setf (color-pair win) color-pair)))
+      (when background (setf (background win) background)) )))
+
+;; called after _all_ :after aux methods.
+;; for all window types in the hierarchy.
+;; this has to be called after other aux methods because the windows have to be created first.
+(defmethod initialize-instance :around ((win window) &key frame-rate)
+  ;; before :before, :after and primary.
+  (let ((result (call-next-method)))
+    ;; after :before, :after and primary.
+    (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p draw-border-p stackedp) win
+      ;; the frame rate argument, if available, takes precedence over input blocking
+      ;; because they access the same ncurses timeout
+      ;; a non-nil frame-rate always implies non-blocking input with a delay
+      (if frame-rate
+          (setf (frame-rate win) frame-rate)
+          (set-input-blocking winptr input-blocking))
+      (ncurses:scrollok winptr scrolling-enabled-p)
+      ;; TODO 190511 on newest ncurses 6.1.x setting a background after we set the border converts the
+      ;; border line drawing chars into ascii.
+      (when draw-border-p (ncurses:box winptr 0 0))
+      (ncurses:keypad winptr function-keys-enabled-p)
+      (when stackedp (stack-push win *main-stack*)))
+
+    ;; why do we have to return the result in :around aux methods?
+    result))
 
 (defclass screen (window)
   ((colors-enabled-p
@@ -305,6 +332,36 @@ field, textarea:
 
   (:documentation "Represents the main window created upon screen initialisation."))
 
+(defmethod initialize-instance :after ((scr screen) &key color-pair)
+  (with-slots (winptr colors-enabled-p use-terminal-colors-p cursor-visible-p input-echoing-p
+                      function-keys-enabled-p newline-translation-enabled-p fgcolor bgcolor
+                      scrolling-enabled-p background input-buffering-p process-control-chars-p) scr
+    ;; just for screen window types.
+    (when (eq (type-of scr) 'screen)
+      ;; pass the environment locale to the ncurses C library
+      ;; has to be done explicitely since sbcl 2.0.3.
+      (ncurses:setlocale ncurses:+LC-ALL+ "")
+      (setf winptr (ncurses:initscr))
+      (when colors-enabled-p
+        (if (ncurses:has-colors)
+            (progn
+              (ncurses:start-color)
+              (set-default-color-pair use-terminal-colors-p))
+            ;; TODO 201031 signaling an error does not cleanly exit ncurses
+            (error "initialize-instance screen: This terminal does not support colors.")))
+
+      (cond ((or fgcolor bgcolor)
+             (set-color-pair winptr (color-pair scr)))
+            (color-pair
+             ;; set fg and bg, pass to ncurses
+             (setf (color-pair scr) color-pair)))
+
+      (when background (setf (background scr) background))
+      (if newline-translation-enabled-p (ncurses:nl) (ncurses:nonl))
+      (if input-echoing-p (ncurses:echo) (ncurses:noecho))
+      (set-input-mode input-buffering-p process-control-chars-p)
+      (set-cursor-visibility cursor-visible-p))))
+
 (defclass sub-window (window)
   ((parent
     :initarg       :parent
@@ -328,6 +385,28 @@ field, textarea:
 
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
 
+;; sub-window has to be contained within a parent window
+;; touch parent before refreshing a subwindow
+;; move also needs a method for subwindows.
+;; Subwindows must be deleted before the main window can be deleted.
+(defmethod initialize-instance :after ((win sub-window) &key)
+  (with-slots (winptr parent height width position relativep) win
+    ;; just for SUB-WINDOW types
+    (when (eq (type-of win) 'sub-window)
+      ;; the default value 0 for width or height is "to the end of the screen".
+      (unless width (setf width 0))
+      (unless height (setf height 0))
+      (if relativep
+          ;;(setf winptr (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
+          (setf winptr (let ((val (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position))))
+                         (if (cffi:null-pointer-p val)
+                             ;; may also be null if the parent window passed is null
+                             (error "Subwindow could not be created. Probably too big and not contained in the parent window.")
+                             val)))
+          (setf winptr (ncurses:subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
+
+;; TODO: add a method that draws the title and can be called with call-next-method
+;; as of now we have to write the title for every class derived from decorated-window.
 (defclass decorated-window (window)
   ((sub-window
     :initarg       :sub-window
@@ -341,167 +420,48 @@ field, textarea:
    a title displayed over the top border and a sub-window where the content should
    be displayed."))
 
-;; default size of ncurses menus is 16 rows, 1 col.
-(defclass menu (element)
-  ((items
-    :initarg       :items
-    :initform      nil
-    :accessor      items
-    :type          (or null cons)
-    :documentation "List of menu items. Item types can be strings, symbols, other menus or callback functions.")
+(defmethod initialize-instance :after ((win decorated-window) &key)
+  (with-slots (winptr width height position sub-window) win
+    ;; only for decorated window types
+    (when (eq (type-of win) 'decorated-window)
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (setf sub-window
+            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
 
-   (menu-type
-    :initarg       :menu-type
-    :initform      :selection
-    :accessor      menu-type
-    :type          keyword
-    :documentation "Types of menus: :selection (default, can contain strings, symbols, menus) or :checklist.")
-
-   (current-item-number
-    :initform      0
-    :accessor      current-item-number
-    :type          integer
-    :documentation "Number (row-major mode) of the currently selected item.")
-
-   (current-item
-    :initform      nil
-    :type          (or null string symbol menu-item number)
-    :accessor      current-item
-    :documentation "Pointer to the currently selected item object. The first item is initialized as the current item.")
-
-   (current-item-position
-    :initarg       :current-item-position
-    :initform      nil
-    :accessor      current-item-position
-    :type          (or null cons)
-    :documentation
-    "Position (y x) of the current item in the window.
-    This information is useful for positioning the cursor on the current item after displaying the menu.")
-
-   (current-item-mark
-    :initarg       :current-item-mark
-    :initform      ""
-    :reader        current-item-mark
-    :type          string
-    :documentation "A string prefixed to the current item in the menu.")
-
-   (cyclic-selection-p
-    :initarg       :cyclic-selection
-    :initform      nil
-    :accessor      cyclic-selection-p
-    :type          boolean
-    :documentation "Wrap around when the end of a non-scrolled menu is reached.")
-
-   (max-item-length
-    :initarg       :max-item-length
-    :initform      15
-    :accessor      max-item-length
-    :type          integer
-    :documentation "Max number of characters displayed for a single item.")
-
-   (layout
-    :initarg       :layout
-    :initform      nil
-    :accessor      layout
-    :type          (or null cons)
-    :documentation "Layout (no-of-rows no-of-columns) of the items in the menu. If nil, we have a vertical list.")
-
-   (scrolled-layout
-    :initarg       :scrolled-layout
-    :initform      nil
-    :accessor      scrolled-layout
-    :type          (or null cons)
-    :documentation "Layout (no-of-rows no-of-columns) of the menu items actually displayed on screen.")
-
-   (scrolled-region-start
-    :initform      (list 0 0)
-    :accessor      scrolled-region-start
-    :type          (or null cons)
-    :documentation "A 2-element list tracking the starting row/y and column/x of the displayed menu region."))
-
-  (:default-initargs :keymap 'menu-map)
-  (:documentation "A menu is a list of items that can be selected by the user."))
-
-(defclass menu-window (menu decorated-window)
+;; if a window-position is given during make-instance, it can be simply ignored.
+;; or we can check for position and signal an error.
+(defclass pad (window)
   ()
-  (:documentation "A menu-window is decorated-window providing a list of items to be selected by the user."))
+  (:documentation "A pad is a window without a specified position on screen, which is specified dynamically during refresh."))
 
-;; init for menus which aren't menu windows
-(defmethod initialize-instance :after ((menu menu) &key)
-  (with-slots (items current-item layout) menu
-    ;; Convert strings and symbols to item objects
-    (setf items (mapcar (lambda (item)
-                          (if (typep item 'menu-item)
-                              ;; if an item object is given, just return it
-                              item
-                              ;; if we have strings, symbols or menus, convert them to menu-items
-                              (make-instance 'menu-item
-                                             :name (typecase item
-                                                     (string nil)
-                                                     (number nil)
-                                                     (symbol item)
-                                                     (menu (name item)))
-                                             :title (typecase item
-                                                      (string item)
-                                                      (symbol (symbol-name item))
-                                                      (number (princ-to-string item))
-                                                      ;; if there is a title string, take it,
-                                                      ;; otherwise use the menu name as the item title
-                                                      (menu (if (and (title item)
-                                                                     (stringp (title item)))
-                                                                (title item)
-                                                                (symbol-name (name item)))))
-                                             :value item)))
-                        ;; apply the function to the init arg passed to make-instance.
-                        items))
+(defmethod initialize-instance :after ((win pad) &key)
+  (with-slots (winptr height width) win
+    ;; just for a pad window
+    (when (eq (type-of win) 'pad)
+      (setf winptr (ncurses:newpad height width)))))
 
-    ;; Initialize the current item as the first item from the items list.
-    ;; TODO: if initarg items is nil, signal an error.
-    (setf current-item (car items))
+(defclass sub-pad (pad)
+  ((parent
+    :initarg       :parent
+    :initform      nil
+    :type          (or null pad)
+    :documentation "The parent pad which will contain the sub-pad."))
+  (:documentation  "A sub-pad shares the memory and the display with a parent pad and has to be contained within it."))
 
-    ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
-    (unless layout (setf layout (list (length items) 1))) ))
-
-(defmethod initialize-instance :after ((win menu-window) &key color-pair)
-  (with-slots (winptr items type height width position element-position sub-window draw-border-p layout scrolled-layout
-                      max-item-length current-item-mark fgcolor bgcolor) win
-    ;; only for menu windows
-    (when (eq (type-of win) 'menu-window)
-      (let ((padding (if draw-border-p 1 0)))
-        ;; if the initarg :position was given, both the window position and the element-position
-        ;; have been set. ignore the element position.
-        (setf element-position nil)        
-        ;; if no layout was given, use a vertical list (n 1)
-        (unless layout (setf layout (list (length items) 1)))
-        ;; if height and width are not given as initargs, they will be calculated,
-        ;; according to no of rows +/- border, and _not_ maximized like normal windows.
-        (unless height (setf height (+ (* 2 padding) (car (or scrolled-layout layout)))))
-        (unless width  (setf width  (+ (* 2 padding) (* (cadr (or scrolled-layout layout))
-                                                        (+ (length current-item-mark) max-item-length)))))
-        (setf winptr (ncurses:newwin height width (car position) (cadr position)))
-        (setf sub-window
-              (make-instance 'sub-window
-                             :parent win :height (car (or scrolled-layout layout))
-                             :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
-                             :position (list padding padding) :relative t))
-        (cond ((or fgcolor bgcolor)
-               (set-color-pair winptr (color-pair win))
-               (setf (color-pair sub-window) (color-pair win)
-                     (background win) (make-instance 'complex-char :color-pair (color-pair win))
-                     (background sub-window) (make-instance 'complex-char :color-pair (color-pair win)) ))
-              ;; when a color-pair is passed as a keyword
-              (color-pair
-               ;; set fg and bg, pass to ncurses
-               (setf (color-pair win) color-pair
-                     (color-pair sub-window) color-pair
-                     (background win) (make-instance 'complex-char :color-pair color-pair)
-                     (background sub-window) (make-instance 'complex-char :color-pair color-pair)))) ))))
+;; sub-pads always use positions relative to parent pads
+(defmethod initialize-instance :after ((win sub-pad) &key)
+  (with-slots (winptr parent height width position) win
+    ;; just for a sub-pad window
+    (when (eq (type-of win) 'sub-pad)
+      (setf winptr (ncurses:subpad (slot-value parent 'winptr) height width (car position) (cadr position))))))
 
 (defclass element (widget)
   ((value
     :initarg       :value
     :initform      nil
     :accessor      value
+    ;; TODO 200809 we have to comment this out because it clashes with the type of menu-item
+    ;; why does a latter type spec not override this earlier type spec?
     ;;:type          (or symbol keyword string number)
     :documentation "Value of the element, mostly the result of the form editing.")
 
@@ -511,7 +471,7 @@ field, textarea:
     :type          (or null cons)
     :accessor      element-position
     :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element within its associated window.")
-   
+
    ;; we need this to draw selected and other elements with different styles.
    ;; this has to be toggled at the same time as current-element of a form
    (selectedp
@@ -543,36 +503,23 @@ field, textarea:
 
   (:documentation "An element of a form, like a field or button."))
 
-;; (window (if (window field) (window field) (window (parent field))))
-(defmethod window ((element element))
-  "Return the window associated with an element, which can optionally be part of a form.
+(defclass button (element)
+  ((callback
+    :initarg       :callback
+    :initform      nil
+    :accessor      callback
+    :type          (or null symbol function)
+    :documentation "Callback function called when the button is activated."))
 
-If there is no window asociated with the element, return the window associated with the parent form."
-  (with-slots (window parent) element
-    (if window
-        window
-        ;; not every element (for example a menu) has a parent form.
-        (if parent
-            (if (slot-value parent 'window)
-                (slot-value parent 'window)
-                (error "(window element) ERROR: No window is associated with the parent form."))
-            (error "(window element) ERROR: Neither a window nor a parent form are associated with the element.")))))
+   ;; for every button we need a general activation event like newline or space,
+   ;; and we need a hotkey for every button alone, like :f4 :f5, etc.
+   ;; they hotkeys would then be global keys added to the form, not to a button.
 
-(defmethod (setf window) (window (element element))
-  (setf (slot-value element 'window) window))
+  (:default-initargs :keymap 'button-map)
+  (:documentation "An element that can call a function by pressing enter (or in future, with a mouse click)."))
 
-(defmethod style ((element element))
-  "If the element's style slot is empty, check whether a default style has been defined in the parent form."
-  (with-slots (style parent) element
-    (if style
-        style
-        ;; not every element (for example a menu) has a parent form.
-        (when parent
-          (if (slot-value parent 'style)
-              ;; get the default element style from the form style slot.
-              (getf (slot-value parent 'style) (type-of element))
-              nil)))))
-
+;; TODO: the reference should not be an object, but the element name
+;; for that we need a function that takes a name and returns the object
 (defclass label (element)
   ((reference
     :initarg       :reference
@@ -583,6 +530,8 @@ If there is no window asociated with the element, return the window associated w
     "If the name of a reference element is specified, the element's title will be displayed instead of the label's.
     If a title for the label is explicitely provided, it overrides the title of the reference element.")
 
+   ;; TODO: width, style should be element slots and not label slots because the label doesnt do anything with them.
+   
    (width
     :initarg       :width
     :initform      nil
@@ -590,22 +539,12 @@ If there is no window asociated with the element, return the window associated w
     :accessor      width
     :documentation "The width of the label.")
 
+   ;; TODO 201222 add default initargs instead of duplicating the slot
    (activep
     :initform      nil
     :documentation "Labels are by default not active and can not be selected when cycling through the elements."))
   
   (:documentation "A single-line string displayed at the specified position."))
-
-(defclass button (element)
-  ((callback
-    :initarg       :callback
-    :initform      nil
-    :accessor      callback
-    :type          (or null symbol function)
-    :documentation "Callback function called when the button is activated."))
-
-  (:default-initargs :keymap 'button-map)
-  (:documentation "An element that can call a function by pressing enter (or in future, with a mouse click)."))
 
 (defclass checkbox (element)
   ((checkedp
@@ -617,82 +556,6 @@ If there is no window asociated with the element, return the window associated w
 
   (:default-initargs :keymap 'checkbox-map)
   (:documentation "A boolean element that can be checked (t) or unchecked (nil)"))
-
-(defclass menu-item (checkbox)
-  ((value
-    :type          (or symbol keyword string menu menu-window function number)
-    :documentation "The value of an item can be a string, a number, a sub menu or a function to be called when the item is selected."))
-
-  (:documentation  "A menu contains of a list of menu items."))
-
-(defclass checklist (menu)
-  ()
-  (:default-initargs :menu-type :checklist)
-  (:documentation "A checklist is a multi-selection menu with checkable items."))
-
-(defclass field (element)
-  ((width
-    :initarg       :width
-    :initform      nil
-    :type          (or null integer)
-    :accessor      width
-    :documentation "The width of the field. The default buffer length is equal the width.")
-
-   (insert-mode-p
-    :initarg       :insert-mode
-    :initform      nil
-    :type          boolean
-    :accessor      insert-mode-p
-    :documentation
-    "Printing a new char will insert (t) it before the character under the cursor
-    instead of overwriting it (nil, default).")
-
-   (buffer
-    :initform      nil
-    :type          (or null list)
-    :accessor      buffer
-    :documentation "List containing the characters in the field.")
-
-   (max-buffer-length
-    :initarg       :max-buffer-length
-    :initform      nil
-    :type          (or null integer)
-    :accessor      max-buffer-length
-    :documentation
-    "Max length of the field buffer. If nil, it will be initialized to field width. 
-    Horizontal scrolling is then disabled.")
-
-   (display-pointer
-    :initform      0
-    :type          (or null integer)
-    :accessor      display-pointer
-    :documentation
-    "Position in the input buffer from which n=width characters are displayed.
-    When max-buffer-length is greater than width, display-pointer can be greater than zero.
-    Horizontal scrolling is then enabled.")
-
-   (input-pointer
-    :initform      0
-    :type          integer
-    :accessor      input-pointer
-    :documentation "The position in the input buffer to which the next character will be written."))
-
-  (:default-initargs :keymap 'field-map)
-  (:documentation "A field is an editable part of the screen for user input. Can be part of a form."))
-
-(defmethod initialize-instance :after ((field field) &key)
-  (with-slots (max-buffer-length width bindings keymap) field
-    ;; If unspecified, the default max-buffer-length should be equal to the visible field width.
-    (unless max-buffer-length
-      (setf max-buffer-length width))))
-
-(defmethod value ((field field))
-  "If the field buffer is empty, return nil, otherwise return the buffer as a string."
-  (when (slot-value field 'buffer)
-    (coerce (reverse (slot-value field 'buffer)) 'string)))
-
-(defmethod (setf value) (new-value (field field))
-  (setf (slot-value field 'buffer) (reverse (coerce new-value 'list))))
 
 (defclass form (widget)
   ((elements
@@ -744,6 +607,8 @@ If there is no window asociated with the element, return the window associated w
         ;; if a list of elements was not passed, signal an error.
         (error "A list of elements is required to initialize a form."))))
 
+;; TODO: use both window-free forms and form-windows, window-free menus und menu-windows.
+;;(defclass form-window (form decorated-window)
 (defclass form-window (decorated-window form)
   ()
   (:documentation ""))
@@ -752,140 +617,18 @@ If there is no window asociated with the element, return the window associated w
   (with-slots (winptr height width position sub-window draw-border-p window) win
     ;; only for form windows
     (when (eq (type-of win) 'form-window)
+
+      ;; TODO: this isnt form specific, this should be part of window initialization
+      ;; TODO 200612 see window and sub-window init
       (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+
+      ;; TODO: this isnt form specific, this should be part of decorated-window initialization
       (setf sub-window (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2)
                                       :position (list 1 1) :relative t :enable-function-keys t))
+
       ;; set the sub of the decorated window to be the associated window of the form
       ;; the form will be drawn to the associated window, i.e. to the sub
       (setf window sub-window) )))
-
-;; if a window-position is given during make-instance, it can be simply ignored.
-;; or we can check for position and signal an error.
-(defclass pad (window)
-  ()
-  (:documentation "A pad is a window without a specified position on screen, which is specified dynamically during refresh."))
-
-(defmethod initialize-instance :after ((win pad) &key)
-  (with-slots (winptr height width) win
-    ;; just for a pad window
-    (when (eq (type-of win) 'pad)
-      (setf winptr (ncurses:newpad height width)))))
-
-(defclass sub-pad (pad)
-  ((parent
-    :initarg       :parent
-    :initform      nil
-    :type          (or null pad)
-    :documentation "The parent pad which will contain the sub-pad."))
-  (:documentation  "A sub-pad shares the memory and the display with a parent pad and has to be contained within it."))
-
-;; sub-pads always use positions relative to parent pads
-(defmethod initialize-instance :after ((win sub-pad) &key)
-  (with-slots (winptr parent height width position) win
-    ;; just for a sub-pad window
-    (when (eq (type-of win) 'sub-pad)
-      (setf winptr (ncurses:subpad (slot-value parent 'winptr) height width (car position) (cadr position))))))
-
-(defmethod initialize-instance :after ((win window) &key color-pair dimensions)
-  (with-slots (winptr height width position fgcolor bgcolor background) win
-    ;; for ALL window types
-    ;; the keyword dimensions overrides width and height
-    (when dimensions
-      (setf height (car dimensions)
-            width (cadr dimensions)))
-    ;; just for WINDOW types
-    (when (eq (type-of win) 'window)
-      ;; the default value 0 for width or height is "to the end of the screen".
-      (unless width (setf width 0))
-      (unless height (setf height 0))
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
-
-      ;; fg/bg should not be passed together with the color-pair keyword.
-      (cond ((or fgcolor bgcolor)
-             (set-color-pair winptr (color-pair win)))
-            (color-pair
-             ;; set fg and bg, pass to ncurses
-             (setf (color-pair win) color-pair)))
-      (when background (setf (background win) background)) )))
-
-(defmethod initialize-instance :after ((scr screen) &key color-pair)
-  (with-slots (winptr colors-enabled-p use-terminal-colors-p cursor-visible-p input-echoing-p
-                      function-keys-enabled-p newline-translation-enabled-p fgcolor bgcolor
-                      scrolling-enabled-p background input-buffering-p process-control-chars-p) scr
-    ;; just for screen window types.
-    (when (eq (type-of scr) 'screen)
-      ;; pass the environment locale to the ncurses C library
-      ;; has to be done explicitely since sbcl 2.0.3.
-      (ncurses:setlocale ncurses:+LC-ALL+ "")
-      (setf winptr (ncurses:initscr))
-      (when colors-enabled-p
-        (if (ncurses:has-colors)
-            (progn
-              (ncurses:start-color)
-              (set-default-color-pair use-terminal-colors-p))
-            (error "initialize-instance screen: This terminal does not support colors.")))
-
-      (cond ((or fgcolor bgcolor)
-             (set-color-pair winptr (color-pair scr)))
-            (color-pair
-             ;; set fg and bg, pass to ncurses
-             (setf (color-pair scr) color-pair)))
-
-      (when background (setf (background scr) background))
-      (if newline-translation-enabled-p (ncurses:nl) (ncurses:nonl))
-      (if input-echoing-p (ncurses:echo) (ncurses:noecho))
-      (set-input-mode input-buffering-p process-control-chars-p)
-      (set-cursor-visibility cursor-visible-p))))
-
-;; sub-window has to be contained within a parent window
-;; touch parent before refreshing a subwindow
-;; move also needs a method for subwindows.
-;; Subwindows must be deleted before the main window can be deleted.
-(defmethod initialize-instance :after ((win sub-window) &key)
-  (with-slots (winptr parent height width position relativep) win
-    ;; just for SUB-WINDOW types
-    (when (eq (type-of win) 'sub-window)
-      ;; the default value 0 for width or height is "to the end of the screen".
-      (unless width (setf width 0))
-      (unless height (setf height 0))
-      (if relativep
-          ;;(setf winptr (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
-          (setf winptr (let ((val (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position))))
-                         (if (cffi:null-pointer-p val)
-                             ;; may also be null if the parent window passed is null
-                             (error "Subwindow could not be created. Probably too big and not contained in the parent window.")
-                             val)))
-          (setf winptr (ncurses:subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
-
-(defmethod initialize-instance :after ((win decorated-window) &key)
-  (with-slots (winptr width height position sub-window) win
-    ;; only for decorated window types
-    (when (eq (type-of win) 'decorated-window)
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
-      (setf sub-window
-            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
-
-;; called after _all_ :after aux methods.
-;; for all window types in the hierarchy
-;; this has to be called after other aux methods because the windows have to be created first.
-(defmethod initialize-instance :around ((win window) &key frame-rate)
-  ;; before :before, :after and primary.
-  (let ((result (call-next-method)))
-    ;; after :before, :after and primary.
-    (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p draw-border-p stackedp) win
-      ;; the frame rate argument, if available, takes precedence over input blocking
-      ;; because they access the same ncurses timeout
-      ;; a non-nil frame-rate always implies non-blocking input with a delay
-      (if frame-rate
-          (setf (frame-rate win) frame-rate)
-          (set-input-blocking winptr input-blocking))
-      (ncurses:scrollok winptr scrolling-enabled-p)
-      (when draw-border-p (ncurses:box winptr 0 0))
-      (ncurses:keypad winptr function-keys-enabled-p)
-      (when stackedp (stack-push win *main-stack*)))
-
-    ;; why do we have to return the result in :around aux methods?
-    result))
 
 ;; Accessors
 
@@ -905,6 +648,7 @@ If there is no window asociated with the element, return the window associated w
     (setf position pos)
     (apply #'ncurses:mvwin winptr pos)))
 
+;; TODO 200613: replace slots position with position-y and position-x, make position only an accessor like color pair
 ;; The slots position-y and position-x dont exist, these accessors exist for convenience.
 
 (defgeneric position-y (window))
@@ -957,6 +701,11 @@ If there is no window asociated with the element, return the window associated w
 (defmethod height ((window window))
   (ncurses:getmaxy (slot-value window 'winptr)))
 
+;; TODO use getyx, the official macro interface
+;; TODO add a :dimensions initialization keyword, so we dont have to give height and width separately
+;; TODO check whether we can resize the window during run time or only during initialization
+;; TODO: add methods for menus, fields, textarea, etc.
+;; TODO: add mixin parent classes for all square objects that can have dimensions.
 (defgeneric dimensions (object)
   (:documentation "Return a two-element list with the height and width of the object.")
   (:method (object)
@@ -1156,10 +905,18 @@ nil,0      t
   (setf (slot-value screen 'newline-translation-enabled-p) status)
   (if status (ncurses:nl) (ncurses:nonl)))
 
+;; TODO: change this to use wide chars, so we can use unicode chars additionally to the limited small set of ACS chars
+;; (setf (background window nil) xchar)
+;; (setf (background window t) xchar) = (setf (background window) xchar)
 (defgeneric background (window))
 (defmethod background ((win window))
+  ;; TODO: compare whether slot and ncurses return equal xchars
+  ;; this isnt the case if we set a ACS char, which gets translated to a code.
+  ;;(let ((slot (slot-value win 'background))
+  ;;  (ncurses (get-background-cchar_t win)))
   (slot-value win 'background))
 
+;; TODO: writing a normal string waddstr on a wide cchar background causes an SB-KERNEL::CONTROL-STACK-EXHAUSTED-ERROR
 (defgeneric (setf background) (char window &optional apply))
 (defmethod (setf background) (char (window window) &optional (apply t))
   (setf (slot-value window 'background) char)
@@ -1181,7 +938,7 @@ nil,0      t
     (add-attributes window added)
     (remove-attributes window removed)))
 |#
-;; TODO use ncurses:wattron and ncurses:wattroff here.
+;; TODO: use ncurses:wattron and ncurses:wattroff here.
 
 (defmethod (setf attributes) (attributes (win window))
   (with-slots ((win-attributes attributes)) win
@@ -1200,6 +957,10 @@ nil,0      t
 ;; (defmethod (setf attributes) (attributes (window window))
 ;;   (setf (slot-value window 'attributes) attributes)
 ;;   (set-attributes window attributes))
+
+
+;; TODO 200731 we do not need separate methods for windows and complex-chars
+;; they are identical
 
 (defgeneric color-pair (object)
   (:documentation
@@ -1268,6 +1029,56 @@ This applies to window, field and textarea objects, for example."
       (setf (insert-mode-p object) (not (insert-mode-p object)))
       (error "toggle-insert-mode: the object does not have an insert-mode-p property.")))
 
+(defmethod stackedp ((win window))
+  (slot-value win 'stackedp))
+
+(defmethod (setf stackedp) (stackedp (win window))
+  "Add or remove the window to the global window stack."
+  (if stackedp
+      ;; t: check if in stack, if not, add to stack, if yes, error
+      (if (member win (items *main-stack*) :test #'eq)
+          (error "setf stackedp t: window already on stack")
+          (progn
+            (stack-push win *main-stack*)
+            (setf (slot-value win 'stackedp) t)))
+      ;; nil: check if in stack, if yes, remove from stack, if not, error
+      (if (member win (items *main-stack*) :test #'eq)
+          (progn
+            (setf (items *main-stack*) (remove win (items *main-stack*) :test #'eq))
+            (setf (slot-value win 'stackedp) nil))
+          (error "setf stackedp nil: window not on stack"))))
+
+;; (window (if (window field) (window field) (window (parent field))))
+(defmethod window ((element element))
+  "Return the window associated with an element, which can optionally be part of a form.
+
+If there is no window asociated with the element, return the window associated with the parent form."
+  (with-slots (window parent) element
+    (if window
+        window
+        ;; not every element (for example a menu) has a parent form.
+        (if parent
+            (if (slot-value parent 'window)
+                (slot-value parent 'window)
+                (error "(window element) ERROR: No window is associated with the parent form."))
+            (error "(window element) ERROR: Neither a window nor a parent form are associated with the element.")))))
+
+(defmethod (setf window) (window (element element))
+  (setf (slot-value element 'window) window))
+
+;; TODO: add a way to specify element default styles outside of a form style
+(defmethod style ((element element))
+  "If the element's style slot is empty, check whether a default style has been defined in the parent form."
+  (with-slots (style parent) element
+    (if style
+        style
+        ;; not every element (for example a menu) has a parent form.
+        (when parent
+          (if (slot-value parent 'style)
+              ;; get the default element style from the form style slot.
+              (getf (slot-value parent 'style) (type-of element))
+              nil)))))
+
 ;;; print, prin1, princ, format ~A, ~S
 
 ;; print a wide but simple lisp character to a window
@@ -1322,12 +1133,6 @@ This applies to window, field and textarea objects, for example."
   (ncurses:endwin))
 
 (defmethod close ((stream decorated-window) &key abort)
-  (declare (ignore abort))
-  (ncurses:delwin (winptr (sub-window stream)))
-  (ncurses:delwin (winptr stream)))
-
-;; although it is not a stream, we will abuse close to close a menu's window and subwindow, which _are_ streams.
-(defmethod close ((stream menu-window) &key abort)
   (declare (ignore abort))
   (ncurses:delwin (winptr (sub-window stream)))
   (ncurses:delwin (winptr stream)))
