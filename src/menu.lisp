@@ -123,6 +123,30 @@
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
     (unless layout (setf layout (list (length items) 1))) ))
 
+(defclass menu-window (menu window)
+  ()
+  (:documentation "A menu-window is a window displaying a menu."))
+
+(defmethod initialize-instance :after ((win menu-window) &key color-pair)
+  (with-slots (winptr items height width position element-position layout scrolled-layout
+               max-item-length current-item-mark background fgcolor bgcolor) win
+    (when (eq (type-of win) 'menu-window)
+      (setf element-position nil)
+      (unless layout (setf layout (list (length items) 1)))
+      (unless height (setf height (car (or scrolled-layout layout))))
+      (unless width  (setf width  (* (cadr (or scrolled-layout layout))
+                                     (+ (length current-item-mark) max-item-length))))
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (cond ((or fgcolor bgcolor)
+             (set-color-pair winptr (color-pair win)))
+            (color-pair
+             (setf (color-pair win) color-pair)))
+      (when background (setf (background win) background)))))
+
+(defmethod close ((stream menu-window) &key abort)
+  (declare (ignore abort))
+  (ncurses:delwin (winptr stream)))
+
 (defclass menu-panel (menu panel)
   ()
   (:documentation "A menu-panel is a panel providing a list of items to be selected by the user."))
@@ -380,6 +404,11 @@ At the third position, display the item given by item-number."
   ;; update-cursor-position = place the cursor on the current item
   ;; if the menu is a checklist, place the cursor inside the [_], like it is done with a single checkbox.
   (update-cursor-position menu))
+
+(defmethod draw ((menu menu-window))
+  "Draw the menu to its own window."
+  (draw-menu menu menu)
+  (refresh menu))
 
 (defmethod draw ((menu menu-panel))
   "Draw the menu-panel."

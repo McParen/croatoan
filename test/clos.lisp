@@ -2693,6 +2693,19 @@ friend. It is my life. I must master it as I must master my life.")
         (get-char scr))
       (close menu))))
 
+(defun t19b1 ()
+  "Draw the menu to its own simple window."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
+           (menu (make-instance 'menu-window :items choices :position (list 0 20) :title "t19b"
+                                :cyclic-selection t :draw-border t :enable-function-keys t)))
+      (let ((result (select menu)))
+        (format scr "You chose ~A" result)
+        (touch scr)
+        (refresh scr)
+        (get-char scr))
+      (close menu))))
+
 (defun t19b2 ()
   "Use the select function with independent windows and menus"
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)

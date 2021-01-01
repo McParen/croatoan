@@ -34,6 +34,7 @@
    panel
    menu
    checklist
+   menu-window
    menu-panel
    menu-item
    dialog-window
