@@ -1,6 +1,6 @@
 (in-package :de.anvi.croatoan)
 
-(defclass dialog-window (menu-window)
+(defclass dialog-window (menu-panel)
   ;; this has to be a pad, so we can scroll it if the message is large.
   ;; TODO: check how scrolling would work with a subwindow.
   ((message-pad

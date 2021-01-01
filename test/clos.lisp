@@ -2684,7 +2684,7 @@ friend. It is my life. I must master it as I must master my life.")
   "Use the menu class, draw-menu and select functions."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (menu (make-instance 'menu-window :items choices :position (list 0 20) :title "t19b"
+           (menu (make-instance 'menu-panel :items choices :position (list 0 20) :title "t19b"
                                 :cyclic-selection t :draw-border t :enable-function-keys t)))
       (let ((result (select menu)))
         (format scr "You chose ~A" result)
@@ -2722,7 +2722,7 @@ friend. It is my life. I must master it as I must master my life.")
                              :background (list :fgcolor :yellow)
                              :selected-foreground (list :attributes (list :reverse))
                              :selected-background (list :attributes (list :reverse))))
-           (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
+           (menu (make-instance 'menu-panel :items choices :position (list 0 25) :scrolled-layout (list 6 1)
                                 :title "t19c" :draw-border t :enable-function-keys t :style menu-style)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
@@ -2742,7 +2742,7 @@ friend. It is my life. I must master it as I must master my life.")
                           "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            ;; First, create a menu
            ;; TODO: how to determine the position of the sub-menu depending on the parent menu?
-           (sub-menu2 (make-instance 'menu-window
+           (sub-menu2 (make-instance 'menu-panel
                                      :items choices ;; here we only have strings
                                      :position (list 2 57) :scrolled-layout (list 6 1)
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
@@ -2750,14 +2750,14 @@ friend. It is my life. I must master it as I must master my life.")
                                      :bgcolor :red
                                      :name :sub2 :title t :draw-border t :enable-function-keys t))
            ;; then add that sub-menu menu as an item to the next menu, and so on.
-           (sub-menu1 (make-instance 'menu-window
+           (sub-menu1 (make-instance 'menu-panel
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
                                      :position (list 1 41) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #x999999)
                                      :fgcolor :green
                                      :name :sub1 :title nil :draw-border t :enable-function-keys t))
            ;; finally, create the main menu containing sub-menu1 as an item
-           (menu      (make-instance 'menu-window
+           (menu      (make-instance 'menu-panel
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
                                      :position (list 0 25) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #xcccccc)
@@ -2783,7 +2783,7 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
+           (menu (make-instance 'menu-panel :items choices :position (list 0 25) :scrolled-layout (list 6 1)
                                 :title "t19c" :draw-border t :enable-function-keys t
                                 :menu-type :checklist
                                 :max-item-length 20
@@ -2802,7 +2802,7 @@ friend. It is my life. I must master it as I must master my life.")
   "Use the arrow keys to pick a value from an 2D array menu, given as a layout parameter."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items (loop for i below 200 collect (format nil "Item ~A" i)))
-           (menu (make-instance 'menu-window
+           (menu (make-instance 'menu-panel
                                 :items items :position (list 0 0) :layout (list 20 10) :scrolled-layout (list 10 4)
                                 :cyclic-selection nil :max-item-length 9 :title "t19d" :draw-border t :enable-function-keys t)))
       (event-case (scr event)
@@ -2819,7 +2819,7 @@ friend. It is my life. I must master it as I must master my life.")
   "A one-line menu without a title and border resembling a menu bar."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
-           (menu (make-instance 'menu-window :input-blocking t :items items :position (list 0 0)
+           (menu (make-instance 'menu-panel :input-blocking t :items items :position (list 0 0)
                                 :layout (list 1 (length items))
                                 :scrolled-layout (list 1 6)
                                 ;;:color-pair (list :black :yellow)
@@ -2840,13 +2840,13 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items1 (list "Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                          "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :scrolled-layout (list 6 1)
+           (sub-menu1 (make-instance 'menu-panel :items items1 :position (list 2 30) :scrolled-layout (list 6 1)
                                      :name :sm1 :title nil :draw-border t :enable-function-keys t :visible nil :menu-type :selection))
-           (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :scrolled-layout (list 6 1)
+           (sub-menu2 (make-instance 'menu-panel :items items1 :position (list 2 45) :scrolled-layout (list 6 1)
                                      :name :sm2 :title nil :draw-border t :enable-function-keys t :visible nil :menu-type :checklist))
            (fun1 (make-instance 'menu-item :name :fun1 :title "fun1" :value (lambda () (clear scr) (move scr 4 0))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
-           (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :layout (list 1 (length items2))
+           (menu (make-instance 'menu-panel :input-blocking t :items items2 :position (list 0 0) :layout (list 1 (length items2))
                                              :max-item-length 15 :width (width scr) :draw-border t :enable-function-keys t)))
       ;; start the output at line 4, below the menu bar.
       (move scr 4 0)

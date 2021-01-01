@@ -123,15 +123,15 @@
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
     (unless layout (setf layout (list (length items) 1))) ))
 
-(defclass menu-window (menu panel)
+(defclass menu-panel (menu panel)
   ()
-  (:documentation "A menu-window is a panel providing a list of items to be selected by the user."))
+  (:documentation "A menu-panel is a panel providing a list of items to be selected by the user."))
 
-(defmethod initialize-instance :after ((win menu-window) &key color-pair)
+(defmethod initialize-instance :after ((win menu-panel) &key color-pair)
   (with-slots (winptr items type height width position element-position sub-window draw-border-p layout scrolled-layout
                       max-item-length current-item-mark fgcolor bgcolor) win
     ;; only for menu windows
-    (when (eq (type-of win) 'menu-window)
+    (when (eq (type-of win) 'menu-panel)
       (let ((padding (if draw-border-p 1 0)))
         ;; if the initarg :position was given, both the window position and the element-position
         ;; have been set. ignore the element position.
@@ -164,7 +164,7 @@
                      (background sub-window) (make-instance 'complex-char :color-pair color-pair)))) ))))
 
 ;; although it is not a stream, we will abuse close to close a menu's window and subwindow, which _are_ streams.
-(defmethod close ((stream menu-window) &key abort)
+(defmethod close ((stream menu-panel) &key abort)
   (declare (ignore abort))
   (ncurses:delwin (winptr (sub-window stream)))
   (ncurses:delwin (winptr stream)))
@@ -176,7 +176,7 @@
 
 (defclass menu-item (checkbox)
   ((value
-    :type          (or symbol keyword string menu menu-window function number)
+    :type          (or symbol keyword string menu menu-panel function number)
     :documentation "The value of an item can be a string, a number, a sub menu or a function to be called when the item is selected."))
 
   (:documentation  "A menu contains of a list of menu items."))
@@ -339,7 +339,7 @@ At the third position, display the item given by item-number."
         ;; display it in the window associated with the menu
         (add win (format-menu-item menu item-number) :style fg-style)))))
 
-;; draws to any window, not just to a sub-window of a menu-window.
+;; draws to any window, not just to a sub-window of a menu-panel.
 (defun draw-menu (window menu)
   "Draw the menu to the window."
   (with-accessors ((layout layout) (scrolled-layout scrolled-layout) (scrolled-region-start scrolled-region-start)) menu
@@ -381,8 +381,8 @@ At the third position, display the item given by item-number."
   ;; if the menu is a checklist, place the cursor inside the [_], like it is done with a single checkbox.
   (update-cursor-position menu))
 
-(defmethod draw ((menu menu-window))
-  "Draw the menu-window."
+(defmethod draw ((menu menu-panel))
+  "Draw the menu-panel."
   (with-accessors ((title title) (border draw-border-p) (sub-win sub-window)) menu
     ;; draw the menu to the sub-window
     (draw-menu sub-win menu)
@@ -398,7 +398,7 @@ At the third position, display the item given by item-number."
     (refresh menu)))
 
 (defmethod draw ((menu dialog-window))
-  ;; first draw a menu-window, dialog-window's superclass
+  ;; first draw a menu-panel, dialog-window's superclass
   ;; TODO: describe what exactly is drawn here and what in the parent method.
   (call-next-method)
 
@@ -480,9 +480,9 @@ At the third position, display the item given by item-number."
           (funcall val)
           (return-from-menu menu (name (current-item menu))))
 
-         ;; if the item is a menu (and thus also a menu-window), recursively select an item from that submenu
+         ;; if the item is a menu (and thus also a menu-panel), recursively select an item from that submenu
          ((or (typep val 'menu)
-              (typep val 'menu-window))
+              (typep val 'menu-panel))
           (let ((selected-item (select val)))
 
             ;; when we have more than menu in one window, redraw the parent menu when we return from the submenu.
@@ -529,7 +529,7 @@ At the third position, display the item given by item-number."
   (draw menu)
   (run-event-loop menu))
 
-(defmethod select ((menu menu-window))
+(defmethod select ((menu menu-panel))
   "Display the menu, let the user select an item, return the selected item.
 
 If the selected item is a menu object, recursively display the sub menu."
@@ -538,7 +538,7 @@ If the selected item is a menu object, recursively display the sub menu."
 
   (draw menu)
   
-  ;; here we can pass the menu to run-event-loop because it is a menu-window.
+  ;; here we can pass the menu to run-event-loop because it is a menu-panel.
   ;; all handler functions have to accept window and event as arguments.
   (let ((val (run-event-loop menu)))
 
