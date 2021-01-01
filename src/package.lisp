@@ -31,7 +31,7 @@
    window
    screen
    sub-window
-   decorated-window
+   panel
    menu
    checklist
    menu-window

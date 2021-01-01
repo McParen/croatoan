@@ -123,9 +123,9 @@
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
     (unless layout (setf layout (list (length items) 1))) ))
 
-(defclass menu-window (menu decorated-window)
+(defclass menu-window (menu panel)
   ()
-  (:documentation "A menu-window is decorated-window providing a list of items to be selected by the user."))
+  (:documentation "A menu-window is a panel providing a list of items to be selected by the user."))
 
 (defmethod initialize-instance :after ((win menu-window) &key color-pair)
   (with-slots (winptr items type height width position element-position sub-window draw-border-p layout scrolled-layout
@@ -394,7 +394,7 @@ At the third position, display the item given by item-number."
     (when (and border title)
       (add-title menu))
     ;; todo: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
-    ;; make refresh specialize on menu and decorated window in a way to do both.
+    ;; make refresh specialize on menu and panel in a way to do both.
     (refresh menu)))
 
 (defmethod draw ((menu dialog-window))

@@ -406,27 +406,23 @@ field, textarea:
           (setf winptr (ncurses:subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
 
 ;; TODO: add a method that draws the title and can be called with call-next-method
-;; as of now we have to write the title for every class derived from decorated-window.
-(defclass decorated-window (window)
+;; as of now we have to write the title for every class derived from panel.
+(defclass panel (window)
   ((sub-window
-    :initarg       :sub-window
     :initform      nil
     :type          (or null sub-window)
     :reader        sub-window
-    :documentation "Active content window, for example for menu items."))
+    :documentation "Subwindow for content, for example a menu or a form."))
 
   (:documentation
-   "A decorated-window is a window consisting of a background window with a border, 
-   a title displayed over the top border and a sub-window where the content should
-   be displayed."))
+   "A panel is a window with a subwindow for the content and a separate space for the border."))
 
-(defmethod initialize-instance :after ((win decorated-window) &key)
+(defmethod initialize-instance :after ((win panel) &key)
   (with-slots (winptr width height position sub-window) win
-    ;; only for decorated window types
-    (when (eq (type-of win) 'decorated-window)
+    ;; only for panels
+    (when (eq (type-of win) 'panel)
       (setf winptr (ncurses:newwin height width (car position) (cadr position)))
-      (setf sub-window
-            (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
+      (setf sub-window (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
 
 ;; if a window-position is given during make-instance, it can be simply ignored.
 ;; or we can check for position and signal an error.
@@ -608,8 +604,8 @@ field, textarea:
         (error "A list of elements is required to initialize a form."))))
 
 ;; TODO: use both window-free forms and form-windows, window-free menus und menu-windows.
-;;(defclass form-window (form decorated-window)
-(defclass form-window (decorated-window form)
+;;(defclass form-window (form panel)
+(defclass form-window (panel form)
   ()
   (:documentation ""))
 
@@ -622,11 +618,11 @@ field, textarea:
       ;; TODO 200612 see window and sub-window init
       (setf winptr (ncurses:newwin height width (car position) (cadr position)))
 
-      ;; TODO: this isnt form specific, this should be part of decorated-window initialization
+      ;; TODO: this isnt form specific, this should be part of panel initialization
       (setf sub-window (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2)
                                       :position (list 1 1) :relative t :enable-function-keys t))
 
-      ;; set the sub of the decorated window to be the associated window of the form
+      ;; set the sub of the panel to be the associated window of the form
       ;; the form will be drawn to the associated window, i.e. to the sub
       (setf window sub-window) )))
 
@@ -1132,7 +1128,7 @@ If there is no window asociated with the element, return the window associated w
   (declare (ignore abort))
   (ncurses:endwin))
 
-(defmethod close ((stream decorated-window) &key abort)
+(defmethod close ((stream panel) &key abort)
   (declare (ignore abort))
   (ncurses:delwin (winptr (sub-window stream)))
   (ncurses:delwin (winptr stream)))

@@ -154,7 +154,7 @@ If title is t, use the name. If title is nil, return an empty string."
 (defun add-title (win)
   "Draw a title to the first line of a window.
 
-Usually, this will be a decorated window with a border and the title on the top border.
+Usually, this will be a panel with a border and the title on the top border.
 
 When title is t instead of a title string, display the symbol name of the widget."
   (add-string win (format-title win "| " " |")
@@ -166,7 +166,7 @@ When title is t instead of a title string, display the symbol name of the widget
 ;; TODO 201030 add style-to-complex-char and complex-char-to-style
 ;;(setf (background win) (make-instance 'complex-char :style '(:simple-char #\space :fgcolor :red :bgcolor :white)))
 
-(defmethod draw ((win decorated-window))
+(defmethod draw ((win panel))
   "Draw the background window, and the title and the border if they are given."
   (with-accessors ((title title)) win
     ;; update cursor position only refreshes the window associated with the form, which is the sub-window
@@ -195,7 +195,7 @@ When title is t instead of a title string, display the symbol name of the widget
     ;; TODO do we have to refresh here?
     (refresh win)
 
-    ;; in multiple inheritance, a decorated-window should be the first superclass
+    ;; in multiple inheritance, a panel should be the first superclass
     ;; so we can first draw the border and title here and then
     ;; call-next-method the second class here to draw the contents
     ;; provided by the next superclass (for example menu or form)
