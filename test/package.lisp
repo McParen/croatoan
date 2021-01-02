@@ -155,8 +155,8 @@
    #:matrix3
    #:matrix4
    #:robots
+   #:pong
    #:tetris
-
 
    ;; evolution.lisp
    #:evolve5

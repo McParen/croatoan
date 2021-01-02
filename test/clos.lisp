@@ -295,6 +295,49 @@
         (draw-board scr)
         (run-event-loop scr)))))
 
+(defun pong ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)
+    (let* ((h (height scr))
+           (w (width scr))
+           runp     ; ball moving flag
+           y x      ; ball
+           y1 x1    ; paddle 1
+           y2 x2    ; paddle 2
+           (n 10)   ; paddle length
+           dy dx)   ; increment
+      (labels ((draw-paddle (win y x)
+                 (draw-line win (list y x) (list (+ y n) x) #\|))
+               (draw-game (win)
+                 (clear win) (draw-paddle win y1 x1) (draw-paddle win y2 x2) (add-char win #\O :y y :x x) (refresh win))
+               (rand () (if (zerop (random 2)) -1 1))
+               (reset-game (win)
+                 (setq runp nil y (floor h 2) x (floor w 2) y1 5 x1 1 y2 5 x2 (- w 2) dy (rand) dx (rand))
+                 (draw-game scr))
+               (move-paddle (win event)
+                 (case event
+                   (#\w (when (> y1 0)       (decf y1)))
+                   (#\s (when (< (+ y1 n) h) (incf y1)))
+                   (#\p (when (> y2 0)       (decf y2)))
+                   (#\l (when (< (+ y2 n) h) (incf y2))))
+                 (draw-game win)))
+        (bind scr #\q 'exit-event-loop)
+        (bind scr #\space (lambda (win e) (setq runp t)))
+        (bind scr '(#\w #\p #\s #\l) #'move-paddle)
+        (bind scr nil (lambda (win e)
+                        (when runp
+                          (setq y (+ y dy) x (+ x dx))
+                          (draw-game win)
+                          (when (or (= y 0) (= y (1- h)))
+                            (setq dy (- dy)))
+                          (when (or (and (= x x1) (<= y1 y (+ y1 n)))
+                                    (and (= x x2) (<= y2 y (+ y2 n))))
+                            (setq dx (- dx)))
+                          (when (or (= x 0) (= x (1- w)))
+                            (reset-game win)))))
+        (reset-game scr)
+        (setf (frame-rate scr) 30)
+        (run-event-loop scr)))))
+
 ;; initialize ncurses, deinitialize ncurses
 ;; tests initialize-instance
 (defun t00 ()
