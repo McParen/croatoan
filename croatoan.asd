@@ -9,7 +9,7 @@
 
   ((:file "package")
    (:file "character")        ; complex character and string
-   (:file "stack")            ; panel stack extension for curses
+   (:file "stack")            ; stack extension for curses (ncurses term: panel)
    (:file "classes")
    (:file "croatoan")         ; macros, event handling
    (:file "dialog")           ; misc dialog boxes

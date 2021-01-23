@@ -154,63 +154,51 @@ If title is t, use the name. If title is nil, return an empty string."
 (defun add-title (win)
   "Draw a title to the first line of a window.
 
-Usually, this will be a panel with a border and the title on the top border.
+Usually, this will be an extended-window with a border and the title on the top border.
 
 When title is t instead of a title string, display the symbol name of the widget."
   (add-string win (format-title win "| " " |")
               :y 0 :x 2 :style (getf (slot-value win 'style) :title)))
 
-;; change order of superclasses in menu-win
-
-;; TODO 201030 add :style option to the cchar constructor
-;; TODO 201030 add style-to-complex-char and complex-char-to-style
-;;(setf (background win) (make-instance 'complex-char :style '(:simple-char #\space :fgcolor :red :bgcolor :white)))
-
-(defmethod draw ((win panel))
+(defmethod draw ((win extended-window))
   "Draw the background window, and the title and the border if they are given."
-  (with-accessors ((title title)) win
-    ;; update cursor position only refreshes the window associated with the form, which is the sub-window
-    ;; in order to see the border, we have to touch and refresh the parent border window.
-    ;; refreshing the parent window has to be done before refreshing the cursor position in the sub
-    ;; or the cursor will be moved to 0,0 of the parent window.
+  ;; update cursor position only refreshes the window associated with the form, which is the sub-window
+  ;; in order to see the border, we have to touch and refresh the parent border window.
+  ;; refreshing the parent window has to be done before refreshing the cursor position in the sub
+  ;; or the cursor will be moved to 0,0 of the parent window.
 
-    ;; TODO 201101: check ncurses:wsyncup, maybe we can avoid the explicit touch
-    (touch win)
+  ;; TODO 201101 check ncurses:wsyncup, maybe we can avoid the explicit touch
+  ;; TODO 210117 check whether we can touch in the refresh routine for a subwin
+  (touch win)
+    
+  ;; TODO do we have to refresh here?
+  (refresh win)
 
-    (when (slot-value win 'style)
-      (let ((border-style (getf (slot-value win 'style) :border))
-            (bg-style     (getf (slot-value win 'style) :background)))
-        (when bg-style
-          (setf (background (sub-window win)) (style-char bg-style)))
-        (when border-style
-          (setf (background win) (style-char border-style)))))
+  ;; in multiple inheritance, an extended-window should be the first superclass
+  ;; so we can first draw the border and title here and then
+  ;; call-next-method the second class here to draw the contents
+  ;; provided by the next superclass (for example menu or form)
+  ;; If there was a draw method for windows, it would be called before going to the next superclass
+  ;; but we do not have a draw method for simple windows.
+  (when (next-method-p)
+    (call-next-method)))
 
+(defmethod draw ((win form-window))
+  "Draw the the border and the title, then the form."
+  (with-accessors ((title title) (draw-border-p draw-border-p)) win  
     ;; we can add a title even when there is no border
     ;; If a title is given as a string, it is displayed
     ;; If the title is t, the name is displayed as the title.
     ;; If the title is nil or the border is nil, no title is displayed.
-    (when title
+    ;; we do not want to draw a title for menu-windows by drawing them in extended window
+    ;; a title is only added for form-window
+    (when (and draw-border-p title)
       (add-title win))
-    
-    ;; TODO do we have to refresh here?
-    (refresh win)
-
-    ;; in multiple inheritance, a panel should be the first superclass
-    ;; so we can first draw the border and title here and then
-    ;; call-next-method the second class here to draw the contents
-    ;; provided by the next superclass (for example menu or form)
-    ;; If there was a draw method for windows, it would be called before going to the next superclass
-    ;; but we do not have a draw method for simple windows.
+  
+    ;; first call next method to draw the extended window
+    ;; then from the decorated window call-next-method to draw the form contents
     (when (next-method-p)
       (call-next-method))))
-
-(defmethod draw ((fwin form-window))
-  "Draw the the border and the title, then the form."
-  ;; The draw method does nothing specific for a form-window
-  ;; first call next method to draw the decorated window (border and title)
-  ;; then from the decorated window call-next-method to draw the form contents
-  (when (next-method-p)
-    (call-next-method)))
 
 ;; previous-element and next-element are the only two elements where the current-element-number is changed.
 ;; here also current-element and selected has to be set.
@@ -343,7 +331,8 @@ Bind this to an event or element to exit the event loop of a form."
           when (activep element)
           collect (cons (name element) (value element)))))
 
-;; TODO: use (clear field) instead of this
+;; TODO 210123 use (clear field) instead of this
+
 ;; TODO: we cant simply set the value to zero, we also have to set the input-pointer and cursor
 ;; we HAVE to use clear
 ;; we CANt use clear, because it doesnt do anything but drawing the background

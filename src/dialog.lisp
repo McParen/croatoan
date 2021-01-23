@@ -1,6 +1,6 @@
 (in-package :de.anvi.croatoan)
 
-(defclass dialog-window (menu-panel)
+(defclass dialog-window (menu-window)
   ;; this has to be a pad, so we can scroll it if the message is large.
   ;; TODO: check how scrolling would work with a subwindow.
   ((message-pad
@@ -121,7 +121,7 @@
    :draw-border t)
   
   (:documentation
-   "A msgbox is a dialog presenting the user a message and an OK button to accept it."))
+   "A msgbox is a form-window presenting the user a message and an OK button to accept it."))
 
 (defmethod initialize-instance :before ((msgbox msgbox) &key center)
   (with-slots (elements msg-area ok-button) msgbox

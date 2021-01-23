@@ -179,7 +179,11 @@ field, textarea:
     :type          (or null complex-char)
     :documentation
     "Sets a complex char with its attributes and colors as the default style of unrendered text and empty cells of the window. 
-    Complex chars with pre-existing attributes and colors are not changed.")
+    
+Complex chars with pre-existing attributes and colors are not changed.
+
+If the background char with attributes is set after the foreground attributes, the background attributes override the 
+foreground attributes. To prevent this, set the background char with attributes before the foreground attributes.")
 
    (attributes
     :initarg       :attributes
@@ -229,10 +233,13 @@ field, textarea:
 (defmethod initialize-instance :after ((win window) &key color-pair dimensions)
   (with-slots (winptr height width position fgcolor bgcolor background) win
     ;; for ALL window types
+    ;; called BEFORE more specific after methods
+    
     ;; the keyword dimensions overrides width and height
     (when dimensions
       (setf height (car dimensions)
             width (cadr dimensions)))
+
     ;; just for WINDOW types
     (when (eq (type-of win) 'window)
       ;; the default value 0 for width or height is "to the end of the screen".
@@ -246,16 +253,16 @@ field, textarea:
             (color-pair
              ;; set fg and bg, pass to ncurses
              (setf (color-pair win) color-pair)))
-      (when background (setf (background win) background)) )))
+      (when background (setf (background win) background)))))
 
 ;; called after _all_ :after aux methods.
 ;; for all window types in the hierarchy.
-;; this has to be called after other aux methods because the windows have to be created first.
+;; this has to be called after other aux methods because the windows (winptrs) have to be created first.
 (defmethod initialize-instance :around ((win window) &key frame-rate)
   ;; before :before, :after and primary.
   (let ((result (call-next-method)))
     ;; after :before, :after and primary.
-    (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p draw-border-p stackedp) win
+    (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p draw-border-p stackedp style) win
       ;; the frame rate argument, if available, takes precedence over input blocking
       ;; because they access the same ncurses timeout
       ;; a non-nil frame-rate always implies non-blocking input with a delay
@@ -263,11 +270,14 @@ field, textarea:
           (setf (frame-rate win) frame-rate)
           (set-input-blocking winptr input-blocking))
       (ncurses:scrollok winptr scrolling-enabled-p)
+      (ncurses:keypad winptr function-keys-enabled-p)
+      (when stackedp (stack-push win *main-stack*))
+      ;; if there is a style parameter, it overrides any other arg (fgcolor, bgcolor, background, attributes)
+      (when style
+        (setf (style win) style))
       ;; TODO 190511 on newest ncurses 6.1.x setting a background after we set the border converts the
       ;; border line drawing chars into ascii.
-      (when draw-border-p (ncurses:box winptr 0 0))
-      (ncurses:keypad winptr function-keys-enabled-p)
-      (when stackedp (stack-push win *main-stack*)))
+      (when draw-border-p (ncurses:box winptr 0 0)))
 
     ;; why do we have to return the result in :around aux methods?
     result))
@@ -406,23 +416,175 @@ field, textarea:
           (setf winptr (ncurses:subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
 
 ;; TODO: add a method that draws the title and can be called with call-next-method
-;; as of now we have to write the title for every class derived from panel.
-(defclass panel (window)
-  ((sub-window
+;; as of now we have to write the title for every class derived from extended-window
+(defclass extended-window (window)
+  ((border-width
+    :initform      0 ; default should be 0 and only set to 1 if :border is t.
+    :type          integer
+    :reader        border-width
+    :documentation "")
+
+   ;; TODO 210110 rename to something else, like "content"
+   (sub-window
     :initform      nil
     :type          (or null sub-window)
     :reader        sub-window
     :documentation "Subwindow for content, for example a menu or a form."))
 
   (:documentation
-   "A panel is a window with a subwindow for the content and a separate space for the border."))
+   "An extended window contains a subwindow for the content.
+
+It can optionally be surrounded with space for a border or a title.
+
+Since the window and the sub share the space, they also implicitely
+will share any attributes.
+
+The primary use of extended windows are menu-windows and form-windows,
+which have to explicitely target the sub-window to write their contents
+by setting the :window slot to the sub-window.
+
+Except for those special cases you probably want to use a panel, which
+behaves more like a simple window."))
+
+(defmethod initialize-instance :after ((win extended-window) &key)
+  (with-slots (winptr width height position sub-window border-width) win
+    ;; only for extended-window
+    (when (eq (type-of win) 'extended-window)
+      ;; first make the main window
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      ;; then make the content sub-window
+      (setf sub-window (make-instance 'sub-window :parent win
+                                                  :height (- height (* border-width 2))
+                                                  :width (- width (* border-width 2))
+                                                  :position (list border-width border-width)
+                                                  :relative t)))))
+
+(defclass panel (window)
+  ((border-width
+    :initarg       :border-width
+    :initform      1
+    :type          integer
+    :documentation "")
+
+   (border-win
+    :initform      nil
+    :type          (or null window)
+    :documentation "A border window for decorations like title, border, scroll bar.")
+
+   (shadowp
+    :initarg       :shadow
+    :initform      nil
+    :type          boolean
+    :documentation "Draw (t) or don't draw (nil, default) a shadow behind the panel.")
+   
+   (shadow-win
+    :initform      nil
+    :type          (or null window)
+    :documentation "A window to provide the shadow."))
+
+  (:documentation
+   "A panel is a window displaying the main content decorated by a background window for
+the border, title and other decorations and a second window providing a shadow.
+
+The border and the shadow are displayed outside of the content window, so they change the
+absolute position and dimensions of the panel."))
 
 (defmethod initialize-instance :after ((win panel) &key)
-  (with-slots (winptr width height position sub-window) win
+  (with-slots (winptr width height position draw-border-p border-win shadowp shadow-win border-width style) win
     ;; only for panels
     (when (eq (type-of win) 'panel)
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
-      (setf sub-window (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2) :position (list 1 1) :relative t)))))
+      (let* ((y1 (car position)) ; main
+             (x1 (cadr position))
+             (y2 (- y1 border-width)) ; border
+             (x2 (- x1 border-width))
+             (h2 (+ height (* border-width 2)))
+             (w2 (+ width (* border-width 2)))
+             (y3 (+ y2 1)) ; shadow
+             (x3 (+ x2 1)))
+
+        ;; the content window gets (h w)
+        (setf winptr (ncurses:newwin height width y1 x1))
+        ;; the aux windows are enlarged
+
+        ;; check if border is t
+        ;; if nil, do not create the border window
+        (when draw-border-p
+          (setf border-win (make-instance 'window :height h2 :width w2 :position (list y2 x2)))
+          (ncurses:box (winptr border-win) 0 0))
+        ;; check if shadow is t
+        ;; if nil, do not create the shadow window
+        (when shadowp
+          (setf shadow-win (make-instance 'window :height h2 :width w2 :position (list y3 x3)))) ))))
+
+(defmethod refresh ((win panel) &rest args)
+  (with-slots (draw-border-p border-win shadow-win shadowp) win
+    (when shadowp
+      (touch shadow-win)
+      (refresh shadow-win))
+    (when draw-border-p
+      (touch border-win)
+      (refresh border-win))
+    (touch win)
+    (ncurses:wrefresh (winptr win))))
+
+(defmethod close ((win panel) &key abort)
+  (declare (ignore abort))
+  (with-slots (draw-border-p border-win shadow-win shadowp) win
+    (when draw-border-p
+      (ncurses:delwin (winptr border-win)))
+    (when shadowp
+      (ncurses:delwin (winptr shadow-win)))
+    (ncurses:delwin (winptr win))))
+
+;; :foreground
+;;   :fgcolor
+;;   :bgcolor
+;;   :attributes
+;; :background (passed automatically as a plist to make-instance)
+;;   :fgcolor
+;;   :bgcolor
+;;   :attributes
+;;   :simple-char
+
+(defmethod (setf style) (style (win window))
+  (setf (slot-value win 'style) style)
+  (let ((fg (getf style :foreground))
+        (bg (getf style :background)))
+    ;; the bg char is set before the fg because else the bg attributes override
+    ;; the fg attributes
+    (when bg
+      (setf (background win) (apply #'make-instance 'complex-char bg)))
+    (when fg
+      (let ((fgcolor (getf fg :fgcolor))
+            (bgcolor (getf fg :bgcolor))
+            (attr    (getf fg :attributes)))
+        (setf (color-pair win) (list fgcolor bgcolor)
+              (attributes win) attr)))))
+
+(defmethod (setf style) (style (win extended-window))
+  ;; first set the style of the parent
+  (call-next-method)
+  ;; we have to explicitely set the fg of the sub-window
+  ;; the bg is inherited, but the fg for some strange reason isnt
+  (let ((fg (getf style :foreground)))
+    (when fg
+      (let ((fgcolor (getf fg :fgcolor))
+            (bgcolor (getf fg :bgcolor))
+            (attr    (getf fg :attributes)))
+        (setf (color-pair (sub-window win)) (list fgcolor bgcolor)
+              (attributes (sub-window win)) attr)))))
+
+(defmethod (setf style) (style (win panel))
+  ;; first set the style of the window
+  (call-next-method)
+  ;; then set the style of the border and shadow windows
+  (with-slots (draw-border-p border-win shadowp shadow-win style) win
+    (when (and draw-border-p
+               (getf style :border))
+      (setf (style border-win) (getf style :border)))
+    (when (and shadowp
+               (getf style :shadow))
+      (setf (style shadow-win) (getf style :shadow)))))
 
 ;; if a window-position is given during make-instance, it can be simply ignored.
 ;; or we can check for position and signal an error.
@@ -604,27 +766,31 @@ field, textarea:
         (error "A list of elements is required to initialize a form."))))
 
 ;; TODO: use both window-free forms and form-windows, window-free menus und menu-windows.
-;;(defclass form-window (form panel)
-(defclass form-window (panel form)
+(defclass form-window (extended-window form)
   ()
   (:documentation ""))
 
 (defmethod initialize-instance :after ((win form-window) &key)
-  (with-slots (winptr height width position sub-window draw-border-p window) win
+  (with-slots (winptr height width position sub-window draw-border-p border-width window) win
     ;; only for form windows
     (when (eq (type-of win) 'form-window)
-
+      (setf border-width (if draw-border-p 1 0))
+      
       ;; TODO: this isnt form specific, this should be part of window initialization
       ;; TODO 200612 see window and sub-window init
       (setf winptr (ncurses:newwin height width (car position) (cadr position)))
 
       ;; TODO: this isnt form specific, this should be part of panel initialization
-      (setf sub-window (make-instance 'sub-window :parent win :height (- height 2) :width (- width 2)
-                                      :position (list 1 1) :relative t :enable-function-keys t))
+      (setf sub-window (make-instance 'sub-window :parent win
+                                                  :height (- height (* border-width 2))
+                                                  :width (- width (* border-width 2))
+                                                  :position (list border-width border-width)
+                                                  :relative t
+                                                  :enable-function-keys t))
 
       ;; set the sub of the panel to be the associated window of the form
       ;; the form will be drawn to the associated window, i.e. to the sub
-      (setf window sub-window) )))
+      (setf window sub-window))))
 
 ;; Accessors
 
@@ -1118,6 +1284,7 @@ If there is no window asociated with the element, return the window associated w
       (setf (items *main-stack*) (remove stream (items *main-stack*) :test #'eq)))
   (ncurses:delwin (winptr stream))
   ;; The default method provided by class FUNDAMENTAL-STREAM sets a flag for OPEN-STREAM-P.
+  ;; TODO 210117 we have to do this for other window types too
   (call-next-method))
 
 (defmethod close ((stream sub-window) &key abort)
@@ -1128,7 +1295,7 @@ If there is no window asociated with the element, return the window associated w
   (declare (ignore abort))
   (ncurses:endwin))
 
-(defmethod close ((stream panel) &key abort)
+(defmethod close ((stream extended-window) &key abort)
   (declare (ignore abort))
   (ncurses:delwin (winptr (sub-window stream)))
   (ncurses:delwin (winptr stream)))

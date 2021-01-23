@@ -123,72 +123,48 @@
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
     (unless layout (setf layout (list (length items) 1))) ))
 
-(defclass menu-window (menu window)
+(defclass menu-window (menu extended-window)
   ()
-  (:documentation "A menu-window is a window displaying a menu."))
+  (:documentation "A menu-window is an extended window displaying a menu in its sub-window."))
 
 (defmethod initialize-instance :after ((win menu-window) &key color-pair)
-  (with-slots (winptr items height width position element-position layout scrolled-layout
-               max-item-length current-item-mark background fgcolor bgcolor) win
-    (when (eq (type-of win) 'menu-window)
-      (setf element-position nil)
-      (unless layout (setf layout (list (length items) 1)))
-      (unless height (setf height (car (or scrolled-layout layout))))
-      (unless width  (setf width  (* (cadr (or scrolled-layout layout))
-                                     (+ (length current-item-mark) max-item-length))))
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
-      (cond ((or fgcolor bgcolor)
-             (set-color-pair winptr (color-pair win)))
-            (color-pair
-             (setf (color-pair win) color-pair)))
-      (when background (setf (background win) background)))))
-
-(defmethod close ((stream menu-window) &key abort)
-  (declare (ignore abort))
-  (ncurses:delwin (winptr stream)))
-
-(defclass menu-panel (menu panel)
-  ()
-  (:documentation "A menu-panel is a panel providing a list of items to be selected by the user."))
-
-(defmethod initialize-instance :after ((win menu-panel) &key color-pair)
-  (with-slots (winptr items type height width position element-position sub-window draw-border-p layout scrolled-layout
-                      max-item-length current-item-mark fgcolor bgcolor) win
+  (with-slots (winptr items type height width position element-position sub-window draw-border-p border-width
+               layout scrolled-layout max-item-length current-item-mark fgcolor bgcolor) win
     ;; only for menu windows
-    (when (eq (type-of win) 'menu-panel)
-      (let ((padding (if draw-border-p 1 0)))
-        ;; if the initarg :position was given, both the window position and the element-position
-        ;; have been set. ignore the element position.
-        (setf element-position nil)        
-        ;; if no layout was given, use a vertical list (n 1)
-        (unless layout (setf layout (list (length items) 1)))
-        ;; if height and width are not given as initargs, they will be calculated,
-        ;; according to no of rows +/- border, and _not_ maximized like normal windows.
-        (unless height (setf height (+ (* 2 padding) (car (or scrolled-layout layout)))))
-        (unless width  (setf width  (+ (* 2 padding) (* (cadr (or scrolled-layout layout))
-                                                        (+ (length current-item-mark) max-item-length)))))
-        (setf winptr (ncurses:newwin height width (car position) (cadr position)))
-        (setf sub-window
-              (make-instance 'sub-window
-                             :parent win :height (car (or scrolled-layout layout))
-                             :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
-                             :position (list padding padding) :relative t))
-        ;; TODO: do this once for all decorated windows, at the moment it is duplicated
-        (cond ((or fgcolor bgcolor)
-               (set-color-pair winptr (color-pair win))
-               (setf (color-pair sub-window) (color-pair win)
-                     (background win) (make-instance 'complex-char :color-pair (color-pair win))
-                     (background sub-window) (make-instance 'complex-char :color-pair (color-pair win)) ))
-              ;; when a color-pair is passed as a keyword
-              (color-pair
-               ;; set fg and bg, pass to ncurses
-               (setf (color-pair win) color-pair
-                     (color-pair sub-window) color-pair
-                     (background win) (make-instance 'complex-char :color-pair color-pair)
-                     (background sub-window) (make-instance 'complex-char :color-pair color-pair)))) ))))
+    (when (eq (type-of win) 'menu-window)
+      (setf border-width (if draw-border-p 1 0))
+      ;; if the initarg :position was given, both the window position and the element-position
+      ;; have been set. ignore the element position.
+      (setf element-position nil)        
+      ;; if no layout was given, use a vertical list (n 1)
+      (unless layout (setf layout (list (length items) 1)))
+      ;; if height and width are not given as initargs, they will be calculated,
+      ;; according to no of rows +/- border, and _not_ maximized like normal windows.
+      (unless height (setf height (+ (* 2 border-width) (car (or scrolled-layout layout)))))
+      (unless width  (setf width  (+ (* 2 border-width) (* (cadr (or scrolled-layout layout))
+                                                           (+ (length current-item-mark) max-item-length)))))
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (setf sub-window (make-instance 'sub-window :parent win
+                                                  :height (car (or scrolled-layout layout))
+                                                  :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
+                                                  :position (list border-width border-width)
+                                                  :relative t))
+      ;; TODO: do this once for all decorated windows, at the moment it is duplicated
+      (cond ((or fgcolor bgcolor)
+             (set-color-pair winptr (color-pair win))
+             (setf (color-pair sub-window) (color-pair win)
+                   (background win) (make-instance 'complex-char :color-pair (color-pair win))
+                   (background sub-window) (make-instance 'complex-char :color-pair (color-pair win)) ))
+            ;; when a color-pair is passed as a keyword
+            (color-pair
+             ;; set fg and bg, pass to ncurses
+             (setf (color-pair win) color-pair
+                   (color-pair sub-window) color-pair
+                   (background win) (make-instance 'complex-char :color-pair color-pair)
+                   (background sub-window) (make-instance 'complex-char :color-pair color-pair)))))))
 
 ;; although it is not a stream, we will abuse close to close a menu's window and subwindow, which _are_ streams.
-(defmethod close ((stream menu-panel) &key abort)
+(defmethod close ((stream menu-window) &key abort)
   (declare (ignore abort))
   (ncurses:delwin (winptr (sub-window stream)))
   (ncurses:delwin (winptr stream)))
@@ -200,7 +176,7 @@
 
 (defclass menu-item (checkbox)
   ((value
-    :type          (or symbol keyword string menu menu-panel function number)
+    :type          (or symbol keyword string menu menu-window function number)
     :documentation "The value of an item can be a string, a number, a sub menu or a function to be called when the item is selected."))
 
   (:documentation  "A menu contains of a list of menu items."))
@@ -363,7 +339,7 @@ At the third position, display the item given by item-number."
         ;; display it in the window associated with the menu
         (add win (format-menu-item menu item-number) :style fg-style)))))
 
-;; draws to any window, not just to a sub-window of a menu-panel.
+;; draws to any window, not just to a sub-window of a menu-window.
 (defun draw-menu (window menu)
   "Draw the menu to the window."
   (with-accessors ((layout layout) (scrolled-layout scrolled-layout) (scrolled-region-start scrolled-region-start)) menu
@@ -406,29 +382,25 @@ At the third position, display the item given by item-number."
   (update-cursor-position menu))
 
 (defmethod draw ((menu menu-window))
-  "Draw the menu to its own window."
-  (draw-menu menu menu)
-  (refresh menu))
-
-(defmethod draw ((menu menu-panel))
-  "Draw the menu-panel."
+  "Draw the menu to its content sub-window."
   (with-accessors ((title title) (border draw-border-p) (sub-win sub-window)) menu
     ;; draw the menu to the sub-window
     (draw-menu sub-win menu)
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
-    ;; draw the title only when we also have a border, because we draw the title on top of the border.
-    ;; If there is a title string, take it, otherwise take the name.
-    ;; The name is displayed only if title is t.
-    (when (and border title)
-      (add-title menu))
-    ;; todo: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
-    ;; make refresh specialize on menu and panel in a way to do both.
+    ;; TODO: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
+    ;; make refresh specialize on menu and extended-window in a way to do both.
     (refresh menu)))
 
 (defmethod draw ((menu dialog-window))
-  ;; first draw a menu-panel, dialog-window's superclass
-  ;; TODO: describe what exactly is drawn here and what in the parent method.
+  ;; draw the title only when we also have a border, because we draw the title on top of the border.
+  ;; If there is a title string, take it, otherwise take the name.
+  ;; The name is displayed only if title is t.
+  (with-accessors ((title title) (border draw-border-p)) menu
+    (when (and border title)
+      (add-title menu)))
+
+  ;; then draw a menu-window, dialog-window's superclass
   (call-next-method)
 
   ;; then draw the message in the reserved space above the menu.
@@ -509,9 +481,9 @@ At the third position, display the item given by item-number."
           (funcall val)
           (return-from-menu menu (name (current-item menu))))
 
-         ;; if the item is a menu (and thus also a menu-panel), recursively select an item from that submenu
+         ;; if the item is a menu (and thus also a menu-window), recursively select an item from that submenu
          ((or (typep val 'menu)
-              (typep val 'menu-panel))
+              (typep val 'menu-window))
           (let ((selected-item (select val)))
 
             ;; when we have more than menu in one window, redraw the parent menu when we return from the submenu.
@@ -558,7 +530,7 @@ At the third position, display the item given by item-number."
   (draw menu)
   (run-event-loop menu))
 
-(defmethod select ((menu menu-panel))
+(defmethod select ((menu menu-window))
   "Display the menu, let the user select an item, return the selected item.
 
 If the selected item is a menu object, recursively display the sub menu."
@@ -567,7 +539,7 @@ If the selected item is a menu object, recursively display the sub menu."
 
   (draw menu)
   
-  ;; here we can pass the menu to run-event-loop because it is a menu-panel.
+  ;; here we can pass the menu to run-event-loop because it is a menu-window.
   ;; all handler functions have to accept window and event as arguments.
   (let ((val (run-event-loop menu)))
 
