@@ -203,11 +203,11 @@ foreground attributes. To prevent this, set the background char with attributes 
     :type          (or null keyword integer list)
     :documentation "A keyword denoting the background color of new characters added to the window.")
 
-   (draw-border-p
-    :initarg       :draw-border
+   (borderp
+    :initarg       :border
     :initform      nil
     :type          boolean
-    :reader        draw-border-p
+    :reader        borderp
     :documentation "Draw (t) or don't draw (nil, default) an initial border around a window. Not redrawn automatically.")
 
    (stackedp
@@ -262,7 +262,7 @@ foreground attributes. To prevent this, set the background char with attributes 
   ;; before :before, :after and primary.
   (let ((result (call-next-method)))
     ;; after :before, :after and primary.
-    (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p draw-border-p stackedp style) win
+    (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p borderp stackedp style) win
       ;; the frame rate argument, if available, takes precedence over input blocking
       ;; because they access the same ncurses timeout
       ;; a non-nil frame-rate always implies non-blocking input with a delay
@@ -277,7 +277,7 @@ foreground attributes. To prevent this, set the background char with attributes 
         (setf (style win) style))
       ;; TODO 190511 on newest ncurses 6.1.x setting a background after we set the border converts the
       ;; border line drawing chars into ascii.
-      (when draw-border-p (ncurses:box winptr 0 0)))
+      (when borderp (ncurses:box winptr 0 0)))
 
     ;; why do we have to return the result in :around aux methods?
     result))
@@ -490,7 +490,7 @@ The border and the shadow are displayed outside of the content window, so they c
 absolute position and dimensions of the panel."))
 
 (defmethod initialize-instance :after ((win panel) &key)
-  (with-slots (winptr width height position draw-border-p border-win shadowp shadow-win border-width style) win
+  (with-slots (winptr width height position borderp border-win shadowp shadow-win border-width style) win
     ;; only for panels
     (when (eq (type-of win) 'panel)
       (let* ((y1 (car position)) ; main
@@ -508,7 +508,7 @@ absolute position and dimensions of the panel."))
 
         ;; check if border is t
         ;; if nil, do not create the border window
-        (when draw-border-p
+        (when borderp
           (setf border-win (make-instance 'window :height h2 :width w2 :position (list y2 x2)))
           (ncurses:box (winptr border-win) 0 0))
         ;; check if shadow is t
@@ -517,11 +517,11 @@ absolute position and dimensions of the panel."))
           (setf shadow-win (make-instance 'window :height h2 :width w2 :position (list y3 x3)))) ))))
 
 (defmethod refresh ((win panel) &rest args)
-  (with-slots (draw-border-p border-win shadow-win shadowp) win
+  (with-slots (borderp border-win shadow-win shadowp) win
     (when shadowp
       (touch shadow-win)
       (refresh shadow-win))
-    (when draw-border-p
+    (when borderp
       (touch border-win)
       (refresh border-win))
     (touch win)
@@ -529,8 +529,8 @@ absolute position and dimensions of the panel."))
 
 (defmethod close ((win panel) &key abort)
   (declare (ignore abort))
-  (with-slots (draw-border-p border-win shadow-win shadowp) win
-    (when draw-border-p
+  (with-slots (borderp border-win shadow-win shadowp) win
+    (when borderp
       (ncurses:delwin (winptr border-win)))
     (when shadowp
       (ncurses:delwin (winptr shadow-win)))
@@ -578,8 +578,8 @@ absolute position and dimensions of the panel."))
   ;; first set the style of the window
   (call-next-method)
   ;; then set the style of the border and shadow windows
-  (with-slots (draw-border-p border-win shadowp shadow-win style) win
-    (when (and draw-border-p
+  (with-slots (borderp border-win shadowp shadow-win style) win
+    (when (and borderp
                (getf style :border))
       (setf (style border-win) (getf style :border)))
     (when (and shadowp
@@ -771,10 +771,10 @@ absolute position and dimensions of the panel."))
   (:documentation ""))
 
 (defmethod initialize-instance :after ((win form-window) &key)
-  (with-slots (winptr height width position sub-window draw-border-p border-width window) win
+  (with-slots (winptr height width position sub-window borderp border-width window) win
     ;; only for form windows
     (when (eq (type-of win) 'form-window)
-      (setf border-width (if draw-border-p 1 0))
+      (setf border-width (if borderp 1 0))
       
       ;; TODO: this isnt form specific, this should be part of window initialization
       ;; TODO 200612 see window and sub-window init

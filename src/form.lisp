@@ -185,14 +185,14 @@ When title is t instead of a title string, display the symbol name of the widget
 
 (defmethod draw ((win form-window))
   "Draw the the border and the title, then the form."
-  (with-accessors ((title title) (draw-border-p draw-border-p)) win  
+  (with-accessors ((title title) (borderp borderp)) win  
     ;; we can add a title even when there is no border
     ;; If a title is given as a string, it is displayed
     ;; If the title is t, the name is displayed as the title.
     ;; If the title is nil or the border is nil, no title is displayed.
     ;; we do not want to draw a title for menu-windows by drawing them in extended window
     ;; a title is only added for form-window
-    (when (and draw-border-p title)
+    (when (and borderp title)
       (add-title win))
   
     ;; first call next method to draw the extended window

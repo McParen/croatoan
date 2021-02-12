@@ -512,8 +512,8 @@
 (defun t02d ()
   "Test precedence of the background char. Compare with nctest9."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
-    (let* ((win1 (make-instance 'window :height 10 :width 20 :position (list 3  5) :draw-border t))
-           (win2 (make-instance 'window :height 10 :width 20 :position (list 3 40) :draw-border t)))
+    (let* ((win1 (make-instance 'window :height 10 :width 20 :position (list 3  5) :border t))
+           (win2 (make-instance 'window :height 10 :width 20 :position (list 3 40) :border t)))
       (setf (background win1) (make-instance 'complex-char :simple-char :board :fgcolor :yellow)
             (background win2) (make-instance 'complex-char :simple-char #\.    :bgcolor :red))
       ;; the background char is displayed instead of space
@@ -534,7 +534,7 @@
 
 (defun t02e ()
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
-    (let ((win (make-instance 'panel :height 10 :width 20 :position (list 3 5) :draw-border t :border-width 1 :shadow t)))
+    (let ((win (make-instance 'panel :height 10 :width 20 :position (list 3 5) :border t :border-width 1 :shadow t)))
       (with-slots (border-win shadow-win) win
         (setf (style win)
               '(:border (;:foreground  (:fgcolor :black :bgcolor :white)  ; this would be the style of the drawn border
@@ -923,7 +923,7 @@
            (refresh scr)
            (get-char scr)
 
-           (let ((win (make-instance 'window :height 15 :width 50 :position '(5 5) :draw-border t)))
+           (let ((win (make-instance 'window :height 15 :width 50 :position '(5 5) :border t)))
              (setf (background win) (make-instance 'complex-char :simple-char #\: :color-pair '(nil :blue)))
              (add-string win "Window 1" :y 2 :x 4 :fgcolor :red :bgcolor :yellow)
              (refresh win)
@@ -1181,9 +1181,9 @@ Test whether a window (stream) was closed."
     (box scr)
     (refresh scr)
 
-    (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)  :draw-border t))
-          (w2 (make-instance 'window            :width 30 :position '(6 10) :draw-border t))
-          (w3 (make-instance 'window :height 10           :position '(9 15) :draw-border t)))
+    (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)  :border t))
+          (w2 (make-instance 'window            :width 30 :position '(6 10) :border t))
+          (w3 (make-instance 'window :height 10           :position '(9 15) :border t)))
 
       (setf (background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black))
             (background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
@@ -1214,7 +1214,7 @@ Test whether a window (stream) was closed."
           (stack (make-instance 'stack)))
       ;; create 8 windows (with 8 different background colors), push them to the stack
       (dotimes (i 8)
-        (stack-push (make-instance 'window :height 10 :width 30 :position (list (+ 3 (* i 1)) (+ 3 (* i 3))) :draw-border t :visible t
+        (stack-push (make-instance 'window :height 10 :width 30 :position (list (+ 3 (* i 1)) (+ 3 (* i 3))) :border t :visible t
                                    :background (make-instance 'complex-char :fgcolor :black :bgcolor (list :number i)))
                     stack))
       (refresh stack)
@@ -2068,7 +2068,7 @@ Scrolling is enabled by default and the buffer is unlimited.
 C-a (^A) accepts the entry and exits the edit loop returning the
 contents of the area as a single string."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
-    (let* ((win  (make-instance 'window   :position '(5 5) :dimensions '(8 21) :draw-border t :enable-function-keys t))
+    (let* ((win  (make-instance 'window   :position '(5 5) :dimensions '(8 21) :border t :enable-function-keys t))
            (area (make-instance 'textarea :position '(1 1) :dimensions '(6 19) :window win)))
       (setf (background win) (make-instance 'complex-char :attributes '(:reverse)))
       (refresh win)
@@ -2082,8 +2082,8 @@ contents of the area as a single string."
 (defun t16e3 ()
   "Show a textarea, test how the window background char interacts with space characters."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
-    (let* ((win  (make-instance 'window   :position '(5 5)  :dimensions '(8 17) :draw-border t :enable-function-keys t))
-           (win1 (make-instance 'window   :position '(5 50) :dimensions '(8 17) :draw-border t))
+    (let* ((win  (make-instance 'window   :position '(5 5)  :dimensions '(8 17) :border t :enable-function-keys t))
+           (win1 (make-instance 'window   :position '(5 50) :dimensions '(8 17) :border t))
            (area (make-instance 'textarea :position '(1 1)  :dimensions '(6 15) :window win)))
       (setf (background win)  (make-instance 'complex-char :simple-char :board :fgcolor :yellow))
       (setf (background win1) (make-instance 'complex-char :simple-char #\. :bgcolor :red ))
@@ -2302,7 +2302,7 @@ will be more efficient to use a character array, a string."
 
            (form (make-instance 'form-window :elements (list field1 field2 field3 button1 button2 button3)
                                 :style style3 :enable-function-keys t :input-blocking t :title "form window"
-                                :draw-border t :height 15 :width 50 :position (list 5 15))))
+                                :border t :height 15 :width 50 :position (list 5 15))))
 
       (setf (background scr) (make-instance 'complex-char :simple-char #\space))
       (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
@@ -2373,7 +2373,7 @@ will be more efficient to use a character array, a string."
 
              (form (make-instance 'form-window :elements (list field1 field2 label1 label2 button1 button2 button3)
                                   :style style4 :enable-function-keys t :input-blocking t :name :fw1 :title "form window"
-                                  :draw-border t :height 10 :width 50 :position (list 5 15))))
+                                  :border t :height 10 :width 50 :position (list 5 15))))
 
         (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
         (refresh scr)
@@ -2518,7 +2518,7 @@ friend. It is my life. I must master it as I must master my life.")
                                 :elements (list area1 area2 button1)
                                 :style style4 :enable-function-keys t :input-blocking t
                                 :title "Form window"
-                                :draw-border t :height 13 :width 54
+                                :border t :height 13 :width 54
                                 :position (list 1 1))))
       ;; first area without string wrapping
       (setf (value area1) *t16k-message*
@@ -2557,9 +2557,9 @@ friend. It is my life. I must master it as I must master my life.")
   "Show how to creating sub-windows and how they share memory with the parent window."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     ;; Leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3).
-    (let* ((win1 (make-instance 'window :position '(2 2) :draw-border t))
-           (win2 (make-instance 'sub-window :parent win1 :dimensions '(5 20) :position '(4 4) :draw-border t))
-           (win3 (make-instance 'sub-window :parent win1           :width 20 :position '(4 4) :draw-border t :relative t)))
+    (let* ((win1 (make-instance 'window :position '(2 2) :border t))
+           (win2 (make-instance 'sub-window :parent win1 :dimensions '(5 20) :position '(4 4) :border t))
+           (win3 (make-instance 'sub-window :parent win1           :width 20 :position '(4 4) :border t :relative t)))
       (princ "win1" win1)
       (princ "win2" win2)
       (princ "win3 relative" win3)
@@ -2580,7 +2580,7 @@ friend. It is my life. I must master it as I must master my life.")
 ;; we can change where it is displayed by changing the sub-windows position.
 (defun t17a ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
-    (let ((win (make-instance 'sub-window :parent scr :height 5 :width 20 :position '(2 2) :draw-border t :relative t)))
+    (let ((win (make-instance 'sub-window :parent scr :height 5 :width 20 :position '(2 2) :border t :relative t)))
       ;; initial content written to subwin and thus to scr.
       (move win 1 1) (princ "subwin" win)
 
@@ -2750,7 +2750,7 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
            (menu (make-instance 'menu-window :items choices :position (list 0 20) :title "t19b"
-                                             :cyclic-selection t :draw-border t :enable-function-keys t)))
+                                             :cyclic-selection t :border t :enable-function-keys t)))
       (let ((result (select menu)))
         (format scr "You chose ~A" result)
         (touch scr)
@@ -2763,7 +2763,7 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
            (menu (make-instance 'menu-window :items choices :position (list 0 20) :title "t19b"
-                                             :cyclic-selection t :draw-border t :enable-function-keys t)))
+                                             :cyclic-selection t :border t :enable-function-keys t)))
       (let ((result (select menu)))
         (format scr "You chose ~A" result)
         (touch scr)
@@ -2801,7 +2801,7 @@ friend. It is my life. I must master it as I must master my life.")
                              :selected-foreground (list :attributes (list :reverse))
                              :selected-background (list :attributes (list :reverse))))
            (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
-                                             :title "t19c" :draw-border t :enable-function-keys t :style menu-style)))
+                                             :title "t19c" :border t :enable-function-keys t :style menu-style)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select menu)))
@@ -2826,21 +2826,21 @@ friend. It is my life. I must master it as I must master my life.")
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
                                      :bgcolor :red
-                                     :name :sub2-name :title t :draw-border t :enable-function-keys t))
+                                     :name :sub2-name :title t :border t :enable-function-keys t))
            ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
                                      :position (list 1 41) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #x999999)
                                      :fgcolor :green
-                                     :name :sub1 :title "Sub1 title" :draw-border t :enable-function-keys t))
+                                     :name :sub1 :title "Sub1 title" :border t :enable-function-keys t))
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
                                      :position (list 0 25) :scrolled-layout (list 6 1)
                                      ;;:color-pair (list :black #xcccccc)
                                      :fgcolor :blue :bgcolor :yellow
-                                     :name :menu :draw-border nil :enable-function-keys t)))
+                                     :name :menu :border nil :enable-function-keys t)))
       (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
       (refresh scr)
 
@@ -2862,7 +2862,7 @@ friend. It is my life. I must master it as I must master my life.")
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
-                                :title "t19c" :draw-border t :enable-function-keys t
+                                :title "t19c" :border t :enable-function-keys t
                                 :menu-type :checklist
                                 :max-item-length 20
                                 :color-pair (list :yellow :red) )))
@@ -2882,7 +2882,7 @@ friend. It is my life. I must master it as I must master my life.")
     (let* ((items (loop for i below 200 collect (format nil "Item ~A" i)))
            (menu (make-instance 'menu-window
                                 :items items :position (list 0 0) :layout (list 20 10) :scrolled-layout (list 10 4)
-                                :cyclic-selection nil :max-item-length 9 :title "t19d" :draw-border t :enable-function-keys t)))
+                                :cyclic-selection nil :max-item-length 9 :title "t19d" :border t :enable-function-keys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select menu)))
@@ -2901,7 +2901,7 @@ friend. It is my life. I must master it as I must master my life.")
                                 :layout (list 1 (length items))
                                 :scrolled-layout (list 1 6)
                                 ;;:color-pair (list :black :yellow)
-                                :max-item-length 10 :width (width scr) :draw-border t :enable-function-keys t)))
+                                :max-item-length 10 :width (width scr) :border t :enable-function-keys t)))
       ;; start the output below the menu
       (move scr 4 0)
       ;; exit the infinite loop by exiting the menu with q.
@@ -2919,13 +2919,13 @@ friend. It is my life. I must master it as I must master my life.")
     (let* ((items1 (list "Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                          "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :scrolled-layout (list 6 1)
-                                     :name :sub1-name :title nil :draw-border t :enable-function-keys t :visible nil :menu-type :selection))
+                                     :name :sub1-name :title nil :border t :enable-function-keys t :visible nil :menu-type :selection))
            (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :scrolled-layout (list 6 1) :max-item-length 20
-                                     :name :sub2 :title "Sub2 title" :draw-border t :enable-function-keys t :visible nil :menu-type :checklist))
+                                     :name :sub2 :title "Sub2 title" :border t :enable-function-keys t :visible nil :menu-type :checklist))
            (fun1 (make-instance 'menu-item :name :fun1 :title "fun1" :value (lambda () (clear scr) (move scr 4 0))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
            (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :layout (list 1 (length items2))
-                                             :max-item-length 15 :width (width scr) :draw-border t :enable-function-keys t)))
+                                             :max-item-length 15 :width (width scr) :border t :enable-function-keys t)))
       ;; start the output at line 4, below the menu bar.
       (move scr 4 0)
       (refresh scr)
@@ -2953,7 +2953,7 @@ friend. It is my life. I must master it as I must master my life.")
                                 :current-item-mark "> "
                                 :color-pair (list :yellow :red)
                                 :width 60
-                                :draw-border t
+                                :border t
                                 :enable-function-keys t
                                 :name :t19f
                                 :title t
@@ -2990,7 +2990,7 @@ friend. It is my life. I must master it as I must master my life.")
                                 :color-pair (list :yellow :red)
                                 ;; we do not need an item mark in a checklist
                                 :current-item-mark ""
-                                :width 60 :draw-border t :enable-function-keys t
+                                :width 60 :border t :enable-function-keys t
                                 :title "this is a checkbox dialog"
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))

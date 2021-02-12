@@ -128,11 +128,11 @@
   (:documentation "A menu-window is an extended window displaying a menu in its sub-window."))
 
 (defmethod initialize-instance :after ((win menu-window) &key color-pair)
-  (with-slots (winptr items type height width position element-position sub-window draw-border-p border-width
+  (with-slots (winptr items type height width position element-position sub-window borderp border-width
                layout scrolled-layout max-item-length current-item-mark fgcolor bgcolor) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
-      (setf border-width (if draw-border-p 1 0))
+      (setf border-width (if borderp 1 0))
       ;; if the initarg :position was given, both the window position and the element-position
       ;; have been set. ignore the element position.
       (setf element-position nil)        
@@ -383,7 +383,7 @@ At the third position, display the item given by item-number."
 
 (defmethod draw ((menu menu-window))
   "Draw the menu to its content sub-window."
-  (with-accessors ((title title) (border draw-border-p) (sub-win sub-window)) menu
+  (with-accessors ((sub-win sub-window)) menu
     ;; draw the menu to the sub-window
     (draw-menu sub-win menu)
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
@@ -396,8 +396,8 @@ At the third position, display the item given by item-number."
   ;; draw the title only when we also have a border, because we draw the title on top of the border.
   ;; If there is a title string, take it, otherwise take the name.
   ;; The name is displayed only if title is t.
-  (with-accessors ((title title) (border draw-border-p)) menu
-    (when (and border title)
+  (with-accessors ((title title) (borderp borderp)) menu
+    (when (and borderp title)
       (add-title menu)))
 
   ;; then draw a menu-window, dialog-window's superclass

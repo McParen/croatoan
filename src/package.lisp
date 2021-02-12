@@ -67,7 +67,7 @@
    cursor-position
    cursor-position-y
    cursor-position-x
-   draw-border-p
+   borderp
    stackedp
    visiblep
    winptr

@@ -33,11 +33,11 @@
   (:documentation  "A dialog is a decorated menu with a title, a message and items."))
 
 (defmethod initialize-instance :after ((win dialog-window) &key color-pair center)
-  (with-slots (winptr items height width position sub-window draw-border-p layout max-item-length current-item-mark
+  (with-slots (winptr items height width position sub-window borderp layout max-item-length current-item-mark
                       fgcolor bgcolor message-pad message-text message-height message-pad-coordinates) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
-      (let ((padding (if draw-border-p 1 0))
+      (let ((padding (if borderp 1 0))
             (item-length (+ (length current-item-mark) max-item-length)))
         ;; if no layout was given, use a horizontal list (1 n).
         (unless layout (setf layout (list (length items) 1)))
@@ -118,7 +118,7 @@
   (:default-initargs
    :enable-function-keys t
    :input-blocking t
-   :draw-border t)
+   :border t)
   
   (:documentation
    "A msgbox is a form-window presenting the user a message and an OK button to accept it."))
@@ -133,7 +133,7 @@
     (setf elements (list msg-area ok-button))))
 
 (defmethod initialize-instance :after ((msgbox msgbox) &key center (message-wrap t))
-  (with-slots (winptr height width position sub-window draw-border-p window elements current-element message msg-area ok-button) msgbox
+  (with-slots (winptr height width position sub-window window elements current-element message msg-area ok-button) msgbox
     (when (eq (type-of msgbox) 'msgbox)
       ;; The default size of a msgbox is half the height, 2/3 the width of the screen
       (unless height (setf height (round (/ ncurses:LINES 2))))
