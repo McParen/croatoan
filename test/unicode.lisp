@@ -6,6 +6,7 @@
 ;; Unicode strings are supported by the default non-unicode ncurses API (addstr) as long as libncursesw is used.
 ;; Special wide-char string functions (addwstr, add_wchstr) do not have to be used.
 (defun ut01 ()
+  (setlocale +LC-ALL+ "")
   (initscr)
 
   (mvaddstr 2 2 "ččććššđđžž")
@@ -23,18 +24,20 @@
 ;; Use the cchar type for convert-to-foreign via a plist.
 ;; cchar-chars isnt a pointer to an integer array here, but an integer.
 (defun ut02 ()
+  "Display russian chars ш and Љ as cchar_t without creating it with setcchar."
+  (setlocale +LC-ALL+ "")
   (let ((scr (initscr)))
 
     ;; %add-wch
     ;; Add #\CYRILLIC_SMALL_LETTER_SHA = #\ш to the stdscr.
-    (cffi:with-foreign-object (ptr '(:struct cchar))
+    (cffi:with-foreign-object (ptr '(:struct cchar_t))
       (setf ptr (cffi:convert-to-foreign (list 'cchar-attr 0 'cchar-chars (char-code #\ш))
                                     '(:struct cchar)))
       (add-wch ptr))
 
     ;; %wadd-wch
     ;; #\CYRILLIC_CAPITAL_LETTER_LJE = #\Љ
-    (cffi:with-foreign-object (ptr '(:struct cchar))
+    (cffi:with-foreign-object (ptr '(:struct cchar_t))
       (setf ptr (cffi:convert-to-foreign (list 'cchar-attr #x00020000 'cchar-chars (char-code #\Љ))
                                     '(:struct cchar)))
       (wadd-wch scr ptr))
@@ -44,6 +47,8 @@
     (endwin)))
 
 (defun ut02b ()
+  "Add russian char Љ as cchar_t by manually setting it with mem-aref."
+  (setlocale +LC-ALL+ "")
   (let ((scr (initscr)))
     (start-color)
     (init-pair 1 1 3) ; red(1) on yellow(3)
@@ -92,6 +97,8 @@
 ;; Use the cchar_t type for setcchar.
 ;; cchar-chars is a pointer to an integer array here, like the C prototype requires.
 (defun ut04 ()
+  "Add russian character ш as cchar_t by creating it (properly) with setcchar."
+  (setlocale +LC-ALL+ "")
   (let ((scr (initscr)))
     (start-color)
     ;; Initialize color pair 1, yellow 3 on red 1.
@@ -118,11 +125,16 @@
 ;; 126 works 7bit
 ;; 161 doesn't work 8bit
 ;; #x2592 doesn't work wide char
+
+;; https://c-for-dummies.com/blog/?p=2568
+
 (defun ut05 (&optional (n #x2592))
-  "Minimal example of creating a cchar and setting it as a window background."
+  "Minimal example of creating a cchar_t and setting it as a window background.
+
+Also see t02b."
 
   ;; call setlocale explicitly because it is not called any more by SBCL
-  ;; sbcl-2.0.3/src/runtime/runtime.c 
+  ;; sbcl-2.0.3/src/runtime/runtime.c
   (setlocale +LC-ALL+ "")
 
   (let ((scr (initscr)))
@@ -134,11 +146,16 @@
       (setcchar ptr wch 0 0 (cffi:null-pointer))
 
       ;; TODO 200404 works with ncurses 6.1 but not with 6.2
-      ;; manually replacing line 209: SetChar2(*cp, CharOf(new_char));
+      ;; manually replacing line 209 in lib_bkgd.c
+      ;; SetChar2(*cp, CharOf(new_char));
       ;; with: win->_line[y].text[x] = win->_nc_bkgd;
       ;; from ncurses 6.1 is an ugly, but working solution for wbkgrnd
       ;; in ncurses-6.2-20200404/ncurses/base/lib_bkgd.c.
+      ;; fixed since ncurses-6.2-20210206, will be released as ncurses 6.3.
       (wbkgrnd scr ptr)
+
+      ;; adding a single cchar_t
+      (wadd-wch scr ptr)
       
       (wrefresh scr)
       (wgetch scr)
