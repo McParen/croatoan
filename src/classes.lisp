@@ -275,9 +275,10 @@ foreground attributes. To prevent this, set the background char with attributes 
       ;; if there is a style parameter, it overrides any other arg (fgcolor, bgcolor, background, attributes)
       (when style
         (setf (style win) style))
-      ;; TODO 190511 on newest ncurses 6.1.x setting a background after we set the border converts the
-      ;; border line drawing chars into ascii.
-      (when borderp (ncurses:box winptr 0 0)))
+      ;; We have to check for a panel here in :around, after :after because the winptr has to be created in
+      ;; :after first. Set the border for all types except the (main) panel window, panels set their own border.
+      (unless (typep win 'panel)
+        (when borderp (ncurses:box winptr 0 0))))
 
     ;; why do we have to return the result in :around aux methods?
     result))
