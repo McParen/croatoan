@@ -169,6 +169,38 @@
   (ncurses:delwin (winptr (sub-window stream)))
   (ncurses:delwin (winptr stream)))
 
+(defclass menu-panel (menu panel)
+  ()
+  (:documentation "A menu-panel is a panel providing a list of items to be selected by the user."))
+
+(defmethod initialize-instance :after ((win menu-panel) &key color-pair)
+  (when (eq (type-of win) 'menu-panel)
+    (with-slots (winptr items type height width position element-position borderp border-width border-win shadow-win shadowp
+                 layout scrolled-layout max-item-length current-item-mark) win
+      (setf element-position nil)
+      (unless layout (setf layout (list (length items) 1)))
+      (unless height (setf height (car (or scrolled-layout layout))))
+      (unless width  (setf width  (* (cadr (or scrolled-layout layout))
+                                     (+ (length current-item-mark) max-item-length))))
+      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (let* (;; main win
+             (y1 (car position))
+             (x1 (cadr position))
+             ;; border win
+             (y2 (- y1 border-width))
+             (x2 (- x1 border-width))
+             (h2 (+ height (* border-width 2)))
+             (w2 (+ width (* border-width 2)))
+             ;; shadow win
+             (y3 (+ y2 1))
+             (x3 (+ x2 1)))
+        ;; check if border is t, if nil, do not create the border window
+        (when borderp
+          (setf border-win (make-instance 'window :height h2 :width w2 :position (list y2 x2) :border t)))
+        ;; check if shadow is t, if nil, do not create the shadow window
+        (when shadowp
+          (setf shadow-win (make-instance 'window :height h2 :width w2 :position (list y3 x3))))))))
+
 (defclass checklist (menu)
   ()
   (:default-initargs :menu-type :checklist)
@@ -392,6 +424,14 @@ At the third position, display the item given by item-number."
     ;; make refresh specialize on menu and extended-window in a way to do both.
     (refresh menu)))
 
+(defmethod draw ((menu menu-panel))
+  (with-accessors ((title title) (borderp borderp)) menu
+    (when (and borderp title)
+      (add-title (slot-value menu 'border-win)
+                 (format-title menu "| " " |"))))
+  (draw-menu menu menu)
+  (refresh menu))
+
 (defmethod draw ((menu dialog-window))
   ;; draw the title only when we also have a border, because we draw the title on top of the border.
   ;; If there is a title string, take it, otherwise take the name.
@@ -555,4 +595,14 @@ If the selected item is a menu object, recursively display the sub menu."
 
     ;; the return value of select is the return value of run-event-loop
     ;; is the value thrown to the catch tag 'event-loop.
+    val))
+
+(defmethod select ((menu menu-panel))
+  (stack-push menu *menu-stack*)
+  (draw menu)
+  (let ((val (run-event-loop menu)))
+    (unless (stack-empty-p *main-stack*)
+      (refresh *main-stack*))
+    (unless (stack-empty-p *menu-stack*)
+      (refresh *menu-stack*))
     val))

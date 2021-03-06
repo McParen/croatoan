@@ -151,13 +151,16 @@ If title is t, use the name. If title is nil, return an empty string."
 ;; TODO 201025 add align: left right center
 ;; draw the background window according to the style sheet
 ;; styles: title, border
-(defun add-title (win)
+(defun add-title (win &optional title)
   "Draw a title to the first line of a window.
 
 Usually, this will be an extended-window with a border and the title on the top border.
 
 When title is t instead of a title string, display the symbol name of the widget."
-  (add-string win (format-title win "| " " |")
+  (add-string win
+              (if title
+                  title
+                  (format-title win "| " " |"))
               :y 0 :x 2 :style (getf (slot-value win 'style) :title)))
 
 (defmethod draw ((win extended-window))
