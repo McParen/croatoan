@@ -18,22 +18,37 @@ whole window, it has to be explicitely touched or marked for redraw.
 
 A window does not require any additional arguments to be refreshed.
 Any provided additional arguments are ignored."
+  (declare (ignore args))
   (ncurses:wrefresh (winptr win)))
 
 (defmethod refresh ((pad pad) &rest args)
-  "A pad requires additional arguments to be refreshed.
+  "A pad requires 6 additional arguments to be refreshed.
 
 The additional arguments are required to specify which part of the pad
 should be displayed and on which position on the screen.
 
-All 6 arguments have to be given, otherwise an error is signalled. 
-We don't have default arguments."
-  (destructuring-bind (pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x) args
-    (unless (and pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
-      (error "One of the arguments for pad refreshing is missing."))
-    (ncurses:prefresh (winptr pad) pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)))
+The top-left corner of the rectangular area of the pad to be displayed.
 
-(defun mark-for-refresh (win &rest args)
+1. pad-min-y
+2. pad-min-x
+
+The top-left and bottom-right corner of the screen where the pad should
+be displayed.
+
+3. screen-min-y
+4. screen-min-x
+
+5. screen-max-y
+6. screen-max-y
+
+All 6 arguments have to be given, otherwise an error is signalled.
+There are no default arguments."
+  (if (= (length args) 6)
+      (apply #'ncurses:prefresh (winptr pad) args)
+      (error "refresh pad: one of the pad position arguments is missing.")))
+
+(defgeneric mark-for-refresh (win &rest args)
+  (:documentation
   "Mark a window for a later refresh.
 
 Copy a window to the virtual screen, but do not display it on the
@@ -43,28 +58,32 @@ After all windows are marked, call refresh-marked to display all
 marked refreshes.
 
 The goal of this batch refresh is improved efficiency and preventing
-flicker that might occur if several refreshes are called in sequence.
+flicker that might occur if several refreshes are called in sequence."))
 
-A window does not require any additional arguments to be refreshed.
+(defmethod mark-for-refresh ((win window) &rest args)
+  "A window does not require any additional arguments to be refreshed."
+  (declare (ignore args))
+  (ncurses:wnoutrefresh (winptr win)))
 
-A pad requires additional arguments to be refreshed. The additional
-arguments are required to specify which part of the pad should be
-displayed and on which position on the screen."
-  (let ((winptr (winptr win)))
-    (typecase win
-      ;; typease whether window or pad
-      ;; if window, any parameters provided are ignored.
-      ;; if pad, signal error if not all parameters are provided.
-      ;; typecase uses type-of or typep internally.
-      ;; if typep, a pad will be recognized as a window, since it is a subclass.
-      ;; the pad type has to be checked first.
-      (pad
-       (destructuring-bind (pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x) args
-         (unless (and pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
-           (error "One of the arguments for pad refreshing is missing."))
-         (ncurses:pnoutrefresh winptr pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)))
-      (window
-       (ncurses:wnoutrefresh winptr)))))
+(defmethod mark-for-refresh ((win pad) &rest args)
+  "A pad requires 6 additional arguments to be refreshed. 
+
+The additional arguments are required to specify which part of the pad
+should be displayed and on which position on the screen.
+
+All 6 arguments have to be given, otherwise an error is signalled. 
+We don't have default arguments."
+  (if (= (length args) 6)
+      (apply #'ncurses:pnoutrefresh (winptr win) args)
+      (error "mark-for-refresh pad: one of the pad arguments is missing.")))
+
+(defmethod mark-for-refresh ((win panel) &rest args)
+  "Refreshing a panel also refreshes its shadow and border, if existing."
+  (declare (ignore args))
+  (with-slots (border-win shadow-win winptr) win
+    (when shadow-win (mark-for-refresh shadow-win))
+    (when border-win (mark-for-refresh border-win))
+    (ncurses:wnoutrefresh winptr)))
 
 (defun refresh-marked ()
   "Refresh one or more windows marked for refresh.
