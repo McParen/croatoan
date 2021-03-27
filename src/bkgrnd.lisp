@@ -17,7 +17,10 @@ simple characters added to the window.
 If apply is t, the background setting is immediately applied to all cells
 in the window.
 
-Otherwise, it is applied only to newly added simple characters."
+Otherwise, it is applied only to newly added simple characters.
+
+Setting the background char after setting the window attributes
+overrides the window attributes."
   (let ((fn (if apply #'ncurses:wbkgrnd #'ncurses:wbkgrndset))
         (count 1))
     (if char
