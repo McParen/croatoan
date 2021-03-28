@@ -502,20 +502,14 @@ absolute position and dimensions of the panel."))
              (w2 (+ width (* border-width 2)))
              (y3 (+ y2 1)) ; shadow
              (x3 (+ x2 1)))
-
-        ;; the content window gets (h w)
+        ;; the content window gets (h w), the aux windows are enlarged
         (setf winptr (ncurses:newwin height width y1 x1))
-        ;; the aux windows are enlarged
-
-        ;; check if border is t
-        ;; if nil, do not create the border window
+        ;; check if border is t, if nil, do not create the border window
         (when borderp
-          (setf border-win (make-instance 'window :height h2 :width w2 :position (list y2 x2)))
-          (ncurses:box (winptr border-win) 0 0))
-        ;; check if shadow is t
-        ;; if nil, do not create the shadow window
+          (setf border-win (make-instance 'window :height h2 :width w2 :position (list y2 x2) :border t)))
+        ;; check if shadow is t, if nil, do not create the shadow window
         (when shadowp
-          (setf shadow-win (make-instance 'window :height h2 :width w2 :position (list y3 x3)))) ))))
+          (setf shadow-win (make-instance 'window :height h2 :width w2 :position (list y3 x3))))))))
 
 (defmethod refresh ((win panel) &rest args)
   (with-slots (borderp border-win shadow-win shadowp) win
