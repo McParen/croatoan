@@ -121,7 +121,7 @@
     (setf current-item (car items))
 
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
-    (unless layout (setf layout (list (length items) 1))) ))
+    (unless layout (setf layout (list (length items) 1)))))
 
 (defclass menu-window (menu extended-window)
   ()
@@ -135,7 +135,7 @@
       (setf border-width (if borderp 1 0))
       ;; if the initarg :position was given, both the window position and the element-position
       ;; have been set. ignore the element position.
-      (setf element-position nil)        
+      (setf element-position nil)
       ;; if no layout was given, use a vertical list (n 1)
       (unless layout (setf layout (list (length items) 1)))
       ;; if height and width are not given as initargs, they will be calculated,
@@ -208,7 +208,7 @@
 
 (defclass menu-item (checkbox)
   ((value
-    :type          (or symbol keyword string menu menu-window function number)
+    :type          (or symbol keyword string menu menu-window menu-panel function number)
     :documentation "The value of an item can be a string, a number, a sub menu or a function to be called when the item is selected."))
 
   (:documentation  "A menu contains of a list of menu items."))
@@ -467,6 +467,7 @@ At the third position, display the item given by item-number."
     (when (eq menu-type :checklist)
       (loop for i in items if (checkedp i) do (setf (checkedp i) nil)))))
 
+;; stack for managing overlapping menu windows
 (defparameter *menu-stack* (make-instance 'stack))
 
 (defun return-from-menu (menu return-value)
@@ -521,9 +522,10 @@ At the third position, display the item given by item-number."
           (funcall val)
           (return-from-menu menu (name (current-item menu))))
 
-         ;; if the item is a menu (and thus also a menu-window), recursively select an item from that submenu
+         ;; if the item is a menu (and thus also a menu-window or panel), recursively select an item from that submenu
          ((or (typep val 'menu)
-              (typep val 'menu-window))
+              (typep val 'menu-window)
+              (typep val 'menu-panel))
           (let ((selected-item (select val)))
 
             ;; when we have more than menu in one window, redraw the parent menu when we return from the submenu.

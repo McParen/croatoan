@@ -2781,9 +2781,10 @@ friend. It is my life. I must master it as I must master my life.")
 
 (defun t19b1 ()
   "Use a fancy styled menu-panel to select an item."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :stacked t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (menu (make-instance 'menu-panel :items choices
+           (sub-menu (make-instance 'menu-panel :items choices :position (list 5 27) :enable-function-keys t :border t :shadow t :title "sub-menu"))
+           (menu (make-instance 'menu-panel :items (cons sub-menu choices)
                                             :position (list 5 10)
                                             :title "t19b1"
                                             :cyclic-selection nil
