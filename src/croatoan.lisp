@@ -449,3 +449,23 @@ events to be chained together."))
     `(let ((,pos (cursor-position ,window)))
        ,@body
        (move ,window (car ,pos) (cadr ,pos)))))
+
+(defmacro dogrid (((i h &optional (y0 0))
+                   (j w &optional (x0 0))) &body body)
+  "Loop over a 2D grid given by a height and width in row major order.
+
+Example: ((i 2) (j 3)) produces:
+
+0 0, 0 1, 0 2
+1 0, 1 1, 1 2
+
+Optionally, a start position other than (0 0) can be given as a third
+argument.
+
+Example: ((i 2 10) (j 3 10)) produces:
+
+10 10, 10 11, 10 12
+11 10, 11 11, 11 12"
+  `(loop for ,i from ,y0 below (+ ,y0 ,h) do
+     (loop for ,j from ,x0 below (+ ,x0 ,w) do
+       ,@body)))
