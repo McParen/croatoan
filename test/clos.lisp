@@ -2808,22 +2808,45 @@ friend. It is my life. I must master it as I must master my life.")
       (close menu))))
 
 (defun t19b2 ()
-  "Use the select function with independent windows and menus"
+  "Display a menu associated with a separate window. Display submenus ranger-style to the right of the parent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
-    (let* ((items1 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555"
-                     "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (menu1 (make-instance 'menu :items items1 :name :sm1 :title "sub-menu 1" :max-item-length 50 :position (list 5 10)
-                                       :menu-type :checklist))
-           (items2 (list "Item 0" menu1 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
-           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 50 :position (list 5 10)))
-           (items3 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09"))
-           (menu3 (make-instance 'menu :items items3 :name :t19b2 :title "t19b2" :max-item-length 50 :position (list 5 10))))
+    (let* ((items3 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666" "Choice 7" "Choice 88"))
+           (menu3 (make-instance 'menu :items items3 :name :sm3 :title "sub-menu 3" :max-item-length 20 :position (list 7 50) :menu-type :checklist))
+           (items2 (list "Item 0" menu3 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8"))
+           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 6 30)))
+           (items1 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09" "Item 10"))
+           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10))))
+
       ;; associate the same window with all three menus.
       (setf (window menu1) scr
             (window menu2) scr
             (window menu3) scr)
+
       ;; select an item and return it.
-      (select menu3))))
+      (select menu1))))
+
+(defun t19b3 ()
+  "Display submenus in-place, on top of the parent menu."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (let* ((items3 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666" "Choice 7" "Choice 88" "Choice 999" ))
+           (menu3 (make-instance 'menu :items items3 :name :sm1 :title "sub-menu 1" :max-item-length 20 :position (list 5 10) :menu-type :checklist :layout '(5 2)))
+           (items2 (list "Item 0" menu3 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8"))
+           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 5 10)))
+           (items1 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09" "Item 10"))
+           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10) :layout '(4 3))))
+
+      ;; associate the same underlying window with all three menus.
+      (setf (window menu1) scr
+            (window menu2) scr
+            (window menu3) scr)
+
+      ;; in order to display a submenu in place of the parent, the parent has to be cleared first.
+      ;; clear after a submenu is selected (in menu.lisp accept-selection)
+      (hook menu1 'before-submenu-hook (lambda (obj) (clear obj)))
+      (hook menu2 'before-submenu-hook (lambda (obj) (clear obj)))
+
+      ;; select an item and return it.
+      (select menu1))))
 
 (defun t19c ()
   "Improved t19b, the menu can be called repeatedly with the key a."

@@ -13,6 +13,7 @@
    hooks
    before-event-hook
    after-event-hook
+   before-submenu-hook
    
    event-case
    keymap

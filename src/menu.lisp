@@ -247,6 +247,18 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
     (assert (and (< i m) (< j n)))
     (+ (* i n) j)))
 
+(defmethod clear ((menu menu) &key)
+  "Overwrite the displayed menu with spaces."
+  (with-accessors ((win window) (len max-item-length) (pos element-position)) menu
+    (let* ((layout (if (scrolled-layout menu) (scrolled-layout menu) (layout menu)))
+           (m (car layout))
+           (n (cadr layout)))
+      (dogrid ((i m)
+               (j n))
+        (add win #\space :n len
+                         :y (+ i         (car  pos))
+                         :x (+ (* j len) (cadr pos)))))))
+
 ;; TODO 190308: allow events other then the arrow keys to be used to control the menu.
 (defun update-menu (menu event)
   "Take a menu and an event, update in-place the current item of the menu."
@@ -471,9 +483,18 @@ At the third position, display the item given by item-number."
 (defparameter *menu-stack* (make-instance 'stack))
 
 (defun return-from-menu (menu return-value)
-  "Pop the menu from the menu stack, refresh the remaining menu stack, return the value from select."
-  ;; TODO 200517 check menu stack empty
-  (stack-pop *menu-stack*)
+  "Pop the menu from the menu stack, refresh the remaining menu stack.
+
+If the menu is not a window, clear the menu from the window.
+
+Return the value from select."
+  (if (typep menu 'window)
+      ;; only pop if menu is a window, it makes no sense to pop if it is a simple menu
+      (unless (stack-empty-p *menu-stack*)
+        (stack-pop *menu-stack*))
+      ;; if the menu is not a window, clear the region where it was drawn
+      ;; this has the same effect as removing the menu from the stack
+      (clear menu))
   (reset-menu menu)
   (throw menu return-value))
 
@@ -526,6 +547,11 @@ At the third position, display the item given by item-number."
          ((or (typep val 'menu)
               (typep val 'menu-window)
               (typep val 'menu-panel))
+
+          ;; code to run before a submenu is called
+          ;; this can be used to clear a parent menu before calling a submenu
+          (run-hook menu 'before-submenu-hook)
+
           (let ((selected-item (select val)))
 
             ;; when we have more than menu in one window, redraw the parent menu when we return from the submenu.
