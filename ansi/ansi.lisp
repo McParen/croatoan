@@ -3,40 +3,6 @@
 ;;; Basic terminal control functions based on 7bit escape sequences
 ;;; according to ANSI X3.64 / ECMA 48 / ISO/IEC 6429 / VT10X / XTerm
 
-;; https://github.com/pnathan/cl-ansi-text
-;; https://github.com/vindarel/cl-ansi-term
-;; http://wiki.call-cc.org/eggref/5/ansi-escape-sequences
-;; https://bluesock.org/~willkg/dev/ansi.html
-;; http://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
-;; http://www.termsys.demon.co.uk/vtansi.htm
-;; https://wiki.bash-hackers.org/scripting/terminalcodes
-;; https://github.com/thrig/cl-minterm/blob/master/minterm.lisp
-;; http://ascii-table.com/ansi-escape-sequences.php
-;; https://www.man7.org/linux/man-pages/man4/console_codes.4.html
-;; https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
-;; http://terminals-wiki.org/wiki/index.php/CodeChart:ANSI/ESC/CSI
-;; http://www.xfree86.org/current/ctlseqs.html
-;; http://man7.org/linux/man-pages/man4/console_codes.4.html
-;; https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
-;; https://vt100.net/docs/vt510-rm/chapter4.html
-;; https://terminalguide.namepad.de/seq/
-;; https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
-;; https://docs.microsoft.com/en-us/windows/console/console-screen-buffers
-;; https://www.gnu.org/software/screen/manual/html_node/Control-Sequences.html
-;; http://bitsavers.trailing-edge.com/pdf/tektronix/410x/070-4526-01_4105_PgmrRef_Sep83.pdf
-;; https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
-;; https://real-world-systems.com/docs/ANSIcode.html
-;; https://github.com/fidian/ansi
-;; https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
-;; https://bluesock.org/~willkg/dev/ansi.html
-;; https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
-;; https://godoc.org/github.com/pborman/ansi
-
-;; Based initially on http://en.wikipedia.org/wiki/ANSI_escape_code,
-;; but it doesn't have very many definitions; this page, however, is
-;; comprehensive and excellent:
-;; http://bjh21.me.uk/all-escapes/all-escapes.txt
-
 ;; ECMA-6: 7bit character set 0-127
 ;; ECMA-35: Bit notation 01/07
 ;; ECMA-48: ANSI escape sequences
