@@ -1,8 +1,10 @@
+
 (in-package :de.anvi.ncurses.test)
 
 ;; here the ncurses primitive bindings should be tested.
 
 (defun nctest ()
+  "Minimal example: init, output, refresh, end."
   (initscr)
   (mvaddstr 0 0 "hello there")
   (mvaddstr 7 7 "hello there")
@@ -12,6 +14,7 @@
   (endwin))
 
 (defun nctest2 ()
+  "Save and use the screen pointer, set attributes by their bitmask."
   (let ((scr (initscr)))
     (mvaddstr 0 0 "hello there")
     
@@ -28,6 +31,7 @@
     (endwin)))
 
 (defun nctest3 ()
+  "Start color, init a color pair, examine color and pair contents."
   (initscr)
   (start-color)
   (init-pair 1 1 3) ; red(1) on yellow(3)
@@ -66,15 +70,27 @@
   ;; can-change-color checks whether we can change what color is displayed by a color number.
   ;; some terminals have a hard coded palette.
 
-  ;; BOLD simply makes the color bringhter. if red is 680, then red bold is 1000.
+  ;; BOLD simply makes the color brighter. if red is 680, then red bold is 1000.
   ;; so what happens when we apply bold to 1000? nothing?
+
+  (getch)
   
-  (init-color 3 680 680 0)
+  (init-color 3 1000 680 0)
   (mvaddstr 6 0 "hello")
   
   ;; TODO: display the hex code of the color
   ;; TODO: display the name of the color from its number
 
+
+  ;; extract and display the RGB contents of predefined color no. 3 (yellow).
+  (cffi:with-foreign-objects ((ptr-r :short)
+                              (ptr-g :short)
+                              (ptr-b :short))
+    (color-content 3 ptr-r ptr-g ptr-b)
+    (mvaddstr 8 0 (format nil "~3A ~3A ~3A"
+                          (cffi:mem-aref ptr-r :short)
+                          (cffi:mem-aref ptr-g :short)
+                          (cffi:mem-aref ptr-b :short))))
   (refresh)
   (getch)
   (endwin))
@@ -140,6 +156,7 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
 
 ;; 190302
 (defun nctest5 ()
+  "Test setting background characters."
   (let ((scr (initscr)))
     (addstr (format nil "~A~%" "no background "))
     (wgetch scr)
@@ -166,11 +183,13 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
 
 ;; 190826
 (defun nctest6 ()
+  "Test the interaction of the window foreground color and background char."
   (let ((scr (initscr)))
     (start-color)
     (init-pair 1 1 3) ; red(1) on yellow(3)
     (init-pair 2 2 7) ; green(2) on white(7)
-    
+
+    ;; set the window foreground color
     (color-set 1 (cffi:null-pointer))
     (addstr (format nil "color-set: red on yellow~%"))
     (getch)
@@ -182,7 +201,8 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     
     (addch (char-code #\a))
     (addch (char-code #\b))
-    (addch (char-code #\space)) ;; trying to write space will actually write the background char #\.
+    ;; trying to write space will actually write the background char #\.
+    (addch (char-code #\space))
     (addch (char-code #\space))
     (addch (char-code #\c))
     (getch)
@@ -195,11 +215,13 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     ;; (erase) and (clear) use the last bkgd char to overwrite the window.
     (clear)
     (getch)
-    
+
+    ;; here we only set a color as the bg char, the default bg char is space
     (bkgdset (color-pair 2))
     (addstr (format nil "bkgdset: green on white~%"))
     (getch)
 
+    ;; the default color pair is black on white
     (bkgd (color-pair 0))
     (addstr (format nil "bkgd: default colors~%"))
     (getch)
@@ -207,9 +229,8 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (clear)
     (getch)
 
-    ;; color-set and bgkd write to the same global window variable.
-    ;; so using both at the same time doesnt make sense.
-    
+    ;; color-set (foreground) and bgkd write to the same global window variable.
+    ;; here we se both at the same time
     (bkgdset (logior (char-code #\.) (color-pair 2)))
     (color-set 1 (cffi:null-pointer))
     (addstr (format nil "bkgd green on white, then color-set: red on yellow~%"))
@@ -220,6 +241,7 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (endwin)))
 
 (defun nctest7 ()
+  "Interaction between the default color pair 0 and new color pairs."
   (let ((scr (initscr)))
     (start-color)
 
@@ -240,18 +262,17 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     ;; we can actually use the default color pair, but have to give it another color pair number
     (addch (logior (char-code #\d) (color-pair 2)))
 
+    ;; set the color back to default
     (color-set 0 (cffi:null-pointer))
-
     (addch (char-code #\e))
     
     (refresh)
-
     (getch)
-    
     (endwin)))
 
 ;; 190901
 (defun nctest8 ()
+  "Usage of terminal default colors, when different from black on white."
   (let ((scr (initscr)))
     (start-color)
 
@@ -270,21 +291,19 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
 
     ;; -1 are not the terminal colors, but the (assumed) default colors.
     (init-pair 3 -1 -1)
-    
+
     ;; as soon as one of the assumed default colors is -1,
     ;; the other is also set to -1 for unrendered characters.
     (addch (char-code #\a))
 
     ;; when we reference 5 -1 in a color pair, then the mixed pair works.
     (addch (logior (char-code #\d) (color-pair 3)))
-    
+
     (addch (logior (char-code #\b) (color-pair 1)))
     (addch (logior (char-code #\c) (color-pair 2)))
-        
-    (refresh)
 
+    (refresh)
     (getch)
-    
     (endwin)))
 
 ;; 200517
@@ -314,5 +333,4 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (clear)
     (refresh)
     (getch)
-
     (endwin)))
