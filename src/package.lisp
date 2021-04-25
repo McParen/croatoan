@@ -24,6 +24,7 @@
    bind
    unbind
    save-excursion
+   dogrid
 
    ;; classes
    complex-char
