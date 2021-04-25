@@ -147,6 +147,7 @@
    #:t31c
    #:t32
    #:t33
+   #:t34
 
    ;; clos.lisp
    #:snake

@@ -3848,3 +3848,16 @@ Press C-j, C-m, C-i, C-h to see the difference."
 
                 0 18)
         (get-char scr)))))
+
+(defun t34 ()
+  "Fill and clear a rectangular area in a window."
+  (with-screen (scr)
+    (clear scr)
+    ;; fill and clear rectangles given by 4 coordinates of the position and dimensions.
+    (fill-rectangle scr #\. 5 10 10 20)
+    (clear-rectangle scr 7 12 4 8)
+    ;; fill and clear rectangles given by a position and dimensions given by 2-element lists
+    (fill-rectangle scr #\* '(5 40) '(10 20))
+    (clear-rectangle scr '(7 42) '(4 8))
+    (refresh scr)
+    (get-char scr)))

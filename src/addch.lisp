@@ -41,7 +41,7 @@ the position arguments (y x) are mandatory."
   (apply #'add-char window char :y y :x x keys))
 
 (defun put-string (window y x string &rest keys &key &allow-other-keys)
-  (apply #'add-string window char :y y :x x keys))
+  (apply #'add-string window string :y y :x x keys))
 
 (defun distance-to-eol (window)
   "Return the number of columns from the cursor position to the end of the line in the window."
