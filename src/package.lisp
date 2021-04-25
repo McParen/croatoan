@@ -193,6 +193,8 @@
 
    ;; clear / clear all or part of a curses window
    clear
+   fill-rectangle
+   clear-rectangle
 
    ;; color / curses color manipulation routines
 
