@@ -159,6 +159,9 @@
    new-line
    acs
    wacs
+   put
+   put-char
+   put-string
 
    ;; add_wch / add a wide complex character to a curses window, then advance the cursor
    add-wide-char

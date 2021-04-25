@@ -30,6 +30,19 @@ If n is -1, add as many chars from the string as will fit on the line."
                #'add-wide-char))))   
      (apply fn window object keys)))
 
+(defun put (window y x object &rest keys &key &allow-other-keys)
+  "Add the object to the window at position (y x), then advance the cursor.
+
+put is a thin convenience wrapper around add with the difference that
+the position arguments (y x) are mandatory."
+  (apply #'add window object :y y :x x keys))
+
+(defun put-char (window y x char &rest keys &key &allow-other-keys)
+  (apply #'add-char window char :y y :x x keys))
+
+(defun put-string (window y x string &rest keys &key &allow-other-keys)
+  (apply #'add-string window char :y y :x x keys))
+
 (defun distance-to-eol (window)
   "Return the number of columns from the cursor position to the end of the line in the window."
   (- (width window) (cadr (cursor-position window))))
