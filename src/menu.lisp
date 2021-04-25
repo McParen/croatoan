@@ -249,15 +249,17 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
 
 (defmethod clear ((menu menu) &key)
   "Overwrite the displayed menu with spaces."
-  (with-accessors ((win window) (len max-item-length) (pos element-position)) menu
-    (let* ((layout (if (scrolled-layout menu) (scrolled-layout menu) (layout menu)))
+  (with-accessors ((win window)
+                   (len max-item-length)
+                   (pos element-position)) menu
+    ;; return the visible layout of the menu
+    (let* ((layout (if (scrolled-layout menu)
+                       (scrolled-layout menu)
+                       (layout menu)))
            (m (car layout))
-           (n (cadr layout)))
-      (dogrid ((i m)
-               (j n))
-        (add win #\space :n len
-                         :y (+ i         (car  pos))
-                         :x (+ (* j len) (cadr pos)))))))
+           (n (cadr layout))
+           (w (* n len)))
+      (clear-rectangle win (car pos) (cadr pos) m w))))
 
 ;; TODO 190308: allow events other then the arrow keys to be used to control the menu.
 (defun update-menu (menu event)
