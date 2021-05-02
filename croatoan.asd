@@ -54,6 +54,7 @@
    (:file "mouse")
    (:file "move")
    (:file "refresh")
+   (:file "scroll")
    (:file "touch")
    (:file "util")             ; miscellaneous utils
    (:file "wresize")

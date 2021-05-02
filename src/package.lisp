@@ -325,6 +325,7 @@
    ;; resizeterm / change the curses terminal size
 
    ;; scroll / scroll a curses window
+   scroll
 
    ;; shape / shape plotting extension for ncurses
    draw-shape

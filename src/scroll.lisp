@@ -1,30 +1,34 @@
-(in-package :croatoan)
+(in-package :de.anvi.croatoan)
 
 ;;; scroll
 ;;; scroll a curses window
 ;;; http://invisible-island.net/ncurses/man/curs_scroll.3x.html
 
-;;; C prototypes
-
-;; int scroll(WINDOW *win);
-;; int scrl(int n);
-;; int wscrl(WINDOW *win, int n);
-
-;;; Low-level C functions
-
-(defcfun ("scroll" %scroll) :int (win window))
-(defcfun ("scrl"   %scrl)   :int              (n :int))
-(defcfun ("wscrl"  %wscrl)  :int (win window) (n :int))
-
-;;; High-level Lisp wrappers
-
 (defun scroll (window &optional (n 1))
-  "Scroll the window for n lines.
+  "Scroll the window up or down for n lines relative to its contents.
 
-If n is positive, scroll the window down. If n is negative, scroll the
-window up. The cursor position is not changed."
-  (%wscrl n))
+If n is positive, move the contents up relative to the window.
+The line i becomes line i-n. The window view moves n lines down.
 
-;;; TODOs
+If n is negative, move the contents down relative to the window.
+The line i becomes line i+n. The window view moves n lines up.
 
-;; [ ] what about return values?
+Initial   Scroll up  Scroll down
+            n = 1      n = -1
+
+              1
++-----+    +-----+    +-----+
+|  1  |    |  2  |    |     |
+|  2  |    |  3  |    |  1  |
+|  3  |    |     |    |  2  |
++-----+    +-----+    +-----+
+                         3
+
+The content lines that leave the scrolled window aren't buffered and
+can not be retrieved when moving back, they are lost. (If you need to
+scroll up and down without losing lines, consider using pad windows
+instead of simple windows.)
+
+The cursor position in the window is not changed when the contents are
+scrolled."
+  (ncurses:wscrl (winptr window) n))

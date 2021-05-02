@@ -1482,8 +1482,8 @@ returned byte by byte as with get-char."
 
     (run-event-loop scr)))
 
-;; demonstrate scrolling and scrolling regions.
 (defun t11 ()
+  "Demonstrate automatic scrolling and scrolling regions."
   (let ((scr (make-instance 'screen)))
     (unwind-protect
          (progn
@@ -1512,6 +1512,30 @@ returned byte by byte as with get-char."
                 (sleep 0.2)))
 
       (close scr))))
+
+(defun t11a ()
+  "Demonstrate the manual use of the scroll function for the screen."
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :enable-scrolling t)
+    (dotimes (i (height scr))
+      (put scr i 0 (format nil "~A" i)))
+    (refresh scr)
+    (event-case (scr event)
+      (#\q (return-from event-case))
+      (:up (scroll scr 1) (refresh scr))
+      (:down (scroll scr -1) (refresh scr)))))
+
+(defun t11b ()
+  "Demonstrate the manual use of the scroll function for a window."
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t)
+    (with-window (win :position '(3 6) :dimensions '(10 20) :enable-function-keys t :enable-scrolling t)
+      (setf (background win) (make-instance 'complex-char :color-pair '(:black :white)))
+      (dotimes (i (height win))
+        (put win i 0 (format nil "~A" i)))
+      (refresh win)
+      (event-case (win event)
+        (#\q (return-from event-case))
+        (:up (scroll win 1) (refresh win))
+        (:down (scroll win -1) (refresh win))))))
 
 ;; Display available ACS (alternative character set) pseudo-graphical characters.
 (defun t12 ()
