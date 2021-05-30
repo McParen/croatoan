@@ -89,46 +89,71 @@ This ncurses function has the same purpose as cl:clear-input."
         collect word
         while j))
 
-(defun wrap-string (string width)
-  "Place newlines in a string so that no single line exceeds the given width.
+(defun split-lines (str)
+  "Split a string containing newlines into a list of strings."
+  (split-string str #\newline))
 
-In this simple implementation, pre-existing newlines and multiple spaces are removed."
-  (let* (;; the first word is printed without a preceding space
-         (first t)
-         ;; character position in the current line
-         (pos 0)
-         ;; first, remove existing newlines from the string.
-         (str (substitute #\space #\newline string))
-         ;; then split the string into single words, ignoring multiple spaces
-         (words (split-string str)))
-    ;; output everything to a string instead of standard output
-    (with-output-to-string (*standard-output*)
-      (loop for word in words do
-        (if first
-            ;; the first word does not have a space before it
-            (progn
-              (incf pos (length word))
-              (if (<= pos width)
-                  (progn
-                    (setq first nil)
-                    (princ word))
-                  (progn
-                    (setq pos 0)
-                    (princ #\newline)
+(defun join-strings (list &optional ch)
+  (if ch
+      ;; every has to be put in the control string first.
+      (format nil (concatenate 'string "~{~A~^" (list ch) "~}") list)
+      ;; the default join char is #\space
+      (format nil "~{~A~^ ~}" list)))
+
+(defun join-lines (list)
+  "Join a list of strings into a string of lines separated by newline."
+  (join-strings list #\newline))
+
+(defun wrap-string (string width)
+  "Insert newlines in the string so that no single line exceeds the width.
+
+All pre-existing newlines and multiple spaces are removed."
+  (let* ((pos 0) ; next char position in the current line
+         (str (substitute #\space #\newline string)) ; remove existing newlines from the string
+         (words (split-string str))) ; split the string into words, ignore multiple spaces
+    (labels ((newline () (terpri) (setq pos 0))
+             (space () (princ #\space) (incf pos))
+             (prinw (word)
+               (let ((len (length word)))
+                 (cond
+                   ;; long word at pos=0
+                   ((and (zerop pos) (> len width))
+                    ;; first print width chars
+                    (princ (subseq word 0 width))
+                    (newline)
+                    ;; then recursively print the rest
+                    (prinw (subseq word width)))
+                   ;; long word at pos>0
+                   ((and (not (zerop pos)) (> len width))
+                    (if (= width pos) (newline) (space))
+                    (let ((pos2 (- width pos)))
+                      ;; first print width chars
+                      (princ (subseq word 0 pos2))
+                      (newline)
+                      ;; then print the rest starting from pos2
+                      (prinw (subseq word pos2))))
+                   ;; fitting word at pos=0
+                   ((and (zerop pos) (< len width))
                     (princ word)
-                    (incf pos (length word)))))
-            ;; second and subsequent words
-            (progn
-              (incf pos (1+ (length word))) ; space + word
-              (if (<= pos width)
-                  (progn
-                    (princ #\space)
-                    (princ word))
-                  (progn
-                    (setq pos 0)
-                    (princ #\newline)
+                    (incf pos len))
+                   ;; fitting word at pos>0
+                   ((and (not (zerop pos)) (< (+ pos 1 len) width))
+                    (if (= width pos) (newline) (space))
                     (princ word)
-                    (incf pos (length word))))))))))
+                    (incf pos len))
+                   ;; not fitting word at pos>0
+                   ((and (not (zerop pos)) (> (+ pos 1 len) width))
+                    (newline)
+                    (princ word)
+                    (incf pos len))))))
+      ;; output everything to a string instead of standard output
+      (with-output-to-string (*standard-output*)
+        (dolist (word words)
+          (prinw word))))))
+
+(defun wrap-lines (lines width)
+  "Wrap a list of strings so that no single line exceeds the given width."
+  (split-lines (wrap-string (join-lines lines) width)))
 
 ;;; NOTES
 

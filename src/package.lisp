@@ -354,7 +354,11 @@
    key-to-string
    flush-input
    split-string
+   split-lines
+   join-strings
+   join-lines
    wrap-string
+   wrap-lines
 
    ;; variables / curses global variables
 
