@@ -137,7 +137,7 @@ All pre-existing newlines and multiple spaces are removed."
                     (princ word)
                     (incf pos len))
                    ;; fitting word at pos>0
-                   ((and (not (zerop pos)) (< (+ pos 1 len) width))
+                   ((and (not (zerop pos)) (<= (+ pos 1 len) width))
                     (if (= width pos) (newline) (space))
                     (princ word)
                     (incf pos len))

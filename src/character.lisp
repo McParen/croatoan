@@ -42,7 +42,7 @@
 (defun set-equal (list-a list-b &key (test #'eq) (key #'identity))
   "Compare if every element of list-a is contained in list-b.
 
-The order  of elements in lists does not matter, so the lists are actually treated as sets.
+The order of elements in lists does not matter, so the lists are actually treated as sets.
 
 The items of the set are extracted using function 'key' and compared using predicate 'test'."
   (and (= (length list-a) (length list-b))
@@ -90,10 +90,7 @@ The initial purpose of this function is to be used as the equality test for alex
 (defclass complex-string ()
   ((complex-char-array
     :initarg       :complex-char-array
-    :initform      (make-array 0
-                               :element-type 'complex-char
-                               :fill-pointer 0
-                               :adjustable   t)
+    :initform      (make-array 0 :element-type 'complex-char :fill-pointer 0 :adjustable t)
     :type          vector
     :accessor      complex-char-array
     :documentation "Lisp primitive string type."))
@@ -123,23 +120,27 @@ The supported properties are :simple-char, :fgcolor, :bgcolor and :attributes.
 The separate properties :fgcolor and :bgcolor can be passed together as a :color-pair."
   (apply #'make-instance 'complex-char style))
 
+(defun char-style (char)
+  "Take a complex char, return a plist of its properties."
+  (list :simple-char (simple-char char)
+        :attributes (attributes char)
+        :fgcolor (fgcolor char)
+        :bgcolor (bgcolor char)))
+
 (defun make-background (color-bg &key (color-fg nil) (char #\Space))
-  "Makes an object suitable as background for a window using `color-bg' as background color,
-`color-fg' as  foreground color (default to  `color-bg') and character
-`char'."
+  "Make an object suitable as a window background.
+
+Use `color-bg' as background color, `color-fg' as foreground color and character `char'.
+
+If color-fg is not given, default to `color-bg')."
   (make-instance 'complex-char
                  :simple-char char
                  :color-pair  (if color-fg
                                   (list color-fg color-bg)
                                   (list color-bg color-bg))))
 
-(defmacro complex-string-format ((control-string &rest args)
-                      &key
-                        (attributes nil)
-                        (fgcolor    nil)
-                        (bgcolor    nil))
-  "Use `control-string' to  build a `complex-string' with  the help of
-`format' function"
+(defmacro complex-string-format ((control-string &rest args) &key attributes fgcolor bgcolor)
+  "Use `control-string' to build a `complex-string' with the help of `format' function."
   `(make-instance 'complex-string
                   :string      (apply #'format nil ,control-string ,@args)
                   :attributes  ,attributes
@@ -147,17 +148,18 @@ The separate properties :fgcolor and :bgcolor can be passed together as a :color
                   :bgcolor     ,bgcolor))
 
 (defun complex-string-length (complex-string)
-  "Returns the length (in characters  units) of a complex string passed
-as argument `complex-string'."
+  "Returns the length (in characters  units) of a complex string passed as argument `complex-string'."
   (length (complex-char-array complex-string)))
 
 (defgeneric text-width (object)
-  (:documentation "Returns the length (in characters  units) of a complex string passed
-as argument `complex-string'."))
+  (:documentation
+   "Returns the length (in characters units) of a complex string passed as argument `complex-string'."))
 
 (defgeneric text-slice (object start &optional end)
-  (:documentation  "Returns a sub sequence of `object' starting from
-  `start` and terminating at `end'. If end in nil the the sub sequence ends alt the last element of the sequence"))
+  (:documentation
+   "Returns a sub-sequence of `object' starting from `start` and terminating at `end'. 
+
+If end in nil the the sub sequence ends alt the last element of the sequence."))
 
 (defmethod text-width ((object string))
   (length object))
@@ -169,23 +171,21 @@ as argument `complex-string'."))
   (subseq object start end))
 
 (defun array-slice (array start &optional (end nil))
-  (let* ((new-size         (if end
-                               (- end start)
-                               (length array)))
-         (new-fill-pointer (cond
-                             ((array-has-fill-pointer-p array)
-                              (if end
-                                  new-size
-                                  (fill-pointer array)))
-                             (t
-                              nil)))
-         (new-array        (make-array new-size
-                                       :element-type    (array-element-type array)
-                                       :fill-pointer    new-fill-pointer
-                                       :initial-element (elt array 0)
-                                       :adjustable      (adjustable-array-p array)))
-         (end-iteration    (or end
-                               (length array))))
+  (let* ((new-size (if end
+                       (- end start)
+                       (length array)))
+         (new-fill-pointer
+           (cond ((array-has-fill-pointer-p array)
+                  (if end
+                      new-size
+                      (fill-pointer array)))
+                 (t nil)))
+         (new-array (make-array new-size
+                                :element-type    (array-element-type array)
+                                :fill-pointer    new-fill-pointer
+                                :initial-element (elt array 0)
+                                :adjustable      (adjustable-array-p array)))
+         (end-iteration (or end (length array))))
     (loop
        for index-from from start below end-iteration
        for index-to   from 0
@@ -220,7 +220,7 @@ as argument `complex-string'."))
                         :initial-element (make-instance 'complex-char)
                         :element-type 'complex-char
                         :fill-pointer (length (complex-char-array complex-string))
-                        :adjustable   t))
+                        :adjustable t))
       (loop
          for xch across (complex-char-array complex-string)
          for i from 0
@@ -237,16 +237,18 @@ as argument `complex-string'."))
             (concatenate 'vector inner-array-a inner-array-b)))))
 
 (defgeneric concat-complex-string (a b &key color-attributes-contagion)
-  (:documentation "Return  a new `complex-string' that  is the results
-  of concatenating `a' and 'b'. If `color-attributes-contagion' is non
-  nil `b' will inherit all the attributes and color of the last element of `a'."))
+  (:documentation
+   "Return a new `complex-string' that is the result of concatenating `a' and 'b'. 
+
+If `color-attributes-contagion' is non nil, `b' will inherit all the
+attributes and color of the last element of `a'."))
 
 (defun copy-complex-char-array (a)
   "Make a (non deep) copy of `complex-char' array `a'"
   (let ((res (make-array (length a)
-                         :element-type    'complex-char
-                         :fill-pointer    (length a)
-                         :adjustable      t
+                         :element-type 'complex-char
+                         :fill-pointer (length a)
+                         :adjustable t
                          :initial-element (make-instance 'complex-char))))
     (loop
        for i from 0 below (length a)
@@ -263,10 +265,7 @@ the color and attributes of `a'."
                                :complex-char-array (copy-complex-char-array inner-array-a))))
       (with-accessors ((inner-array-res complex-char-array)) res
         (map nil
-             (lambda (a)
-               (vector-push-extend (make-instance 'complex-char
-                                                  :simple-char a)
-                                   inner-array-res))
+             (lambda (a) (vector-push-extend (make-instance 'complex-char :simple-char a) inner-array-res))
              b))
       res)))
 
@@ -310,31 +309,29 @@ attributes, background color and foreground color."
                 first-char-fg)))))
 
 (defun concat-complex-string-with-contagion (string-1 string-2)
-  "Concatenate two  `complex-strings': the args `string-2' does not inherit
-the color and attributes of `string-1'."
+  "Concatenate two `complex-strings'.
+
+The args `string-2' does not inherit the color and attributes of `string-1'."
   (with-accessors ((inner-array-a complex-char-array)) string-1
-    (let* ((res (make-instance 'complex-string
-                               :complex-char-array (copy-complex-char-array inner-array-a))))
+    (let* ((res (make-instance 'complex-string :complex-char-array (copy-complex-char-array inner-array-a))))
       (with-accessors ((inner-array-res complex-char-array)) res
         (multiple-value-bind (new-attributes new-bg new-fg)
             (complex-string-last-char-attributes string-1)
-          (map nil
-               (lambda (a)
-                 (let ((new-char (make-instance 'complex-char
-                                                :simple-char (simple-char a)
-                                                :attributes  new-attributes
-                                                :fgcolor     new-fg
-                                                :bgcolor     new-bg)))
-                   (vector-push-extend new-char (complex-char-array res))))
+          (map nil (lambda (a)
+                     (let ((new-char (make-instance 'complex-char
+                                                    :simple-char (simple-char a)
+                                                    :attributes  new-attributes
+                                                    :fgcolor     new-fg
+                                                    :bgcolor     new-bg)))
+                       (vector-push-extend new-char (complex-char-array res))))
                (complex-char-array string-2))))
       res)))
 
-(defmethod concat-complex-string ((a complex-string) (b sequence)
-                                  &key (color-attributes-contagion t))
-  "Return a  complex string  that is the  results of  concatenating of
-`a'    (a `complex-string') and `b' (a string). If
-`color-attributes-contagion' is non nil `b' will inherit all the attributes and
-color of the last element of `a'."
+(defmethod concat-complex-string ((a complex-string) (b sequence) &key (color-attributes-contagion t))
+  "Return a complex string that is the results of concatenating of `a' (a `complex-string') and `b' (a string).
+
+If `color-attributes-contagion' is non nil `b' will inherit all the
+attributes and color of the last element of `a'."
   (if (not color-attributes-contagion)
       (concat-complex-string-no-contagion a b)
       (with-accessors ((inner-array-a complex-char-array)) a
@@ -344,56 +341,51 @@ color of the last element of `a'."
                                      :complex-char-array
                                      (copy-complex-char-array inner-array-a))))
             (with-accessors ((inner-array-res complex-char-array)) res
-              (map nil
-                   (lambda (a)
-                     (vector-push-extend (make-instance 'complex-char
-                                                        :bgcolor     new-bg
-                                                        :fgcolor     new-fg
-                                                        :attributes  new-attributes
-                                                        :simple-char a)
-                                         inner-array-res))
+              (map nil (lambda (a)
+                         (vector-push-extend (make-instance 'complex-char
+                                                            :bgcolor     new-bg
+                                                            :fgcolor     new-fg
+                                                            :attributes  new-attributes
+                                                            :simple-char a)
+                                             inner-array-res))
                    b))
             res)))))
 
-(defmethod concat-complex-string ((a sequence) (b complex-string)
-                                  &key (color-attributes-contagion t))
-  "Return a  complex string  that is the  results of  concatenating of
-`a'    (a `string') and `b' (a `complex-string'). If
-`color-attributes-contagion' is non nil `a' will inherit all the attributes and
-color of the first element of `b'."
+(defmethod concat-complex-string ((a sequence) (b complex-string) &key (color-attributes-contagion t))
+  "Return a complex string that is the result of concatenating `a' (string) and `b' (complex-string).
+
+If `color-attributes-contagion' is non nil, `a' will inherit all the
+attributes and color of the first element of `b'."
   (with-accessors ((inner-array-b complex-char-array)) b
     (multiple-value-bind (new-attributes new-bg new-fg)
         (complex-string-first-char-attributes b)
-      (let* ((res-vector-length (+ (length a)
-                                   (length inner-array-b)))
-             (res               (make-instance 'complex-string
-                                               :complex-char-array
-                                               (make-array res-vector-length
-                                                           :element-type 'complex-char
-                                                           :fill-pointer res-vector-length
-                                                           :adjustable      t
-                                                           :initial-element
-                                                           (make-instance 'complex-char)))))
+      (let* ((res-vector-length (+ (length a) (length inner-array-b)))
+             (res (make-instance 'complex-string
+                                 :complex-char-array
+                                 (make-array res-vector-length
+                                             :element-type 'complex-char
+                                             :fill-pointer res-vector-length
+                                             :adjustable t
+                                             :initial-element (make-instance 'complex-char)))))
         (with-accessors ((inner-array-res complex-char-array)) res
           (loop for i from 0 below (length a) do
-               (let ((new-complex-char (if (not color-attributes-contagion)
-                                           (make-instance 'complex-char
-                                                          :simple-char (elt a i))
-                                           (make-instance 'complex-char
-                                                          :bgcolor     new-bg
-                                                          :fgcolor     new-fg
-                                                          :attributes  new-attributes
-                                                          :simple-char (elt a i)))))
-                 (setf (elt inner-array-res i) new-complex-char)))
+            (let ((new-complex-char (if (not color-attributes-contagion)
+                                        (make-instance 'complex-char :simple-char (elt a i))
+                                        (make-instance 'complex-char
+                                                       :bgcolor     new-bg
+                                                       :fgcolor     new-fg
+                                                       :attributes  new-attributes
+                                                       :simple-char (elt a i)))))
+              (setf (elt inner-array-res i) new-complex-char)))
           (loop for i from 0 below (length inner-array-b) do
-               (setf (elt inner-array-res (+ i (length a))) (elt inner-array-b i)))
+            (setf (elt inner-array-res (+ i (length a))) (elt inner-array-b i)))
           res)))))
 
-(defmethod concat-complex-string ((a complex-string) (b complex-string)
-                                  &key (color-attributes-contagion nil))
-  "Return a complex string that is the results of concatenating of `a'
-  and  `b': two  `complex-string'. If  `color-attributes-contagion' is
-  non nil `b' will inherit all the attributes and color of the last element of `a'."
+(defmethod concat-complex-string ((a complex-string) (b complex-string) &key color-attributes-contagion)
+  "Concatenate and return two `complex-strings' `a' and  `b'.
+
+If `color-attributes-contagion' is non nil `b' will inherit all the
+attributes and color of the last element of `a'."
   (if color-attributes-contagion
       (concat-complex-string-with-contagion a b)
       (with-accessors ((inner-array-a complex-char-array)) a
@@ -402,7 +394,7 @@ color of the first element of `b'."
                                     :complex-char-array (copy-complex-char-array inner-array-a))))
             (with-accessors ((inner-array-res complex-char-array)) res
               (loop for i across  inner-array-b do
-                   (vector-push-extend i inner-array-res))
+                (vector-push-extend i inner-array-res))
               res))))))
 
 (defun complex-string->chars-string (complex-string)
@@ -411,44 +403,43 @@ color of the first element of `b'."
     (let ((res (make-array 0 :element-type 'character :fill-pointer 0 :adjustable t)))
       (with-output-to-string (stream res)
         (loop for i across complex-char-array do
-             (format stream "~a" (simple-char i)))
+          (format stream "~a" (simple-char i)))
         res))))
 
 (defgeneric text-ellipsize (object len &key truncate-string)
-  (:documentation "If `object''s length is bigger  than `len', cut the last characters
-  out.  Also replaces the last n  characters (where n is the length of
-  `truncate-string')     of     the      shortened     string     with
-  `truncate-string'. It  defaults to  \"...\", but can  be nil  or the
-  empty string."))
+  (:documentation
+   "If object length is bigger than `len', cut the last characters out.
+
+Also replaces the last n characters (where n is the length of
+`truncate-string') of the shortened string with `truncate-string'. 
+
+It defaults to ..., but can be nil or the empty string."))
 
 (defmethod text-ellipsize ((object complex-string) len &key (truncate-string "..."))
   (let ((string-len (text-width object)))
     (cond
       ((<= string-len len)
        object)
-      ((< len
-          (text-width truncate-string))
+      ((< len (text-width truncate-string))
        (text-slice object 0 len))
       (t
        (concat-complex-string (text-slice object 0 (- len (text-width truncate-string)))
                               truncate-string)))))
 
 (defgeneric text-right-pad (object total-size &key padding-char)
-  (:documentation "Prepend a number of copies of `padding-char' to `object' so that the
-latter has a length equals to `total-size'"))
+  (:documentation
+   "Prepend a number of copies of `padding-char' to `object' so that
+the latter has a length equals to `total-size'"))
 
 (defun right-padding (str total-size &key (padding-char #\Space))
-  (concatenate 'string
-               str
-               (make-string (max 0 (- total-size (length str)))
-                            :initial-element padding-char)))
+  (concatenate 'string str
+               (make-string (max 0 (- total-size (length str))) :initial-element padding-char)))
 
 (defmethod text-right-pad ((object string) (total-size number) &key (padding-char #\Space))
   (assert (> total-size 0))
   (right-padding object total-size :padding-char padding-char))
 
-(defmethod text-right-pad ((object complex-string) (total-size number)
-                               &key (padding-char #\Space))
+(defmethod text-right-pad ((object complex-string) (total-size number) &key (padding-char #\Space))
   (assert (> total-size 0))
   (let ((suffix (make-string (max 0 (- total-size (text-width object)))
                              :initial-element padding-char)))
