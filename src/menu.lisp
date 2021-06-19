@@ -128,7 +128,7 @@
   (:documentation "A menu-window is an extended window displaying a menu in its sub-window."))
 
 (defmethod initialize-instance :after ((win menu-window) &key color-pair)
-  (with-slots (winptr items type height width position element-position sub-window borderp border-width
+  (with-slots (winptr items type height width (y position-y) (x position-x) element-position sub-window borderp border-width
                layout scrolled-layout max-item-length current-item-mark fgcolor bgcolor) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
@@ -143,13 +143,12 @@
       (unless height (setf height (+ (* 2 border-width) (car (or scrolled-layout layout)))))
       (unless width  (setf width  (+ (* 2 border-width) (* (cadr (or scrolled-layout layout))
                                                            (+ (length current-item-mark) max-item-length)))))
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (setf winptr (ncurses:newwin height width y x))
       (setf sub-window (make-instance 'sub-window :parent win
                                                   :height (car (or scrolled-layout layout))
                                                   :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
                                                   :position (list border-width border-width)
                                                   :relative t))
-      ;; TODO: do this once for all decorated windows, at the moment it is duplicated
       (cond ((or fgcolor bgcolor)
              (set-color-pair winptr (color-pair win))
              (setf (color-pair sub-window) (color-pair win)
@@ -175,17 +174,17 @@
 
 (defmethod initialize-instance :after ((win menu-panel) &key color-pair)
   (when (eq (type-of win) 'menu-panel)
-    (with-slots (winptr items type height width position element-position borderp border-width border-win shadow-win shadowp
-                 layout scrolled-layout max-item-length current-item-mark) win
+    (with-slots (winptr items type height width (y position-y) (x position-x) element-position borderp border-width border-win
+                 shadow-win shadowp layout scrolled-layout max-item-length current-item-mark) win
       (setf element-position nil)
       (unless layout (setf layout (list (length items) 1)))
       (unless height (setf height (car (or scrolled-layout layout))))
       (unless width  (setf width  (* (cadr (or scrolled-layout layout))
                                      (+ (length current-item-mark) max-item-length))))
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (setf winptr (ncurses:newwin height width y x))
       (let* (;; main win
-             (y1 (car position))
-             (x1 (cadr position))
+             (y1 y)
+             (x1 x)
              ;; border win
              (y2 (- y1 border-width))
              (x2 (- x1 border-width))

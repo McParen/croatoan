@@ -111,12 +111,17 @@ field, textarea:
       (setf (frame-rate w) frame-rate))))
 
 (defclass window (widget fundamental-character-input-stream fundamental-character-output-stream)
-  ((position
-    :initarg       :position
-    :initform      '(0 0)
-    :type          (or null cons)
-    ;;:accessor    window-position
-    :documentation "The (y=row x=column) coordinate of the top left corner of the window.")
+  ((position-y
+    :initarg       :y
+    :initform      0
+    :type          integer
+    :documentation "The y coordinate (row) of the top left corner of the window.")
+
+   (position-x
+    :initarg       :x
+    :initform      0
+    :type          integer
+    :documentation "The x coordinate (column) of the top left corner of the window.")
 
    (width
     :initarg       :width
@@ -230,10 +235,25 @@ foreground attributes. To prevent this, set the background char with attributes 
 
   (:documentation "A curses window object as returned by newwin."))
 
-(defmethod initialize-instance :after ((win window) &key color-pair dimensions)
-  (with-slots (winptr height width position fgcolor bgcolor background) win
+#|
+:around - most specific first (call-next-method)
+:before - most specific first
+primary - most specific first (call-next-method)
+:after  - most specific LAST = all window type after methods start here
+          widget
+            window
+              screen
+|#
+
+(defmethod initialize-instance :after ((win window) &key position color-pair dimensions)
+  (with-slots (winptr height width (y position-y) (x position-x) fgcolor bgcolor background) win
     ;; for ALL window types
     ;; called BEFORE more specific after methods
+
+    ;; the keyword position overrides the keywords y and x
+    (when position
+      (setf y (car position)
+            x (cadr position)))
     
     ;; the keyword dimensions overrides width and height
     (when dimensions
@@ -245,7 +265,7 @@ foreground attributes. To prevent this, set the background char with attributes 
       ;; the default value 0 for width or height is "to the end of the screen".
       (unless width (setf width 0))
       (unless height (setf height 0))
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (setf winptr (ncurses:newwin height width y x))
 
       ;; fg/bg should not be passed together with the color-pair keyword.
       (cond ((or fgcolor bgcolor)
@@ -401,20 +421,19 @@ foreground attributes. To prevent this, set the background char with attributes 
 ;; move also needs a method for subwindows.
 ;; Subwindows must be deleted before the main window can be deleted.
 (defmethod initialize-instance :after ((win sub-window) &key)
-  (with-slots (winptr parent height width position relativep) win
+  (with-slots (winptr parent height width (y position-y) (x position-x) relativep) win
     ;; just for SUB-WINDOW types
     (when (eq (type-of win) 'sub-window)
       ;; the default value 0 for width or height is "to the end of the screen".
       (unless width (setf width 0))
       (unless height (setf height 0))
       (if relativep
-          ;;(setf winptr (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position)))
-          (setf winptr (let ((val (ncurses:derwin (slot-value parent 'winptr) height width (car position) (cadr position))))
+          (setf winptr (let ((val (ncurses:derwin (slot-value parent 'winptr) height width y x)))
                          (if (cffi:null-pointer-p val)
                              ;; may also be null if the parent window passed is null
                              (error "Subwindow could not be created. Probably too big and not contained in the parent window.")
                              val)))
-          (setf winptr (ncurses:subwin (slot-value parent 'winptr) height width (car position) (cadr position)))))))
+          (setf winptr (ncurses:subwin (slot-value parent 'winptr) height width y x))))))
 
 ;; TODO: add a method that draws the title and can be called with call-next-method
 ;; as of now we have to write the title for every class derived from extended-window
@@ -448,11 +467,11 @@ Except for those special cases you probably want to use a panel, which
 behaves more like a simple window."))
 
 (defmethod initialize-instance :after ((win extended-window) &key)
-  (with-slots (winptr width height position sub-window border-width) win
+  (with-slots (winptr width height (y position-y) (x position-x) sub-window border-width) win
     ;; only for extended-window
     (when (eq (type-of win) 'extended-window)
       ;; first make the main window
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (setf winptr (ncurses:newwin height width y x))
       ;; then make the content sub-window
       (setf sub-window (make-instance 'sub-window :parent win
                                                   :height (- height (* border-width 2))
@@ -490,12 +509,14 @@ the border, title and other decorations and a second window providing a shadow.
 The border and the shadow are displayed outside of the content window, so they change the
 absolute position and dimensions of the panel."))
 
+;; make :position the position of the whole panel, not just of the main window.
+;; how would it be possible to delay winptr creation, to introduce lazyness???
 (defmethod initialize-instance :after ((win panel) &key)
-  (with-slots (winptr width height position borderp border-win shadowp shadow-win border-width style) win
+  (with-slots (winptr width height (y position-y) (x position-x) borderp border-win shadowp shadow-win border-width style) win
     ;; only for panels
     (when (eq (type-of win) 'panel)
-      (let* ((y1 (car position)) ; main
-             (x1 (cadr position))
+      (let* ((y1 y) ; main
+             (x1 x)
              (y2 (- y1 border-width)) ; border
              (x2 (- x1 border-width))
              (h2 (+ height (* border-width 2)))
@@ -603,10 +624,10 @@ absolute position and dimensions of the panel."))
 
 ;; sub-pads always use positions relative to parent pads
 (defmethod initialize-instance :after ((win sub-pad) &key)
-  (with-slots (winptr parent height width position) win
+  (with-slots (winptr parent height width (y position-y) (x position-x)) win
     ;; just for a sub-pad window
     (when (eq (type-of win) 'sub-pad)
-      (setf winptr (ncurses:subpad (slot-value parent 'winptr) height width (car position) (cadr position))))))
+      (setf winptr (ncurses:subpad (slot-value parent 'winptr) height width y x)))))
 
 (defclass element (widget)
   ((value
@@ -766,14 +787,14 @@ absolute position and dimensions of the panel."))
   (:documentation ""))
 
 (defmethod initialize-instance :after ((win form-window) &key)
-  (with-slots (winptr height width position sub-window borderp border-width window) win
+  (with-slots (winptr height width (y position-y) (x position-x) sub-window borderp border-width window) win
     ;; only for form windows
     (when (eq (type-of win) 'form-window)
       (setf border-width (if borderp 1 0))
       
       ;; TODO: this isnt form specific, this should be part of window initialization
       ;; TODO 200612 see window and sub-window init
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+      (setf winptr (ncurses:newwin height width y x))
 
       ;; TODO: this isnt form specific, this should be part of panel initialization
       (setf sub-window (make-instance 'sub-window :parent win
@@ -801,12 +822,10 @@ absolute position and dimensions of the panel."))
         (list (ncurses:getbegy winptr) (ncurses:getbegx winptr)))))
 (defgeneric (setf window-position) (position window))
 (defmethod (setf window-position) (pos (win window))
-  (with-slots (winptr position) win
-    (setf position pos)
-    (apply #'ncurses:mvwin winptr pos)))
-
-;; TODO 200613: replace slots position with position-y and position-x, make position only an accessor like color pair
-;; The slots position-y and position-x dont exist, these accessors exist for convenience.
+  (with-slots (winptr position-y position-x) win
+    (setf position-y (car pos)
+          position-x (cadr pos))
+    (ncurses:mvwin winptr position-y position-x)))
 
 (defgeneric position-y (window))
 (defmethod position-y ((win window))
@@ -828,15 +847,15 @@ absolute position and dimensions of the panel."))
 
 (defgeneric (setf position-y) (y window))
 (defmethod (setf position-y) (y (win window))
-  (let ((x (position-x win)))
-    (setf (slot-value win 'position) (list y x))
-    (ncurses:mvwin (slot-value win 'winptr) y x)))
+  (with-slots (winptr position-y position-x) win
+    (setf position-y y)
+    (ncurses:mvwin winptr position-y position-x)))
 
 (defgeneric (setf position-x) (x window))
 (defmethod (setf position-x) (x (win window))
-  (let ((y (position-y win)))
-    (setf (slot-value win 'position) (list y x))
-    (ncurses:mvwin (slot-value win 'winptr) y x)))
+  (with-slots (winptr position-y position-x) win
+    (setf position-x x)
+    (ncurses:mvwin winptr position-y position-x)))
 
 ;; "The screen-relative parameters of the window are not changed. 
 ;; This routine is used to display different parts of the parent 

@@ -535,7 +535,7 @@
 (defun t02d2 ()
   "Test setting window properties from the window style."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
-    (let* ((win1 (make-instance 'window :height 10 :width 20 :position (list 3  5) :border t))
+    (let* ((win1 (make-instance 'window :height 10 :width 20 :y 3 :x 5 :border t))
            (st2 '(:foreground (:fgcolor :black :bgcolor :white :attributes (:bold))
                   :background (:simple-char #\, :fgcolor :blue :bgcolor :yellow :attributes ())))
            (win2 (make-instance 'window :height 10 :width 20 :position (list 3 40) :border t :style st2)))

@@ -32,8 +32,9 @@
 
   (:documentation  "A dialog is a decorated menu with a title, a message and items."))
 
+;; also see menu.lisp / draw dialog-window
 (defmethod initialize-instance :after ((win dialog-window) &key color-pair center)
-  (with-slots (winptr items height width position sub-window borderp layout max-item-length current-item-mark
+  (with-slots (winptr items height width (y position-y) (x position-x) sub-window borderp layout max-item-length current-item-mark
                       fgcolor bgcolor message-pad message-text message-height message-pad-coordinates) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
@@ -50,10 +51,11 @@
           (setf width (+ (if (zerop padding) 2 4) (* (cadr layout) item-length))))
 
         ;; if the key center was given, calculate position automatically, even if it was explicitely given.
-        (when center (setf position (list (- (round (/ ncurses:LINES 2)) (round (/ height 2)))
-                                          (- (round (/ ncurses:COLS  2)) (round (/ width  2))))))
+        (when center
+          (setf y (- (round (/ ncurses:LINES 2)) (round (/ height 2)))
+                x (- (round (/ ncurses:COLS  2)) (round (/ width  2)))))
 
-        (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+        (setf winptr (ncurses:newwin height width y x))
         (setf sub-window
               (make-instance 'sub-window
                              :parent win :height (car layout)
@@ -65,15 +67,14 @@
         (when (and message-text (> message-height 0))
           (setf message-pad (make-instance 'pad :height message-height :width (- width (+ 2 (* 2 padding)))))
           (setf message-pad-coordinates
-                (list (+ (1+ padding) (car position))  ;screen-min-y
-                      (+ (1+ padding) (cadr position)) ;screen-min-x
-                      (+ (+ 2 (car position)) message-height) ;screen-max-y
-                      (+ (+ 2 (cadr position) (- width 4))))) ;screen-max-x
+                (list (+ (1+ padding) y)         ;screen-min-y
+                      (+ (1+ padding) x)         ;screen-min-x
+                      (+ (+ 2 y) message-height) ;screen-max-y
+                      (+ (+ 2 x (- width 4)))))  ;screen-max-x
           (when color-pair
             (setf (background message-pad) (make-instance 'complex-char :color-pair color-pair)))
           (format message-pad message-text))
 
-        ;; TODO: do this once for all decorated windows, at the moment it is duplicated
         (cond ((or fgcolor bgcolor)
                (set-color-pair winptr (color-pair win))
                (setf (color-pair sub-window) (color-pair win)
@@ -133,16 +134,16 @@
     (setf elements (list msg-area ok-button))))
 
 (defmethod initialize-instance :after ((msgbox msgbox) &key center (message-wrap t))
-  (with-slots (winptr height width position sub-window window elements current-element message msg-area ok-button) msgbox
+  (with-slots (winptr height width (y position-y) (x position-x) sub-window window elements current-element message msg-area ok-button) msgbox
     (when (eq (type-of msgbox) 'msgbox)
       ;; The default size of a msgbox is half the height, 2/3 the width of the screen
       (unless height (setf height (round (/ ncurses:LINES 2))))
       (unless width (setf width (round (* ncurses:COLS 2/3))))
       ;; If the center keyword is t, it replaces the default window position '(0 0).
       (when center
-        (setf position (list (- (round (/ ncurses:LINES 2)) (round (/ height 2)))
-                             (- (round (/ ncurses:COLS  2)) (round (/ width  2))))))
-      (setf winptr (ncurses:newwin height width (car position) (cadr position)))
+        (setf y (- (round (/ ncurses:LINES 2)) (round (/ height 2)))
+              x (- (round (/ ncurses:COLS  2)) (round (/ width  2)))))
+      (setf winptr (ncurses:newwin height width y x))
       (setf sub-window (make-instance 'sub-window :parent msgbox :height (- height 2) :width (- width 2)
                                                   :position (list 1 1) :relative t :enable-function-keys t))
       (setf window sub-window)
