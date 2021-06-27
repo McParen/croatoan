@@ -157,7 +157,7 @@ If color-fg is not given, default to `color-bg')."
 
 (defgeneric text-slice (object start &optional end)
   (:documentation
-   "Returns a sub-sequence of `object' starting from `start` and terminating at `end'. 
+   "Returns a sub-sequence of `object' starting from `start` and terminating at `end'.
 
 If end in nil the the sub sequence ends alt the last element of the sequence."))
 
@@ -173,12 +173,10 @@ If end in nil the the sub sequence ends alt the last element of the sequence."))
 (defun array-slice (array start &optional (end nil))
   (let* ((new-size (if end
                        (- end start)
-                       (length array)))
+                       (- (length array) start)))
          (new-fill-pointer
            (cond ((array-has-fill-pointer-p array)
-                  (if end
-                      new-size
-                      (fill-pointer array)))
+                  new-size)
                  (t nil)))
          (new-array (make-array new-size
                                 :element-type    (array-element-type array)
@@ -238,7 +236,7 @@ If end in nil the the sub sequence ends alt the last element of the sequence."))
 
 (defgeneric concat-complex-string (a b &key color-attributes-contagion)
   (:documentation
-   "Return a new `complex-string' that is the result of concatenating `a' and 'b'. 
+   "Return a new `complex-string' that is the result of concatenating `a' and 'b'.
 
 If `color-attributes-contagion' is non nil, `b' will inherit all the
 attributes and color of the last element of `a'."))
@@ -411,7 +409,7 @@ attributes and color of the last element of `a'."
    "If object length is bigger than `len', cut the last characters out.
 
 Also replaces the last n characters (where n is the length of
-`truncate-string') of the shortened string with `truncate-string'. 
+`truncate-string') of the shortened string with `truncate-string'.
 
 It defaults to ..., but can be nil or the empty string."))
 
