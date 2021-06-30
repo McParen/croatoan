@@ -1186,10 +1186,10 @@ nil,0      t
   "Return the position (y x) of the center of the window."
   (with-accessors ((h height) (w width)) window
     (list (if (oddp h)
-              (ceiling h 2)
+              (floor h 2)
               (/ h 2))
           (if (oddp w)
-              (ceiling w 2)
+              (floor w 2)
               (/ w 2)))))
 
 (defun random-position (win)
