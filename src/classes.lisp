@@ -34,7 +34,7 @@
     :accessor      title
     :type          (or boolean string)
     :documentation
-    "Title of the widget to be displayed to the user. 
+    "Title of the widget to be displayed to the user.
     If the title is t, the name should be displayed.")
 
    (style
@@ -81,7 +81,7 @@ field, textarea:
     :accessor      keymap
     :documentation
     "Keymap containing the key bindings to be used by run-event-loop instead
-    of the object's own bindings. If using an instance-local binding isn't 
+    of the object's own bindings. If using an instance-local binding isn't
     sufficient, we can create an external keymap and reference it in the object.")
 
    (current-keymap
@@ -183,11 +183,11 @@ field, textarea:
     :initform      nil
     :type          (or null complex-char)
     :documentation
-    "Sets a complex char with its attributes and colors as the default style of unrendered text and empty cells of the window. 
-    
+    "Sets a complex char with its attributes and colors as the default style of unrendered text and empty cells of the window.
+
 Complex chars with pre-existing attributes and colors are not changed.
 
-If the background char with attributes is set after the foreground attributes, the background attributes override the 
+If the background char with attributes is set after the foreground attributes, the background attributes override the
 foreground attributes. To prevent this, set the background char with attributes before the foreground attributes.")
 
    (attributes
@@ -201,7 +201,7 @@ foreground attributes. To prevent this, set the background char with attributes 
     :initform      nil
     :type          (or null keyword integer list)
     :documentation "A keyword denoting the foreground color of new characters added to the window.")
-   
+
    (bgcolor
     :initarg       :bgcolor
     :initform      nil
@@ -254,7 +254,7 @@ primary - most specific first (call-next-method)
     (when position
       (setf y (car position)
             x (cadr position)))
-    
+
     ;; the keyword dimensions overrides width and height
     (when dimensions
       (setf height (car dimensions)
@@ -334,7 +334,7 @@ primary - most specific first (call-next-method)
     :initform      nil
     :type          boolean
     :documentation
-    "Set whether typed characters will be returned immediately when they are typed (nil, default) 
+    "Set whether typed characters will be returned immediately when they are typed (nil, default)
     or buffered until Return is typed (t).")
 
    (process-control-chars-p
@@ -342,7 +342,7 @@ primary - most specific first (call-next-method)
     :initform      t
     :type          boolean
     :documentation
-    "If input-buffering is nil, set whether some control characters like ^C, ^S, ^Q, ^D will be processed (t, default) 
+    "If input-buffering is nil, set whether some control characters like ^C, ^S, ^Q, ^D will be processed (t, default)
     or passed directly to the program (nil).
     When input-buffering is t, control chars are always processed and this option has no effect.")
 
@@ -351,8 +351,8 @@ primary - most specific first (call-next-method)
     :initform      t
     :type          boolean
     :documentation
-    "If t (default), the #\return character (CR ^M \r) is automatically translated to newline (NL) on input, 
-     and NL is translated to CR LF on output. 
+    "If t (default), the #\return character (CR ^M \r) is automatically translated to newline (NL) on input,
+     and NL is translated to CR LF on output.
      NL is the standard, system independent, portable way to end a line.
      It can be either #\linefeed (LF ^J \n) on Linux, carriage #\return on MacOS, CRLF \r\n on Windows.
      Setting newline translation to nil is necessary to be able to detect the #\return key.")
@@ -411,7 +411,7 @@ primary - most specific first (call-next-method)
     :initform      nil
     :type          (or null cons)
     :documentation
-    "Position (y x) of the area of the parent window, which is mapped to the subwindow. 
+    "Position (y x) of the area of the parent window, which is mapped to the subwindow.
     By default it is identical to the position of the subwindow."))
 
   (:documentation  "A sub-window shares the memory and the display with and has to be contained within a parent window."))
@@ -496,7 +496,7 @@ behaves more like a simple window."))
     :initform      nil
     :type          boolean
     :documentation "Draw (t) or don't draw (nil, default) a shadow behind the panel.")
-   
+
    (shadow-win
     :initform      nil
     :type          (or null window)
@@ -705,7 +705,7 @@ absolute position and dimensions of the panel."))
     If a title for the label is explicitely provided, it overrides the title of the reference element.")
 
    ;; TODO: width, style should be element slots and not label slots because the label doesnt do anything with them.
-   
+
    (width
     :initarg       :width
     :initform      nil
@@ -717,7 +717,7 @@ absolute position and dimensions of the panel."))
    (activep
     :initform      nil
     :documentation "Labels are by default not active and can not be selected when cycling through the elements."))
-  
+
   (:documentation "A single-line string displayed at the specified position."))
 
 (defclass checkbox (element)
@@ -791,7 +791,7 @@ absolute position and dimensions of the panel."))
     ;; only for form windows
     (when (eq (type-of win) 'form-window)
       (setf border-width (if borderp 1 0))
-      
+
       ;; TODO: this isnt form specific, this should be part of window initialization
       ;; TODO 200612 see window and sub-window init
       (setf winptr (ncurses:newwin height width y x))
@@ -857,8 +857,8 @@ absolute position and dimensions of the panel."))
     (setf position-x x)
     (ncurses:mvwin winptr position-y position-x)))
 
-;; "The screen-relative parameters of the window are not changed. 
-;; This routine is used to display different parts of the parent 
+;; "The screen-relative parameters of the window are not changed.
+;; This routine is used to display different parts of the parent
 ;; window at the same physical position on the screen."
 ;;
 ;; "The mvderwin() function specifies a mapping of characters.
@@ -892,7 +892,7 @@ absolute position and dimensions of the panel."))
   (list (ncurses:getcury (slot-value win 'winptr))
         (ncurses:getcurx (slot-value win 'winptr))))
 
-;; we can move the cursor by doing this, or by calling "move". 
+;; we can move the cursor by doing this, or by calling "move".
 ;; both will use ncurses:wmove in the background.
 ;; note that incf and decf dont work.
 (defgeneric (setf cursor-position) (position window))
