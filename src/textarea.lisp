@@ -97,7 +97,7 @@ The char can be set by setting the :background and :selected-background style.
 
 If the underlying window has a background char, that will be used to
 clear the window."
-  (with-accessors ((pos element-position) (width width) (height height)
+  (with-accessors ((pos widget-position) (width width) (height height)
                    (win window) (selected selectedp) (style style)) area
     (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
            (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
@@ -112,13 +112,13 @@ clear the window."
             (add win bg-char :style bg-style)))))))
 
 (defmethod update-cursor-position ((area textarea))
-  (with-accessors ((pos element-position) (win window) (dptr display-pointer)
+  (with-accessors ((pos widget-position) (win window) (dptr display-pointer)
                    (y cursor-position-y) (x cursor-position-x)) area
     (apply #'move win (mapcar #'+ pos (list (- y dptr) x)))
     (refresh win)))
 
 (defmethod draw ((area textarea))
-  (with-accessors ((pos element-position) (width width) (height height) (inbuf buffer)
+  (with-accessors ((pos widget-position) (width width) (height height) (inbuf buffer)
                    (selected selectedp) (dptr display-pointer) (win window) (style style)) area
     (clear area)
     (let ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground)))

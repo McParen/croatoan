@@ -121,7 +121,7 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
   "Clear the field by overwriting it with the background char.
 
 The default background char is #\space."
-  (with-accessors ((pos element-position) (width width) (selected selectedp) (win window) (style style)) field
+  (with-accessors ((pos widget-position) (width width) (selected selectedp) (win window) (style style)) field
     (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
            (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
       (setf (cursor-position win) pos)
@@ -131,7 +131,7 @@ The default background char is #\space."
 
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
-  (with-accessors ((pos element-position) (inptr input-pointer) (dptr display-pointer) (win window)) field
+  (with-accessors ((pos widget-position) (inptr input-pointer) (dptr display-pointer) (win window)) field
     (move win
           ;; TODO: assumes a single-line field.
           (car pos)
@@ -149,7 +149,7 @@ The default background char is #\space."
 ;; TODO: rewrite clear-field in terms of draw field. simply draw an empty string.
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
-  (with-accessors ((pos element-position) (width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
+  (with-accessors ((pos widget-position) (width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
                    (selected selectedp) (win window) (title title) (style style)) field
     (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground)))
            (len (length inbuf))

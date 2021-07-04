@@ -32,7 +32,7 @@
                   (refresh scr)))))))))
 
 (defun snake2 ()
-  "Use event-case for event handling. Use lists instead of complex numbers for directions."  
+  "Use event-case for event handling. Use lists instead of complex numbers for directions."
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)
     (let* ((body '((0 7) (0 6) (0 5) (0 4) (0 3) (0 2) (0 1) (0 0)))
            (head (car body))
@@ -291,7 +291,7 @@
         (bind scr #\l 'exit-event-loop)
         (bind scr '(#\q #\w #\e #\a #\d #\y #\x #\c)
               (lambda (w e) (move-pos e) (update-robots) (draw-board w)))
-        (bind scr #\t (lambda (w e) (setq pos (random-position scr)) (draw-board w)))        
+        (bind scr #\t (lambda (w e) (setq pos (random-position scr)) (draw-board w)))
         (draw-board scr)
         (run-event-loop scr)))))
 
@@ -539,14 +539,14 @@
            (st2 '(:foreground (:fgcolor :black :bgcolor :white :attributes (:bold))
                   :background (:simple-char #\, :fgcolor :blue :bgcolor :yellow :attributes ())))
            (win2 (make-instance 'window :height 10 :width 20 :position (list 3 40) :border t :style st2)))
-      
+
       (setf (style win1) '(:foreground (:fgcolor :white :bgcolor :black :attributes (:underline))
                            :background (:simple-char #\. :fgcolor :yellow :attributes ())))
 
       (add-string win1 "test" :y 2 :x 2)
       (add-string win2 "test" :y 2 :x 2)
       (add-string win2 "best" :y 4 :x 4 :fgcolor :cyan)
-      
+
       (refresh win1)
       (refresh win2)
       (get-char win1)
@@ -1129,7 +1129,7 @@ Test whether a window (stream) was closed."
 
              ;; move the whole window 3. note that this doesnt refresh the windows below,
              ;; they have to be refreshed separately.
-             (setf (window-position w3) '(9 20))
+             (setf (widget-position w3) '(9 20))
              (refresh w3)
              (get-char w3)
 
@@ -1360,7 +1360,7 @@ returned byte by byte as with get-char."
 
                 ;; function keys, the same as #\rubout, but different code.
                 ;; ncurses bug: :backspace is returned for windows, #\rubout for stdscr.
-                (:backspace (format scr "backspace key <--~%"))                
+                (:backspace (format scr "backspace key <--~%"))
                 ;; printable chars (graphic and control chars)
                 (otherwise
                  (add-string scr (format nil "~A ~S~%" event event))
@@ -2611,7 +2611,7 @@ friend. It is my life. I must master it as I must master my life.")
       (move scr 0 0) (format scr "Dimensions: scr ~A win1 ~A win2 ~A win3 ~A"
                              (dimensions scr) (dimensions win1) (dimensions win2) (dimensions win3))
       (move scr 1 0) (format scr "Positions:  scr ~A win1 ~A win2 ~A win3 ~A"
-                             (window-position scr) (window-position win1) (window-position win2) (window-position win3))
+                             (widget-position scr) (widget-position win1) (widget-position win2) (widget-position win3))
       (mapc #'refresh (list scr win1 win2 win3))
       (get-char win3)
       (mapc #'close (list win2 win3))
@@ -2661,7 +2661,7 @@ friend. It is my life. I must master it as I must master my life.")
       ;; it still maps area2, but now to the new position.
       ;; the original content written to the subwin (and thus to scr because they share memory)
       ;; is now visible in scr, since the subwin overlay has moved.
-      (setf (window-position win) '(10 2))
+      (setf (widget-position win) '(10 2))
       (mapc #'(lambda (w) (touch w) (refresh w)) (list scr win))
       (get-char scr)
 
@@ -3399,7 +3399,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       (refresh stack)
       (get-char scr)
 
-      (setf (window-position win) (list 2 4))
+      (setf (widget-position win) (list 2 4))
       (refresh stack)
       (get-char scr)
 

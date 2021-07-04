@@ -149,7 +149,7 @@
       (setf window sub-window)
       (setf (height msg-area) (- height 5))
       (setf (width msg-area) (- width 4))
-      (setf (element-position ok-button) (list (- height 3)
+      (setf (widget-position ok-button) (list (- height 3)
                                                (- (floor width 2)
                                                   ;; why do we need 4 here?
                                                   (floor (+ 4 (length (title ok-button))) 2))))

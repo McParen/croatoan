@@ -20,7 +20,6 @@
     :type          keyword
     :documentation "Types of menus: :selection (default, can contain strings, symbols, menus) or :checklist.")
 
-   ;; TODO: start with nil instead of 0
    (current-item-number
     :initform      0
     :accessor      current-item-number
@@ -86,8 +85,9 @@
   (:default-initargs :keymap 'menu-map)
   (:documentation "A menu is a list of items that can be selected by the user."))
 
+;;; TODO 201230 here we allow which objects are allowed to be passed as items: string, number, symbol, menu
+
 ;; init for menus which aren't menu windows
-;; TODO 201230 here we allow which objects are allowed to be passed as items: string, number, symbol, menu
 (defmethod initialize-instance :after ((menu menu) &key)
   (with-slots (items current-item layout) menu
     ;; Convert strings and symbols to item objects
@@ -116,8 +116,9 @@
                         ;; apply the function to the init arg passed to make-instance.
                         items))
 
+;;; TODO if initarg items is nil, signal an error.
+
     ;; Initialize the current item as the first item from the items list.
-    ;; TODO: if initarg items is nil, signal an error.
     (setf current-item (car items))
 
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
@@ -128,14 +129,11 @@
   (:documentation "A menu-window is an extended window displaying a menu in its sub-window."))
 
 (defmethod initialize-instance :after ((win menu-window) &key color-pair)
-  (with-slots (winptr items type height width (y position-y) (x position-x) element-position sub-window borderp border-width
+  (with-slots (winptr items type height width (y position-y) (x position-x) sub-window borderp border-width
                layout scrolled-layout max-item-length current-item-mark fgcolor bgcolor) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
       (setf border-width (if borderp 1 0))
-      ;; if the initarg :position was given, both the window position and the element-position
-      ;; have been set. ignore the element position.
-      (setf element-position nil)
       ;; if no layout was given, use a vertical list (n 1)
       (unless layout (setf layout (list (length items) 1)))
       ;; if height and width are not given as initargs, they will be calculated,
@@ -149,6 +147,9 @@
                                                   :width (* (cadr (or scrolled-layout layout)) (+ (length current-item-mark) max-item-length))
                                                   :position (list border-width border-width)
                                                   :relative t))
+
+;;; TODO do this once for all decorated windows, at the moment it is duplicated
+
       (cond ((or fgcolor bgcolor)
              (set-color-pair winptr (color-pair win))
              (setf (color-pair sub-window) (color-pair win)
@@ -174,9 +175,8 @@
 
 (defmethod initialize-instance :after ((win menu-panel) &key color-pair)
   (when (eq (type-of win) 'menu-panel)
-    (with-slots (winptr items type height width (y position-y) (x position-x) element-position borderp border-width border-win
+    (with-slots (winptr items type height width (y position-y) (x position-x) borderp border-width border-win
                  shadow-win shadowp layout scrolled-layout max-item-length current-item-mark) win
-      (setf element-position nil)
       (unless layout (setf layout (list (length items) 1)))
       (unless height (setf height (car (or scrolled-layout layout))))
       (unless width  (setf width  (* (cadr (or scrolled-layout layout))
@@ -224,7 +224,8 @@
                do (setf (aref array i j) (nth (+ (* i n) j) list))))
       array)))
 
-;; TODO: see menu_format
+;;; TODO see menu_format
+
 (defun rmi2sub (layout rmi)
   "Take array dimensions and an index in row-major order, return two subscripts.
 
@@ -250,7 +251,7 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   "Overwrite the displayed menu with spaces."
   (with-accessors ((win window)
                    (len max-item-length)
-                   (pos element-position)) menu
+                   (pos widget-position)) menu
     ;; return the visible layout of the menu
     (let* ((layout (if (scrolled-layout menu)
                        (scrolled-layout menu)
@@ -260,7 +261,6 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
            (w (* n len)))
       (clear-rectangle win (car pos) (cadr pos) m w))))
 
-;; TODO 190308: allow events other then the arrow keys to be used to control the menu.
 (defun update-menu (menu event)
   "Take a menu and an event, update in-place the current item of the menu."
   ;; we need to make menu special in order to setf i in the passed menu object.
@@ -279,7 +279,9 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
       (if scrolled-layout
           ;; when scrolling is on, the menu is not cycled.
           (progn
-            ;; TODO 201114 allow the user to set events instead of hard-coding up left down right, for example hjkl.
+
+;;; TODO 201114 allow the user to set events instead of hard-coding up left down right, for example hjkl.
+
             (case event
               (:up    (when (> i 0) (decf i))             ; when not in first row, move one row up
                       (when (< i m0) (decf m0)))          ; when above region, move region one row up
@@ -333,12 +335,14 @@ At the third position, display the item given by item-number."
             (if (eq type :checklist)
                 (if (checkedp (nth item-number items)) "[X] " "[ ] ")
                 "")
-            
+
             ;; for the current item, draw the current-item-mark
             ;; for all other items, draw a space
             (if (= current-item-number item-number)
                 current-item-mark
                 (make-string (length current-item-mark) :initial-element #\space))
+
+;;; TODO 210410 ERROR when the item list length does not match the layout product, we cant format a nil item
 
             ;; then add the item title
             (format-title (nth item-number items)) )))
@@ -350,26 +354,27 @@ At the third position, display the item given by item-number."
                    (current-item-mark current-item-mark)
                    (current-item-position current-item-position)
                    (max-item-length max-item-length)
-                   (element-position element-position)
+                   (widget-position widget-position)
                    (style style)) menu
     (let* (pos-y
            pos-x
            (item-selected-p (= item-number current-item-number))
            (len (+ (length current-item-mark) max-item-length)))
-      (if element-position
-          ;; add an offset when element-position is given
-          (setq pos-y (+ i         (car  element-position))
-                pos-x (+ (* j len) (cadr element-position)))
-          ;; if a position is not given, display the menu starting at 0,0
+      (if (typep menu 'window)
+          ;; if the menu is a menu-window or a menu-panel, assume the (0 0) position
           (setq pos-y i
-                pos-x (* j len)))
+                pos-x (* j len))
+          ;; otherwise, the menu itself can be positioned
+          (setq pos-y (+ i         (car  widget-position))
+                pos-x (+ (* j len) (cadr widget-position))))
       (move win pos-y pos-x)
       ;; save the position of the current item, to be used in update-cursor-position.
       (when item-selected-p
         (setf current-item-position (list pos-y pos-x)))
 
-      ;; TODO 191226: foreground should be displayed when the item is current AND the menu element is selected.
-      ;; TODO 191227: have a default selected style, the default non-selected style is nil.
+;;; TODO 191226: foreground should be displayed when the item is current AND the menu element is selected.
+;;; TODO 191227: have a default selected style, the default non-selected style is nil.
+
       (let ((fg-style (if style
                           (getf style (if item-selected-p :selected-foreground :foreground))
                           ;; default foreground style
@@ -379,7 +384,9 @@ At the third position, display the item given by item-number."
                           ;; default background style
                           (if item-selected-p (list :attributes (list :reverse)) nil))))
         ;; write an empty string as the background.
-        ;; TODO 200705: :n should take mark length into account
+
+;;; TODO 200705: :n should take mark length into account
+
         (save-excursion win (add win #\space :style bg-style :n len))
         ;; display it in the window associated with the menu
         (add win (format-menu-item menu item-number) :style fg-style)))))
@@ -389,12 +396,11 @@ At the third position, display the item given by item-number."
   "Draw the menu to the window."
   (with-accessors ((layout layout) (scrolled-layout scrolled-layout) (scrolled-region-start scrolled-region-start)) menu
 
-    ;; TODO 191201: remove this to be able to draw a menu within a form.
-    ;; if we clear here, we clear the whole window, which also clears the rest of the form, not only the menu.
-    ;; problem: when we do not clear the window, the highlight of the last item is not removed
+;;; TODO 191201: remove this to be able to draw a menu within a form.
+;;; if we clear here, we clear the whole window, which also clears the rest of the form, not only the menu.
+;;; problem: when we do not clear the window, the highlight of the last item is not removed
+;;; t19b2 menus are not displayed properly if we do not clear
 
-    ;; t19b2 menus are not displayed properly if we do not clear
-    
     ;;(clear window)
 
     (let ((m  (car  layout))
@@ -433,14 +439,27 @@ At the third position, display the item given by item-number."
     (draw-menu sub-win menu)
     ;; we have to explicitely touch the background win, because otherwise it wont get refreshed.
     (touch menu)
-    ;; TODO: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
-    ;; make refresh specialize on menu and extended-window in a way to do both.
+
+;;; TODO: when we refresh a window with a subwin, we shouldnt have to refresh the subwin separately.
+;;; make refresh specialize on menu and extended-window in a way to do both.
+
     (refresh menu)))
 
 (defmethod draw ((menu menu-panel))
   (with-accessors ((title title) (borderp borderp)) menu
     (when (and borderp title)
+
+;;; TODO 210228 problem: add-title tries to take the title from the window where it is displayed
+;;; for a panel, those are two different objects
+;;; a possible elegant solution could be to have a "parent" for all objects, so when we dont find a title,
+;;; take the title of the parent...
+
       (add-title (slot-value menu 'border-win)
+
+;;; TODO 210306 we cant add a title style because it is defined for the main window, not for the border window
+;;; -> solution: add-title should be a method
+;;; TODO 210228 also we do not want to hard code the title prefix and suffix.
+
                  (format-title menu "| " " |"))))
   (draw-menu menu menu)
   (refresh menu))
@@ -504,11 +523,12 @@ Return the value from select."
   (declare (ignore event))
   (return-from-menu menu nil))
 
-;; TODO 191201: (setf (checked-items menu) (list :name1 :name2))
-;; pass a list of items to be checked.
+;;; TODO 191201 (setf (checked-items menu) (list :name1 :name2))
+;;; pass a list of items to be checked.
+
 (defun checked-items (menu)
   "Take a menu, return a list of checked menu items."
-  (loop for i in (items menu) if (checkedp i) collect i))  
+  (loop for i in (items menu) if (checkedp i) collect i))
 
 (defmethod value ((menu menu))
   "Return the value of the selected item."
@@ -522,7 +542,8 @@ Return the value from select."
   "Return the value of the currently selected item or all checked items."
   (declare (ignore event))
 
-  ;; TODO 191201: do not check the menu-type slot, but the object type
+;;; TODO 191201 do not check the menu-type slot, but the object type
+
   ;; menu vs checklist
   (case (menu-type menu)
     (:checklist
@@ -538,7 +559,8 @@ Return the value from select."
               (typep val 'number))
           (return-from-menu menu val))
 
-         ;; TODO 201227 instead of adding separate function objects, do what CAPI does and add a callback slot to every item
+;;; TODO 201227 instead of adding separate function objects, do what CAPI does and add a callback slot to every item
+
          ;; if the item is a function object, call it.
          ((typep val 'function)
           (funcall val)
@@ -586,11 +608,11 @@ Return the value from select."
   (:left  'update-redraw-menu)
   (:right 'update-redraw-menu)
 
+;;; TODO 191213: when the menu is an element, this action should not be called from an element, but from the parent form.
+;;; so if a menu is always be used as an element, remove this.
+;;; it should stay for the cases when we use menus which are not embedded in a form.
+
   ;; return the selected item or all checked items, then exit the menu like q.
-  ;; TODO 191213: when the menu is an element, this action should not be called from an element,
-  ;; but from the parent form.
-  ;; so if a menu is always be used as an element, remove this.
-  ;; it should stay for the cases when we use menus which are not embedded in a form.
   (#\newline 'accept-selection))
 
 (defgeneric select (obj))
@@ -607,7 +629,7 @@ If the selected item is a menu object, recursively display the sub menu."
   (stack-push menu *menu-stack*)
 
   (draw menu)
-  
+
   ;; here we can pass the menu to run-event-loop because it is a menu-window.
   ;; all handler functions have to accept window and event as arguments.
   (let ((val (run-event-loop menu)))

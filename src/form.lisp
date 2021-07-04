@@ -25,7 +25,7 @@ Instead of the name, another key can be provided to identify the element."
   (:documentation "Update the cursor position of the element of a form.")
   (:method (object)
     "The default method puts the cursor at the start position of the element."
-    (setf (cursor-position (window object)) (element-position object))
+    (setf (cursor-position (window object)) (widget-position object))
     (refresh (window object))))
 
 ;; when the form element is an embedded selection menu or checklist
@@ -52,11 +52,11 @@ Place the cursor between the brackets [_] of the current item."
 
 (defmethod update-cursor-position ((checkbox checkbox))
   "Update the cursor position of a checkbox."
-  (with-accessors ((pos element-position) (win window)) checkbox
+  (with-accessors ((pos widget-position) (win window)) checkbox
     (move win
           (car pos)
           (1+ (cadr pos))) ;; put the cursor after the [
-    (refresh win) ))
+    (refresh win)))
 
 ;; update-cursor-position for form-window is identical to that for form.
 (defmethod update-cursor-position ((form form))
@@ -67,7 +67,7 @@ Place the cursor between the brackets [_] of the current item."
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
 (defmethod draw ((label label))
-  (with-accessors ((pos element-position) (win window) (name name) (title title) (width width) (style style) (reference reference)
+  (with-accessors ((pos widget-position) (win window) (name name) (title title) (width width) (style style) (reference reference)
                    (parent parent)) label
     ;; pick the string to write in the following order
     ;;   title of the label
@@ -92,7 +92,7 @@ Place the cursor between the brackets [_] of the current item."
         (add-string win string :style fg-style)))))
 
 (defmethod draw ((button button))
-  (with-accessors ((pos element-position) (name name) (title title) (win window) (selected selectedp) (style style)) button
+  (with-accessors ((pos widget-position) (name name) (title title) (win window) (selected selectedp) (style style)) button
     (apply #'move win pos)
     (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground))))
       ;; if a title is given, display it, otherwise use the name.
@@ -100,7 +100,7 @@ Place the cursor between the brackets [_] of the current item."
 
 ;; TODO: for a checkbox, we need a style for checked and unchecked
 (defmethod draw ((checkbox checkbox))
-  (with-accessors ((pos element-position) (name name) (win window) (selected selectedp) (style style)
+  (with-accessors ((pos widget-position) (name name) (win window) (selected selectedp) (style style)
                    (checkedp checkedp)) checkbox
     (apply #'move win pos)
     (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground))))
@@ -162,6 +162,12 @@ When title is t instead of a title string, display the symbol name of the widget
                   title
                   (format-title win "| " " |"))
               :y 0 :x 2 :style (getf (slot-value win 'style) :title)))
+
+;; change order of superclasses in menu-win
+
+;; TODO 201030 add :style option to the cchar constructor
+;; TODO 201030 add style-to-complex-char and complex-char-to-style
+;;(setf (background win) (make-instance 'complex-char :style '(:simple-char #\space :fgcolor :red :bgcolor :white)))
 
 (defmethod draw ((win extended-window))
   "Draw the background window, and the title and the border if they are given."

@@ -1,5 +1,6 @@
 (in-package :de.anvi.croatoan)
 
+;; TODO 200317 make move a method, so we can use it for fields and textboxes
 (defun move (window y x &key relative)
   "Move cursor to the position given by row y and column x.
 
@@ -51,11 +52,12 @@ different position."
                        dir)))
       (move window (car offset) (cadr offset) :relative t))))
 
+;;; TODO 210628 rename to move-widget
 (defun move-window (window y x &key relative)
   "Move top left corner of the window to row y and column x.
 
 If relative is t, move the window by y rows and x columns relative to its current position."
-  (with-accessors ((pos window-position)) window
+  (with-accessors ((pos widget-position)) window
     (let* ((pos-y (car pos))
            (pos-x (cadr pos))
            (new-pos (if relative

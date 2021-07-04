@@ -14,7 +14,7 @@
    before-event-hook
    after-event-hook
    before-submenu-hook
-   
+
    event-case
    keymap
    define-keymap
@@ -63,7 +63,8 @@
    width
    height
    dimensions
-   window-position
+   widget-position
+   window-position ;deprecated
    position-y
    position-x
    cursor-position
@@ -114,7 +115,6 @@
    ;; form
    buffer
    elements
-   element-position
    activep
    style
    max-buffer-length

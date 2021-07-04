@@ -18,15 +18,14 @@
     (when (and (null bindings) bindings-plist)
       (setf bindings (plist2alist (convert-strings bindings-plist))))))
 
-(defclass widget ()
+(defclass component ()
   ((name
     :initarg       :name
     :initform      nil
     :reader        name
     :type          (or null symbol keyword)
     :documentation
-    "Optional unique name by which the widget can be identified and accessed.
-    If the title is t, the name is displayed instead of the title.")
+    "Optional unique name by which the object can be identified and accessed.")
 
    (title
     :initarg       :title
@@ -34,8 +33,8 @@
     :accessor      title
     :type          (or boolean string)
     :documentation
-    "Title of the widget to be displayed to the user.
-    If the title is t, the name should be displayed.")
+    "Title of the object to be displayed to the user. If nil, no title is displayed.
+    If the title is t, the name is be displayed.")
 
    (style
     :initarg       :style
@@ -43,27 +42,28 @@
     :type          (or null cons)
     :accessor      style
     :documentation
-    "A style is a plist corresponding to the properties of a complex char.
 
-In the plist the properties fgcolor, bgcolor, the attributes and a
-simple character can be specified.
+    "A style is a plist containing the properties of an object necessary for its rendering.
 
-Currently, the styles for the following objects can be set:
+The basic style corresponds to the slots of a complex-char:
+:fgcolor, :bgcolor, :attributes and :simple-char
+
+Currently, the compound styles for the following objects can be set:
 
 form:
 A plist of default styles for each form element type.
 
 menu (styles of the menu items)
- :foreground, :background, :selected-foreground, :selected-background
+:foreground, :background, :selected-foreground, :selected-background
 
 The default style of the selected item is the attribute :reverse,
 and nil for other items.
 
 button, checkbox:
- :foreground and :selected-foreground.
+:foreground and :selected-foreground.
 
 field, textarea:
- :foreground, :background, :selected-foreground, :selected-background.")
+:foreground, :background, :selected-foreground, :selected-background.")
 
    (bindings
     :initarg       :bindings
@@ -99,46 +99,63 @@ field, textarea:
     :documentation
     "Alist of hooks registered with the object."))
 
-  (:documentation "Base class for all widgets like windows, form elements, etc."))
+  (:documentation "Base class for all croatoan objects."))
 
-;; called first for all widgets other than windows
+;; called first for all objects other than windows
 ;; if it is not a window (form or form element), set the timeout of its associated window
 ;; we only init if the rate is not the default nil
 ;; because the default window blocking already is t = rate nil
-(defmethod initialize-instance :after ((w widget) &key frame-rate)
-  (unless (typep w 'window)
+(defmethod initialize-instance :after ((obj component) &key frame-rate)
+  (unless (typep obj 'window)
     (when frame-rate
-      (setf (frame-rate w) frame-rate))))
+      (setf (frame-rate obj) frame-rate))))
 
-(defclass window (widget fundamental-character-input-stream fundamental-character-output-stream)
+(defclass widget (component)
   ((position-y
     :initarg       :y
     :initform      0
     :type          integer
-    :documentation "The y coordinate (row) of the top left corner of the window.")
+    :documentation "The y coordinate (row) of the top left corner.")
 
    (position-x
     :initarg       :x
     :initform      0
     :type          integer
-    :documentation "The x coordinate (column) of the top left corner of the window.")
+    :documentation "The x coordinate (column) of the top left corner.")
 
    (width
     :initarg       :width
     :initform      nil
     :type          (or null integer)
-    :documentation "The width (second, horizontal, x dimension) of the window.")
+    :documentation "The width (second, horizontal, x dimension), number of columns.")
 
    (height
     :initarg       :height
     :initform      nil
     :type          (or null integer)
-    :documentation "The height (first, vertical, y dimension) of the window.")
+    :documentation "The height (first, vertical, y dimension), number of rows."))
 
-   ;; has to be a 2el-list so we can use 1 arg with setf.
+  (:documentation
+   "A widget is a visible component defined by its dimensions (h w) and displayed at a given position (y x).
+
+It represents a visible region on the screen, either a window, or a form element like a button or input field."))
+
+(defmethod initialize-instance :after ((obj widget) &key position dimensions)
+  (with-slots (height width (y position-y) (x position-x)) obj
+    ;; the keyword position overrides the keywords y and x
+    (when position
+      (setf y (car position)
+            x (cadr position)))
+    ;; the keyword dimensions overrides width and height
+    (when dimensions
+      (setf height (car dimensions)
+            width (cadr dimensions)))))
+
+(defclass window (widget fundamental-character-input-stream fundamental-character-output-stream)
+  (;; has to be a 2el-list so we can use 1 arg with setf.
    ;; TODO 200724 we actually do not need this slot.
    ;; we only need accessors which access ncurses functions getcuryx and move.
-   ;; we need other slots like width and heght for after methods
+   ;; we need other slots like width and height for :after methods
    (cursor-position
     :type          cons
     :initform      '(0 0)
@@ -245,20 +262,10 @@ primary - most specific first (call-next-method)
               screen
 |#
 
-(defmethod initialize-instance :after ((win window) &key position color-pair dimensions)
+(defmethod initialize-instance :after ((win window) &key color-pair)
   (with-slots (winptr height width (y position-y) (x position-x) fgcolor bgcolor background) win
     ;; for ALL window types
     ;; called BEFORE more specific after methods
-
-    ;; the keyword position overrides the keywords y and x
-    (when position
-      (setf y (car position)
-            x (cadr position)))
-
-    ;; the keyword dimensions overrides width and height
-    (when dimensions
-      (setf height (car dimensions)
-            width (cadr dimensions)))
 
     ;; just for WINDOW types
     (when (eq (type-of win) 'window)
@@ -480,7 +487,8 @@ behaves more like a simple window."))
                                                   :relative t)))))
 
 (defclass panel (window)
-  ((border-width
+  (;; TODO 210701 use default initargs instead of a separate slot
+   (border-width
     :initarg       :border-width
     :initform      1
     :type          integer
@@ -602,7 +610,7 @@ absolute position and dimensions of the panel."))
                (getf style :shadow))
       (setf (style shadow-win) (getf style :shadow)))))
 
-;; if a window-position is given during make-instance, it can be simply ignored.
+;; if a position is given during make-instance, it can be simply ignored.
 ;; or we can check for position and signal an error.
 (defclass pad (window)
   ()
@@ -638,13 +646,6 @@ absolute position and dimensions of the panel."))
     ;; why does a latter type spec not override this earlier type spec?
     ;;:type          (or symbol keyword string number)
     :documentation "Value of the element, mostly the result of the form editing.")
-
-   (element-position
-    :initarg       :position
-    :initform      nil
-    :type          (or null cons)
-    :accessor      element-position
-    :documentation "A two-element list (y=row x=column) containing the coordinate of the top left corner of the element within its associated window.")
 
    ;; we need this to draw selected and other elements with different styles.
    ;; this has to be toggled at the same time as current-element of a form
@@ -731,7 +732,7 @@ absolute position and dimensions of the panel."))
   (:default-initargs :keymap 'checkbox-map)
   (:documentation "A boolean element that can be checked (t) or unchecked (nil)"))
 
-(defclass form (widget)
+(defclass form (component)
   ((elements
     :initarg       :elements
     ;; Make sure we already have fields when we initialize a form.
@@ -810,52 +811,101 @@ absolute position and dimensions of the panel."))
 
 ;; Accessors
 
-(defgeneric window-position (window))
-(defmethod window-position ((win window))
+;;; generic functions and default methods
+
+(defgeneric widget-position (object)
+  (:documentation "Return the position (y x) of the top left corner of the widget.")
+  (:method (object)
+    "The default method returns the values of the y and x slots in a two-element list."
+    (with-slots (position-y position-x) object
+      (list position-y position-x))))
+
+(defgeneric (setf widget-position) (position object)
+  (:documentation "Set the position (y x) of the top left corner of the widget.")
+  (:method (position object)
+    "The default method sets the values of the y and x slots from a two-element list."
+    (with-slots (position-y position-x) object
+      (setf position-y (car position)
+            position-x (cadr position)))))
+
+(defgeneric position-y (object)
+  (:documentation "Return the y position (row) of the top left corner of the widget.")
+  (:method (object)
+    (slot-value object 'position-y)))
+
+(defgeneric position-x (object)
+  (:documentation "Return the x position (column) of the top left corner of the widget.")
+  (:method (object)
+    (slot-value object 'position-x)))
+
+(defgeneric (setf position-y) (y object)
+  (:documentation "Set the y position (row) of the top left corner of the widget.")
+  (:method (y object)
+    (with-slots (position-y) object
+      (setf position-y y))))
+
+(defgeneric (setf position-x) (x object)
+  (:documentation "Set the x position (column) of the top left corner of the widget.")
+  (:method (x object)
+    (with-slots (position-x) object
+      (setf position-x x))))
+
+;;; specialized methods
+
+(defmethod widget-position ((win window))
   (with-slots (winptr) win
     (list (ncurses:getbegy winptr)
           (ncurses:getbegx winptr))))
-(defmethod window-position ((win sub-window))
+
+(defmethod widget-position ((win sub-window))
   (with-slots (winptr relativep) win
     (if relativep
         (list (ncurses:getpary winptr) (ncurses:getparx winptr))
         (list (ncurses:getbegy winptr) (ncurses:getbegx winptr)))))
-(defgeneric (setf window-position) (position window))
-(defmethod (setf window-position) (pos (win window))
+
+(defmethod (setf widget-position) (pos (win window))
   (with-slots (winptr position-y position-x) win
-    (setf position-y (car pos)
-          position-x (cadr pos))
+    (when (next-method-p)
+      (call-next-method))
     (ncurses:mvwin winptr position-y position-x)))
 
-(defgeneric position-y (window))
 (defmethod position-y ((win window))
   (ncurses:getbegy (slot-value win 'winptr)))
+
 (defmethod position-y ((win sub-window))
   (with-slots (winptr relativep) win
     (if relativep
         (ncurses:getpary winptr)
         (ncurses:getbegy winptr))))
 
-(defgeneric position-x (window))
 (defmethod position-x ((win window))
   (ncurses:getbegx (slot-value win 'winptr)))
+
 (defmethod position-x ((win sub-window))
   (with-slots (winptr relativep) win
     (if relativep
         (ncurses:getparx winptr)
         (ncurses:getbegx winptr))))
 
-(defgeneric (setf position-y) (y window))
 (defmethod (setf position-y) (y (win window))
   (with-slots (winptr position-y position-x) win
-    (setf position-y y)
+    (when (next-method-p)
+      (call-next-method))
     (ncurses:mvwin winptr position-y position-x)))
 
-(defgeneric (setf position-x) (x window))
 (defmethod (setf position-x) (x (win window))
   (with-slots (winptr position-y position-x) win
-    (setf position-x x)
+    (when (next-method-p)
+      (call-next-method))
     (ncurses:mvwin winptr position-y position-x)))
+
+(defgeneric window-position (window)
+  (:documentation "Deprecated but kept for backward compatibility, use the inherited widget-position instead."))
+(defmethod window-position ((win window))
+  (widget-position win))
+(defgeneric (setf window-position) (position window))
+(defmethod (setf window-position) (pos (win window))
+  (setf (widget-position win) pos))
 
 ;; "The screen-relative parameters of the window are not changed.
 ;; This routine is used to display different parts of the parent
@@ -864,16 +914,29 @@ absolute position and dimensions of the panel."))
 ;; "The mvderwin() function specifies a mapping of characters.
 ;; The function identifies a mapped area of the parent of the specified window"
 
-(defgeneric (setf source-position) (position sub-window))
+(defgeneric (setf source-position) (position sub-window)
+  (:documentation
+   "Set the position of the parent window that will be mirrored in the sub-window.
+
+By default it is identical to the position of the sub-window."))
+
 (defmethod (setf source-position) (position (w sub-window))
   (setf (slot-value w 'source-position) position)
   (ncurses:mvderwin (slot-value w 'winptr) (car position) (cadr position)))
 
-(defgeneric width (window))
+(defgeneric width (object)
+  (:documentation "")
+  (:method (object)
+    (slot-value object 'width)))
+
+(defgeneric height (object)
+  (:documentation "")
+  (:method (object)
+    (slot-value object 'height)))
+
 (defmethod width ((window window))
   (ncurses:getmaxx (slot-value window 'winptr)))
 
-(defgeneric height (window))
 (defmethod height ((window window))
   (ncurses:getmaxy (slot-value window 'winptr)))
 
