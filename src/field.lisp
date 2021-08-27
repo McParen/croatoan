@@ -57,6 +57,9 @@
     (unless max-buffer-length
       (setf max-buffer-length width))))
 
+(defmethod height ((obj field))
+  1)
+
 ;; TODO: make value return numbers instead of strings
 ;; TODO: make value return nil if it contains an empty buffer
 ;; coercing an empty string to a list properly returns nil.

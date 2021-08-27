@@ -124,6 +124,14 @@
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
     (unless layout (setf layout (list (length items) 1)))))
 
+(defmethod width ((obj menu))
+  (with-slots (max-item-length layout) obj
+    (* (cadr layout) max-item-length)))
+
+(defmethod height ((obj menu))
+  (with-slots (max-item-length layout) obj
+    (car layout)))
+
 (defclass menu-window (menu extended-window)
   ()
   (:documentation "A menu-window is an extended window displaying a menu in its sub-window."))

@@ -25,7 +25,8 @@
     :reader        name
     :type          (or null symbol keyword)
     :documentation
-    "Optional unique name by which the object can be identified and accessed.")
+    "Optional unique name by which the object can be identified and accessed.
+    If the title is t, the name is displayed instead of the title.")
 
    (title
     :initarg       :title
@@ -34,7 +35,7 @@
     :type          (or boolean string)
     :documentation
     "Title of the object to be displayed to the user. If nil, no title is displayed.
-    If the title is t, the name is be displayed.")
+    If the title is t, the name is displayed.")
 
    (style
     :initarg       :style
@@ -42,8 +43,7 @@
     :type          (or null cons)
     :accessor      style
     :documentation
-
-    "A style is a plist containing the properties of an object necessary for its rendering.
+    "A style is a plist with properties relevant to the rendering of an object.
 
 The basic style corresponds to the slots of a complex-char:
 :fgcolor, :bgcolor, :attributes and :simple-char
@@ -766,8 +766,11 @@ absolute position and dimensions of the panel."))
   (:documentation
    "A form is a list of elements like fields, textareas, checkboxes and buttons."))
 
-(defmethod initialize-instance :after ((form form) &key)
+(defmethod initialize-instance :after ((form form) &key layout)
   (with-slots (elements current-element keymap) form
+    (when layout
+      (calculate-positions layout)
+      (setf elements (flatten-elements layout)))
     (if elements
         (progn
           ;; Initialize the current element as the first active element from the passed elements list.
@@ -816,17 +819,27 @@ absolute position and dimensions of the panel."))
 (defgeneric widget-position (object)
   (:documentation "Return the position (y x) of the top left corner of the widget.")
   (:method (object)
-    "The default method returns the values of the y and x slots in a two-element list."
+    "The default method returns the values of the y and x slots in a two-element list.
+
+If both y and x slots are nil, nil is returned instead of (nil nil)."
     (with-slots (position-y position-x) object
-      (list position-y position-x))))
+      (if (and (null position-y)
+               (null position-x))
+          nil
+          (list position-y position-x)))))
 
 (defgeneric (setf widget-position) (position object)
   (:documentation "Set the position (y x) of the top left corner of the widget.")
   (:method (position object)
-    "The default method sets the values of the y and x slots from a two-element list."
+    "The default method sets the values of the y and x slots from a two-element list.
+
+If position is nil, both y and x are set to nil."
     (with-slots (position-y position-x) object
-      (setf position-y (car position)
-            position-x (cadr position)))))
+      (if (null position)
+          (setf position-y nil
+                position-x nil)
+          (setf position-y (car position)
+                position-x (cadr position))))))
 
 (defgeneric position-y (object)
   (:documentation "Return the y position (row) of the top left corner of the widget.")
@@ -939,6 +952,55 @@ By default it is identical to the position of the sub-window."))
 
 (defmethod height ((window window))
   (ncurses:getmaxy (slot-value window 'winptr)))
+
+
+(defmethod width ((obj button))
+  (with-slots (title name) obj
+    (length (format nil "<~A>" (if title title name)))))
+
+(defmethod height ((obj button))
+  1)
+
+(defmethod height ((obj label))
+  1)
+
+(defmethod height ((obj (eql nil)))
+  0)
+
+(defmethod width ((obj (eql nil)))
+  ;; nil = "", so length = 0
+  0)
+
+(defmethod width ((obj label))
+  (with-slots (width title name reference parent) obj
+    (if width
+        ;; if the object was initialized with a width, take that
+        width
+        ;; otherwise calc the width from the title or name
+        (let* ((text (or title
+                         (title (find-element parent reference))
+                         (name (find-element parent reference))
+                         name))
+               (string (when text (format nil "~A" text))))
+          (length string)))))
+
+(defmethod width ((obj string))
+  (length obj))
+
+(defmethod width ((obj number))
+  (length (princ-to-string obj)))
+
+(defmethod width ((obj symbol))
+  (length (symbol-name obj)))
+
+(defmethod height ((obj string))
+  1)
+
+(defmethod height ((obj number))
+  1)
+
+(defmethod height ((obj symbol))
+  1)
 
 ;; TODO use getyx, the official macro interface
 ;; TODO add a :dimensions initialization keyword, so we dont have to give height and width separately

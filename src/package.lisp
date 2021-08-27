@@ -44,6 +44,23 @@
    sub-pad
    field
    textarea
+
+   grid
+   cyclicp
+   grid-position-y
+   grid-position-x
+   grid-height
+   grid-width
+   region-position-y
+   region-position-x
+   region-height
+   region-width
+   move-up
+   move-down
+   move-left
+   move-right
+
+   layout
    form
    form-window
    msgbox

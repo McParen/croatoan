@@ -10,6 +10,7 @@
   ((:file "package")
    (:file "character")        ; complex character and string
    (:file "stack")            ; stack extension for curses (ncurses term: panel)
+   (:file "grid")             ; Utility to track the display of items in a scrollable mxn grid
    (:file "classes")
    (:file "croatoan")         ; macros, event handling
    (:file "dialog")           ; misc dialog boxes
