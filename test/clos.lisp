@@ -2544,6 +2544,37 @@ will be more efficient to use a character array, a string."
       (refresh scr)
       (wait-for-event scr))))
 
+(defun t16j2 ()
+  "Pass elements to a form within a grid layout to automatically calculate their positions."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let* ((buttons (loop for i from 0 to 9 collect
+                      (make-instance 'button :title (format nil "~R" (random 200)) :callback 'accept)))
+           (field (make-instance 'field :name :f1 :width 25))
+           (area (make-instance 'textarea :name :a1 :dimensions '(5 20)))
+           (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h) :layout '(4 2) :max-item-length 3))
+           ;; show 6 labels in a grid nested within the main grid.
+           (labels1
+             ;; The padding is the number of spaces added to each element, (top bottom left right).
+             (make-instance 'layout :grid-height 3 :grid-width 2 :padding '(0 1 0 1) :elements
+               (loop for i from 0 to 5 collect
+                 (make-instance 'label :active nil :title (format nil "hello ~r" (random 20))))))
+           (form (make-instance 'form
+                                :window scr
+                                ;; instead of passing the elements in a element list, pass them within a layout object.
+                                ;; this will automatically calculate their positions during form initialization.
+                                ;; "nil" elements are represented as empty cells in the grid.
+                                :layout (make-instance 'layout :grid-height 6 :grid-width 3
+                                                               :padding '(0 1 0 1) :position '(2 4)
+                                                               :elements (append (list menu1 nil) buttons (list area nil labels1 nil field)))
+                                :style '(field (:background (:attributes (:reverse))
+                                                :selected-background (:bgcolor :blue))
+                                         textarea (:background (:attributes (:reverse))
+                                                   :selected-background (:bgcolor :blue))
+                                         label (:foreground (:fgcolor :red :bgcolor :yellow))
+                                         button (:foreground (:attributes (:reverse))
+                                                 :selected-foreground (:bgcolor :blue))))))
+      (edit form))))
+
 (defparameter *t16k-message*
   "This is my textarea. There are many like it, but this one is mine. My textarea is my best
 friend. It is my life. I must master it as I must master my life.")
