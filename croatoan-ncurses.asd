@@ -48,6 +48,7 @@
    (:file "legacy_coding")    ; legacy coding
    (:file "mouse")            ; mouse interface through curses
    (:file "move")             ; move curses window cursor
+   (:file "new_pair")         ; new curses color-pair functions
    (:file "opaque")           ; curses window properties
    (:file "outopts")          ; curses output options
    (:file "pad")              ; create and display curses pads

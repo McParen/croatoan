@@ -13,6 +13,8 @@
    #:nctest7
    #:nctest8
    #:nctest9
+   ;; Use new pair functions: find-pair, alloc-pair, free-pair and reset-color-pairs.
+   #:nctest10
 
    ;; unicode.lisp
    #:ut01

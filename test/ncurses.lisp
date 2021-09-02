@@ -17,7 +17,7 @@
   "Save and use the screen pointer, set attributes by their bitmask."
   (let ((scr (initscr)))
     (mvaddstr 0 0 "hello there")
-    
+
     (wattron scr #x00020000)
     (mvaddstr 7 7 "hello there")
     (wattroff scr #x00020000)
@@ -51,7 +51,8 @@
                            (cffi:mem-aref ptr-r :short)
                            (cffi:mem-aref ptr-g :short)
                            (cffi:mem-aref ptr-b :short))))
-  
+
+  ;; set red on yellow as the window color
   (color-set 1 (cffi:null-pointer))
   (mvaddstr 5 0 "hello")
 
@@ -74,13 +75,9 @@
   ;; so what happens when we apply bold to 1000? nothing?
 
   (getch)
-  
+
   (init-color 3 1000 680 0)
   (mvaddstr 6 0 "hello")
-  
-  ;; TODO: display the hex code of the color
-  ;; TODO: display the name of the color from its number
-
 
   ;; extract and display the RGB contents of predefined color no. 3 (yellow).
   (cffi:with-foreign-objects ((ptr-r :short)
@@ -145,7 +142,7 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
       (dotimes (i 5) (setf (cffi:mem-aref wch 'wchar_t i) 0))
       (mvwin-wch scr 0 0 wcval)
       (getcchar wcval wch attrs color-pair (cffi:null-pointer))
-      
+
       (mvaddstr 5 0 (format nil "~A" (cffi:mem-aref wch 'wchar_t 0)))
       (mvaddstr 6 0 (format nil "~A" (cffi:mem-aref color-pair :short)))
       (mvaddstr 7 0 (format nil "~8,'0x" (cffi:mem-aref attrs 'attr_t))))
@@ -176,7 +173,7 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (wbkgd scr (char-code #\+))
     (addstr (format nil "~A~%" "background plus "))
     (wgetch scr)
-    
+
     (wrefresh scr)
     (wgetch scr)
     (endwin)))
@@ -198,7 +195,7 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (bkgdset (logior (char-code #\.) (color-pair 2)))
     (addstr (format nil "bkgd: green on white~%"))
     (getch)
-    
+
     (addch (char-code #\a))
     (addch (char-code #\b))
     ;; trying to write space will actually write the background char #\.
@@ -237,7 +234,7 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (refresh)
 
     (getch)
-    
+
     (endwin)))
 
 (defun nctest7 ()
@@ -248,9 +245,9 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     ;; init-pair 0 7 0 ; white(7) on black (0) - default color pair
     (init-pair 1 1 3) ; red(1) on yellow(3)
     (init-pair 2 7 0) ; white(7) on black(0)
-    
+
     (addch (char-code #\a))
-    
+
     (color-set 1 (cffi:null-pointer))
 
     (addch (char-code #\b))
@@ -265,7 +262,7 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     ;; set the color back to default
     (color-set 0 (cffi:null-pointer))
     (addch (char-code #\e))
-    
+
     (refresh)
     (getch)
     (endwin)))
@@ -279,7 +276,7 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     ;;(use-default-colors)
     ;; is the same as
     ;;(assume-default-colors -1 -1)
-    
+
     ;; we can not combine any other color with -1
     ;; as soon as one color (fg or g) is -1, the other automatically is set to -1.
     ;; this is the case for unrendered characters added without color attributes.
@@ -331,6 +328,37 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
 
     ;; the screen is cleared using the background char.
     (clear)
+    (refresh)
+    (getch)
+    (endwin)))
+
+;; 210902
+(defun nctest10 ()
+  "Use new pair functions: find-pair, alloc-pair, free-pair and reset-color-pairs."
+  (initscr)
+  (start-color)
+  (let ((pair (if (= -1 (find-pair 1 3)) ; red (1) on yellow (3)
+                  ;; alloc-pair replaces init-pair to define a new pair
+                  (alloc-pair 1 3)
+                  ;; if the pair already exists, return its number
+                  (find-pair 1 3))))
+    (mvaddstr 0 0 "default white on black")
+    (refresh)
+    (getch)
+    (color-set pair (cffi:null-pointer))
+    (mvaddstr 1 0 "red on yellow")
+    (refresh)
+    (getch)
+    ;; mark the pair as unused, so alloc can use it to define a new pair
+    ;; but the color can still be used until it is redefined.
+    (free-pair pair)
+    (mvaddstr 2 0 "red on yellow after free-pair")
+    (refresh)
+    (getch)
+    ;; erases defined color pairs everywhere theyre used (back to black on black)
+    (reset-color-pairs)
+    (color-set 0 (cffi:null-pointer))
+    (mvaddstr 3 0 "default white on black")
     (refresh)
     (getch)
     (endwin)))

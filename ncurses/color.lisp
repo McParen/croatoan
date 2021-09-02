@@ -22,6 +22,8 @@
 ;; int extended_pair_content(int pair, int *f, int *b);
 ;; int extended_color_content(int color, int *r, int *g, int *b);
 
+;; void reset_color_pairs(void);
+
 ;;; C macros
 
 ;; COLOR_PAIR(int n)
@@ -40,11 +42,13 @@
 
 (cffi:defcfun ("init_extended_pair"     init-extended-pair)     :int (pair  :int) (f :int) (b :int))
 (cffi:defcfun ("init_extended_color"    init-extended-color)    :int (color :int) (r :int) (g :int) (b :int))
-(cffi:defcfun ("extended_pair_content"  pair-extended-content)  :int (pair  :int) (f (:pointer :int)) (b (:pointer :int)))
-(cffi:defcfun ("extended_color_content" color-extended-content) :int (color :int) (r (:pointer :int)) (g (:pointer :int)) (b (:pointer :int)))
+(cffi:defcfun ("extended_pair_content"  extended-pair-content)  :int (pair  :int) (f (:pointer :int)) (b (:pointer :int)))
+(cffi:defcfun ("extended_color_content" extended-color-content) :int (color :int) (r (:pointer :int)) (g (:pointer :int)) (b (:pointer :int)))
+
+(cffi:defcfun ("reset_color_pairs"      reset-color-pairs) :void)
 
 (cffi:defcfun ("COLOR_PAIR"  color-pair)  :int (n :int))
-(cffi:defcfun ("PAIR_NUMBER" pair-number) :int (attrs :int))     
+(cffi:defcfun ("PAIR_NUMBER" pair-number) :int (attrs :int))
 
 (defconstant +COLOR-BLACK+   0)
 (defconstant +COLOR-RED+     1)

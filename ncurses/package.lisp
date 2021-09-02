@@ -2,11 +2,11 @@
   (:documentation "Low-level CFFI bindings to the Ncurses C API. Not meant to be used directly.")
   (:use #:common-lisp)
   (:nicknames #:ncurses)
-  (:export 
+  (:export
 
    ;; addch / add a character (with attributes) to a curses window, then advance the cursor
-   addch   
-   waddch  
+   addch
+   waddch
    mvaddch
    mvwaddch
    echochar
@@ -19,10 +19,10 @@
    mvwadd-wch
    echo-wchar
    wecho-wchar
-   
+
    ;; addstr / add a string of characters to a curses window and advance cursor
    addstr
-   addnstr 
+   addnstr
    waddstr
    waddnstr
    mvaddstr
@@ -121,8 +121,9 @@
    color-content
    init-extended-pair
    init-extended-color
-   pair-extended-content
-   color-extended-content
+   extended-pair-content
+   extended-color-content
+   reset-color-pairs
    color-pair
    pair-number
    +COLOR-BLACK+
@@ -162,7 +163,7 @@
    ;; getcchar / Get a wide character string and rendition from a cchar_t or set a cchar_t from a wide-character string
    getcchar
    setcchar
-   
+
    ;; getch / get (or push back) characters from curses terminal keyboard
    getch
    wgetch
@@ -323,6 +324,11 @@
    move
    wmove
 
+   ;; new_pair / new curses color-pair functions
+   alloc-pair
+   find-pair
+   free-pair
+
    ;; ncurses / CRT screen handling and optimization package
    *library-name*
    *library-file-name*
@@ -366,7 +372,7 @@
    idcok
    immedok
    leaveok
-   scrollok              
+   scrollok
    setscrreg
    wsetscrreg
    nl
@@ -386,7 +392,7 @@
    wnoutrefresh
    doupdate
    redrawwin
-   wredrawln   
+   wredrawln
 
    ;; resizeterm / change the curses terminal size
    is-term-resized
@@ -409,10 +415,10 @@
    slk-touch
    slk-attron
    slk-attroff
-   slk-attrset                   
+   slk-attrset
    slk-attr-on
    slk-attr-off
-   slk-attr-set                   
+   slk-attr-set
    slk-attr
    slk-color
 
@@ -431,7 +437,7 @@
    touchwin
    touchline
    untouchwin
-   wtouchln                  
+   wtouchln
    is-linetouched
    is-wintouched
 
@@ -461,7 +467,7 @@
    subwin
    derwin
    mvderwin
-   dupwin              
+   dupwin
    wsyncup
    syncok
    wcursyncup
@@ -476,7 +482,7 @@
    +LC-NUMERIC+
    +LC-TIME+
    +LC-COLLATE+
-   +LC-MONETARY+      
+   +LC-MONETARY+
    +LC-MESSAGES+
    +LC-ALL+
    +LC-PAPER+
