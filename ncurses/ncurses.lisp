@@ -23,6 +23,9 @@
           "libncursesw.so.5.9"
           "libncursesw.so.5"
           "libncursesw.so"))
+    (:windows
+     (:or "libpdcurses.dll"
+	  "libncursesw.dll"))
     (t (:default "libncursesw")))
   (cffi:use-foreign-library libncursesw)
   (setq *library-name* 'libncursesw))
