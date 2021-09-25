@@ -732,6 +732,33 @@ absolute position and dimensions of the panel."))
   (:default-initargs :keymap 'checkbox-map)
   (:documentation "A boolean element that can be checked (t) or unchecked (nil)"))
 
+(defclass collection ()
+  ((items
+    :initarg       :items
+    :initform      nil
+    :accessor      items
+    :type          (or null cons)
+    :documentation "")
+
+   (current-item-number
+    :initform      nil
+    :accessor      current-item-number
+    :type          (or null integer)
+    :documentation "Number (row-major mode) of the currently selected item, nil if the list is empty."))
+
+  (:documentation "Base class for for all objects that contain a list of other objects selectable by the user."))
+
+(defmethod initialize-instance :after ((obj collection) &key)
+  (with-slots (items) obj
+    ;; if items has been passed as an initarg, init the current item pointer
+    (when items
+      (setf (current-item-number obj) 0))))
+
+(defun current-item (collection)
+  "Return the current object from the collection."
+  (with-slots (items current-item-number) collection
+    (nth current-item-number items)))
+
 (defclass form (component)
   ((elements
     :initarg       :elements

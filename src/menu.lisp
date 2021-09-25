@@ -5,32 +5,13 @@
 ;; http://invisible-island.net/ncurses/man/menu.3x.html
 
 ;; default size of ncurses menus is 16 rows, 1 col.
-(defclass menu (element)
-  ((items
-    :initarg       :items
-    :initform      nil
-    :accessor      items
-    :type          (or null cons)
-    :documentation "List of menu items. Item types can be strings, symbols, other menus or callback functions.")
-
-   (menu-type
+(defclass menu (element collection)
+  ((menu-type
     :initarg       :menu-type
     :initform      :selection
     :accessor      menu-type
     :type          keyword
     :documentation "Types of menus: :selection (default, can contain strings, symbols, menus) or :checklist.")
-
-   (current-item-number
-    :initform      0
-    :accessor      current-item-number
-    :type          integer
-    :documentation "Number (row-major mode) of the currently selected item.")
-
-   (current-item
-    :initform      nil
-    :type          (or null string symbol menu-item number)
-    :accessor      current-item
-    :documentation "Pointer to the currently selected item object. The first item is initialized as the current item.")
 
    (current-item-position
     :initarg       :current-item-position
@@ -89,7 +70,7 @@
 
 ;; init for menus which aren't menu windows
 (defmethod initialize-instance :after ((menu menu) &key)
-  (with-slots (items current-item layout) menu
+  (with-slots (items layout) menu
     ;; Convert strings and symbols to item objects
     (setf items (mapcar (lambda (item)
                           (if (typep item 'menu-item)
@@ -115,12 +96,6 @@
                                              :value item)))
                         ;; apply the function to the init arg passed to make-instance.
                         items))
-
-;;; TODO if initarg items is nil, signal an error.
-
-    ;; Initialize the current item as the first item from the items list.
-    (setf current-item (car items))
-
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
     (unless layout (setf layout (list (length items) 1)))))
 
@@ -273,7 +248,7 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   "Take a menu and an event, update in-place the current item of the menu."
   ;; we need to make menu special in order to setf i in the passed menu object.
   (declare (special menu))
-  (with-accessors ((current-item-number current-item-number) (current-item current-item) (items items)
+  (with-accessors ((current-item-number current-item-number) (items items)
                    (cyclic-selection cyclic-selection-p) (layout layout) (scrolled-layout scrolled-layout)
                    (scrolled-region-start scrolled-region-start)) menu
     (let ((i  (car  (rmi2sub layout current-item-number)))
@@ -319,9 +294,7 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                   (:right (setf j (min (1+ j) (1- n)))))))
 
       ;; after updating i,j, update the current-item-number
-      (setf current-item-number (sub2rmi layout (list i j)))
-      ;; after updating the current-item-number, update the pointer to the current-item.
-      (setf current-item (nth current-item-number items)) )))
+      (setf current-item-number (sub2rmi layout (list i j))) )))
 
 (defun format-menu-item (menu item-number)
   "Take a menu and return item item-number as a properly formatted string.
@@ -500,9 +473,8 @@ At the third position, display the item given by item-number."
 ;;   return-from-menu
 (defun reset-menu (menu)
   "After the menu is closed reset it to its initial state."
-  (with-slots (items current-item-number current-item scrolled-region-start menu-type) menu
+  (with-slots (items current-item-number scrolled-region-start menu-type) menu
     (setf current-item-number   0
-          current-item          (car items)
           scrolled-region-start (list 0 0))
     (when (eq menu-type :checklist)
       (loop for i in items if (checkedp i) do (setf (checkedp i) nil)))))
