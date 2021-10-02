@@ -75,11 +75,11 @@
          ;; direct input of the color number, just return it.
          (:number val)
          ;; keyword denoting the color name
-         (:name (color-name-to-number color))
+         (:name (color-name-to-number val))
          (:hex
           (typecase val
             ;; hex rgb notation, for example (:hex #x00ff00)
-            (integer (hex-to-sgr color)))))))))
+            (integer (hex-to-sgr val)))))))))
 
 ;; keys are 2 element lists of the form: (:fgcolor :bgcolor)
 ;; fgcolor and bgcolor are keyword symbols
@@ -149,7 +149,7 @@ If the pair already exists, return its pair number.
 
 If pair is nil, return the default color number, 0.
 
-Example: 
+Example:
 
 (pair-to-number '(:white :black)) => 0"
   (if pair
@@ -187,7 +187,7 @@ Example:
       ;; when both colors are given, just return the original pair
       ((and color-pair fg bg) color-pair)
 
-      ;; when the pair is nil or when both colors are missing      
+      ;; when the pair is nil or when both colors are missing
       ((or (null color-pair)
            (and (null fg) (null bg)))
        ;; just return the default pair
@@ -222,7 +222,7 @@ If both colors are missing, they are substituted in the following order:
       ;; when both colors are given, just return the original pair
       ((and pair fg bg) pair)
 
-      ;; when the pair is nil or when both colors are missing      
+      ;; when the pair is nil or when both colors are missing
       ((or (null pair)
            (and (null fg) (null bg)))
        (cond
@@ -239,7 +239,7 @@ If both colors are missing, they are substituted in the following order:
          ;;((and (background window)
          ;;      (color-pair (background window)))
          ;; (complete-pair window (color-pair (background window))))
-         
+
          (t (number-to-pair 0))))
 
       ;; when only the bg is missing, complete the bg
@@ -432,7 +432,7 @@ attributes and color-pair can be nil.
 If char is a complex char, and the attributes and color-pair are passed,
 they override the attributes and the color-of the complex char."
   (typecase char
-    ;; x2c itself calls make-chtype 
+    ;; x2c itself calls make-chtype
     (complex-char (xchar2chtype char))
     ;; we first convert all three parameters to separate integers,
     ;; then OR them together to create the chtype.

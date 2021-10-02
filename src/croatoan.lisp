@@ -116,7 +116,7 @@ For now, it is limited to events generated in a single window. So events
 from multiple windows have to be handled separately.
 
 In order for event handling to work, input-buffering has to be nil.
-Several control character events can only be handled when 
+Several control character events can only be handled when
 process-control-chars is also nil.
 
 If input-blocking is nil, we can handle the (nil) event, i.e. what
@@ -372,7 +372,7 @@ to the object's bindings slot.
 
 Args is one or more additional arguments that can be passed to the handlers.
 
-Provide a non-local exit point so we can exit the loop from an event handler. 
+Provide a non-local exit point so we can exit the loop from an event handler.
 
 One of the events must provide a way to exit the event loop by 'throwing' the object.
 
@@ -436,7 +436,7 @@ events to be chained together."))
                ;; this means that if we dont need args, we can define most handlers as two-argument functions.
                (apply handler object event args)))
         ;; if there is no handler in the form keymap, pass the event to the current element.
-        (handle-event (current-element object) event args)))))
+        (handle-event (current-item object) event args)))))
 
 (defun exit-event-loop (object event &rest args)
   "Associate this function with an event to exit the event loop."

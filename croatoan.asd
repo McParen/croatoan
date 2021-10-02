@@ -59,7 +59,6 @@
    (:file "touch")
    (:file "util")             ; miscellaneous utils
    (:file "wresize")
-   
+
    ;; Extension libraries
-   (:file "shape")            ; curses extension for plotting shapes
-))
+   (:file "shape")))          ; curses extension for plotting shapes

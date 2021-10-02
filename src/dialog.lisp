@@ -120,21 +120,21 @@
    :enable-function-keys t
    :input-blocking t
    :border t)
-  
+
   (:documentation
    "A msgbox is a form-window presenting the user a message and an OK button to accept it."))
 
 (defmethod initialize-instance :before ((msgbox msgbox) &key center)
-  (with-slots (elements msg-area ok-button) msgbox
+  (with-slots (items msg-area ok-button) msgbox
     (setf msg-area (make-instance 'textarea :position '(1 1) :active nil))
     (setf ok-button (make-instance 'button :name :ok-button :title "  OK  "))
     (setf (callback ok-button) 'accept)
     ;; the elements list has to be assembled :before the primary form initialization method
     ;; otherwise the :after method for form doesnt work
-    (setf elements (list msg-area ok-button))))
+    (setf items (list msg-area ok-button))))
 
 (defmethod initialize-instance :after ((msgbox msgbox) &key center (message-wrap t))
-  (with-slots (winptr height width (y position-y) (x position-x) sub-window window elements current-element message msg-area ok-button) msgbox
+  (with-slots (winptr height width (y position-y) (x position-x) sub-window window message msg-area ok-button) msgbox
     (when (eq (type-of msgbox) 'msgbox)
       ;; The default size of a msgbox is half the height, 2/3 the width of the screen
       (unless height (setf height (round (/ ncurses:LINES 2))))

@@ -759,30 +759,32 @@ absolute position and dimensions of the panel."))
   (with-slots (items current-item-number) collection
     (nth current-item-number items)))
 
-(defclass form (component)
-  ((elements
-    :initarg       :elements
-    ;; Make sure we already have fields when we initialize a form.
-    :initform      nil
-    :type          (or null cons)
-    :accessor      elements
-    :documentation "List of elements. The first element will be initialized as the current element.")
+(defgeneric select-previous-item (collection)
+  (:documentation "")
+  (:method (collection)
+    (with-accessors ((items items) (current-item-number current-item-number)) collection
+      (setf current-item-number (mod (1- current-item-number) (length items))))))
 
-   ;; if init is 0, what if we have no fields yet?
-   (current-element-number
-    :initform      0
-    :type          integer
-    :accessor      current-element-number
-    :documentation "Number of the currently selected element.")
+(defgeneric select-next-item (collection)
+  (:documentation "")
+  (:method (collection)
+    (with-accessors ((items items) (current-item-number current-item-number)) collection
+      (setf current-item-number (mod (1+ current-item-number) (length items))))))
 
-   ;; has to be updated every time the current element number is updated.
-   (current-element
-    :initform      nil
-    :type          (or null field button label checkbox menu checklist textarea)
-    :accessor      current-element
-    :documentation "Currently selected element object.")
+(defgeneric select-first-item (collection)
+  (:documentation "")
+  (:method (collection)
+    (with-accessors ((items items) (current-item-number current-item-number)) collection
+      (setf current-item-number 0))))
 
-   (window
+(defgeneric select-last-item (collection)
+  (:documentation "")
+  (:method (collection)
+    (with-accessors ((items items) (current-item-number current-item-number)) collection
+      (setf current-item-number (1- (length items))))))
+
+(defclass form (component collection)
+  ((window
     :initarg       :window
     :initform      nil
     :type          (or null window)
@@ -791,26 +793,34 @@ absolute position and dimensions of the panel."))
 
   (:default-initargs :keymap 'form-map)
   (:documentation
-   "A form is a list of elements like fields, textareas, checkboxes and buttons."))
+   "A form is a collection of elements like fields, textareas, checkboxes, menus and buttons."))
 
-(defmethod initialize-instance :after ((form form) &key layout)
-  (with-slots (elements current-element keymap) form
+(defmethod initialize-instance :after ((form form) &key layout elements)
+  (with-slots (items current-item-number) form
+    ;; For backward compatibility, if a list of elements has been passed, store it in the items slot.
+    (when elements
+      (setf items elements))
     (when layout
       (calculate-positions layout)
-      (setf elements (flatten-elements layout)))
-    (if elements
+      (setf items (flatten-elements layout)))
+    ;; Check that only elements are passed to a form.
+    (when (notevery (lambda (x) (typep x 'element)) items)
+      (error "Form init: All items passed to a form have to be element objects."))
+    (if items
         (progn
           ;; Initialize the current element as the first active element from the passed elements list.
           ;; we have to set the current element before we can change it with select-previous-element and select-next-element
-          (setf current-element (find-if #'activep elements))
-          ;; set the selected option of the initial current element.
-          (setf (slot-value current-element 'selectedp) t)
+          (setf current-item-number (position-if #'activep items))
+          ;; mark the current element selected so it can be highlighted
+          (setf (slot-value (current-item form) 'selectedp) t)
           ;; set the parent form slot of every element.
-          (loop for element in elements
-             do (setf (slot-value element 'parent) form)))
-
+          (loop for element in items
+                do (setf (slot-value element 'parent) form)))
         ;; if a list of elements was not passed, signal an error.
-        (error "A list of elements is required to initialize a form."))))
+        (error "Form init: A list of elements is required to initialize a form."))))
+
+(defun elements (form)
+  (slot-value form 'items))
 
 ;; TODO: use both window-free forms and form-windows, window-free menus und menu-windows.
 (defclass form-window (extended-window form)

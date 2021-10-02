@@ -61,7 +61,7 @@ Place the cursor between the brackets [_] of the current item."
 ;; update-cursor-position for form-window is identical to that for form.
 (defmethod update-cursor-position ((form form))
   "Move the cursor to the correct position in current element of the form."
-  (update-cursor-position (current-element form)))
+  (update-cursor-position (current-item form)))
 
 (defgeneric draw (object)
   (:documentation "Draw objects (form, field, menu) to their associated window."))
@@ -163,12 +163,6 @@ When title is t instead of a title string, display the symbol name of the widget
                   (format-title win "| " " |"))
               :y 0 :x 2 :style (getf (slot-value win 'style) :title)))
 
-;; change order of superclasses in menu-win
-
-;; TODO 201030 add :style option to the cchar constructor
-;; TODO 201030 add style-to-complex-char and complex-char-to-style
-;;(setf (background win) (make-instance 'complex-char :style '(:simple-char #\space :fgcolor :red :bgcolor :white)))
-
 (defmethod draw ((win extended-window))
   "Draw the background window, and the title and the border if they are given."
   ;; update cursor position only refreshes the window associated with the form, which is the sub-window
@@ -179,7 +173,7 @@ When title is t instead of a title string, display the symbol name of the widget
   ;; TODO 201101 check ncurses:wsyncup, maybe we can avoid the explicit touch
   ;; TODO 210117 check whether we can touch in the refresh routine for a subwin
   (touch win)
-    
+
   ;; TODO do we have to refresh here?
   (refresh win)
 
@@ -194,7 +188,7 @@ When title is t instead of a title string, display the symbol name of the widget
 
 (defmethod draw ((win form-window))
   "Draw the the border and the title, then the form."
-  (with-accessors ((title title) (borderp borderp)) win  
+  (with-accessors ((title title) (borderp borderp)) win
     ;; we can add a title even when there is no border
     ;; If a title is given as a string, it is displayed
     ;; If the title is t, the name is displayed as the title.
@@ -203,49 +197,41 @@ When title is t instead of a title string, display the symbol name of the widget
     ;; a title is only added for form-window
     (when (and borderp title)
       (add-title win))
-  
+
     ;; first call next method to draw the extended window
     ;; then from the decorated window call-next-method to draw the form contents
     (when (next-method-p)
       (call-next-method))))
 
-;; previous-element and next-element are the only two elements where the current-element-number is changed.
-;; here also current-element and selected has to be set.
-(defun select-previous-element (form event &rest args)
+(defmethod select-previous-item ((form form))
   "Select the previous element in a form's element list."
-  ;;(declare (special form))
-  (with-accessors ((elements elements) (current-element-number current-element-number) (current-element current-element) (win window)) form
-    (setf (selectedp current-element) nil)
-
-    ;; use mod to cycle the element list.
-    (setf current-element-number (mod (- current-element-number 1) (length elements)))
-    (setf current-element (nth current-element-number elements))
-
+  (with-accessors ((current-item current-item)) form
+    (setf (selectedp current-item) nil)
+    ;; call parent method for collection
+    (call-next-method)
     ;; ignore inactive elements like labels.
-    (if (activep current-element)
-        (progn
-          (setf (selectedp current-element) t)
-          ;; after we switched the element number, we also have to redraw the form.
-          (draw form))
-        (select-previous-element form event))))
+    (if (activep current-item)
+        (setf (selectedp current-item) t)
+        (select-previous-item form))))
+
+(defun select-previous-element (form event &rest args)
+  (select-previous-item form)
+  (draw form))
+
+(defmethod select-next-item ((form form))
+  "Select the next element in a form's element list."
+  (with-accessors ((current-item current-item)) form
+    (setf (selectedp current-item) nil)
+    ;; call parent method for collection
+    (call-next-method)
+    ;; ignore inactive elements like labels.
+    (if (activep current-item)
+        (setf (selectedp current-item) t)
+        (select-next-item form))))
 
 (defun select-next-element (form event &rest args)
-  "Select the next element in a form's element list."
-  ;;(declare (special form))
-  (with-accessors ((elements elements) (current-element-number current-element-number) (current-element current-element) (win window)) form
-    (setf (selectedp current-element) nil)
-
-    ;; use mod to cycle the element list.
-    (setf current-element-number (mod (+ current-element-number 1) (length elements)))
-    (setf current-element (nth current-element-number elements))
-
-    ;; ignore inactive elements like labels.
-    (if (activep current-element)
-        (progn
-          (setf (selectedp current-element) t)
-          ;; after we switched the element number, we also have to redraw the form.
-          (draw form))
-        (select-next-element form event))))
+  (select-next-item form)
+  (draw form))
 
 (defgeneric move-previous-char (object event &rest args)
   (:documentation "Move the cursor to the previous character.")
@@ -319,8 +305,8 @@ allows to exit the form event loop and return any value."
   (throw (get-catch-tag object)
     (if (typep object 'form)
         ;; form
-        (values (value (current-element object))
-                (name (current-element object)))
+        (values (value (current-item object))
+                (name (current-item object)))
         ;; form element
         (values (value object)
                 (name object)))))

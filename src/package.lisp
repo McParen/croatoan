@@ -60,6 +60,12 @@
    move-left
    move-right
 
+   collection
+   select-previous-item
+   select-next-item
+   select-first-item
+   select-last-item
+
    layout
    form
    form-window
