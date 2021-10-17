@@ -362,3 +362,26 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (refresh)
     (getch)
     (endwin)))
+
+;; 210906
+(defun nctest11 ()
+  "Use wresize to resize a window."
+  (initscr)
+  (let ((win (newwin 5 10 2 10)))
+    (wbkgd win (char-code #\-))
+    (wrefresh win)
+    (wgetch win)
+    ;; the added area is filled with the background character.
+    (wresize win 10 20)
+    (wbkgd win (char-code #\.))
+    (wrefresh win)
+    (wgetch win)
+
+    (wresize win 5 10)
+    (wbkgd win (char-code #\+))
+    (refresh)
+    (wrefresh win)
+    (wgetch win)
+
+    (delwin win)
+    (endwin)))

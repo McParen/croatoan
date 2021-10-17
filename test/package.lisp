@@ -15,6 +15,8 @@
    #:nctest9
    ;; Use new pair functions: find-pair, alloc-pair, free-pair and reset-color-pairs.
    #:nctest10
+   ;; Use wresize to resize a window.
+   #:nctest11
 
    ;; unicode.lisp
    #:ut01
