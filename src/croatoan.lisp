@@ -383,6 +383,22 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
       (handle-events object args)
       (process))))
 
+(defun apply-handler (handler object event args)
+  "Depending on the callback type of the object, pass the correct arguments to the handler function.
+
+At the moment, following callback lambda lists are supported:
+
+(lambda (object) ...)        :object
+(lambda (object event) ...)  :object-event
+
+:callback-type :object-event is the default."
+  (with-slots (callback-type) object
+    (ecase callback-type
+      (:object
+       (apply handler object args))
+      (:object-event
+       (apply handler object event args)))))
+
 (defun handle-events (object args)
   "Read a single event from the user, lookup a handler and apply it."
   (let* ((event (get-wide-event object)))
@@ -396,7 +412,7 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
         ;; It has to be handled separately to allow handling of chained events.
         (let ((handler (get-event-handler object event)))
           (when handler
-            (apply handler object event args))))))
+            (apply-handler handler object event args))))))
 
 (defgeneric handle-event (object event args)
   (:documentation
@@ -419,7 +435,7 @@ events to be chained together."))
                (setf map nil)
                ;; if args is nil, apply will call the handler with just object and event
                ;; this means that if we dont need args, we can define most handlers as two-argument functions.
-               (apply handler object event args)))))))
+               (apply-handler handler object event args)))))))
 
 (defmethod handle-event ((object form) event args)
   "If a form can't handle an event, let the current element try to handle it."
@@ -434,11 +450,11 @@ events to be chained together."))
                (setf map nil)
                ;; if args is nil, apply will call the handler with just object and event
                ;; this means that if we dont need args, we can define most handlers as two-argument functions.
-               (apply handler object event args)))
+               (apply-handler handler object event args)))
         ;; if there is no handler in the form keymap, pass the event to the current element.
         (handle-event (current-item object) event args)))))
 
-(defun exit-event-loop (object event &rest args)
+(defun exit-event-loop (object &optional event &rest args)
   "Associate this function with an event to exit the event loop."
   (declare (ignore event args))
   (throw object :exit-event-loop))

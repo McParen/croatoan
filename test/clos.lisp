@@ -234,8 +234,7 @@
       (flet ((randch () (+ 64 (random 58))))
         (bind scr #\q 'exit-event-loop)
         (bind scr nil
-          (lambda (win event)
-            (declare (ignore event))
+          (lambda (win)
             (loop for column from 0 to (1- width) do
                  (loop repeat (nth column speeds) do
                       (let ((pos (nth column positions)))
@@ -249,7 +248,10 @@
                         (add win #\space  :y (mod (- pos (floor height 3)) height) :x column)
                         (refresh win)
                         (setf (nth column positions) (mod (1+ pos) height)))))))))
-    (setf (frame-rate scr) 20)
+    (setf (frame-rate scr) 20
+          ;; here, the event handlers are passed one argument, the object
+          ;; if the type is :object-event, handlers are passed two arguments
+          (callback-type scr) :object)
     (run-event-loop scr)))
 
 (defun robots ()

@@ -29,7 +29,7 @@
     :type          (or null integer)
     :accessor      max-buffer-length
     :documentation
-    "Max length of the field buffer. If nil, it will be initialized to field width. 
+    "Max length of the field buffer. If nil, it will be initialized to field width.
     Horizontal scrolling is then disabled.")
 
    (display-pointer
@@ -200,11 +200,11 @@ The default background char is #\space."
           ((= (length inbuf) width)
            (setf inptr (1- (length inbuf)))
            (setf dptr 0))
-          
+
           ((> (length inbuf) width)
            (setf inptr (length inbuf))
            (setf dptr (+ 1 (- (length inbuf) width))) )))
-  
+
   (draw field))
 
 
@@ -315,11 +315,11 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
                       ;; if scrolling is disabled, do not move past the last char in the field.
                       (when (> inptr (+ dptr width))
                         (incf dptr))
-                      
+
                       (when (> inptr (+ dptr (1- width)))
                         (incf dptr))))))) ;accessors
         (draw field)) ;progn
-      
+
       ;; if the char isnt graphic, do nothing.
       ;; TODO: this doesnt work with acs chars, which are keywords.
       nil))
@@ -339,9 +339,9 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
     ;; when we want to debug the whole form.
     (form
      ;; TODO: this doesnt work when we have elements that are not fields?
-     (debug-print-field-buffer (current-element object) event)))
+     (debug-print-field-buffer (current-item object) event)))
   (draw object))
-  
+
 ;; TODO 191110: if there is an initial value of the field, do not reset it to nil, but to the initial value
 (defun reset-field (field event &rest args)
   "Clear the field and reset its internal buffers and pointers."
@@ -362,7 +362,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
   ;; TODO: use C-a to get to the start of the field
   ;;(#\l 'move-start-of-line)
   ;;(#\k 'move-end-of-line)
-  
+
   ;; C-r = reset = DC2 = #\dc2
   ;; reset the field
   (#\dc2 'reset-field)
