@@ -16,7 +16,8 @@
           "libncursesw.dylib"
           "libcurses.dylib"))
     (:unix
-     (:or "libncursesw.so.6.2"
+     (:or "libncursesw.so.6.3"
+          "libncursesw.so.6.2"
           "libncursesw.so.6.1"
           "libncursesw.so.6.0"
           "libncursesw.so.6"
@@ -41,7 +42,8 @@
           "libncurses.dylib"
           "libcurses.dylib"))
     (:unix
-     (:or "libncurses.so.6.2"
+     (:or "libncurses.so.6.3"
+          "libncurses.so.6.2"
           "libncurses.so.6.1"
           "libncurses.so.6.0"
           "libncurses.so.6"
@@ -137,6 +139,7 @@ typedef uint32_t mmask_t;
 ;; used in get_wch.lisp
 ;; wint_t needs to be a signed int to represent a negative WEOF value.
 (cffi:defctype wint_t :int32)
+;;(cffi:defctype wint_t :uint32)
 
 ;; typedef chtype attr_t;
 ;; TODO: rename this to attr_t
