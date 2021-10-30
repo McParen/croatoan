@@ -44,8 +44,27 @@
 
   (:documentation "Utility to track the display of items in a scrollable mxn grid, like a layout or a menu."))
 
-(defun move-left (grid)
-  "Move the current grid position once cell to the left."
+(defun visible-grid-height (grid)
+  (with-slots (scrolling-enabled-p region-height grid-height) grid
+    (if scrolling-enabled-p region-height grid-height)))
+
+(defun visible-grid-width (grid)
+  (with-slots (scrolling-enabled-p region-width grid-width) grid
+    (if scrolling-enabled-p region-width grid-width)))
+
+(defgeneric move-left (obj)
+  (:documentation "Move the current grid position one cell to the left."))
+
+(defgeneric move-right (obj)
+  (:documentation "Move the current grid position one cell to the right."))
+
+(defgeneric move-up (obj)
+  (:documentation "Move the current grid position one cell upwards."))
+
+(defgeneric move-down (obj)
+  (:documentation "Move the current grid position one cell downwards."))
+
+(defmethod move-left ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
                (m grid-height)
@@ -68,16 +87,15 @@
                         n0 (- n n1))))
             ;; only scroll the region, no cycling
             (progn
-              (when (> j 0) (decf j))             ; when not in first column, move one column left
-              (when (< j n0) (decf n0))))         ; when left of region, move region one column left
+              (when (> j 0) (decf j))     ; when not in first column, move one column left
+              (when (< j n0) (decf n0)))) ; when left of region, move region one column left
         (if cyclicp
             ;; no scrolling, cycle
             (setf j (mod (1- j) n))
             ;; no scrolling, no cycle
             (setf j (max (1- j) 0))))))
 
-(defun move-right (grid)
-  "Move the current grid position once cell to the right."
+(defmethod move-right ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
                (m grid-height)
@@ -108,8 +126,7 @@
             ;; no scrolling, no cycle
             (setf j (min (1+ j) (1- n)))))))
 
-(defun move-up (grid)
-  "Move the current grid position once cell upwards."
+(defmethod move-up ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
                (n grid-width)
@@ -132,16 +149,15 @@
                         m0 (- m m1))))
             ;; only scroll the region, no cycling
             (progn
-              (when (> i 0) (decf i))        ; when not in first row, move one row up
-              (when (< i m0) (decf m0))))    ; when above region, move region one row up
+              (when (> i 0) (decf i))     ; when not in first row, move one row up
+              (when (< i m0) (decf m0)))) ; when above region, move region one row up
         (if cyclicp
             ;; no scrolling, cycle
             (setf i (mod (1- i) m))
             ;; no scrolling, no cycle
             (setf i (max (1- i) 0))))))
 
-(defun move-down (grid)
-  "Move the current grid position once cell downwards."
+(defmethod move-down ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
                (n grid-width)

@@ -34,21 +34,24 @@
 
 ;; also see menu.lisp / draw dialog-window
 (defmethod initialize-instance :after ((win dialog-window) &key color-pair center)
-  (with-slots (winptr items height width (y position-y) (x position-x) sub-window borderp layout max-item-length current-item-mark
-                      fgcolor bgcolor message-pad message-text message-height message-pad-coordinates) win
+  (with-slots (winptr items height width (y position-y) (x position-x) sub-window borderp max-item-length current-item-mark
+               fgcolor bgcolor message-pad message-text message-height message-pad-coordinates
+               grid-height grid-width) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
       (let ((padding (if borderp 1 0))
             (item-length (+ (length current-item-mark) max-item-length)))
         ;; if no layout was given, use a horizontal list (1 n).
-        (unless layout (setf layout (list (length items) 1)))
+        (unless (or grid-height grid-width)
+          (setf grid-height 1
+                grid-width (length items)))
 
         ;; if height and width are not given as initargs, they will be calculated,
         ;; according to the number of rows +/- border, and _not_ maximized like normal windows.
         (unless height
-          (setf height (+ (if (zerop padding) 3 2) message-height (* 2 padding) (car layout))))
+          (setf height (+ (if (zerop padding) 3 2) message-height (* 2 padding) grid-height)))
         (unless width
-          (setf width (+ (if (zerop padding) 2 4) (* (cadr layout) item-length))))
+          (setf width (+ (if (zerop padding) 2 4) (* grid-width item-length))))
 
         ;; if the key center was given, calculate position automatically, even if it was explicitely given.
         (when center
@@ -58,8 +61,8 @@
         (setf winptr (ncurses:newwin height width y x))
         (setf sub-window
               (make-instance 'sub-window
-                             :parent win :height (car layout)
-                             :width (* (cadr layout) item-length)
+                             :parent win :height grid-height
+                             :width (* grid-width item-length)
                              :position (list (+ 2 message-height padding) (+ padding 1)) :relative t))
 
         ;; if there is space reserved for a message, and the message is provided,
