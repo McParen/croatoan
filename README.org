@@ -10,10 +10,10 @@ It is inspired by, but not derived from, cl-ncurses and cl-charms.
 The API is not yet stable, but the already finished parts are not
 expected to change much.
 
-It is developed and tested on Ubuntu 20.04 x86_64 and SBCL 2.0.10.
+It is developed and tested on Ubuntu 20.04 x86_64 and SBCL 2.1.10.
 
 The only supported ncurses version is 6.x --with-abi-version=6.
-Version 5.9 mostly works, but I will focus new efforts on 6.x.
+The previous version 5.9 mostly works, but is not actively supported.
 
 If your distribution still ships ncurses --with-abi-version=5,
 for full compatibility (wide characters, 256 colors and extended
@@ -71,7 +71,15 @@ thread-safe queue. Basic support for this has been implemented.
 A tutorial on interacting with ncurses from swank/slime is available
 in docs/slime.md
 
-** Contributing
+* Contributing
 
 You are welcome to contribute and any form of help would be greatly
 appreciated.
+
+* Contact
+
+Please direct any questions about ncurses, croatoan or other
+terminal-related Lisp topics, libraries and applications to the
+following mailing list:
+
+- https://mailman.common-lisp.net/listinfo/croatoan-devel
