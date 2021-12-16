@@ -21,7 +21,7 @@
 ;; code x/y = column/line
 ;; 7bit code table = x-column 0-7 / y-line 0-15
 
-;; x/y:        x       y 
+;; x/y:        x       y
 ;; Bit:    7 6 5 4 3 2 1
 ;; Weight: 4 2 1 8 4 2 1
 
@@ -355,7 +355,7 @@ Mode 2 (erase-line) erases all characters on the line."
 ;; Final char:  m
 ;, Final byte:  06/13
 ;; Sequence:    CSI Pm m
-;; Parameters:  See documentation string. 
+;; Parameters:  See documentation string.
 ;; Defaults:    Pm = 0
 ;; Reference:   ANSI 5.77, ECMA 8.3.117
 (defun select-graphic-rendition (&rest params)
@@ -422,7 +422,7 @@ Background colors:
 
 ;;; DEC private mode
 
-;; Set (enable, turn on) 
+;; Set (enable, turn on)
 
 (defun dec-private-mode-set (mode)
   "Set (turn on, enable) a DEC private mode.

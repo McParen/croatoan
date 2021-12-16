@@ -1,5 +1,5 @@
 (in-package :de.anvi.ansi-escape.test)
-  
+
 (defun t01 ()
   (erase)
   (cursor-position 0 0)
@@ -110,15 +110,15 @@ In the default cooked mode, the entry has to be confirmed by pressing enter."
                   :csize  nil
                   :parenb nil
                   :vmin 1
-                  :vtime 0)  
+                  :vtime 0)
   (erase)
   (cursor-position 1 1)
   (force-output)
   (let ((a (read-char)))
-    (cursor-position 3 1)
+    (cursor-position 10 5)
     (princ a)
     (force-output))
-  
+
   (set-tty-mode t :echo t
                   :brkint t
                   :ignpar t
@@ -155,3 +155,30 @@ Cooked and raw are opposite modes. Enabling cooked disbles raw and vice versa."
     (princ a)
     (force-output))
   (uiop:run-program "stty -raw echo" :ignore-error-status t))
+
+(defun t09 ()
+  "Query terminal size with ANSI escape sequences."
+  ;; Put the terminal into raw mode so we can read the "user input"
+  ;; of the reply char by char
+  ;; Turn off the echo or the sequence will be displayed
+  (set-tty-mode t :cooked nil :echo nil)
+  (save-cursor-position)
+  ;; Go to the bottom right corner of the terminal by attempting
+  ;; to go to some high value of row and column
+  (cursor-position 999 999)
+  (let (chars)
+    ;; The terminal returns an escape sequence to the standard input
+    (device-status-report)
+    (force-output)
+    ;; The reply isnt immediately available, the terminal does need
+    ;; some time to answer
+    (sleep 0.1)
+    ;; The reply has to be read as if the user typed an escape sequence
+    (loop for i = (read-char-no-hang *standard-input* nil)
+          until (null i)
+          do (push i chars))
+    ;; Put the terminal back into its initial cooked state
+    (set-tty-mode t :raw nil :echo t)
+    (restore-cursor-position)
+    ;; Return the read sequence as a list of characters.
+    (nreverse chars)))
