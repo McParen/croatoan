@@ -415,10 +415,31 @@ Background colors:
 
 (setf (fdefinition 'sgr) #'select-graphic-rendition)
 
-;; the terminal sends ^[[11;16R or ESC[n;mR to the application
-;; as if we read it through read-line
-(defun device-status-report ()
-  (csi "6n"))
+;; Name:        Device Status Report
+;; Mnemonic:    DSR
+;; Final char:  n
+;, Final byte:  06/14
+;; Sequence:    CSI Ps n
+;; Parameters:  Ps = status command to send to the terminal
+;; Defaults:    n = 6
+;; Reference:   ECMA 8.3.35
+(defun device-status-report (&optional (n 6))
+  "The terminal responds by sending a Cursor Position Report (CPR) to the standard input
+as if we read it through read-line from the user."
+  (csi "n" n))
+
+(setf (fdefinition 'dsr) #'device-status-report)
+
+;; Name:        Cursor Position Report
+;; Mnemonic:    CPR
+;; Final char:  R
+;, Final byte:  05/02
+;; Sequence:    CSI Pm ; Pn R
+;; Parameters:  Pm = line, Pn = column
+;; Defaults:    Pm = 1, Pn = 1
+;; Reference:   ECMA 8.3.14
+;; Description: Response of the terminal to a Device Status Report (DSR)
+;;              sent to be read from the standard input.
 
 ;;; DEC private mode
 

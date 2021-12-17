@@ -31,7 +31,7 @@
 
    #:sgr #:select-graphic-rendition
 
-   #:device-status-report
+   #:dsr #:device-status-report
 
    ;; DEC private mode set and reset
    #:decset #:dec-private-mode-set
