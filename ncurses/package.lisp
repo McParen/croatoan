@@ -316,9 +316,15 @@
    ;; legacy_coding
    use-legacy-coding
 
-   ;; mouse interface through curses
+   ;; mouse / mouse interface through curses
+   has-mouse
    getmouse
+   ungetmouse
    mousemask
+   wenclose
+   mouse-trafo
+   wmouse-trafo
+   mouseinterval
 
    ;; move / move curses window cursor
    move

@@ -225,7 +225,7 @@ cchar_t;
 ;;; mouse.lisp
 
 ;; typedef unsigned long mmask_t;
-;; 
+;;
 ;; typedef struct {
 ;;     short id;         /* ID to distinguish multiple devices */
 ;;     int x, y, z;      /* event coordinates */

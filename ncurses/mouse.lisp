@@ -17,8 +17,13 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("getmouse"   getmouse)   :int      (event (:pointer (:struct mevent))))
-(cffi:defcfun ("mousemask"  mousemask)  mmask_t   (newmask mmask_t) (oldmask (:pointer mmask_t)))
-
 (cffi:defcfun ("has_mouse"  has-mouse)  :boolean)
+(cffi:defcfun ("getmouse"   getmouse)   :int      (event (:pointer (:struct mevent))))
 (cffi:defcfun ("ungetmouse" ungetmouse) :int      (event (:pointer (:struct mevent))))
+(cffi:defcfun ("mousemask"  mousemask)  mmask_t   (newmask mmask_t) (oldmask (:pointer mmask_t)))
+(cffi:defcfun ("wenclose"   wenclose)   :boolean  (win window) (y :int) (x :int))
+
+(cffi:defcfun ("mouse_trafo"  mouse-trafo)  :boolean              (py (:pointer :int)) (px (:pointer :int)) (to_screen :boolean))
+(cffi:defcfun ("wmouse_trafo" wmouse-trafo) :boolean (win window) (py (:pointer :int)) (px (:pointer :int)) (to_screen :boolean))
+
+(cffi:defcfun ("mouseinterval" mouseinterval) :int (erval :int))
