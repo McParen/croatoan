@@ -23,7 +23,7 @@
            (labels (;; check whether we left the board.
                     (boundary-crossed-p (piece position)
                       (loop
-                         for i in piece 
+                         for i in piece
                          for j = (mapcar #'+ i position)
                          do
                            (when (or (> (cadr j) 9) (< (cadr j) 0))
@@ -31,16 +31,16 @@
 
                     (bottom-reached-p (piece position)
                       (loop
-                         for i in piece 
+                         for i in piece
                          for j = (mapcar #'+ i position)
                          do
-                           (when (> (car j) 19) 
+                           (when (> (car j) 19)
                              (return t))))
 
                     ;; check whether the piece coordinates are non-nil on the board.
                     (collision-occured-p (board piece position)
                       (loop
-                         for i in piece 
+                         for i in piece
                          for j = (mapcar #'+ i position)
                          do
                            (when (aref board (car j) (cadr j))
@@ -60,7 +60,7 @@
                     ;; add piece to board.
                     (update-board ()
                       (loop
-                         for i in piece 
+                         for i in piece
                          for j = (mapcar #'+ i position)
                          do
                            (setf (aref board (car j) (cadr j)) t)))
@@ -87,7 +87,7 @@
                       ;; add coord of position to every coord of piece
                       ;; then draw the piece
                       (loop
-                         for i in piece 
+                         for i in piece
                          for j = (mapcar #'+ i position)
                          do
                            (move scr (car j) (cadr j))
@@ -111,7 +111,7 @@
                     (rotate-piece ()
                       (let ((next-piece (elt (elt pieces style) (mod (+ orientation 1) 4))))
                         (when (move-permissible-p board next-piece position)
-                          (setf orientation (mod (+ orientation 1) 4)) 
+                          (setf orientation (mod (+ orientation 1) 4))
                           (setf piece (elt (elt pieces style) orientation))
                           (draw-board-and-piece))))
 
@@ -132,7 +132,7 @@
 
              ;; navigate with the arrow keys, q to quit.
              (loop
-                (let ((event (get-event scr)))
+                (let ((event (event-key (get-event scr))))
                   (if event
                       (case event
                         (:up (rotate-piece))

@@ -254,27 +254,53 @@ The default background char is #\space."
     (draw field)))
 
 ;; TODO: rename to add-char, make it a method
-(defun field-add-char (field char &rest args)
+(defun field-add-char (field event &rest args)
   "Add char to the current cursor position in the field, then move the cursor forward.
 
 The buffer can be longer than the displayed field width, horizontal scrolling is enabled."
-  (if (and (characterp char) (graphic-char-p char))
-      (progn
-        (with-accessors ((width width) (inbuf buffer) (mlen max-buffer-length) (inptr input-pointer)
-                         (dptr display-pointer) (win window)) field
-          (let ((len (length inbuf)))
-            (if (insert-mode-p field)
-
-                ;; insert mode
-                (progn
-                  ;; only add new chars until we've reached the max-buffer-length
-                  (unless (>= len mlen)
-                    ;; if we're at the end of the inbuf
-                    (if (= inptr len)
-                        ;; just add another char to the inbuf
-                        (setf inbuf (cons char inbuf))
-                        ;; if we're in the middle of the buffer, either insert or replace
+  (with-accessors ((char event-key)) event
+    (if (and (characterp char) (graphic-char-p char))
+        (progn
+          (with-accessors ((width width) (inbuf buffer) (mlen max-buffer-length) (inptr input-pointer)
+                           (dptr display-pointer) (win window)) field
+            (let ((len (length inbuf)))
+              (if (insert-mode-p field)
+                  ;; insert mode
+                  (progn
+                    ;; only add new chars until we've reached the max-buffer-length
+                    (unless (>= len mlen)
+                      ;; if we're at the end of the inbuf
+                      (if (= inptr len)
+                          ;; just add another char to the inbuf
+                          (setf inbuf (cons char inbuf))
+                          ;; if we're in the middle of the buffer, either insert or replace
                         (setf inbuf (insert-nth (- len inptr) char inbuf)) )
+                      ;; we need special cases when mlen is exactly equal to width.
+                      (if (= mlen width)
+                          ;; advance the cursor if it is not already at the end
+                          ;; if scrolling is disabled, do not move past the last char in the field.
+                          (unless (>= inptr (- mlen 1))
+                            (incf inptr))
+                          (unless (> inptr (- mlen 1))
+                            (incf inptr))))
+                    ;; after updating the fill-pointer, update the display-pointer
+                    (if (< inptr dptr) (decf dptr))
+                    (if (> inptr (+ dptr (1- width))) (incf dptr)))
+
+                  ;; default overwrite mode
+                  (progn
+                    ;; only add new chars until we've reached the max-buffer-length then only overwrite.
+                    (if (>= len mlen)
+                        (if (< inptr mlen)
+                            ;; even when the inbuf is full, when inptr is not at the end, overwrite.
+                            (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf))
+                            nil)
+                        ;; if we're at the end of the inbuf
+                        (if (= inptr len)
+                            ;; just add another char to the inbuf
+                            (setf inbuf (cons char inbuf))
+                            ;; if we're in the middle of the buffer, either insert or replace
+                            (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf))))
                     ;; we need special cases when mlen is exactly equal to width.
                     (if (= mlen width)
                         ;; advance the cursor if it is not already at the end
@@ -282,47 +308,20 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
                         (unless (>= inptr (- mlen 1))
                           (incf inptr))
                         (unless (> inptr (- mlen 1))
-                          (incf inptr))))
-                  ;; after updating the fill-pointer, update the display-pointer
-                  (if (< inptr dptr) (decf dptr))
-                  (if (> inptr (+ dptr (1- width))) (incf dptr)))
+                          (incf inptr)))
+                    ;; after updating the fill-pointer, update the display-pointer
+                    (when (< inptr dptr) (decf dptr))
+                    (if (<= mlen width)
+                        ;; if scrolling is disabled, do not move past the last char in the field.
+                        (when (> inptr (+ dptr width))
+                          (incf dptr))
+                        (when (> inptr (+ dptr (1- width)))
+                          (incf dptr))))))) ;accessors
+          (draw field)) ;progn
 
-                ;; default overwrite mode
-                (progn
-                  ;; only add new chars until we've reached the max-buffer-length then only overwrite.
-                  (if (>= len mlen)
-                      (if (< inptr mlen)
-                          ;; even when the inbuf is full, when inptr is not at the end, overwrite.
-                          (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf))
-                          nil)
-                      ;; if we're at the end of the inbuf
-                      (if (= inptr len)
-                          ;; just add another char to the inbuf
-                          (setf inbuf (cons char inbuf))
-                          ;; if we're in the middle of the buffer, either insert or replace
-                          (setf inbuf (replace-nth (- len (1+ inptr)) char inbuf))))
-                  ;; we need special cases when mlen is exactly equal to width.
-                  (if (= mlen width)
-                      ;; advance the cursor if it is not already at the end
-                      ;; if scrolling is disabled, do not move past the last char in the field.
-                      (unless (>= inptr (- mlen 1))
-                        (incf inptr))
-                      (unless (> inptr (- mlen 1))
-                        (incf inptr)))
-                  ;; after updating the fill-pointer, update the display-pointer
-                  (when (< inptr dptr) (decf dptr))
-                  (if (<= mlen width)
-                      ;; if scrolling is disabled, do not move past the last char in the field.
-                      (when (> inptr (+ dptr width))
-                        (incf dptr))
-
-                      (when (> inptr (+ dptr (1- width)))
-                        (incf dptr))))))) ;accessors
-        (draw field)) ;progn
-
-      ;; if the char isnt graphic, do nothing.
-      ;; TODO: this doesnt work with acs chars, which are keywords.
-      nil))
+        ;; if the char isnt graphic, do nothing.
+        ;; TODO: this doesnt work with acs chars, which are keywords.
+        nil)))
 
 ;; TODO: remove form case
 (defun debug-print-field-buffer (object event &rest args)

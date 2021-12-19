@@ -12,7 +12,7 @@
         (display-snake scr body)
         (refresh scr)
         (loop
-          (let ((event (get-event scr)))
+          (let ((event (event-key (get-event scr))))
             (if event
                 ;; when the event is different from nil
                 (case event
@@ -48,7 +48,7 @@
           (#\q
            (return-from event-case))
           ((:right :left :up :down)
-           (setq dir (get-direction event)))
+           (setq dir (get-direction (event-key event))))
           ((nil)
            (sleep 0.05)
            ;; snake moves = erase last body pair by overwriting it with space
@@ -71,7 +71,7 @@
                (mapc (lambda (pos) (add win #\* :position pos)) body))
              (set-dir (win event)
                (declare (ignore win))
-               (setq dir (get-direction event))))
+               (setq dir (get-direction (event-key event)))))
         (bind scr #\q 'exit-event-loop)
         (bind scr '(:right :left :up :down) #'set-dir)
         (bind scr nil (lambda (w e)
@@ -292,7 +292,7 @@
                  (refresh w)))
         (bind scr #\l 'exit-event-loop)
         (bind scr '(#\q #\w #\e #\a #\d #\y #\x #\c)
-              (lambda (w e) (move-pos e) (update-robots) (draw-board w)))
+              (lambda (w e) (move-pos (event-key e)) (update-robots) (draw-board w)))
         (bind scr #\t (lambda (w e) (setq pos (random-position scr)) (draw-board w)))
         (draw-board scr)
         (run-event-loop scr)))))
@@ -316,7 +316,7 @@
                  (setq runp nil y (floor h 2) x (floor w 2) y1 5 x1 1 y2 5 x2 (- w 2) dy (rand) dx (rand))
                  (draw-game scr))
                (move-paddle (win event)
-                 (case event
+                 (case (event-key event)
                    (#\w (when (> y1 0)       (decf y1)))
                    (#\s (when (< (+ y1 n) h) (incf y1)))
                    (#\p (when (> y2 0)       (decf y2)))
@@ -615,16 +615,15 @@
        while (not (equal ch 113)) ; 113 = q
        do (princ ch scr))))
 
-;; read and display chars until a q is pressed, non-blocking version (leads to 100% CPU usage).
-;; uses get-event for event handling.
 (defun t03b ()
+  "Read and display chars until a q is pressed.
+
+Non-blocking version (leads to 100% CPU usage), uses get-event for event handling."
   (with-screen (scr :input-echoing nil :input-blocking nil)
     (clear scr)
     (add-string scr "Type chars. Type q to quit. ")
     (refresh scr)
-
-    ;; TODO: should get-event only return single bytes, or should we merge it with get-wide-event?
-    (loop (let ((event (get-event scr)))
+    (loop (let ((event (event-key (get-event scr))))
             (when event
               (case event
                 (#\q (return))
@@ -632,26 +631,28 @@
 
 ;; 200119
 (defun t03b1 ()
-  "Show the second return value (integer key code) of get-event and the event type."
+  "Show the integer key code of an event and the event key type."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-scrolling t)
     (clear scr)
     (format scr "get-char:~%")
     (refresh scr)
     (loop
-       (multiple-value-bind (event code) (get-event scr)
-         (when event
-           (case event
-             (#\q (return))
-             (otherwise (format scr "~A ~A ~A~%" event code (type-of event)))))))
+      (let ((event (get-event scr)))
+        (with-accessors ((key event-key) (code event-code)) event
+          (when key
+            (case key
+              (#\q (return))
+              (otherwise (format scr "~A ~A ~A~%" key code (type-of key))))))))
     (clear scr)
     (format scr "get-wide-char:~%")
     (refresh scr)
     (loop
-       (multiple-value-bind (event code) (get-wide-event scr)
-         (when event
-           (case event
-             (#\q (return))
-             (otherwise (format scr "~A ~A ~A~%" event code (type-of event)))))))))
+      (let ((event (get-wide-event scr)))
+        (with-accessors ((key event-key) (code event-code)) event
+          (when key
+            (case key
+              (#\q (return))
+              (otherwise (format scr "~A ~A ~A~%" key code (type-of key))))))))))
 
 ;; using the event-case macro to simplify the event loop.
 ;; do not use ((nil) nil) with input-blocking nil, it leads to 100% CPU usage.
@@ -664,7 +665,7 @@
     (event-case (scr event)
       ;; ((nil) nil)
       (#\q (return-from event-case))
-      (otherwise (add-char scr (char-code event))))))
+      (otherwise (add-char scr (event-code event))))))
 
 ;; slightly improved t03b2 pasted as an example to the cliki croatoan page
 (defun t03b3 ()
@@ -677,7 +678,7 @@
           (attributes scr) '(:bold))
     (event-case (scr event)
       (#\q (return-from event-case))
-      (otherwise (princ event scr)
+      (otherwise (princ (event-key event) scr)
                  (refresh scr)))))
 
 ;; read and display chars until a q is pressed, blocking + gray stream version.
@@ -896,7 +897,7 @@
   (let ((*debugger-hook* #'(lambda (c h) (declare (ignore c)) (declare (ignore h)) (end-screen))))
     (unwind-protect
          (let ((scr (make-instance 'screen)))
-           (add-string scr "hello there! press a char to signal an error and go to the debugger without messung up the screen!")
+           (add-string scr "hello there! press a char to signal an error and go to the debugger without messing up the screen!")
            (refresh scr)
            (get-char scr)
            (error "zu huelf!"))
@@ -1183,7 +1184,7 @@ Test whether a window (stream) was closed."
              (refresh w2)
              (refresh w3)
 
-             (loop (let ((event (get-event scr)))
+             (loop (let ((event (event-key (get-event scr))))
                      (when event
                        (case event
                          (#\1 (touch w1) (refresh w1))
@@ -1237,16 +1238,20 @@ Test whether a window (stream) was closed."
           (stack (make-instance 'stack)))
       ;; create 8 windows (with 8 different background colors), push them to the stack
       (dotimes (i 8)
-        (stack-push (make-instance 'window :height 10 :width 30 :position (list (+ 3 (* i 1)) (+ 3 (* i 3))) :border t :visible t
-                                   :background (make-instance 'complex-char :fgcolor :black :bgcolor (list :number i)))
+        (stack-push (make-instance 'window :height 10 :width 30
+                                           ;;:position (list (+ 3 (* i 1)) (+ 3 (* i 3)))
+                                           :y (+ 3 (* i 1))
+                                           :x (+ 3 (* i 3))
+                                           :border t :visible t
+                                           :background (make-instance 'complex-char :fgcolor :black :bgcolor (list :number i)))
                     stack))
       (refresh stack)
       (event-case (scr event)
         ;; type 0-7 to pick a window
         ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7)
          ;; show the chosen window number in the upper right screen corner
-         (add-char scr event :y 1 :x 78 :color-pair (list :white :black))
-         (setf n (- (char-code event) 48)))
+         (add-char scr (event-key event) :y 1 :x 78 :color-pair (list :white :black))
+         (setf n (- (event-code event) 48)))
         ;; move the chosen window in the stack
         (#\t (stack-move n :top stack)    (setq n 0)              (refresh stack)) ; raise a window to the top
         (#\r (stack-move n :up stack)     (when (> n 0) (decf n)) (refresh stack)) ; raise window n one position
@@ -1321,6 +1326,22 @@ newlines any more and the screen doesnt scroll."
             ;; we wait anyway to spare the CPU.
             (sleep 0.15))))))
 
+(defun t10a3 ()
+  (with-screen (scr :input-echoing nil :input-blocking nil :input-buffering nil :enable-function-keys t)
+    ;; If no key has been pressed, the main loop produces a single tick.
+    (bind scr nil (lambda (win event)
+                    (declare (ignore event))
+                    (princ #\. win)
+                    (refresh scr)))
+    ;; If a key was pressed, it is processed immediately.
+    (bind scr t (lambda (win event)
+                  (princ (event-key event) win)
+                  (refresh win)))
+    (bind scr #\q 'exit-event-loop)
+    ;; a frame rate of 5 ticks per second sets a blocking delay of 1000/5 = 200 milliseconds.
+    (setf (frame-rate scr) 5)
+    (run-event-loop scr)))
+
 (defun t10a ()
   "Print the screen size. Scrolling is enabled.
 
@@ -1334,7 +1355,7 @@ returned byte by byte as with get-char."
     (setf (scrolling-enabled-p scr) t)
     (format scr "~A lines high, ~A columns wide.~%~%" (height scr) (width scr))
     ;; get-event explicitely gets single-byte events, not wide events.
-    (loop (let ((event (get-event scr)))
+    (loop (let ((event (event-key (get-event scr))))
             (when event
               (case event
                 (#\q (return))
@@ -1480,7 +1501,7 @@ returned byte by byte as with get-char."
     (define-function-key :alt-n (list #\esc #\n))
 
     (bind scr #\q 'exit-event-loop)
-    (bind scr t (lambda (w e) (format w "Event: ~S~%" e)))
+    (bind scr t (lambda (w e) (format w "Event: ~S~%" (event-key e))))
 
     (run-event-loop scr)))
 
@@ -1758,7 +1779,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t13 ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil)
     (loop
-       (let ((event (get-event scr)))
+       (let ((event (event-key (get-event scr))))
          (if event
              (case event
                (#\b (alert :beep))
@@ -1766,55 +1787,95 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                (#\q (return)))
              (sleep 0.1))))))
 
-;; minimal setting to get the mouse working.
-;; reads and prints a single mouse event.
 (defun t14 ()
+  "Minimal setting to get the mouse working, read and print a single mouse event."
   (let ((scr (make-instance 'screen :input-echoing nil :input-blocking t :enable-function-keys t)))
     (unwind-protect
          (progn
-           (ncurses:mousemask #b00000111111111111111111111111111 (cffi:null-pointer)) ; activate all mouse events.
-           (get-char scr) ; here you have to click to generate a mouse event.
-           (cffi:with-foreign-object (me '(:struct ncurses:mevent)) ; create a pointer to the struct mevent.
-             (ncurses:getmouse me) ; save the mouse event struct to the pointed position.
-             (princ (cffi:mem-ref me '(:struct ncurses:mevent)) scr) ; dereference the pointer, return a plist of the struct.
+           ;; activate all mouse events.
+           (ncurses:mousemask #b00000111111111111111111111111111 (cffi:null-pointer))
+           ;; click to generate a mouse event.
+           (get-char scr)
+           ;; create a pointer to the struct mevent.
+           (cffi:with-foreign-object (me '(:struct ncurses:mevent))
+             ;; save the mouse event struct to the pointed position.
+             (ncurses:getmouse me)
+             ;; dereference the pointer, return a plist of the struct.
+             (princ (cffi:mem-ref me '(:struct ncurses:mevent)) scr)
              (get-char scr)))
       (close scr))))
 
 ;; (cffi:convert-to-foreign '(id 1 x 1 y 2 z 3 bstate 2) '(:struct mevent))
 ;; (setf ev (convert-from-foreign (mem-ref bstate '(:struct mevent)) '(:struct mevent)))
 
-;; mouse events are now detected in the event loop.
-;; print the y x coordinates and the detected event.
 (defun t14a ()
+  "Mouse events are now detected in the event loop, print the y x coordinates and the event."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
+    ;; Set the events to be reported.
     (set-mouse-event '(:button-1-clicked :button-2-clicked :button-3-clicked))
-    (event-case (scr event y x)
-      ((:button-1-clicked :button-2-clicked :button-3-clicked) (format scr "~3A ~3A ~A~%" y x event))
-      (#\q (return-from event-case)))))
+    (event-case (scr event)
+      ((:button-1-clicked :button-2-clicked :button-3-clicked)
+       (format scr "~3A ~3A ~A~%" (position-y event) (position-x event) (event-key event)))
+      (#\q
+       (return-from event-case)))))
 
-;; left click prints a 1, right click prints a 3.
 (defun t14b ()
+  "A left click prints a 1, right click prints a 3, use event-case to handle mouse events."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
     (set-mouse-event '(:button-1-clicked :button-3-clicked))
-    (event-case (scr event mouse-y mouse-x)
-      (:button-1-clicked (move scr mouse-y mouse-x) (princ "1" scr))
-      (:button-3-clicked (move scr mouse-y mouse-x) (princ "3" scr))
-      (#\q (return-from event-case)))))
+    (event-case (scr event)
+      (:button-1-clicked
+       (move scr (position-y event) (position-x event)) (princ "1" scr))
+      (:button-3-clicked
+       (move scr (position-y event) (position-x event)) (princ "3" scr))
+      (#\q
+       (return-from event-case)))))
+
+(defun t14b1 ()
+  "A left click prints a 1, right click prints a 3, use bind/run-event-loop to handle mouse events."
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
+    (set-mouse-event '(:button-1-clicked :button-3-clicked))
+    (bind scr :button-1-clicked
+          (lambda (w e)
+            (goto w (event-position e)) (princ "1" w)))
+    (bind scr :button-3-clicked
+          (lambda (w e)
+            (move w (position-y e) (position-x e)) (princ "3" w)))
+    (bind scr #\q 'exit-event-loop)
+    (run-event-loop scr)))
 
 (defun t14c ()
-  "Print all mouse events."
+  "Print mouse event details, use event-case for event handling."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
     (ncurses:mousemask #b00000111111111111111111111111111 (cffi:null-pointer))
-    (event-case (scr event y x)
+    (event-case (scr event)
       (#\q (return-from event-case))
-      (t (format scr "~3A ~3A ~A~%" y x event)) )))
+      (t (when (= (cursor-position-y scr) (1- (height scr)))
+           (clear scr))
+         (if (typep event 'mouse-event)
+             (format scr "~3A ~3A ~A~%" (position-y event) (position-x event) (event-key event))
+             (format scr "~A ~A ~A~%" event (event-key event) (event-code event)))))))
+
+(defun t14c1 ()
+  "Print mouse event details with bind/run-event-loop for event handling."
+  (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
+    (ncurses:mousemask #b00000111111111111111111111111111 (cffi:null-pointer))
+    (bind scr #\q 'exit-event-loop)
+    (bind scr t
+          (lambda (w e)
+            (when (= (cursor-position-y w) (1- (height w)))
+              (clear w))
+            (if (typep e 'mouse-event)
+                (format w "~3A ~3A ~A~%" (position-y e) (position-x e) (event-key e))
+                (format w "~A ~A ~A~%" e (event-key e) (event-code e)))))
+    (run-event-loop scr)))
 
 ;; resize event: the standard screen size is resized automatically.
 (defun t15 ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil :enable-colors t)
     (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
     (loop
-       (let ((event (get-event scr)))
+       (let ((event (event-key (get-event scr))))
          (if event
              (case event
                (:resize (move scr 1 0)
@@ -1836,7 +1897,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
           (win (make-instance 'window :height 5 :width 10 :position (list (round (/ (height scr) 2))
                                                                           (round (/ (width scr) 2))))))
       (loop
-         (let ((event (get-event scr)))
+         (let ((event (event-key (get-event scr))))
            (if event
                (case event
                  (:resize ;; if the scren is resized, relocate the window to the new center.
@@ -1867,7 +1928,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
           ;; make the window slightly smaller than the standard screen.
           (win (make-instance 'window :height (- (height scr) 4) :width (- (width scr) 6) :position '(2 3))))
       (loop
-         (let ((event (get-event scr)))
+         (let ((event (event-key (get-event scr))))
            (if event
                (case event
                  (:resize ;; resize the window on every termina resize.
@@ -1983,18 +2044,18 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (delete-char win)))
         (#\q (return-from event-case))
         ((nil) ; when no key is hit at all
-         ;; when there is no event, get-event will return nil.
+         ;; when there is no event, get-event will return a nil event.
          ;; this is the place for no-event code.
          ;; instead of doing nothing, set blocking to t.
          nil)
         ;; non-function keys, i.e. normal character keys
         (otherwise
-         (when (and (characterp event)
+         (when (and (characterp (event-key event))
                     (< (cadr (cursor-position win)) (1- (width win))))
            (incf n)
            ;; insert-mode-p does not insert if we do not use gray stream functions
            ;;(add-wide-char win event))))
-           (write-char event win)))) ; calls stream-write-char
+           (write-char (event-key event) win)))) ; calls stream-write-char
            ;; (princ event win) ; calls print-object
       (close win)
       (close wout))))
@@ -2007,7 +2068,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   "Use an input buffer instead of extracting the string from the window. Create windows using the with-windows macro."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t)
     (with-windows ((wout :height (1- (height scr)) :width (width scr) :position '(0 0) :enable-scrolling t)
-                   (win  :height 1                  :width (width scr) :position (list (1- (height scr)) 0) :enable-function-keys t :input-blocking t))
+                   (win  :height 1                 :width (width scr) :position (list (1- (height scr)) 0) :enable-function-keys t :input-blocking t))
       (let ((*standard-output* wout)
             (inbuf nil) ; input buffer character list
             (inptr 0))  ; position of the next character in the buffer
@@ -2048,10 +2109,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (refresh wout))
           (otherwise
            (if (= inptr (length inbuf))
-               (setf inbuf (cons event inbuf))
+               (setf inbuf (cons (event-key event) inbuf))
                (if (insert-mode-p win)
-                   (setf inbuf (insert-nth (- (length inbuf) inptr) event inbuf))
-                   (setf inbuf (replace-nth (- (length inbuf) (1+ inptr)) event inbuf))))
+                   (setf inbuf (insert-nth (- (length inbuf) inptr) (event-key event) inbuf))
+                   (setf inbuf (replace-nth (- (length inbuf) (1+ inptr)) (event-key event) inbuf))))
            (incf inptr)
            (clear win)
            (add-string win (coerce (reverse inbuf) 'string))
@@ -3371,7 +3432,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
          (format scr "~A" i))
     (refresh scr)
     (event-case (scr event)
-      ((:up :down) (move-direction scr event) (refresh scr))
+      ((:up :down) (move-direction scr (event-key event)) (refresh scr))
       (#\d (delete-line scr) (refresh scr))
       (#\i (insert-line scr) (refresh scr))
       (#\q (return-from event-case)))
@@ -3514,7 +3575,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (bind scr #\a (lambda (win event) (declare (ignore event)) (format win "Hello there.~%")))
     (bind scr #\b (lambda (win event) (declare (ignore event)) (format win "Dear John.~%")))
 
-    (bind scr '("^a" "^b" "^d") (lambda (w e) (format w "Control char: ~A~%" e)))
+    (bind scr '("^a" "^b" "^d") (lambda (w e) (format w "Control char: ~A~%" (event-key e))))
 
     ;; d clears the window.
     (bind scr #\d (lambda (win event) (declare (ignore event)) (clear win)))
@@ -3530,7 +3591,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (run-event-loop scr)))
 
 (defun t28-hello (win event)
-  (format win "Hello there ~A.~%" event))
+  (format win "Hello there ~A.~%" (event-key event)))
 
 (defun t28-clear (win event)
   (declare (ignore event))
@@ -3547,8 +3608,8 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 (defparameter *t28-ctrl-x-map*
   (make-instance 'keymap :bindings-plist
     (list
-     t    (lambda (win event) (format win "^X map: Default event handler ~A~%" event))
-     #\k  (lambda (win event) (format win "^X map: ~A~%" event))
+     t    (lambda (win event) (format win "^X map: Default event handler ~A~%" (event-key event)))
+     #\k  (lambda (win event) (format win "^X map: ~A~%" (event-key event)))
      ;; ^T is another prefix key, so the keys in that map can be reached via "^X ^T".
      "^T" *t28-map*))
   "A separately defined keymap bound to the prefix key ^X.")
@@ -3562,11 +3623,11 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     ;; add another event handler to the window instead of the external keymap
     ;; Object-local bindings override the external keymap. The local bindings
     ;; are checked first for a handler, then the external keymap.
-    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
+    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" (event-key event))))
 
     ;; t is the default handler for all events without defined handlers.
     ;; The default event handler should not be used to handle the nil event when input-blocking is nil
-    (bind *t28-map* t (lambda (win event) (format win "Default event handler ~A~%" event)))
+    (bind *t28-map* t (lambda (win event) (format win "Default event handler ~A~%" (event-key event))))
 
     ;; Defining a keymap as a hander for ^X makes it the prefix key for that keymap.
     (bind scr "^X" *t28-ctrl-x-map*)
@@ -3583,7 +3644,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     (setf (keymap scr) *t28-map*)
 
-    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
+    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" (event-key event))))
 
     ;; The handler function for the nil event will be called between keyboard events.
     (bind scr nil (lambda (win event) (declare (ignore event)) (format win ".")))
@@ -3622,11 +3683,11 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     ;; add another event handler to the window not to the external keymap
     ;; Object-local bindings override the external keymap. The local bindings
     ;; are checked first for a handler, then the external keymap.
-    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" event)))
+    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" (event-key event))))
 
     ;; t is the default handler for all events without defined handlers.
     ;; The default event handler should not be used to handle the nil event when input-blocking is nil
-    (bind (find-keymap 't28b-map) t (lambda (win event) (format win "Default event handler ~A~%" event)))
+    (bind (find-keymap 't28b-map) t (lambda (win event) (format win "Default event handler ~A~%" (event-key event))))
 
     (clear scr)
     (add-string scr "Type a, s or d. Type q to quit.")
@@ -3838,24 +3899,25 @@ Press C-j, C-m, C-i, C-h to see the difference."
                     :enable-function-keys  t
                     :cursor-visible        nil)
     (bind scr "^Q" 'exit-event-loop)
-    (bind scr t (lambda (win event)
-                  (clear win)
-                  (add win "Press C-q to exit." :y 0 :x 0)
-                  (move win 2 0)
-                  (cond ((characterp event)
-                         (let ((key-decoded  (key-to-string  event))
-                               (char-decoded (char-to-string event)))
-                           (format win "event ~a key decoded ~a char decoded ~a" event key-decoded char-decoded)))
-                        ((function-key-p (key-name-to-code event event))
-                         (let ((key-decoded  (key-to-string (key-name-to-code event)))
-                               ;; decoding a char when taking a function key returns no useful result
-                               (char-decoded (char-to-string (key-name-to-code event))))
-                           (move win 2 0)
-                           (format win "event ~a key decoded ~a char decoded ~a" event key-decoded char-decoded)))
-                        ((numberp event)
-                         (format win "Unknown keycode ~a" event))
-                        (t (format win "Unknown event ~A" event)))
-                  (refresh win)))
+    (bind scr t (lambda (win e)
+                  (with-accessors ((event event-key)) e
+                    (clear win)
+                    (add win "Press C-q to exit." :y 0 :x 0)
+                    (move win 2 0)
+                    (cond ((characterp event)
+                           (let ((key-decoded  (key-to-string  event))
+                                 (char-decoded (char-to-string event)))
+                             (format win "event ~a key decoded ~a char decoded ~a" event key-decoded char-decoded)))
+                          ((function-key-p (key-name-to-code event event))
+                           (let ((key-decoded  (key-to-string (key-name-to-code event)))
+                                 ;; decoding a char when taking a function key returns no useful result
+                                 (char-decoded (char-to-string (key-name-to-code event))))
+                             (move win 2 0)
+                             (format win "event ~a key decoded ~a char decoded ~a" event key-decoded char-decoded)))
+                          ((numberp event)
+                           (format win "Unknown keycode ~a" event))
+                          (t (format win "Unknown event ~A" event)))
+                    (refresh win))))
     (clear scr)
     (add scr "Press C-q to exit." :y 0 :x 0)
     (refresh scr)

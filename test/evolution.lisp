@@ -114,7 +114,7 @@
                   (princ "|")
                   (loop for x
                         below *width*
-                        do (princ (cond 
+                        do (princ (cond
                                     ;; if there is one or more animals, print a M.
                                     ((some (lambda (animal) (and (= (animal-x animal) x)
                                                             (= (animal-y animal) y)))
@@ -149,17 +149,17 @@
 ;; instead of using princ to draw to stdout, use add-string to draw to the curses screen.
 ;; the screen has to be initialized first in the main function evolve.
 (defun draw-world-croatoan (scr)
-  (loop 
-     for y 
+  (loop
+     for y
      from 0
      below *height*
-     do (loop 
-           for x 
+     do (loop
+           for x
            from 0
            below *width*
            do (add-string scr
                           (format nil "~A"
-                                  (cond 
+                                  (cond
                                     ;; if there is one or more animals, print a M.
                                     ((some (lambda (animal) (and (= (animal-x animal) x)
                                                             (= (animal-y animal) y)))
@@ -183,15 +183,15 @@
     (setq *width* (width scr))
     (setq *height* (height scr))
 
-    (loop 
-       initially 
+    (loop
+       initially
          (draw-world-croatoan scr)
 
        for ch = (get-char scr)
 
        while (or (= ch -1) (not (equal (code-char ch) #\q)))
        do
-         (update-world) 
+         (update-world)
          (sleep 0.001)
          (draw-world-croatoan scr))))
 
@@ -221,8 +221,8 @@
               ((equal (code-char ch) #\q) (return))))
 
       evolution-body
-      
-      (update-world) 
+
+      (update-world)
       (sleep 0.001)
       (draw-world-croatoan scr)
       (refresh scr)))))
@@ -242,8 +242,8 @@
      (if (key-pressed-p scr)
          (let ((ch (get-char scr)))
            (cond ((equal (code-char ch) #\q) (return))))
-       (progn     
-         (update-world) 
+       (progn
+         (update-world)
          (sleep 0.001)
          (draw-world-croatoan scr) )))))
 
@@ -259,12 +259,12 @@
     (draw-world-croatoan scr)
 
     (loop
-       (let ((event (get-event scr)))
+       (let ((event (event-key (get-event scr))))
          (if event
              (case event
                (#\q (return)))
-             (progn     
-               (update-world) 
+             (progn
+               (update-world)
                (sleep 0.001)
                (draw-world-croatoan scr) ))))))
 
@@ -280,8 +280,8 @@
 
     (event-case (scr event)
       (#\q (return-from event-case))
-      ((nil) 
-       (update-world) 
+      ((nil)
+       (update-world)
        (sleep 0.001)
        (draw-world-croatoan scr)))))
 
@@ -307,5 +307,5 @@
 
     ;; Draw the world once before entering the main loop.
     (draw-world-croatoan scr)
-    
+
     (run-event-loop scr)))

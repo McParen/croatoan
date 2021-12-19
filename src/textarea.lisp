@@ -43,7 +43,7 @@
     :type          (or null integer)
     :accessor      display-pointer
     :documentation
-    "When the area contains more lines than can be shown on screen because they exceed the 
+    "When the area contains more lines than can be shown on screen because they exceed the
     given height, this points to the first line that is displayed.")
 
    (input-pointer
@@ -69,10 +69,11 @@
     "X position (column) in the textarea window where the next character will be added."))
 
   (:default-initargs :keymap 'textarea-map)
-  
+
   (:documentation
    "A textarea is a multiline field for display and editing of texts including newlines.
-   For now, control characters other than newline are not interpreted."))
+   For now, control characters other than newline are not interpreted.
+   The main difference to a window is the ability to scroll the buffer."))
 
 (defmethod initialize-instance :after ((area textarea) &key dimensions)
   (with-slots (width height) area
@@ -155,6 +156,7 @@ clear the window."
 
 (defmethod move-previous-char ((area textarea) event &rest args)
   "Move the cursor to the previous char in the textarea."
+  (declare (ignore event))
   (with-accessors ((width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
                    (win window) (y cursor-position-y) (x cursor-position-x)) area
     (when (> inptr 0)
@@ -177,7 +179,7 @@ clear the window."
          (setf y (1- y) x (1- width))
          (when (< y dptr)
            (decf dptr)))
-         ;; when inptr is on a normal char, just move the cursor to the left        
+         ;; when inptr is on a normal char, just move the cursor to the left
         (t
          (decf inptr)
          (decf x)))))
@@ -205,6 +207,7 @@ return the number of chars between the pointer and the first newline before the 
 
 (defmethod move-next-char ((area textarea) event &rest args)
   "Move the cursor to the next char in the textarea."
+  (declare (ignore event))
   (with-accessors ((width width) (height height) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
                    (win window) (y cursor-position-y) (x cursor-position-x)) area
     (when (< inptr (length inbuf))
@@ -221,26 +224,28 @@ return the number of chars between the pointer and the first newline before the 
             (incf x)))))
   (draw area))
 
-(defun textarea-add-char (area char &rest args)
-  (with-accessors ((inbuf buffer) (inptr input-pointer) (width width) (height height) (dptr display-pointer)
-                   (y cursor-position-y) (x cursor-position-x)) area
-    (when (characterp char)
-      (if (or (char= char #\newline)
-              (= x (1- width)))
-          (progn
-            (setf y (1+ y) x 0)
-            (when (> (- y dptr) (1- height)) (incf dptr)))
-          (incf x))
-      (if (insert-mode-p area)
-          (setf inbuf (insert-nth inptr char inbuf))
-          (setf inbuf (replace-nth inptr char inbuf)))
-      (incf inptr)))
-  (draw area))
+(defun textarea-add-char (area event &rest args)
+  (with-accessors ((char event-key)) event
+    (with-accessors ((inbuf buffer) (inptr input-pointer) (width width) (height height) (dptr display-pointer)
+                     (y cursor-position-y) (x cursor-position-x)) area
+      (when (characterp char)
+        (if (or (char= char #\newline)
+                (= x (1- width)))
+            (progn
+              (setf y (1+ y) x 0)
+              (when (> (- y dptr) (1- height)) (incf dptr)))
+            (incf x))
+        (if (insert-mode-p area)
+            (setf inbuf (insert-nth inptr char inbuf))
+            (setf inbuf (replace-nth inptr char inbuf)))
+        (incf inptr)))
+    (draw area)))
 
 (define-keymap textarea-map
   (:left 'move-previous-char)
   (:right 'move-next-char)
   (:ic  (lambda (area event &rest args)
+          (declare (ignore event))
           (toggle-insert-mode area)))
   (#\soh 'accept)
   (#\can 'cancel)

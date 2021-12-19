@@ -385,3 +385,25 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
 
     (delwin win)
     (endwin)))
+
+;; 211212
+(defun nctest12 ()
+  "Basic use of the ncurses mouse functions."
+  (let ((scr (initscr)))
+    (noecho)
+    (cbreak)
+    ;; we have to call keypad so mouse events are returned as a single
+    ;; event code instead of a whole escape sequence
+    (keypad scr t)
+    ;; 32bit bitmask of mouse events to return
+    (mousemask #b00000111111111111111111111111111 (cffi:null-pointer))
+    (getch)
+    ;; after a general mouse event has been returned by getch,
+    ;; getmouse will return a struct with specific mouse event details.
+    (cffi:with-foreign-object (me '(:struct mevent))
+      (format t "~A" (getmouse me))
+      ;; return the mouse event struct as a plist and print it
+      (addstr (format nil "~A" (cffi:mem-ref me '(:struct mevent)))))
+    (refresh)
+    (getch)
+    (endwin)))
