@@ -341,8 +341,8 @@ The window from which the char is read is automatically refreshed."
 
 
 |#
-    
-    
+
+
 (defmacro access-alist (key find-fn test-fn get-value-fn default)
   "Helper macro for 'key-name-to-code' and 'key-code-to-name'."
   (let ((pair (gensym)))
@@ -460,19 +460,19 @@ The following chars can be returned:
     (cond
       ;; -1 means no key has been pressed.
       ((= ch -1)
-       (values nil ch))
+       (make-instance 'event :key nil :code ch))
       ;; 0-255 are regular chars, whch can be converted to lisp chars with code-char.
       ((and (>= ch 0) (<= ch 255))
-       (values (code-char ch) ch))
+       (make-instance 'event :key (code-char ch) :code ch))
       ;; if the code belongs to a registered function key, return a keyword symbol.
       ((function-key-p ch)
        (let ((ev (key-code-to-name ch ch)))
          (if (eq ev :mouse)
              ;; a mouse event returns 3 values, see mouse.lisp
              (multiple-value-bind (mev y x) (get-mouse-event)
-               (values mev y x))
+               (make-instance 'mouse-event :key mev :code ch :y y :x x))
              ;; for normal function keys, return a keyword and the code.
-             (values ev ch))))
+             (make-instance 'event :key ev :code ch))))
       ;; todo: unknown codes, like mouse, resize and unknown function keys.
       (t
        ;;(error "invalid value of char received from ncurses.")

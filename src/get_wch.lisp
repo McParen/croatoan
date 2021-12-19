@@ -31,29 +31,30 @@ If input-blocking is nil for the window, return nil if no key was typed.")
     "Default method: Read an event from the window associated with object."
     (get-wide-event (window object))))
 
-(defmethod get-wide-event ((window window))
+(defmethod get-wide-event ((object window))
   "Return a single user input event and its code as a second value.
 
 An event can be a lisp character or a keyword representing a function or mouse key.
 
 If input-blocking is nil for the window, return nil if no key was typed."
-  (multiple-value-bind (ch function-key-p) (get-wide-char window)
+  (multiple-value-bind (ch function-key-p) (get-wide-char object)
     (cond
       ;; for wide chars, if no input is waiting in non-blocking mode, ERR=0 is returned.
       ;; for normal chars, ERR=-1.
       ((= ch 0)
-       (values nil ch))
+       (make-instance 'event :key nil :code ch))
       (function-key-p
        (let ((ev (key-code-to-name ch ch)))
          (if (eq ev :mouse)
+             ;; return the mouse key and the position
              (multiple-value-bind (mev y x) (get-mouse-event)
-               (values mev y x)) ; returns 3 values, see mouse.lisp
+               (make-instance 'mouse-event :key mev :code ch :y y :x x))
              ;; return a keyword representing the key name.
-             (values ev ch))))
+             (make-instance 'event :key ev :code ch))))
       ;; if the event is not a function key, it is a character.
       ;; return the lisp character and its corresponding code.
       (t
-       (values (code-char ch) ch)))))
+       (make-instance 'event :key (code-char ch) :code ch)))))
 
 ;; we have to getch from the sub in order to move the cursor there and not on the parent window border.
 (defmethod get-wide-event ((object form-window))

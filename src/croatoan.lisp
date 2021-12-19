@@ -109,7 +109,7 @@ Example:
       `(progn
          ,@body)))
 
-(defmacro event-case ((window event &optional mouse-y mouse-x) &body body)
+(defmacro event-case ((window event) &body body)
   "Window event loop, events are handled by an implicit case form.
 
 For now, it is limited to events generated in a single window. So events
@@ -132,34 +132,19 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
   (let ((get-event-function
          #+(or sb-unicode unicode openmcl-unicode-strings) ''get-wide-event
          #-(or sb-unicode unicode openmcl-unicode-strings) ''get-event))
-    (if (and mouse-y mouse-x)
-        ;; when the variables y and x are passed, bind them to the mouse coordinates
-        `(loop :named event-case do
-            (multiple-value-bind (,event ,mouse-y ,mouse-x) (funcall ,get-event-function ,window)
-              ;;(print (list ,event mouse-y mouse-x) ,window)
-              (when (null ,event)
-                ;; process the contents of the job queue (ncurses access from other threads)
-                (process))
-              (when ,event
-                (run-hook ,window 'before-event-hook))
-              (case ,event
-                ,@body)
-              (when ,event
-                (run-hook ,window 'after-event-hook))))
-        ;; default case, no mouse used
-        `(loop :named event-case do
-            (let ((,event (funcall ,get-event-function ,window)))
-              (when (null ,event)
-                ;; while idle, process the contents of the job queue (ncurses access from other threads)
-                (process))
-              ;; run the hook only for non-nil events.
-              (when ,event
-                (run-hook ,window 'before-event-hook))
-              ;; handle the actual events.
-              (case ,event
-                ,@body)
-              (when ,event
-                (run-hook ,window 'after-event-hook)))))))
+    `(loop :named event-case do
+       (let ((,event (funcall ,get-event-function ,window)))
+         (when (null (event-key ,event))
+           ;; when idle, process the contents of the job queue (ncurses access from other threads)
+           (process))
+         ;; run the hook only for non-nil events.
+         (when (event-key ,event)
+           (run-hook ,window 'before-event-hook))
+         ;; handle the actual events.
+         (case (event-key ,event)
+           ,@body)
+         (when (event-key ,event)
+           (run-hook ,window 'after-event-hook))))))
 
 (defun bind (object event handler)
   "Bind the handler to the event in the bindings alist of the object.
@@ -392,17 +377,22 @@ At the moment, following callback lambda lists are supported:
 (lambda (object event) ...)  :object-event
 
 :callback-type :object-event is the default."
-  (with-slots (callback-type) object
-    (ecase callback-type
-      (:object
-       (apply handler object args))
-      (:object-event
-       (apply handler object event args)))))
+  (if (typep event 'mouse-event)
+      ;; in case of a mouse event, we have to pass the event to every handler
+      ;; because the event contains the position (y x)
+      (apply handler object event args)
+      ;; for other events (keyboard, resize, nil), we can choose what will be passed.
+      (with-slots (callback-type) object
+        (ecase callback-type
+          (:object
+           (apply handler object args))
+          (:object-event
+           (apply handler object event args))))))
 
 (defun handle-events (object args)
   "Read a single event from the user, lookup a handler and apply it."
   (let* ((event (get-wide-event object)))
-    (if event
+    (if (event-key event)
         ;; t
         (progn
           (run-hook object 'before-event-hook)
@@ -410,7 +400,7 @@ At the moment, following callback lambda lists are supported:
           (run-hook object 'after-event-hook))
         ;; The nil (idle) event should be defined directly in the object's bindings/keymap.
         ;; It has to be handled separately to allow handling of chained events.
-        (let ((handler (get-event-handler object event)))
+        (let ((handler (get-event-handler object nil)))
           (when handler
             (apply-handler handler object event args))))))
 
@@ -425,7 +415,7 @@ events to be chained together."))
 (defmethod handle-event (object event args)
   "Default method. If the current keymap is not nil, lookup from that keymap."
   (with-slots ((map current-keymap)) object
-    (let ((handler (get-event-handler (if map map object) event)))
+    (let ((handler (get-event-handler (if map map object) (event-key event))))
       (when handler
         (cond ((typep handler 'keymap)
                ;; when the handler is another keymap, lookup the next event from that keymap.
@@ -440,7 +430,7 @@ events to be chained together."))
 (defmethod handle-event ((object form) event args)
   "If a form can't handle an event, let the current element try to handle it."
   (with-slots ((map current-keymap)) object
-    (let ((handler (get-event-handler (if map map object) event)))
+    (let ((handler (get-event-handler (if map map object) (event-key event))))
       (if handler
         (cond ((typep handler 'keymap)
                ;; when the handler is another keymap, lookup the next event from that keymap.

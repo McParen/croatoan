@@ -7,12 +7,12 @@
 ;; halfdelay is turned off by nocbreak.
 
 ;; terminal input modes:
-;; 
-;;                  canonical             non canonical        
+;;
+;;                  canonical             non canonical
 ;;                  line buffered         character based
 ;;                  ctrl chars processed  ^C,^S,^Q,^D processed  no ctrl chars processed
 ;;                  cooked                cbreak                 raw
-;; 
+;;
 ;; buffering        t                     nil                    nil
 ;; control          t                     t                      nil
 
@@ -20,7 +20,7 @@
 ;; ----------+--------+--------+-----
 ;; buffering | t      | nil    | nil
 ;; ----------+--------+--------+-----
-;; control   | t      | t      | nil 
+;; control   | t      | t      | nil
 
 ;; The combination echo+getch should not be used during buffered input
 (defun set-input-mode (input-buffering process-control-chars)
@@ -74,8 +74,3 @@ If flag is nil, F keys will be system-dependent multi-character escape codes."
 
 (defun type-ahead-fd (fd)
   (ncurses:typeahead fd))
-
-;;; TODOs
-
-;; [X] do not mix cbreak and raw. use either the one or the other.
-;; [ ] for now, we consider only global optins. work in a window parameter as well.

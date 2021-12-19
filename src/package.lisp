@@ -317,6 +317,13 @@
    ;; mouse / mouse interface through curses
    set-mouse-event
    get-mouse-event
+   event
+   mouse-event
+   mouse-y
+   mouse-x
+   event-key
+   event-code
+   event-position
 
    ;; move / move curses window cursor
    move

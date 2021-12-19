@@ -1,5 +1,76 @@
 (in-package :de.anvi.croatoan)
 
+#|
+
+event     +--> mouse-event
+
+keymap
+
+grid
+
+collection
+
+component +--> widget ---+--> window  +--> screen
+          |              |            |
+          |              |            +--> sub-window
+          |              |            |
+          |              |            +--> extended-window
+          |              |            |
+          |              |            +--> pad --> sub-pad
+          |              |            |
+          |              |            +--> panel
+          |              |
+          |              +--> element +--> field
+          |              |            |
+          |              |            +--> button
+          |              |            |
+          |              |            +--> label
+          |              |            |
+          |              |            +--> checkbox --> menu-item
+          |              |            |
+          |              |            +--> menu +--> menu-window --> dialog-window
+          |              |                      |
+          |              |                      +--> menu-panel
+          |              |                      |
+          |              |                      +--> checklist
+          |              |
+          |              +--> layout
+          |
+          +--> form --------> form-window
+|#
+
+(defclass event ()
+  ((key
+    :initarg       :key
+    :initform      nil
+    :reader        event-key
+    :type          (or null keyword character)
+    :documentation "Character or keyword representing a function key, terminal :resize or mouse event.")
+
+   (code
+    :initarg       :code
+    :initform      nil
+    :reader        event-code
+    :type          (or null integer)
+    :documentation "Integer code representing the character or function key as returned by ncurses."))
+
+  (:documentation  ""))
+
+(defclass mouse-event (event)
+  ((position-y
+    :initarg       :y
+    :initform      nil
+    :type          (or null integer)
+    :documentation "The y coordinate (row) of mouse event.")
+
+   (position-x
+    :initarg       :x
+    :initform      nil
+    :type          (or null integer)
+    :documentation "The x coordinate (column) of the mouse event."))
+
+  (:documentation  "The class represents the ncurses MEVENT struct as returned by getmouse."))
+
 (defclass keymap ()
   ((bindings
     :initarg       :bindings
