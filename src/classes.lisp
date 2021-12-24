@@ -67,7 +67,14 @@ component +--> widget ---+--> window  +--> screen
     :initarg       :x
     :initform      nil
     :type          (or null integer)
-    :documentation "The x coordinate (column) of the mouse event."))
+    :documentation "The x coordinate (column) of the mouse event.")
+
+   (modifiers
+    :initarg       :modifiers
+    :initform      nil
+    :reader        event-modifiers
+    :type          (or null cons)
+    :documentation "A list containing any combination of :ctrl, :shift and :alt"))
 
   (:documentation  "The class represents the ncurses MEVENT struct as returned by getmouse."))
 

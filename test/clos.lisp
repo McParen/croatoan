@@ -1815,7 +1815,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (set-mouse-event '(:button-1-clicked :button-2-clicked :button-3-clicked))
     (event-case (scr event)
       ((:button-1-clicked :button-2-clicked :button-3-clicked)
-       (format scr "~3A ~3A ~A~%" (position-y event) (position-x event) (event-key event)))
+       (format scr "~3A ~3A ~A ~A~%" (position-y event) (position-x event) (event-key event) (event-modifiers event)))
       (#\q
        (return-from event-case)))))
 
@@ -1859,14 +1859,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t14c1 ()
   "Print mouse event details with bind/run-event-loop for event handling."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
-    (ncurses:mousemask #b00000111111111111111111111111111 (cffi:null-pointer))
+    ;; :all-mouse-events is a bitmask for button events
+    ;; :report-mouse-position has to be activated explicitely
+    (set-mouse-event '(:all-mouse-events :report-mouse-position))
     (bind scr #\q 'exit-event-loop)
     (bind scr t
           (lambda (w e)
             (when (= (cursor-position-y w) (1- (height w)))
               (clear w))
             (if (typep e 'mouse-event)
-                (format w "~3A ~3A ~A~%" (position-y e) (position-x e) (event-key e))
+                (format w "~3A ~3A ~A ~A~%" (position-y e) (position-x e) (event-key e) (event-modifiers e))
                 (format w "~A ~A ~A~%" e (event-key e) (event-code e)))))
     (run-event-loop scr)))
 

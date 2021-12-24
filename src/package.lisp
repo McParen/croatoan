@@ -319,10 +319,9 @@
    get-mouse-event
    event
    mouse-event
-   mouse-y
-   mouse-x
    event-key
    event-code
+   event-modifiers
    event-position
 
    ;; move / move curses window cursor

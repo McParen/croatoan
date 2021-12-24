@@ -202,7 +202,7 @@ The window from which the char is read is automatically refreshed."
     (:max       . 511))) ; alt-delete
 
 #|
-    
+
     ;; The following codes are not part of ncurses because they are not portable, i.e. they do not
     ;; exist on all terminals.
     ;; These are tested on xterm / gnome-terminal
@@ -224,7 +224,7 @@ The window from which the char is read is automatically refreshed."
     (:shift-ctrl-end      . 531)
     (:ctrl-alt-end        . 532)
     ;;(:shift-ctrl-alt-end . xxx) ^[[1;8F
-    
+
     (:alt-home            . 533)
     (:shift-alt-home      . 534)
     (:ctrl-home           . 535)
@@ -240,18 +240,18 @@ The window from which the char is read is automatically refreshed."
     (:alt-npage           . 548)
     (:ctrl-npage          . 550)
     (:ctrl-alt-ppage      . 552)
-    
+
     (:alt-ppage           . 553)
     (:ctrl-ppage          . 555)
     (:ctrl-alt-ppage      . 557)
-    
+
     ;; :shift-up = :sr = 337
     (:alt-up              . 564)
     (:shift-alt-up        . 565)
     (:ctrl-up             . 566)
     (:shift-ctrl-up       . 567)
     ;; (:shift-alt-ctrl-up . xxx)
-    
+
 ;;    ;; :shift-down = :sf = 336
     (:alt-down            . 523)
     (:shift-alt-down      . 524)
@@ -277,7 +277,7 @@ The window from which the char is read is automatically refreshed."
     ;;; paren
 
     ;; xterm
-    
+
 ;;    ;; :shift-delete = :sdc
 ;;    (:shift-alt-delete   . 512)
 ;;    (:ctrl-delete        . 513) ; Ctrl-Delete
@@ -469,8 +469,9 @@ The following chars can be returned:
        (let ((ev (key-code-to-name ch ch)))
          (if (eq ev :mouse)
              ;; a mouse event returns 3 values, see mouse.lisp
-             (multiple-value-bind (mev y x) (get-mouse-event)
-               (make-instance 'mouse-event :key mev :code ch :y y :x x))
+             (multiple-value-bind (mev y x mods) (get-mouse-event)
+               (make-instance 'mouse-event :key mev :code ch :y y :x x
+                                           :modifiers mods))
              ;; for normal function keys, return a keyword and the code.
              (make-instance 'event :key ev :code ch))))
       ;; todo: unknown codes, like mouse, resize and unknown function keys.

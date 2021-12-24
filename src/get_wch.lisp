@@ -47,8 +47,9 @@ If input-blocking is nil for the window, return nil if no key was typed."
        (let ((ev (key-code-to-name ch ch)))
          (if (eq ev :mouse)
              ;; return the mouse key and the position
-             (multiple-value-bind (mev y x) (get-mouse-event)
-               (make-instance 'mouse-event :key mev :code ch :y y :x x))
+             (multiple-value-bind (mev y x mods) (get-mouse-event)
+               (make-instance 'mouse-event :key mev :code ch :y y :x x
+                                           :modifiers mods))
              ;; return a keyword representing the key name.
              (make-instance 'event :key ev :code ch))))
       ;; if the event is not a function key, it is a character.
