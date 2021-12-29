@@ -234,6 +234,7 @@
       (flet ((randch () (+ 64 (random 58))))
         (bind scr #\q 'exit-event-loop)
         (bind scr nil
+          ;; setting callback-type :object means only the window is passed to the handler
           (lambda (win)
             (loop for column from 0 to (1- width) do
                  (loop repeat (nth column speeds) do
@@ -352,9 +353,10 @@
 (defun t01 ()
   (unwind-protect
        (let ((scr (make-instance 'screen :enable-colors t)))
-
          (clear scr)
          (move scr 0 0)
+
+         ;; normal, unrendered chars in default colors.
          (add-string scr "hello there!")
 
          ;; the text will be red on yellow.
@@ -455,20 +457,13 @@
 (defun t02b ()
   "Set and get a wide character background."
   (with-screen (scr)
-    ;;(de.anvi.croatoan::funcall-make-cchar_t-ptr #'%wbkgrnd (winptr scr) 0 0 0 1)
-
-    ;; if we set char 0 as background, ncurses sets char 32 (space), which is obviously the default char.
-    ;; also setting 0 leads to the color pair not being accepted.
-    ;; TODO: check that only graphic chars are set.
+    ;; #x2592 = 9618
     (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair '(:yellow :red)))
-    (get-char scr)
-
     (move scr 0 0)
     ;; the low-level function returns the code.
     (let ((ch (de.anvi.croatoan::get-background-cchar_t scr)))
       (format scr "ch: ~A~%" ch)
       (format scr "~A ~A ~A" (char-code (simple-char ch)) (attributes ch) (color-pair ch)))
-
     (move scr 2 0)
     ;; the high level interface returns what was set by the high-level setf.
     ;; TODO: when we set background to :board, should it return :board or the numeric code point?
@@ -476,7 +471,6 @@
       (if ch
           (format scr "~A ~A ~A" (simple-char ch) (attributes ch) (color-pair ch))
           (format scr "ch: ~A" ch)))
-
     (refresh scr)
     (get-char scr)))
 
@@ -491,7 +485,8 @@
     (add-string scr "Dear John!")
     (fresh-line scr) (refresh scr) (get-char scr)
 
-    ;; removing the color pair puts back the outut into the default state.
+    ;; removing the color pair puts back the output into the default state
+    ;; (terminal colors instead of ncurses white on black).
     (setf (color-pair scr) '())
     (add-string scr "Open the pod bay door.")
     (fresh-line scr) (refresh scr) (get-char scr)
@@ -516,8 +511,10 @@
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
     (let* ((win1 (make-instance 'window :height 10 :width 20 :position (list 3  5) :border t))
            (win2 (make-instance 'window :height 10 :width 20 :position (list 3 40) :border t)))
+
       (setf (background win1) (make-instance 'complex-char :simple-char :board :fgcolor :yellow)
             (background win2) (make-instance 'complex-char :simple-char #\.    :bgcolor :red))
+
       ;; the background char is displayed instead of space
       (add-wide-char win1 #\space                  :y 1 :x 1 :n 10)
       ;; the background color is used
@@ -567,9 +564,7 @@
                 :background (:simple-char #\. :fgcolor :black :bgcolor :white)))
 
         (setf (background scr) (make-instance 'complex-char :simple-char :board :fgcolor :cyan))
-        (clear scr)
         (refresh scr)
-        (clear win)
         (move win 1 1) (add-string win "hello there")
         ;; since a panel is a window, it can be used with stream output functions
         (move win 3 3) (format win "dear john")
@@ -683,6 +678,7 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
 
 ;; read and display chars until a q is pressed, blocking + gray stream version.
 ;; the stream reading function wont work in non-blocking mode and with non-char keys.
+;; stream reading and writing uses wide-char functions.
 (defun t03c ()
   (with-screen (scr :input-echoing nil :input-blocking t)
     (clear scr)
@@ -892,23 +888,24 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
     (end-screen)))
 
 ;; End ncurses cleanly _before_ getting into the debugger when an error is signalled.
-;; do get into the debugger, but only after we are back to the repl.
+;; get into the debugger, but only after we are back to the repl.
 (defun t06 ()
-  (let ((*debugger-hook* #'(lambda (c h) (declare (ignore c)) (declare (ignore h)) (end-screen))))
+  (let ((*debugger-hook* #'(lambda (c h)
+                             (declare (ignore c)) (declare (ignore h)) (end-screen))))
     (unwind-protect
          (let ((scr (make-instance 'screen)))
-           (add-string scr "hello there! press a char to signal an error and go to the debugger without messing up the screen!")
+           (add-string scr "press a char to signal an error. ncurses will be ended before going to the debugger.")
            (refresh scr)
            (get-char scr)
            (error "zu huelf!"))
       (end-screen))))
 
-;; The debugger hook is added now to with-screen.
+;; The debugger hook is added to with-screen.
 ;; When an error is signalled in a ncurses app, we cleanly exit ncurses first, we dont get
 ;; into the debugger and we merely print the signalled condition to the REPL.
 (defun t06a ()
-  (with-screen (scr)
-    (add-string scr "hello there! press a char to signal an error. the app will be ended without going to the debugger.")
+  (with-screen (scr :bind-debugger-hook nil)
+    (add-string scr "press a char to signal an error. ncurses will be ended before going to the debugger.")
     (refresh scr)
     (get-char scr)
     (error "zu huelf!")))
@@ -1154,22 +1151,16 @@ Test whether a window (stream) was closed."
     (unwind-protect
          (progn
            (clear scr)
-
            (box scr)
            (refresh scr)
-
            ;; the default value for width or height is "to the end of the screen".
            (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)))
                  (w2 (make-instance 'window            :width 30 :position '(6 10)))
                  (w3 (make-instance 'window :height 10           :position '(9 15))))
-
-             (box w1)
-             (box w2)
-             (box w3)
-
+             (mapc #'box (list w1 w2 w3))
              ;; after we define a default pair, :terminal -1 refers to these colors.
-             (setf (use-terminal-colors-p scr) t)
              ;;(setf (default-color-pair scr) (list :yellow :red))
+             (setf (use-terminal-colors-p scr) t)
 
              (setf (background w1) (make-instance 'complex-char :color-pair '(:default-fg :yellow)))
              ;; window w2 uses the :default fg and bg color of the terminal, because use-terminal-colors is t.
@@ -1178,12 +1169,7 @@ Test whether a window (stream) was closed."
              ;; print currently active color pairs to w3
              (format w3 "~A" de.anvi.croatoan::*color-pair-alist*)
 
-             ;; TODO: clear, refresh, etc, should take one or more windows as arguments.
-             ;; so we can do (refresh w1 w2 w3) instead of:
-             (refresh w1)
-             (refresh w2)
-             (refresh w3)
-
+             (mapc #'refresh (list w1 w2 w3))
              (loop (let ((event (event-key (get-event scr))))
                      (when event
                        (case event
@@ -1192,42 +1178,38 @@ Test whether a window (stream) was closed."
                          (#\3 (touch w3) (refresh w3))
                          (#\q (return))
                          (otherwise nil)))))
-
-             (close w1)
-             (close w2)
-             (close w3)))
-
+             (mapc #'close (list w1 w2 w3))))
       (close scr))))
 
 (defun t09b ()
   "Use with-screen, event-case and mapc to simplify t09a."
   (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
+    ;; we cant set :border t for a screen because with-screen calls clear bofore executing the body
     (box scr)
-    (refresh scr)
 
+    ;; omitting width or height implies stretching that dimension to the end of the screen
     (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)  :border t))
           (w2 (make-instance 'window            :width 30 :position '(6 10) :border t))
           (w3 (make-instance 'window :height 10           :position '(9 15) :border t)))
-
-      (setf (background w1) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black))
-            (background w3) (make-instance 'complex-char :simple-char #\space :color-pair '(:white :black)))
-
+      ;; we dont have to explicitely give a simple char, a space will be assumed if the char is missing
+      (setf (background w1) (make-instance 'complex-char :simple-char #\+ :color-pair '(:white :yellow))
+            (background w3) (make-instance 'complex-char :simple-char #\. :color-pair '(:white :black)))
+      (mapc #'touch (list w1 w2 w3))
       (mapc #'refresh (list w1 w2 w3))
 
-      (event-case (scr event)
+      ;; press 123 to raise the window.
+      ;; if windows are overlapping, we need to touch+refresh a window to raise it to the top.
+      ;; without a touch, it isnt completely redrawn.
+      (event-case (w1 event)
         (#\1 (touch w1) (refresh w1))
         (#\2 (touch w2) (refresh w2))
         (#\3 (touch w3) (refresh w3))
         (#\q (return-from event-case))
         (otherwise nil))
-
       (mapc #'close (list w1 w2 w3))
-
       ;; return nil explicitely, so it doesnt return the window list.
       nil)))
 
-;; https://www.gnu.org/software/guile-ncurses/manual/html_node/Panels-Basics.html#Panels-Basics
-;; https://www.gnu.org/software/guile-ncurses/manual/html_node/The-curses-panel-library.html
 (defun t09c ()
   "Use a window stack to manage overlapping windows."
   (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :enable-function-keys t :cursor-visible nil)
@@ -1271,11 +1253,6 @@ Test whether a window (stream) was closed."
     ;; return nil explicitely, so it doesnt return the window list.
     nil))
 
-;; port of kletva/test05.
-;; print the screen size.
-;; print the keys and key codes of any key pressed.
-;; TODO: when we reach the end of the screen, the ~% doesnt print newlines any more and the screen doesnt scroll.
-;; see scroll.lisp. a lot of window options, including scrolling, arent closified yet.
 ;; enable-function-keys t: fkeys have codes 255+
 ;; enable-function-keys nil: fkeys are multi-char escape codes.
 (defun t10 ()
@@ -1392,7 +1369,6 @@ returned byte by byte as with get-char."
 (defun t10b ()
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :enable-scrolling t
                     :input-buffering nil :process-control-chars nil :enable-newline-translation t)
-
     ;; add existing, but unportable keys to the key alist. (here: xterm 322 on ncurses 6.2)
     (mapc
      (lambda (a)
@@ -1458,6 +1434,10 @@ returned byte by byte as with get-char."
     ;; define new keys by their escape control sequences
     ;; the automatically generated new codes start at 1024 to avoid conflicts with codes generated by ncurses.
 
+    ;; gnome-terminal, linux console
+    (define-function-key :alt-1 (list #\esc #\1))
+    (define-function-key :alt-n (list #\esc #\n))
+
     ;; xterm
     ;;                      f1  - f12
     ;; shift-f1           = f13 - f24
@@ -1496,13 +1476,8 @@ returned byte by byte as with get-char."
     (define-function-key :shift-ctrl-alt-end (list #\esc #\[ #\1 #\; #\8 #\F))
     (define-function-key :shift-ctrl-alt-delete (list #\esc #\[ #\3 #\; #\8 #\~))
 
-    ;; gnome-terminal, linux console
-    (define-function-key :alt-1 (list #\esc #\1))
-    (define-function-key :alt-n (list #\esc #\n))
-
     (bind scr #\q 'exit-event-loop)
-    (bind scr t (lambda (w e) (format w "Event: ~S~%" (event-key e))))
-
+    (bind scr t (lambda (w e) (format w "Event: ~A ~A~%" (event-key e) (event-code e))))
     (run-event-loop scr)))
 
 (defun t11 ()
@@ -1512,28 +1487,17 @@ returned byte by byte as with get-char."
          (progn
            (clear scr)
            (refresh scr)
-
-           ;; (move scr 5 5)
-           (setf (cursor-position scr) '(5 5))
-
-           ;; see inopts.
            (setf
-
-            ;; this is sufficient to make the whole window scroll.
-            ;;(scrolling-enabled-p scr t)
-            ;;(%scrollok (winptr scr) t)
+            ;; identical to move
+            (cursor-position scr) '(0 0)
+            ;; make the whole window scroll when the last line is reached.
             (scrolling-enabled-p scr) t
-
-            ;; to make only a few lines (5 to 10) scroll, we have to set a line-based region.
-            ;;(set-scrolling-region scr 5 10)
-            ;;(%wsetscrreg (winptr scr) 5 10)
+            ;; to make only a few lines (5 to 10) scroll, set a line-based region.
             (scrolling-region scr) '(5 10))
-
-           (loop for i from 0 to 30 do
-                (format scr "~A~%" i)
-                (refresh scr)
-                (sleep 0.2)))
-
+           (dotimes (i 20)
+             (format scr "~A~%" i)
+             (refresh scr)
+             (sleep 0.5)))
       (close scr))))
 
 (defun t11a ()
@@ -1902,7 +1866,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (let ((event (event-key (get-event scr))))
            (if event
                (case event
-                 (:resize ;; if the scren is resized, relocate the window to the new center.
+                 (:resize ;; if the screen is resized, relocate the window to the new center.
                           (move-window win (round (/ (height scr) 2)) (round (/ (width scr) 2)))
                           ;; better differentiation of types with methods.
                           (move win 0 0)
@@ -1933,7 +1897,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (let ((event (event-key (get-event scr))))
            (if event
                (case event
-                 (:resize ;; resize the window on every termina resize.
+                 (:resize ;; resize the window on every terminal resize.
                           (resize win (- (height scr) 4) (- (width scr) 6))
                           (move win 0 0)
                           (format win "Y:~A X:~A" (height scr) (width scr))
@@ -2195,8 +2159,8 @@ contents of the area as a single string."
     (let* ((win  (make-instance 'window   :position '(5 5)  :dimensions '(8 17) :border t :enable-function-keys t))
            (win1 (make-instance 'window   :position '(5 50) :dimensions '(8 17) :border t))
            (area (make-instance 'textarea :position '(1 1)  :dimensions '(6 15) :window win)))
-      (setf (background win)  (make-instance 'complex-char :simple-char :board :fgcolor :yellow))
-      (setf (background win1) (make-instance 'complex-char :simple-char #\. :bgcolor :red ))
+      (setf (background win)  (make-instance 'complex-char :simple-char :board :fgcolor :yellow)
+            (background win1) (make-instance 'complex-char :simple-char #\. :bgcolor :red ))
 
       ;; adding a simple space to a window with a background char only displays the background char.
       (add-wide-char win1 #\space                                   :y 1 :x 1 :n 10)
@@ -2359,6 +2323,10 @@ will be more efficient to use a character array, a string."
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
       (bind form :f4 'crt::debug-print-field-buffer)
 
+      ;; remove q and newline from the menu map because enter exits the main menu loop
+      (unbind (find-keymap 'menu-map) #\q)
+      (unbind (find-keymap 'menu-map) #\newline)
+
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda (b e)
                                  (declare (ignore b e))
@@ -2471,11 +2439,11 @@ will be more efficient to use a character array, a string."
              ;; form element default styles
              (style4 (list 'field style1 'button style2 'label style3))
 
-             (label1 (make-instance 'label :name :l1 :reference :f1 :width 20 :position (list 2 1)))
-             (field1 (make-instance 'field :name :f1 :title "Forename" :position (list 2 22) :width 20 :max-buffer-length 25))
+             (label1 (make-instance 'label :name :l1 :reference :f1 :width 20 :position (list 1 1)))
+             (field1 (make-instance 'field :name :f1 :title "Forename" :position (list 1 22) :width 20 :max-buffer-length 25))
 
-             (label2 (make-instance 'label :name :l2 :reference :f2 :width 20 :position (list 4 1)))
-             (field2 (make-instance 'field :name :f2 :title "Surname" :position (list 4 22) :width 20 :max-buffer-length 25))
+             (label2 (make-instance 'label :name :l2 :reference :f2 :width 20 :position (list 3 1)))
+             (field2 (make-instance 'field :name :f2 :title "Surname" :position (list 3 22) :width 20 :max-buffer-length 25))
 
              (button1 (make-instance 'button :name :b3 :title "Reset"  :position (list 6 15)))
              (button2 (make-instance 'button :name :b2 :title "Cancel" :position (list 6 25)))
@@ -2483,7 +2451,7 @@ will be more efficient to use a character array, a string."
 
              (form (make-instance 'form-window :elements (list field1 field2 label1 label2 button1 button2 button3)
                                   :style style4 :enable-function-keys t :input-blocking t :name :fw1 :title "form window"
-                                  :border t :height 10 :width 50 :position (list 5 15))))
+                                  :border t :height 9 :width 45 :position (list 5 15))))
 
         (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
         (refresh scr)
@@ -2493,17 +2461,18 @@ will be more efficient to use a character array, a string."
         (setf (callback button3) 'accept)
 
         (if (edit form)
+            ;; if accepted, create an alist as the value to be returned by t16i
             (setq value (pairlis (list (title field1) (title field2))
                                  (list (value field1) (value field2))))
             (setq value nil))
         (close form)))
 
-    ;; return the input values
+    ;; return an alist (input values) or nil.
     value))
 
 (defun t16j ()
   "Perform long-running calculations in worker threads to prevent freezing the ncurses UI."
-  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking nil)
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking 200)
     (let* ((field1 (make-instance 'field :name :f1 :title "Forename" :position (list 3 20) :width 15))
            (field2 (make-instance 'field :name :f2 :title "Surname"  :position (list 5 20) :width 15))
            (field3 (make-instance 'field :name :f3 :title "Nickname" :position (list 7 20) :width 15))
@@ -2536,7 +2505,7 @@ will be more efficient to use a character array, a string."
                             (let ((v1 (value field1))
                                   (v2 (value field2)))
                               (bt:make-thread (lambda ()
-                                                ;; simulate a long-running calculation
+                                                ;; simulate a long-running calculation running in a worker thread
                                                 (sleep 10)
                                                 (enqueue (concatenate 'string v1 " " v2) queue))))))
 
@@ -2550,13 +2519,6 @@ will be more efficient to use a character array, a string."
       (setf (value field1) "hello"
             (value field2) "there")
 
-      ;; TODO 200103: we need to make frame-rate a property of every object that can be passed to run-event-loop
-      ;; not just a window.
-      (setf (frame-rate scr) 20)
-
-      ;; TODO 200103: at the moment the only way to set a polling loop is to set blocking to nil and set a frame
-      ;; rate, then bind the loop to the nil event.
-
       ;; how to set a timer that polls the queue also when blocking is t? (tkinter has the after function)
       (bind form nil (lambda (f e)
                        (declare (ignore f e))
@@ -2568,7 +2530,6 @@ will be more efficient to use a character array, a string."
                           while i do
                             (setf (value field3) i)
                             (draw form))))
-
       (if (edit form)
           ;; edit returned t, which means the user accepted the form
           (progn
@@ -2596,10 +2557,10 @@ will be more efficient to use a character array, a string."
            (l1     (make-instance 'label  :name :l1 :reference :f1    :position (list 3 1)  :width 18))
            (l2     (make-instance 'label  :name :l2 :reference :f2    :position (list 5 1)  :width 18))
            (l3     (make-instance 'label  :name :l3 :reference :f3    :position (list 7 1)  :width 18))
-           (b1     (make-instance 'button :name :b1 :title "Button1"  :position (list 9 1)  :callback 'return-element-value :value 1))
-           (b2     (make-instance 'button :name :b2 :title "Button2"  :position (list 9 14) :callback 'return-form-values   :value 2))
-           (b3     (make-instance 'button :name :b3 :title "Cancel"   :position (list 9 27) :callback 'cancel))
-           (b4     (make-instance 'button :name :b4 :title "Accept"   :position (list 9 39) :callback 'accept))
+           (b1     (make-instance 'button :name :b1 :title "Button1"  :position (list  9  1) :callback 'return-element-value :value 1))
+           (b2     (make-instance 'button :name :b2 :title "Button2"  :position (list  9 20) :callback 'return-form-values   :value 2))
+           (b3     (make-instance 'button :name :b3 :title "Cancel"   :position (list 11  1) :callback 'cancel))
+           (b4     (make-instance 'button :name :b4 :title "Accept"   :position (list 11 20) :callback 'accept))
            (form   (make-instance 'form :window scr :elements (list field1 field2 field3 l1 l2 l3 b1 b2 b3 b4)
                                         :style '(field (:background (:attributes (:reverse))
                                                         :selected-background (:bgcolor :blue))
@@ -2677,9 +2638,9 @@ friend. It is my life. I must master it as I must master my life.")
   '(button   (:selected-foreground (:fgcolor :white :bgcolor :blue))
     textarea (:foreground (:fgcolor :blue :bgcolor :white)
               :background (:fgcolor :blue :bgcolor :green :simple-char #\.))
-    ;; but since it is also a decorated window, it has its own style properties
+    ;; but since it is also a form-window, it has additional properties that can be styled
     :title (:fgcolor :black :bgcolor :yellow :attributes (:bold))
-    :border (:fgcolor :yellow :bgcolor :red)
+    :foreground (:fgcolor :red :bgcolor :yellow)
     :background (:fgcolor :white :bgcolor :black :simple-char #\*)))
 
 (defun t16k1 ()
@@ -2687,6 +2648,10 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let ((msgbox (make-instance 'msgbox :title "This is a msgbox dialog" :message *t16k-message*
                                          :center t :height 10 :width 50 :style *t16k1-style*)))
+      ;; chars will be added in the fg style of the form window
+      (add-char (sub-window msgbox) #\x :y 0 :x 1)
+      (add-char msgbox #\x :y 4 :x 0)
+
       (setf (cursor-visible-p scr) nil)
       (edit msgbox)
       (setf (cursor-visible-p scr) t)
@@ -2970,7 +2935,7 @@ friend. It is my life. I must master it as I must master my life.")
 
 (defun t19c ()
   "Improved t19b, the menu can be called repeatedly with the key a."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :stacked t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            ;; a menu style is a plist describing four different menu item components.
@@ -2985,10 +2950,12 @@ friend. It is my life. I must master it as I must master my life.")
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select menu)))
-               (format scr "You chose ~A~%" result)
+               (format scr "You chose ~A~%" result)))
                ;; we have to touch scr in order to make the menu disappear.
-               (touch scr)
-               (refresh scr)))
+               ;;(touch scr)
+               ;;(refresh scr)
+               ;; the same is accomplished by setting :stacked t to the underlying screen/windows.
+               ;; because the main stack is refreshed by select before the menu stack
         (#\q (return-from event-case)))
       (close menu))))
 
@@ -3016,9 +2983,11 @@ friend. It is my life. I must master it as I must master my life.")
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
-                                     :position (list 0 25) :scrolled-layout (list 6 1) :enable-scrolling t
+                                     :position (list 0 25) :enable-scrolling t
+                                     ;; the visible grid region replaces :scrolled-layout (list 6 1)
+                                     :region-height 6 :region-width 1
                                      ;;:color-pair (list :black #xcccccc)
-                                     :fgcolor :blue :bgcolor :yellow
+                                     :fgcolor :blue :bgcolor :yellow :border nil
                                      :name :menu :border nil :enable-function-keys t)))
       (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
       (refresh scr)
@@ -3029,6 +2998,9 @@ friend. It is my life. I must master it as I must master my life.")
                (format scr "You chose ~A~%" result)
                (format scr "~A~%" (color-pair menu))
                (format scr "Stack ~A~%" (length (items *main-stack*)))))
+        ;; this only works if we set :border t during menu init
+        (#\b (setf (color-pair sub-menu2) (list :red :black))
+             (box sub-menu2))
         ;; "q" exits the function and all menus and submenus.
         (#\q (return-from event-case)))
       (close menu)
@@ -3042,7 +3014,7 @@ friend. It is my life. I must master it as I must master my life.")
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (menu (make-instance 'menu-window :items choices :position (list 0 25)
                                 :scrolled-layout (list 6 1) :enable-scrolling t
-                                :title "t19c" :border t :enable-function-keys t
+                                :title "t19c3" :border t :enable-function-keys t
                                 :menu-type :checklist
                                 :max-item-length 20
                                 :color-pair (list :yellow :red) )))
@@ -3050,7 +3022,8 @@ friend. It is my life. I must master it as I must master my life.")
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select menu)))
                (format scr "You chose ~A~%" (mapcar #'value result))
-               ;; we have to touch scr in order to make the menu disappear.
+               ;; we have to touch scr in order to make the menu disappear, or add :stacked t to scr
+               ;; the *main-stack* is called by select before the menu value is returned
                (touch scr)
                (refresh scr)))
         (#\q (return-from event-case)))
@@ -3121,7 +3094,7 @@ friend. It is my life. I must master it as I must master my life.")
               (refresh scr)))
       (mapc #'close (list menu sub-menu1 sub-menu2)))))
 
-(defun t19f ()
+(defun t19f (&optional (border t))
   "A more fancy version of t19a, a yes-no dialog using the class dialog-window."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items (list "Yes" "No" "OK" 'cancel))
@@ -3135,13 +3108,19 @@ friend. It is my life. I must master it as I must master my life.")
                                 :max-item-length 12
                                 :current-item-mark "> "
                                 :color-pair (list :yellow :red)
-                                :width 60
-                                :border t
+
+                                ;; width and height will be automatically calculated if they are not given here
+                                ;;:width 68
+                                ;;:dimensions '(10 80)
+
+                                :border border
                                 :enable-function-keys t
+
                                 :name :t19f
-                                :title t
                                 ;; if the title is given as a string, it overrides the default title = name
                                 ;; :title "this is a selection dialog"
+                                :title t
+
                                 :message-height 2
                                 :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
 
@@ -3155,31 +3134,38 @@ friend. It is my life. I must master it as I must master my life.")
               (refresh scr)))
       (close menu))))
 
-(defun t19g ()
-  "A checkbox dialog."
+(defun t19g (&optional (border t))
+  "A checklist dialog."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :use-terminal-colors t)
-    (let* ((items (list "Yes" "No" "OK" 'cancel "Maybe"))
+    (let* ((items (list "Yes" "No" "OK" 'cancel "Maybe" 'hello))
            (menu (make-instance 'dialog-window
                                 :input-blocking t
                                 :items items
                                 ;; when a menu or dialog type is a checklist, items can be checked and unchecked with x/space.
                                 :menu-type :checklist
                                 ;; a dialog window can be automatically centered in the terminal window.
+                                ;;:position (list 5 15)
                                 :center t
-                                :layout (list 5 1)
-                                ;; TODO: the size of the dialog window should depend on scrolled layout when it is defined.
-                                ;;:scrolled-layout (list 3 1) :enable-scrolling t
-                                :max-item-length 56
+                                ;; an error is signaled if h*w of the grid does not match the length of items
+                                ;;:layout (list 2 3)
                                 :color-pair (list :yellow :red)
                                 ;; we do not need an item mark in a checklist
                                 :current-item-mark ""
-                                :width 60 :border t :enable-function-keys t
+
+                                ;; the default dimensions of the dialog are calculated from the
+                                ;; grid dimensions (layout) and the max-item-length
+                                :max-item-length 60
+                                ;;:dimensions '(20 80)
+                                ;;:width 60
+
+                                :border border
+                                :enable-function-keys t
                                 :title "this is a checkbox dialog"
-                                :message-height 2
-                                :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
+
+                                :message-height 4
+                                :message-text "Press <- or -> to choose. Enter to confirm choice. Press q to exit. Press <- or -> to choose. Enter to confirm choice. Press q to exit.")))
       ;; #x2592 = :board
       (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
-
       (refresh scr)
       (loop named menu-case
          do (let ((result (select menu)))
@@ -3547,25 +3533,21 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 (defun t27 ()
   "Use run-event-loop and bind instead of event-case to handle keyboard events."
   (with-screen (scr :input-echoing nil :input-blocking t)
-
+    ;; count and display before and after event hooks
     (let ((a 0) (b 0))
       (hook scr 'before-event-hook
             (lambda (win)
               (save-excursion win
                 (incf a)
-                (move win 0 60)
-                (format win "   ")
-                (move win 0 60)
-                (format win "~A" a)
+                (move win 0 60) (format win "   ")
+                (move win 0 60) (format win "~A" a)
                 (refresh win))))
       (hook scr 'after-event-hook
             (lambda (win)
               (save-excursion win
                 (incf b)
-                (move win 1 60)
-                (format win "   ")
-                (move win 1 60)
-                (format win "~A" b)
+                (move win 1 60) (format win "   ")
+                (move win 1 60) (format win "~A" b)
                 (refresh win)))))
 
     ;; q ends the loop.
@@ -3610,7 +3592,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 (defparameter *t28-ctrl-x-map*
   (make-instance 'keymap :bindings-plist
     (list
-     t    (lambda (win event) (format win "^X map: Default event handler ~A~%" (event-key event)))
+     t    (lambda (win event) (format win "^X map: Default C-x map event handler ~A~%" (event-key event)))
      #\k  (lambda (win event) (format win "^X map: ~A~%" (event-key event)))
      ;; ^T is another prefix key, so the keys in that map can be reached via "^X ^T".
      "^T" *t28-map*))
@@ -3629,9 +3611,9 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     ;; t is the default handler for all events without defined handlers.
     ;; The default event handler should not be used to handle the nil event when input-blocking is nil
-    (bind *t28-map* t (lambda (win event) (format win "Default event handler ~A~%" (event-key event))))
+    (bind *t28-map* t (lambda (win event) (format win "Default map event handler ~A~%" (event-key event))))
 
-    ;; Defining a keymap as a hander for ^X makes it the prefix key for that keymap.
+    ;; Defining a keymap as a handler for ^X makes it the prefix key for that keymap.
     (bind scr "^X" *t28-ctrl-x-map*)
 
     (clear scr)
@@ -3876,17 +3858,23 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (setf (background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:blue :white)))
 
     ;; the fg from background and bg from color-pair will be combined to blue on red.
-    (format scr "~%color-pair nil on red | background blue on white~%") (refresh scr) (get-char scr) ))
+    (format scr "~%color-pair nil on red | background blue on white~%") (refresh scr) (get-char scr)
+
+    ;; when the window bgcolor is removed, the background simple-char is displayed instead of spaces
+    (setf (bgcolor scr) nil)
+    (format scr "color-pair nil | background blue on white~%") (refresh scr) (get-char scr)))
 
 (defun t31c ()
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    ;; red on default black
     (add scr #\a :fgcolor :red)
     (terpri scr)
+    ;; yellow on default black
     (setf (fgcolor scr) :yellow)
     (format scr "~A~%" (color-pair scr))
-
+    ;; white on default black
     (add scr #\b :fgcolor :white)
-
+    ;; yellow (fgcolor of the window) on default black
     (add scr #\c)
     (refresh scr)
     (get-char scr)))
