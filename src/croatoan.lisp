@@ -368,26 +368,41 @@ The function exit-event-loop is pre-defined to perform this non-local exit."
       (handle-events object args)
       (process))))
 
+(defun function-lambda-list (fn)
+  "Return the lambda list of the function object fn."
+  #+abcl      (sys::arglist fn)
+  #+allegro   (excl:arglist fn)
+  #+ccl       (ccl:arglist fn)
+  #+clisp     (ext:arglist fn)
+  #+ecl       (ext:function-lambda-list fn)
+  #+lispworks (lw:function-lambda-list fn)
+  #+sbcl      (sb-introspect:function-lambda-list fn)
+  #-(or abcl allegro ccl clisp ecl lispworks sbcl)
+  (cadr (function-lambda-expression fn)))
+
+(defun function-arity (fn)
+  "Return the number of required arguments of the function fn."
+  (let ((args (function-lambda-list fn)))
+    (length (subseq args 0 (position-if (lambda (i)
+                                          (member i lambda-list-keywords))
+                                        args)))))
+
 (defun apply-handler (handler object event args)
-  "Depending on the callback type of the object, pass the correct arguments to the handler function.
+  "Determine and pass the correct arguments to each event handler.
 
-At the moment, following callback lambda lists are supported:
+The number of the arguments passed to the handler the arity (number of
+required arguments) of the handler function.
 
-(lambda (object) ...)        :object
-(lambda (object event) ...)  :object-event
+This allows handlers with the following lambda lists to be defined:
 
-:callback-type :object-event is the default."
-  (if (typep event 'mouse-event)
-      ;; in case of a mouse event, we have to pass the event to every handler
-      ;; because the event contains the position (y x)
-      (apply handler object event args)
-      ;; for other events (keyboard, resize, nil), we can choose what will be passed.
-      (with-slots (callback-type) object
-        (ecase callback-type
-          (:object
-           (apply handler object args))
-          (:object-event
-           (apply handler object event args))))))
+(lambda () ...)
+(lambda (object) ...)
+(lambda (object event) ...)"
+  (case (function-arity handler)
+    ;; a thunk still has to handle args passed to run-event-loop, if there are any.
+    (0 (apply handler args))
+    (1 (apply handler object args))
+    (2 (apply handler object event args))))
 
 (defun handle-events (object args)
   "Read a single event from the user, lookup a handler and apply it."
@@ -444,9 +459,9 @@ events to be chained together."))
         ;; if there is no handler in the form keymap, pass the event to the current element.
         (handle-event (current-item object) event args)))))
 
-(defun exit-event-loop (object &optional event &rest args)
+(defun exit-event-loop (object &optional args)
   "Associate this function with an event to exit the event loop."
-  (declare (ignore event args))
+  (declare (ignore args))
   (throw object :exit-event-loop))
 
 (defmacro save-excursion (window &body body)

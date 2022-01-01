@@ -36,7 +36,7 @@
     :type          integer
     :documentation "Max number of characters displayed for a single item."))
 
-  (:default-initargs :keymap 'menu-map :callback-type :object)
+  (:default-initargs :keymap 'menu-map)
   (:documentation
    "A menu is a list of items displayed in a grid that can be selected by the user.
 

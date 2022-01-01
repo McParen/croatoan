@@ -74,8 +74,7 @@
                (setq dir (get-direction (event-key event)))))
         (bind scr #\q 'exit-event-loop)
         (bind scr '(:right :left :up :down) #'set-dir)
-        (bind scr nil (lambda (w e)
-                        (declare (ignore w e))
+        (bind scr nil (lambda ()
                         ;; snake moves = erase last body pair by overwriting it with space
                         (add scr #\space :position tail)
                         (setq body (cons (mapcar #'+ head dir) (butlast body)))
@@ -167,8 +166,7 @@
         ;; hit the q key to exit the main loop.
         (bind scr #\q 'exit-event-loop)
         (bind scr nil
-          (lambda (win event)
-            (declare (ignore event))
+          (lambda (win)
             ;; generate a random ascii char
             (loop for column from 0 to (1- width) do
                  (loop repeat (nth column speeds) do
@@ -204,13 +202,11 @@
       (flet ((randch () (+ 64 (random 58))))
         (bind scr #\q 'exit-event-loop)
         (bind scr #\r
-          (lambda (win event)
-            (declare (ignore win event))
+          (lambda ()
             (setf (getf s2 :fgcolor) :red
                   (getf s3 :fgcolor) :red)))
         (bind scr nil
-          (lambda (win event)
-            (declare (ignore event))
+          (lambda (win)
             (loop for column from 0 to (1- width) do
                  (loop repeat (nth column speeds) do
                       (let ((pos (nth column positions)))
@@ -234,7 +230,6 @@
       (flet ((randch () (+ 64 (random 58))))
         (bind scr #\q 'exit-event-loop)
         (bind scr nil
-          ;; setting callback-type :object means only the window is passed to the handler
           (lambda (win)
             (loop for column from 0 to (1- width) do
                  (loop repeat (nth column speeds) do
@@ -249,10 +244,7 @@
                         (add win #\space  :y (mod (- pos (floor height 3)) height) :x column)
                         (refresh win)
                         (setf (nth column positions) (mod (1+ pos) height)))))))))
-    (setf (frame-rate scr) 20
-          ;; here, the event handlers are passed one argument, the object
-          ;; if the type is :object-event, handlers are passed two arguments
-          (callback-type scr) :object)
+    (setf (frame-rate scr) 20)
     (run-event-loop scr)))
 
 (defun robots ()
@@ -294,7 +286,7 @@
         (bind scr #\l 'exit-event-loop)
         (bind scr '(#\q #\w #\e #\a #\d #\y #\x #\c)
               (lambda (w e) (move-pos (event-key e)) (update-robots) (draw-board w)))
-        (bind scr #\t (lambda (w e) (setq pos (random-position scr)) (draw-board w)))
+        (bind scr #\t (lambda (w) (setq pos (random-position scr)) (draw-board w)))
         (draw-board scr)
         (run-event-loop scr)))))
 
@@ -315,7 +307,7 @@
                (rand () (if (zerop (random 2)) -1 1))
                (reset-game (win)
                  (setq runp nil y (floor h 2) x (floor w 2) y1 5 x1 1 y2 5 x2 (- w 2) dy (rand) dx (rand))
-                 (draw-game scr))
+                 (draw-game win))
                (move-paddle (win event)
                  (case (event-key event)
                    (#\w (when (> y1 0)       (decf y1)))
@@ -324,9 +316,9 @@
                    (#\l (when (< (+ y2 n) h) (incf y2))))
                  (draw-game win)))
         (bind scr #\q 'exit-event-loop)
-        (bind scr #\space (lambda (win e) (setq runp t)))
+        (bind scr #\space (lambda () (setq runp t)))
         (bind scr '(#\w #\p #\s #\l) #'move-paddle)
-        (bind scr nil (lambda (win e)
+        (bind scr nil (lambda (win)
                         (when runp
                           (setq y (+ y dy) x (+ x dx))
                           (draw-game win)
@@ -1306,8 +1298,7 @@ newlines any more and the screen doesnt scroll."
 (defun t10a3 ()
   (with-screen (scr :input-echoing nil :input-blocking nil :input-buffering nil :enable-function-keys t)
     ;; If no key has been pressed, the main loop produces a single tick.
-    (bind scr nil (lambda (win event)
-                    (declare (ignore event))
+    (bind scr nil (lambda (win)
                     (princ #\. win)
                     (refresh scr)))
     ;; If a key was pressed, it is processed immediately.
@@ -1825,6 +1816,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
     ;; :all-mouse-events is a bitmask for button events
     ;; :report-mouse-position has to be activated explicitely
+    ;; The mouse report function has to be enabled in the used terminal, for example with TERM=xterm-1003
     (set-mouse-event '(:all-mouse-events :report-mouse-position))
     (bind scr #\q 'exit-event-loop)
     (bind scr t
@@ -2092,9 +2084,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
           (s1 (list :attributes '(:underline)))
           (s2 (list :simple-char #\.))
           (field (make-instance 'field :position (list 3 20) :width 10 :window scr)))
-
       (setf (style field) (list :foreground s1 :background s2))
-
       (bind field #\newline 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; pressing ^A (for "accept") exits the edit mode (for now)
@@ -2110,9 +2100,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
           (progn
             (clear scr)
             (format t "field edit canceled.")))
-
       (refresh scr)
-
       ;; wait for keypress, then exit
       (get-char scr) )))
 
@@ -2126,8 +2114,7 @@ Adding hex values requires 256color support in the terminal."
           (field (make-instance 'field :position (list 3 20) :width 10 :window scr)))
       (setf (style field) (list :foreground s1 :background s2))
       ;; read a color (keyword or hex) from the field then set the background
-      (bind field #\newline (lambda (w e)
-                              (declare (ignore w e))
+      (bind field #\newline (lambda ()
                               (setf (background scr) (make-instance 'complex-char :simple-char #\space :bgcolor (read-from-string (value field))))
                               (refresh scr)))
       (edit field))))
@@ -2254,9 +2241,8 @@ will be more efficient to use a character array, a string."
       (bind (find-keymap 'field-map) :f3 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
-      (setf (callback button1) (lambda (b e)
-                                 (declare (ignore b e))
-                                 (save-excursion scr (move scr 0 0) (format scr "Hello there"))))
+      (setf (callback button1) (lambda ()
+                                 (save-excursion scr (move scr 0 0) (format scr "Hello there, ~A" (value field1)))))
       (setf (callback button2) 'accept)
       (setf (callback button3) 'cancel)
 
@@ -2498,8 +2484,7 @@ will be more efficient to use a character array, a string."
       ;; to avoid freezing non-thread-safe ncurses, move the calculation to a worker thread,
       ;; then return the result through a thread-safe queue
       ;; poll the queue within the nil event and handle the result returned by the worker.
-      (setf (callback b2) (lambda (b e)
-                            (declare (ignore b e))
+      (setf (callback b2) (lambda ()
                             (setf (value field3) "Calculating...")
                             (draw form)
                             (let ((v1 (value field1))
@@ -2520,8 +2505,7 @@ will be more efficient to use a character array, a string."
             (value field2) "there")
 
       ;; how to set a timer that polls the queue also when blocking is t? (tkinter has the after function)
-      (bind form nil (lambda (f e)
-                       (declare (ignore f e))
+      (bind form nil (lambda ()
                        ;; pop an item off the queue and set it as the result of the worker thread calculation to field3.
                        ;; we do not need the loop here since we only have one item in the queue,
                        ;; but in general the polling of a longer queue should be done by a loop.
@@ -3198,8 +3182,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
                     :gray  :red    :lime  :yellow :blue :magenta :cyan :white)))
       (bind scr #\q 'exit-event-loop)
       (bind scr nil
-            (lambda (win e)
-              (declare (ignore e))
+            (lambda (win)
               (echo win #\space
                     :y (random (height win))
                     :x (random (width win))
@@ -3556,16 +3539,16 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     ;; The event handler function has to take two arguments, the window and the event.
 
     ;; a and s add a string to the window.
-    (bind scr #\a (lambda (win event) (declare (ignore event)) (format win "Hello there.~%")))
-    (bind scr #\b (lambda (win event) (declare (ignore event)) (format win "Dear John.~%")))
+    (bind scr #\a (lambda (win) (format win "Hello there.~%")))
+    (bind scr #\b (lambda (win) (format win "Dear John.~%")))
 
     (bind scr '("^a" "^b" "^d") (lambda (w e) (format w "Control char: ~A~%" (event-key e))))
 
     ;; d clears the window.
-    (bind scr #\d (lambda (win event) (declare (ignore event)) (clear win)))
+    (bind scr #\d #'clear)
 
     ;; u unbinds all keys other than q
-    (bind scr #\u (lambda (win event) (declare (ignore win event)) (unbind scr '(#\a #\b #\d "^a" "^b" "^d"))))
+    (bind scr #\u (lambda () (unbind scr '(#\a #\b #\d "^a" "^b" "^d"))))
 
     (clear scr)
     (add-string scr "Type a, b or d with or without Ctrl. Type q to quit.")
@@ -3631,7 +3614,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" (event-key event))))
 
     ;; The handler function for the nil event will be called between keyboard events.
-    (bind scr nil (lambda (win event) (declare (ignore event)) (format win ".")))
+    (bind scr nil (lambda (win) (format win ".")))
 
     ;; Defining a keymap as a hander for ^X makes it the prefix key for that keymap.
     (bind scr "^X" *t28-ctrl-x-map*)
@@ -3646,8 +3629,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     (run-event-loop scr)))
 
-(defun t28b-show-bindings (win event)
-  (declare (ignore event))
+(defun t28b-show-bindings (win)
   (format win "~S" (bindings (find-keymap (keymap win)))))
 
 ;; defines and centrally registers a keymap

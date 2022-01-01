@@ -3,7 +3,10 @@
   :author "Anton Vidovic <anton.vidovic@gmx.de>"
   :licence "MIT"
   :version "0.0.1"
-  :depends-on (:croatoan-ncurses :trivial-gray-streams :bordeaux-threads)
+  :depends-on (:croatoan-ncurses
+               :trivial-gray-streams
+               :bordeaux-threads
+               (:feature :sbcl (:require "sb-introspect")))
   :pathname "src/"
   :components
 

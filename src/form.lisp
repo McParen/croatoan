@@ -214,7 +214,7 @@ When title is t instead of a title string, display the symbol name of the widget
         (setf (selectedp current-item) t)
         (select-previous-item form))))
 
-(defun select-previous-element (form event &rest args)
+(defun select-previous-element (form)
   (select-previous-item form)
   (draw form))
 
@@ -229,19 +229,19 @@ When title is t instead of a title string, display the symbol name of the widget
         (setf (selectedp current-item) t)
         (select-next-item form))))
 
-(defun select-next-element (form event &rest args)
+(defun select-next-element (form)
   (select-next-item form)
   (draw form))
 
-(defgeneric move-previous-char (object event &rest args)
+(defgeneric move-previous-char (object)
   (:documentation "Move the cursor to the previous character.")
-  (:method (object event &rest args)
+  (:method (object)
     "The default method does nothing."
     nil))
 
-(defgeneric move-next-char (object event &rest args)
+(defgeneric move-next-char (object)
   (:documentation "Move the cursor to the next char.")
-  (:method (object event &rest args)
+  (:method (object)
     "The default method does nothing."
     nil))
 
@@ -264,7 +264,7 @@ If the object is used outside a form, use the object itself as the catch tag."
           ;; the event loop uses the element directly
           object)))
 
-(defun accept (object event &rest args)
+(defun accept (object)
   "Exit the event loop of a form or form element.
 
 The first return value is t, emphasizing that the user has accepted the form.
@@ -276,7 +276,7 @@ Bind this function to an event (key binding or button)."
     (values t
             (name object))))
 
-(defun cancel (object event &rest args)
+(defun cancel (object)
   "Exit the event loop of a form or form element.
 
 The return value is nil, emphasizing that the user has canceled the form.
@@ -290,12 +290,12 @@ Bind this function to an event (key binding or button)."
   ;; TODO: if we cancel with a button, object will be a button, so we wont cancel the form.
   ;; so check that we have a form
   (when (typep object 'form)
-    (reset-form object event))
+    (reset-form object))
   (throw (get-catch-tag object)
     (values nil
             (name object))))
 
-(defun return-element-value (object event &rest args)
+(defun return-element-value (object)
   "Exit the event loop and return the value of the (current) element.
 
 The element name is returned as a second value.
@@ -311,7 +311,7 @@ allows to exit the form event loop and return any value."
         (values (value object)
                 (name object)))))
 
-(defun return-form-values (object event &rest args)
+(defun return-form-values (object)
   "Return an alist with element names as keys and element values as values.
 
 It is supposed to resemble GET params fname=John&lname=Doe from html forms.
@@ -326,26 +326,20 @@ Bind this to an event or element to exit the event loop of a form."
           when (activep element)
           collect (cons (name element) (value element)))))
 
-;; TODO 210123 use (clear field) instead of this
+(defgeneric reset (object)
+  (:documentation "Clear user-editable form elements and reset its internal buffers and pointers."))
 
-;; TODO: we cant simply set the value to zero, we also have to set the input-pointer and cursor
-;; we HAVE to use clear
-;; we CANt use clear, because it doesnt do anything but drawing the background
-;; TODO: we should be able to reset the form (clear all fields) outside of the form loop.
-;; this external reset shouldnt draw the form, just clear the fields.
-(defun reset-form (object event &rest args)
-  (declare (ignore event))
-  (let ((form (typecase object
-                (form object)
-                (t (parent object)))))
-    (loop for element in (elements form)
-       do (when (and (typep element 'field) (activep element))
-            (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) element
-              (setf inbuf nil
-                    inptr 0
-                    dptr 0))))
-    ;; TODO: also set the current element back to the first field
-    (draw form)))
+(defmethod reset ((form form))
+  (dolist (el (elements form))
+    (when (and (or (typep el 'field)
+                   (typep el 'textarea))
+               (activep el))
+      (reset el)))
+  (draw form))
+
+(defun reset-form (object)
+  "Reset a parent form from an element callback, for example a button."
+  (reset (parent object)))
 
 (define-keymap form-map
   ;; C-a = ^A = #\soh = 1 = start of heading
@@ -356,18 +350,16 @@ Bind this to an event or element to exit the event loop of a form."
   (#\can 'cancel)
   ;; C-r = reset = DC2 = #\dc2
   ;; reset editable elements of the form (fields, checkboxes)
-  (#\dc2 'reset-form)
+  (#\dc2 'reset)
   (:btab 'select-previous-element)
   (#\tab 'select-next-element))
 
-;; TODO: should we pass the args argument to the callback?
-(defun call-button-function (button event &rest args)
-  (declare (ignore event))
-  (when (callback button)
-    (funcall (callback button) button event)))
+(defun call-button-function (button event)
+  (with-accessors ((callback callback)) button
+    (when callback
+      (apply-handler callback button event nil))))
 
-(defun toggle-checkbox (checkbox event &rest args)
-  (declare (ignore event))
+(defun toggle-checkbox (checkbox)
   (setf (checkedp checkbox) (not (checkedp checkbox)))
   (draw checkbox))
 
@@ -385,18 +377,10 @@ Bind this to an event or element to exit the event loop of a form."
   (#\space 'toggle-checkbox)
   (#\x 'toggle-checkbox))
 
-;; TODO: we want edit to return the edited form.
-;; exit-event-loop just returns the keyword :exit-event-loop
-
-;; TODO: differentiate between form and form-window, the same way select
-;; differentiates between menu and menu-window
-
-(defun edit (object &rest args)
+(defun edit (object)
   "Modify a form or form element. Return t if the edit was accepted, nil of it was canceled.
 
 The return values of the event handler are the return values of the event loop and thus
 also returned by edit."
   (draw object)
-  ;; since we have args passed to run-event-loop, all handler functions have to accept
-  ;; a &rest args argument.
-  (apply #'run-event-loop object args))
+  (run-event-loop object))

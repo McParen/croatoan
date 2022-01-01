@@ -112,6 +112,12 @@ clear the window."
             ;; from the background char of the window.
             (add win bg-char :style bg-style)))))))
 
+(defmethod reset ((area textarea))
+  "Clear the textarea and reset its internal buffers and pointers."
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (y cursor-position-y) (x cursor-position-x)) area
+    (clear area)
+    (setf inbuf nil inptr 0 dptr 0 y 0 x 0)))
+
 (defmethod update-cursor-position ((area textarea))
   (with-accessors ((pos widget-position) (win window) (dptr display-pointer)
                    (y cursor-position-y) (x cursor-position-x)) area
@@ -154,9 +160,8 @@ clear the window."
   (with-accessors ((inbuf buffer) (inptr input-pointer)) area
     (char= (nth (1- inptr) inbuf) char)))
 
-(defmethod move-previous-char ((area textarea) event &rest args)
+(defmethod move-previous-char ((area textarea))
   "Move the cursor to the previous char in the textarea."
-  (declare (ignore event))
   (with-accessors ((width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
                    (win window) (y cursor-position-y) (x cursor-position-x)) area
     (when (> inptr 0)
@@ -205,9 +210,8 @@ return the number of chars between the pointer and the first newline before the 
           (progn
             (mod pos2 width))))))
 
-(defmethod move-next-char ((area textarea) event &rest args)
+(defmethod move-next-char ((area textarea))
   "Move the cursor to the next char in the textarea."
-  (declare (ignore event))
   (with-accessors ((width width) (height height) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
                    (win window) (y cursor-position-y) (x cursor-position-x)) area
     (when (< inptr (length inbuf))
@@ -224,7 +228,7 @@ return the number of chars between the pointer and the first newline before the 
             (incf x)))))
   (draw area))
 
-(defun textarea-add-char (area event &rest args)
+(defun textarea-add-char (area event)
   (with-accessors ((char event-key)) event
     (with-accessors ((inbuf buffer) (inptr input-pointer) (width width) (height height) (dptr display-pointer)
                      (y cursor-position-y) (x cursor-position-x)) area
@@ -244,9 +248,13 @@ return the number of chars between the pointer and the first newline before the 
 (define-keymap textarea-map
   (:left 'move-previous-char)
   (:right 'move-next-char)
-  (:ic  (lambda (area event &rest args)
-          (declare (ignore event))
+  (:ic  (lambda (area)
           (toggle-insert-mode area)))
+
+  ;; C-r = reset = DC2 = #\dc2
+  ;; clear and reset the textarea
+  (#\dc2 'reset)
+
   (#\soh 'accept)
   (#\can 'cancel)
   (t 'textarea-add-char))

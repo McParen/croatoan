@@ -131,6 +131,10 @@ The default background char is #\space."
       (add win bg-char :style bg-style :n width)
       (setf (cursor-position win) pos))))
 
+(defmethod reset ((field field))
+  (clear field)
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)) field
+    (setf inbuf nil inptr 0 dptr 0)))
 
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
@@ -181,17 +185,15 @@ The default background char is #\space."
 ;; after we added the chars, we have to draw the rest of the field.
 
 
-(defun move-start-of-line (field event &rest args)
+(defun move-start-of-line (field)
   "Move the cursor to the first char in the field."
-  (declare (ignore event))
-  (with-accessors ((inptr input-pointer) (dptr display-pointer) (win window)) field
+  (with-accessors ((inptr input-pointer) (dptr display-pointer)) field
     (setf inptr 0 dptr 0)
     (draw field)))
 
 ;; TODO: C-e
-(defun move-end-of-line (field event &rest args)
+(defun move-end-of-line (field)
   "Move the cursor to the last char in the field."
-  (declare (ignore event))
   (with-accessors ((width width) (inptr input-pointer) (inbuf buffer) (dptr display-pointer) (win window)) field
     (cond ((< (length inbuf) width)
            (setf inptr (length inbuf))
@@ -203,14 +205,12 @@ The default background char is #\space."
 
           ((> (length inbuf) width)
            (setf inptr (length inbuf))
-           (setf dptr (+ 1 (- (length inbuf) width))) )))
-
+           (setf dptr (+ 1 (- (length inbuf) width))))))
   (draw field))
 
-
-(defmethod move-previous-char ((field field) event &rest args)
+(defmethod move-previous-char ((field field))
   "Move the cursor to the previous char in the field."
-  (with-accessors ((inptr input-pointer) (dptr display-pointer) (win window)) field
+  (with-accessors ((inptr input-pointer) (dptr display-pointer)) field
     (when (> inptr 0)
       (decf inptr))
     ;; when the inptr moves left past the dptr, simultaneously decf the dptr.
@@ -218,10 +218,9 @@ The default background char is #\space."
       (decf dptr))
     (draw field)))
 
-(defmethod move-next-char ((field field) event &rest args)
+(defmethod move-next-char ((field field))
   "Move the cursor to the next char in the field."
-  (with-accessors ((width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer) (mlen max-buffer-length)
-                   (win window)) field
+  (with-accessors ((width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer) (mlen max-buffer-length)) field
     (when (and (< inptr (length inbuf))
                (not (= (1+ inptr) mlen width)))
       (incf inptr))
@@ -231,9 +230,9 @@ The default background char is #\space."
       (incf dptr))
     (draw field)))
 
-(defun delete-previous-char (field event &rest args)
+(defun delete-previous-char (field)
   "Delete the previous char in the field, moving the cursor to the left."
-  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) field
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)) field
     (when (> inptr 0)
       (decf inptr)
       (when (> dptr 0)
@@ -242,9 +241,9 @@ The default background char is #\space."
     ;; we dont have to redraw the complete form, just the changed field.
     (draw field)))
 
-(defun delete-next-char (field event &rest args)
+(defun delete-next-char (field)
   "Delete the next char (char under the cursor) in the field, not moving the cursor."
-  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) field
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)) field
     ;; we can only delete to the right if the inptr is not at the end of the inbuf.
     (when (> (length inbuf) inptr)
       (when (> dptr 0)
@@ -254,7 +253,7 @@ The default background char is #\space."
     (draw field)))
 
 ;; TODO: rename to add-char, make it a method
-(defun field-add-char (field event &rest args)
+(defun field-add-char (field event)
   "Add char to the current cursor position in the field, then move the cursor forward.
 
 The buffer can be longer than the displayed field width, horizontal scrolling is enabled."
@@ -324,8 +323,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
         nil)))
 
 ;; TODO: remove form case
-(defun debug-print-field-buffer (object event &rest args)
-  (declare (ignore event))
+(defun debug-print-field-buffer (object)
   (typecase object
     (field
      (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) object
@@ -338,16 +336,8 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
     ;; when we want to debug the whole form.
     (form
      ;; TODO: this doesnt work when we have elements that are not fields?
-     (debug-print-field-buffer (current-item object) event)))
+     (debug-print-field-buffer (current-item object))))
   (draw object))
-
-;; TODO 191110: if there is an initial value of the field, do not reset it to nil, but to the initial value
-(defun reset-field (field event &rest args)
-  "Clear the field and reset its internal buffers and pointers."
-  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (win window)) field
-    ;; TODO 191216: only reset if inbuf is not nil, see girc process user input.
-    (clear field)
-    (setf inbuf nil inptr 0 dptr 0)))
 
 (define-keymap field-map
   ;; C-a = ^A = #\soh = 1 = start of heading
@@ -364,12 +354,12 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
 
   ;; C-r = reset = DC2 = #\dc2
   ;; reset the field
-  (#\dc2 'reset-field)
+  (#\dc2 'reset)
 
   (:left 'move-previous-char)
   (:right 'move-next-char)
   (:backspace 'delete-previous-char)
   (:dc 'delete-next-char)
-  (:ic  (lambda (field event &rest args)
+  (:ic  (lambda (field)
           (toggle-insert-mode field)))
   (t 'field-add-char))

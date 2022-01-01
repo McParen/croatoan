@@ -10,7 +10,7 @@
   "Add the text object to the window, then advance the cursor.
 
 Currently supported text objects are characters (simple and complex),
-characters given by integer codes or keywords, and strings 
+characters given by integer codes or keywords, and strings
 (simple and complex).
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -27,8 +27,13 @@ If n is -1, add as many chars from the string as will fit on the line."
               ((or string complex-string)
                #'add-string)
               ((or integer keyword character complex-char)
-               #'add-wide-char))))   
+               #'add-wide-char))))
      (apply fn window object keys)))
+
+;; (put scr 10 10 #\a)
+;; (put scr 11 10 "hello there")
+;; (put scr 10 10 #\a :attributes '(:underline) :color-pair '(:yellow :red))
+;; (put scr 11 10 "dear john" :attributes '(:underline :bold))
 
 (defun put (window y x object &rest keys &key &allow-other-keys)
   "Add the object to the window at position (y x), then advance the cursor.

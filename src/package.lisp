@@ -142,7 +142,6 @@
    style
    max-buffer-length
    callback
-   callback-type
    title
    find-element
    field-map

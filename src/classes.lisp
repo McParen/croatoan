@@ -170,15 +170,6 @@ field, textarea:
     lookup of the next event handler instead of the widgets bindings and keymap.
     Used as an utility only in the handle-event method.")
 
-   (callback-type
-    :initarg       :callback-type
-    :initform      :object-event
-    :type          (or null keyword)
-    :accessor      callback-type
-    :documentation
-    "Keyword describing the lambda list of the event handler function. The following
-    lists are supported: :object for (object) and :object-event for (object event).")
-
    (hooks
     :initform      nil
     :type          (or null cons)
