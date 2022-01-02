@@ -151,7 +151,7 @@
    cancel
    return-element-value
    return-form-values
-   reset-field
+   reset
    reset-form
    checkedp
    draw

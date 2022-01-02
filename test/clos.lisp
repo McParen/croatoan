@@ -2212,6 +2212,23 @@ will be more efficient to use a character array, a string."
     (refresh scr)
     (get-char scr)))
 
+(defun t16e6 ()
+  (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t :enable-function-keys t)
+    (let* ((area (make-instance 'textarea :position '(1 2) :dimensions '(6 19) :window scr
+                                          :style '(:background (:attributes (:reverse))))))
+      ;; edit returns t if accepted and nil if canceled
+      (loop for val = (edit area) do
+        (if val
+            ;; ^A accept displays the contents and resets the area
+            (when (value area)
+              (clear scr)
+              (put scr 10 0 (value area))
+              ;; ^R resets the area manually
+              (reset area)
+              (refresh scr))
+            ;; ^X cancel exits the edit
+            (loop-finish))))))
+
 (defun t16f ()
   "Group several input fields and buttons to a form."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
