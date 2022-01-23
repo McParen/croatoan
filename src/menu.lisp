@@ -43,12 +43,8 @@
 Item types can be strings, symbols, numbers, other menus or callback functions."))
 
 ;; init for menus which aren't menu windows
-(defmethod initialize-instance :after ((menu menu) &key layout scrolled-layout)
+(defmethod initialize-instance :after ((menu menu) &key)
   (with-slots (items grid-height grid-width region-height region-width region-position-y region-position-x) menu
-    (when layout
-      (setf grid-height (car layout) grid-width (cadr layout)))
-    (when scrolled-layout
-      (setf region-height (car scrolled-layout) region-width (cadr scrolled-layout)))
     (setf region-position-y 0 region-position-x 0)
 
     ;; Convert strings and symbols to item objects

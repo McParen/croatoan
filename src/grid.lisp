@@ -44,6 +44,26 @@
 
   (:documentation "Utility to track the display of items in a scrollable mxn grid, like a layout or a menu."))
 
+(defmethod initialize-instance :after ((obj grid) &key grid-position grid-dimensions grid-geometry region-dimensions)
+  (with-slots ((y grid-position-y) (x grid-position-x) (h grid-height) (w grid-width) (rh region-height) (rw region-width)) obj
+    ;; the keyword position overrides the keywords y and x
+    (when grid-position
+      (setf y (car  grid-position)
+            x (cadr grid-position)))
+    ;; the keyword dimensions overrides width and height
+    (when grid-dimensions
+      (setf h (car  grid-dimensions)
+            w (cadr grid-dimensions)))
+    ;; geometry overrides y, x, width and height
+    (when grid-geometry
+      (setf y (nth 0 grid-geometry)
+            x (nth 1 grid-geometry)
+            h (nth 2 grid-geometry)
+            w (nth 3 grid-geometry)))
+    (when region-dimensions
+      (setf rh (car  region-dimensions)
+            rw (cadr region-dimensions)))))
+
 (defun visible-grid-height (grid)
   (with-slots (scrolling-enabled-p region-height grid-height) grid
     (if scrolling-enabled-p region-height grid-height)))
@@ -213,7 +233,7 @@
     :type          (or null cons)
     :documentation "A list of elements (including other layouts)."))
 
-  (:documentation "A layout is a widget containing elements positioned in a grid. Layouts can be nested."))
+  (:documentation "A layout is a container widget containing elements positioned in a grid. Layouts can be nested."))
 
 (defmethod initialize-instance :after ((obj layout) &key padding)
   (with-slots (padding-top padding-bottom padding-left padding-right) obj
@@ -265,7 +285,7 @@
           (height item))))))
 
 (defun calculate-positions (layout)
-  "Set the position (y x) of each of the layout's children."
+  "Recursively set the position (y x) of each of the layout's children."
   (with-slots ((m grid-height) (n grid-width) (y position-y) (x position-x)
                (pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right) elements) layout
     (let* ((widths (column-widths elements (list m n)))

@@ -1831,7 +1831,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 ;; resize event: the standard screen size is resized automatically.
 (defun t15 ()
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil :enable-colors t)
-    (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
+    (add-string scr "Current standard screen dimensions (Y x X):" :y 0 :x 0)
     (loop
        (let ((event (event-key (get-event scr))))
          (if event
@@ -2144,7 +2144,7 @@ contents of the area as a single string."
   "Show a textarea, test how the window background char interacts with space characters."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
     (let* ((win  (make-instance 'window   :position '(5 5)  :dimensions '(8 17) :border t :enable-function-keys t))
-           (win1 (make-instance 'window   :position '(5 50) :dimensions '(8 17) :border t))
+           (win1 (make-instance 'window   :geometry '(5 50 8 17) :border t))
            (area (make-instance 'textarea :position '(1 1)  :dimensions '(6 15) :window win)))
       (setf (background win)  (make-instance 'complex-char :simple-char :board :fgcolor :yellow)
             (background win1) (make-instance 'complex-char :simple-char #\. :bgcolor :red ))
@@ -2305,7 +2305,7 @@ will be more efficient to use a character array, a string."
            (m1-style (list :foreground (list :fgcolor :blue)
                            :selected-foreground (list :fgcolor :yellow :attributes (list :bold))))
 
-           (m1 (make-instance 'checklist :name :m1 :title "checklist" :items (list 'a 'b 'c 'd 'e 'f) :layout (list 2 3)
+           (m1 (make-instance 'checklist :name :m1 :title "checklist" :items '(a b c d e f) :grid-dimensions '(2 3)
                               :max-item-length 6 :position (list 11 20) :style m1-style))
 
            (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :position (list 3 1)))
@@ -2578,11 +2578,11 @@ will be more efficient to use a character array, a string."
                       (make-instance 'button :title (format nil "~R" (random 200)) :callback 'accept)))
            (field (make-instance 'field :name :f1 :width 25))
            (area (make-instance 'textarea :name :a1 :dimensions '(5 20)))
-           (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h) :layout '(4 2) :max-item-length 3))
+           (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h) :grid-dimensions '(4 2) :max-item-length 3))
            ;; show 6 labels in a grid nested within the main grid.
            (labels1
              ;; The padding is the number of spaces added to each element, (top bottom left right).
-             (make-instance 'layout :grid-height 3 :grid-width 2 :padding '(0 1 0 1) :elements
+             (make-instance 'layout :grid-dimensions '(3 2) :padding '(0 1 0 1) :elements
                (loop for i from 0 to 5 collect
                  (make-instance 'label :active nil :title (format nil "hello ~r" (random 20))))))
            (form (make-instance 'form
@@ -2915,11 +2915,11 @@ friend. It is my life. I must master it as I must master my life.")
   "Display submenus in-place, on top of the parent menu."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items3 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666" "Choice 7" "Choice 88" "Choice 999" ))
-           (menu3 (make-instance 'menu :items items3 :name :sm1 :title "sub-menu 1" :max-item-length 20 :position (list 5 10) :menu-type :checklist :layout '(5 2)))
+           (menu3 (make-instance 'menu :items items3 :name :sm1 :title "sub-menu 1" :max-item-length 20 :position (list 5 10) :menu-type :checklist :grid-dimensions '(5 2)))
            (items2 (list "Item 0" menu3 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8"))
            (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 5 10)))
            (items1 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09" "Item 10"))
-           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10) :layout '(4 3))))
+           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10) :grid-dimensions '(4 3))))
 
       ;; associate the same underlying window with all three menus.
       (setf (window menu1) scr
@@ -2945,7 +2945,7 @@ friend. It is my life. I must master it as I must master my life.")
                              :background (list :fgcolor :yellow)
                              :selected-foreground (list :attributes (list :reverse))
                              :selected-background (list :attributes (list :reverse))))
-           (menu (make-instance 'menu-window :items choices :position (list 0 25) :scrolled-layout (list 6 1)
+           (menu (make-instance 'menu-window :items choices :position (list 0 25) :region-dimensions (list 6 1)
                                              :title "t19c" :border t :enable-function-keys t :enable-scrolling t
                                              :style menu-style)))
       (event-case (scr event)
@@ -2969,7 +2969,7 @@ friend. It is my life. I must master it as I must master my life.")
            ;; First, create a menu
            (sub-menu2 (make-instance 'menu-window
                                      :items choices ;; here we only have strings
-                                     :position (list 2 57) :scrolled-layout (list 6 1) :enable-scrolling t
+                                     :position (list 2 57) :region-dimensions (list 6 1) :enable-scrolling t
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
                                      :bgcolor :red
@@ -2977,7 +2977,7 @@ friend. It is my life. I must master it as I must master my life.")
            ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
-                                     :position (list 1 41) :scrolled-layout (list 6 1) :enable-scrolling t
+                                     :position (list 1 41) :region-dimensions (list 6 1) :enable-scrolling t
                                      ;;:color-pair (list :black #x999999)
                                      :fgcolor :green
                                      :name :sub1 :title "Sub1 title" :border t :enable-function-keys t))
@@ -3014,7 +3014,7 @@ friend. It is my life. I must master it as I must master my life.")
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (menu (make-instance 'menu-window :items choices :position (list 0 25)
-                                :scrolled-layout (list 6 1) :enable-scrolling t
+                                :region-dimensions (list 6 1) :enable-scrolling t
                                 :title "t19c3" :border t :enable-function-keys t
                                 :menu-type :checklist
                                 :max-item-length 20
@@ -3035,8 +3035,8 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items (loop for i below 200 collect (format nil "Item ~A" i)))
            (menu (make-instance 'menu-window
-                                :items items :position (list 0 0) :layout (list 20 10)
-                                :scrolled-layout (list 10 4) :enable-scrolling t
+                                :items items :position '(0 0) :grid-dimensions '(20 10)
+                                :region-dimensions '(10 4) :enable-scrolling t
                                 :cyclic nil :max-item-length 9 :title "t19d" :border t
                                 :enable-function-keys t)))
       (event-case (scr event)
@@ -3054,8 +3054,8 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
            (menu (make-instance 'menu-window :input-blocking t :items items :position (list 0 0)
-                                :layout (list 1 (length items))
-                                :scrolled-layout (list 1 6) :enable-scrolling t
+                                :grid-dimensions (list 1 (length items))
+                                :region-dimensions (list 1 6) :enable-scrolling t
                                 ;;:color-pair (list :black :yellow)
                                 :max-item-length 10 :width (width scr) :border t :enable-function-keys t)))
       ;; start the output below the menu
@@ -3074,14 +3074,14 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items1 (list "Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                          "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :scrolled-layout (list 6 1) :enable-scrolling t
+           (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :region-dimensions (list 6 1) :enable-scrolling t
                                      :name :sub1-name :title nil :border t :enable-function-keys t :visible nil :menu-type :selection))
-           (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :scrolled-layout (list 6 1) :enable-scrolling t
+           (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :region-dimensions (list 6 1) :enable-scrolling t
                                      :max-item-length 20 :name :sub2 :title "Sub2 title" :border t :enable-function-keys t :visible nil
                                      :menu-type :checklist))
            (fun1 (make-instance 'menu-item :name :fun1 :title "fun1" :value (lambda () (clear scr) (move scr 4 0))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
-           (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :layout (list 1 (length items2))
+           (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0)  :grid-height 1 :grid-width (length items2)
                                              :max-item-length 15 :width (width scr) :border t :enable-function-keys t)))
       ;; start the output at line 4, below the menu bar.
       (move scr 4 0)
@@ -3105,7 +3105,7 @@ friend. It is my life. I must master it as I must master my life.")
                                 ;; when center is t for a dialog window, we do not need to pass the position explicitely.
                                 ;;:position (list 5 15)
                                 :center t
-                                :layout (list 1 4)
+                                :grid-dimensions (list 1 4)
                                 :max-item-length 12
                                 :current-item-mark "> "
                                 :color-pair (list :yellow :red)
@@ -3148,7 +3148,7 @@ friend. It is my life. I must master it as I must master my life.")
                                 ;;:position (list 5 15)
                                 :center t
                                 ;; an error is signaled if h*w of the grid does not match the length of items
-                                ;;:layout (list 2 3)
+                                ;;:grid-dimensions (list 2 3)
                                 :color-pair (list :yellow :red)
                                 ;; we do not need an item mark in a checklist
                                 :current-item-mark ""

@@ -218,7 +218,7 @@ field, textarea:
 
 It represents a visible region on the screen, either a window, or a form element like a button or input field."))
 
-(defmethod initialize-instance :after ((obj widget) &key position dimensions)
+(defmethod initialize-instance :after ((obj widget) &key position dimensions geometry)
   (with-slots (height width (y position-y) (x position-x)) obj
     ;; the keyword position overrides the keywords y and x
     (when position
@@ -227,7 +227,13 @@ It represents a visible region on the screen, either a window, or a form element
     ;; the keyword dimensions overrides width and height
     (when dimensions
       (setf height (car dimensions)
-            width (cadr dimensions)))))
+            width  (cadr dimensions)))
+    ;; geometry overrides y, x, width and height
+    (when geometry
+      (setf y (nth 0 geometry)
+            x (nth 1 geometry)
+            height (nth 2 geometry)
+            width (nth 3 geometry)))))
 
 (defclass window (widget fundamental-character-input-stream fundamental-character-output-stream)
   (;; has to be a 2el-list so we can use 1 arg with setf.
