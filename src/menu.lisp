@@ -135,7 +135,7 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
   ()
   (:documentation "A menu-panel is a panel providing a list of items to be selected by the user."))
 
-(defmethod initialize-instance :after ((win menu-panel) &key color-pair)
+(defmethod initialize-instance :after ((win menu-panel) &key)
   (when (eq (type-of win) 'menu-panel)
     (with-slots (winptr items type height width (y position-y) (x position-x) borderp border-width border-win
                  shadow-win shadowp grid-height grid-width region-height region-width max-item-length current-item-mark) win

@@ -625,6 +625,7 @@ absolute position and dimensions of the panel."))
           (setf shadow-win (make-instance 'window :height h2 :width w2 :position (list y3 x3))))))))
 
 (defmethod refresh ((win panel) &rest args)
+  (declare (ignore args))
   (with-slots (borderp border-win shadow-win shadowp) win
     (when shadowp
       (touch shadow-win)

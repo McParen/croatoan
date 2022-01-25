@@ -116,6 +116,7 @@ The default color pair is used when no other colors are specified.
 The ncurses default color pair is white on black.
 
 If the terminal can set its own colors, they are named :terminal."
+  (declare (ignore screen))
   (setf *default-color-pair* color-pair)
   (ncurses:assume-default-colors (color-name-to-number (car color-pair))
                                  (color-name-to-number (cadr color-pair))))

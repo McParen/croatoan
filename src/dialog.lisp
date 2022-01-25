@@ -127,7 +127,7 @@
   (:documentation
    "A msgbox is a form-window presenting the user a message and an OK button to accept it."))
 
-(defmethod initialize-instance :before ((msgbox msgbox) &key center)
+(defmethod initialize-instance :before ((msgbox msgbox) &key)
   (with-slots (items msg-area ok-button) msgbox
     (setf msg-area (make-instance 'textarea :position '(1 1) :active nil))
     (setf ok-button (make-instance 'button :name :ok-button :title "  OK  "))

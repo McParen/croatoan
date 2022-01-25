@@ -71,6 +71,7 @@ Valid movement directions are :up :down :top and :bottom."
 
 The windows are refreshed in the order they are added, so that if the windows overlap,
 the window added last will be displayed on top."
+  (declare (ignore args))
   (with-slots (items) stack
     (when items
       (mapc #'(lambda (w)
