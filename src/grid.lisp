@@ -206,34 +206,29 @@
             ;; no scrolling, no cycle
             (setf i (min (1+ i) (1- m)))))))
 
-(defclass layout (widget grid)
+(defclass layout (widget grid collection)
   ((padding-top
     :initarg       :padding-top
     :initform      0
     :type          integer
-    :documentation "Padding on the top of every element in the layout.")
+    :documentation "Padding on the top of every item in the layout.")
    (padding-bottom
     :initarg       :padding-bottom
     :initform      0
     :type          integer
-    :documentation "Number of spaces added to the bottom of every element in the layout.")
+    :documentation "Number of spaces added to the bottom of every item in the layout.")
    (padding-left
     :initarg       :padding-left
     :initform      0
     :type          integer
-    :documentation "The padding added to the left of every element in the layout.")
+    :documentation "The padding added to the left of every item in the layout.")
    (padding-right
     :initarg       :padding-right
     :initform      0
     :type          integer
-    :documentation "The padding added to the right of every element in the layout.")
-   (elements
-    :initarg       :elements
-    :initform      nil
-    :type          (or null cons)
-    :documentation "A list of elements (including other layouts)."))
+    :documentation "The padding added to the right of every item in the layout."))
 
-  (:documentation "A layout is a container widget containing elements positioned in a grid. Layouts can be nested."))
+  (:documentation "A layout is a container widget containing items positioned in a grid. Layouts can be nested."))
 
 (defmethod initialize-instance :after ((obj layout) &key padding)
   (with-slots (padding-top padding-bottom padding-left padding-right) obj
@@ -252,8 +247,8 @@
                (y grid-position-y)
                (pl padding-left)
                (pr padding-right)
-               elements) obj
-    (apply #'+ (* n pl) (* n pr) (column-widths elements (list m n)))))
+               items) obj
+    (apply #'+ (* n pl) (* n pr) (column-widths items (list m n)))))
 
 (defmethod height ((obj layout))
   "The height of a layout consists of the max heights of the rows and the top and bottom padding."
@@ -261,8 +256,8 @@
                (m grid-height)
                (pt padding-top)
                (pb padding-bottom)
-               elements) obj
-    (apply #'+ (* m pt) (* m pb) (row-heights elements (list m n)))))
+               items) obj
+    (apply #'+ (* m pt) (* m pb) (row-heights items (list m n)))))
 
 (defun nth2d (position dimensions list)
   "Return the position (y x) of list by assuming grid dimensions (m n) and row major order."
@@ -287,44 +282,44 @@
 (defun calculate-positions (layout)
   "Recursively set the position (y x) of each of the layout's children."
   (with-slots ((m grid-height) (n grid-width) (y position-y) (x position-x)
-               (pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right) elements) layout
-    (let* ((widths (column-widths elements (list m n)))
-           (heights (row-heights elements (list m n)))
+               (pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right) items) layout
+    (let* ((widths (column-widths items (list m n)))
+           (heights (row-heights items (list m n)))
            (widths2 (loop for i from 0 to (length widths) collect (reduce #'+ (subseq widths 0 i))))
            (heights2 (loop for i from 0 to (length heights) collect (reduce #'+ (subseq heights 0 i)))))
-      (loop for el from 0 below (length elements) do
-        (when (nth el elements)
+      (loop for el from 0 below (length items) do
+        (when (nth el items)
           (let* ((i (car (rmi2sub (list m n) el)))
                  (j (cadr (rmi2sub (list m n) el))))
-            (setf (widget-position (nth el elements))
+            (setf (widget-position (nth el items))
                   (list (+ y (+ (* pt (1+ i))
                                 (* pb i)
                                 (nth i heights2)))
                         (+ x (+ (* pl (1+ j))
                                 (* pr j)
                                 (nth j widths2))))))
-          ;; after setting the position, check if the element is a layout object,
-          ;; then recursively set the positions of its child elements.
-          (when (typep (nth el elements) 'layout)
-            (calculate-positions (nth el elements))))))))
+          ;; after setting the position, check if the item is a layout object,
+          ;; then recursively set the positions of its child items.
+          (when (typep (nth el items) 'layout)
+            (calculate-positions (nth el items))))))))
 
-(defun flatten-elements (layout)
-  "Take a layout object, return a flattened list of its elements to be passed to a form.
+(defun flatten-items (layout)
+  "Take a layout object, return a flattened list of its items to be passed to a form.
 
 Nested layouts are spliced in, nils removed and strings/symbols/numbers converted to labels."
-    (let (elements)
+    (let (items)
       (labels ((flatten (list)
                  (dolist (i list)
                    (cond ((typep i 'layout)
-                          ;; push elements of a nested layout recursively
-                          (flatten (slot-value i 'elements)))
+                          ;; push items of a nested layout recursively
+                          (flatten (slot-value i 'items)))
                          ((typep i 'element)
-                          (push i elements))
+                          (push i items))
                          ((null i)
                           ;; ignore nil layout placeholders
                           nil)
                          ((atom i)
                           ;; strings, numbers, symbols
-                          (push (make-instance 'label :title (princ-to-string i)) elements))))))
-        (flatten (slot-value layout 'elements))
-        (nreverse elements))))
+                          (push (make-instance 'label :title (princ-to-string i)) items))))))
+        (flatten (slot-value layout 'items))
+        (nreverse items))))

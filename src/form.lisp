@@ -18,7 +18,7 @@ The name should be a keyword, symbol or integer, the default test is eql.
 If the name is a string, equal should be used as the test.
 
 Instead of the name, another key can be provided to identify the element."
-  (find element-name (elements form) :test test :key key))
+  (find element-name (items form) :test test :key key))
 
 ;; TODO: rename this, since we're not updating anything, just moving the cursor to its position in the field.
 (defgeneric update-cursor-position (object)
@@ -109,9 +109,9 @@ Place the cursor between the brackets [_] of the current item."
 
 (defmethod draw ((form form))
   "Draw the form by drawing the elements, then moving the cursor to the current element."
-  (with-accessors ((elements elements) (window window)) form
+  (with-accessors ((items items) (window window)) form
     ;; TODO: try with mapc instead of loop.
-    (loop for element in elements do
+    (loop for element in items do
       (draw element))
     ;; after drawing the elements, reposition the cursor to the current element
     (update-cursor-position form)))
@@ -320,7 +320,7 @@ Bind this to an event or element to exit the event loop of a form."
   (throw (if (typep object 'form)
              object
              (parent object))
-    (loop for element in (elements (if (typep object 'form)
+    (loop for element in (items (if (typep object 'form)
                                        object
                                        (parent object)))
           when (activep element)
@@ -330,7 +330,7 @@ Bind this to an event or element to exit the event loop of a form."
   (:documentation "Clear user-editable form elements and reset its internal buffers and pointers."))
 
 (defmethod reset ((form form))
-  (dolist (el (elements form))
+  (dolist (el (items form))
     (when (and (or (typep el 'field)
                    (typep el 'textarea))
                (activep el))

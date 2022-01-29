@@ -887,7 +887,7 @@ absolute position and dimensions of the panel."))
       (setf items elements))
     (when layout
       (calculate-positions layout)
-      (setf items (flatten-elements layout)))
+      (setf items (flatten-items layout)))
     ;; Check that only elements are passed to a form.
     (when (notevery (lambda (x) (typep x 'element)) items)
       (error "Form init: All items passed to a form have to be element objects."))

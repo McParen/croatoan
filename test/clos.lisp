@@ -2582,7 +2582,7 @@ will be more efficient to use a character array, a string."
            ;; show 6 labels in a grid nested within the main grid.
            (labels1
              ;; The padding is the number of spaces added to each element, (top bottom left right).
-             (make-instance 'layout :grid-dimensions '(3 2) :padding '(0 1 0 1) :elements
+             (make-instance 'layout :grid-dimensions '(3 2) :padding '(0 1 0 1) :items
                (loop for i from 0 to 5 collect
                  (make-instance 'label :active nil :title (format nil "hello ~r" (random 20))))))
            (form (make-instance 'form
@@ -2592,7 +2592,7 @@ will be more efficient to use a character array, a string."
                                 ;; "nil" elements are represented as empty cells in the grid.
                                 :layout (make-instance 'layout :grid-height 6 :grid-width 3
                                                                :padding '(0 1 0 1) :position '(2 4)
-                                                               :elements (append (list menu1 nil) buttons (list area nil labels1 nil field)))
+                                                               :items (append (list menu1 nil) buttons (list area nil labels1 nil field)))
                                 :style '(field (:background (:attributes (:reverse))
                                                 :selected-background (:bgcolor :blue))
                                          textarea (:background (:attributes (:reverse))
