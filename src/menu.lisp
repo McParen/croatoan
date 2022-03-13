@@ -44,11 +44,11 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
 
 ;; init for menus which aren't menu windows
 (defmethod initialize-instance :after ((menu menu) &key)
-  (with-slots (items grid-height grid-width region-height region-width region-position-y region-position-x) menu
+  (with-slots (children grid-height grid-width region-height region-width region-position-y region-position-x) menu
     (setf region-position-y 0 region-position-x 0)
 
     ;; Convert strings and symbols to item objects
-    (setf items (mapcar (lambda (item)
+    (setf children (mapcar (lambda (item)
                           (if (typep item 'menu-item)
                               ;; if an item object is given, just return it
                               item
@@ -71,10 +71,10 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                                                                 (symbol-name (name item)))))
                                              :value item)))
                         ;; apply the function to the init arg passed to make-instance.
-                        items))
+                        children))
 
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
-    (unless grid-height (setf grid-height (length items)))
+    (unless grid-height (setf grid-height (length children)))
     (unless grid-width (setf grid-width 1))))
 
 (defmethod width ((obj menu))
@@ -89,14 +89,14 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
   (:documentation "A menu-window is an extended window displaying a menu in its sub-window."))
 
 (defmethod initialize-instance :after ((win menu-window) &key color-pair)
-  (with-slots (winptr items type height width (y position-y) (x position-x) sub-window borderp border-width
+  (with-slots (winptr children type height width (y position-y) (x position-x) sub-window borderp border-width
                grid-height grid-width region-height region-width max-item-length current-item-mark fgcolor bgcolor) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
       (setf border-width (if borderp 1 0))
 
       ;; if no layout was given, use a vertical list (n 1)
-      (unless grid-height (setf grid-height (length items)))
+      (unless grid-height (setf grid-height (length children)))
       (unless grid-width (setf grid-width 1))
 
       ;; if height and width are not given as initargs, they will be calculated,
@@ -137,9 +137,9 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
 
 (defmethod initialize-instance :after ((win menu-panel) &key)
   (when (eq (type-of win) 'menu-panel)
-    (with-slots (winptr items type height width (y position-y) (x position-x) borderp border-width border-win
+    (with-slots (winptr children type height width (y position-y) (x position-x) borderp border-width border-win
                  shadow-win shadowp grid-height grid-width region-height region-width max-item-length current-item-mark) win
-      (unless grid-height (setf grid-height (length items)))
+      (unless grid-height (setf grid-height (length children)))
       (unless grid-width (setf grid-width 1))
       (unless height (setf height (visible-grid-height win)))
       (unless width  (setf width  (* (visible-grid-width win)
@@ -366,14 +366,14 @@ At the third position, display the item given by item-number."
 ;;   return-from-menu
 (defun reset-menu (menu)
   "After the menu is closed reset it to its initial state."
-  (with-slots (items current-item-number grid-position-y grid-position-x region-position-y region-position-x menu-type) menu
+  (with-slots (children current-item-number grid-position-y grid-position-x region-position-y region-position-x menu-type) menu
     (setf current-item-number 0
           grid-position-y 0
           grid-position-x 0
           region-position-y 0
           region-position-x 0)
     (when (eq menu-type :checklist)
-      (loop for i in items if (checkedp i) do (setf (checkedp i) nil)))))
+      (loop for i in children if (checkedp i) do (setf (checkedp i) nil)))))
 
 ;; stack for managing overlapping menu windows
 (defparameter *menu-stack* (make-instance 'stack))

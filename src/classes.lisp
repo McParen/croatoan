@@ -817,21 +817,31 @@ absolute position and dimensions of the panel."))
   (:default-initargs :keymap 'checkbox-map)
   (:documentation "A boolean element that can be checked (t) or unchecked (nil)"))
 
-(defclass collection ()
-  ((items
-    :initarg       :items
+(defclass node ()
+  ((parent
+    :initarg       :parent
     :initform      nil
-    :accessor      items
-    :type          (or null cons)
-    :documentation "")
+    :accessor      parent
+    ;;:type          (or null window)
+    :documentation "Pointer to the parent object.")
 
-   (current-item-number
+   (children
+    :initarg       :children
+    :initform      nil
+    :accessor      children
+    :type          (or null cons)
+    :documentation "List of children."))
+
+  (:documentation "Base class for objects that can be organized in a tree, like layouts."))
+
+(defclass collection (node)
+  ((current-item-number
     :initform      nil
     :accessor      current-item-number
     :type          (or null integer)
     :documentation "Number (row-major mode) of the currently selected item, nil if the list is empty."))
 
-  (:documentation "Base class for for all objects that contain a list of other objects selectable by the user."))
+  (:documentation "Base for objects that contain a list of other objects that can be selected."))
 
 (defmethod initialize-instance :after ((obj collection) &key)
   (with-slots (items) obj
@@ -839,10 +849,28 @@ absolute position and dimensions of the panel."))
     (when items
       (setf (current-item-number obj) 0))))
 
+(defmethod items ((obj collection))
+  "The children of a collection can be accessed as items."
+  (slot-value obj 'children))
+
+(defmethod (setf items) (items (obj collection))
+  "The children of a collection can be accessed as items."
+  (setf (slot-value obj 'children) items))
+
+(defmethod initialize-instance :after ((obj collection) &key items)
+  (with-slots (children current-item-number) obj
+    ;; the children slot can be initialized with the :items initarg.
+    (when items
+      (setf children items))
+    ;; if the children have been initialized, initialize the counter.
+    ;; if the children are added later, the counter has to be initialized manually.
+    (when children
+      (setf current-item-number 0))))
+
 (defun current-item (collection)
   "Return the current object from the collection."
-  (with-slots (items current-item-number) collection
-    (nth current-item-number items)))
+  (with-slots (children current-item-number) collection
+    (nth current-item-number children)))
 
 (defgeneric select-previous-item (collection)
   (:documentation "")
@@ -881,31 +909,34 @@ absolute position and dimensions of the panel."))
    "A form is a collection of elements like fields, textareas, checkboxes, menus and buttons."))
 
 (defmethod initialize-instance :after ((form form) &key layout elements)
-  (with-slots (items current-item-number) form
+  (with-slots (children current-item-number) form
     ;; For backward compatibility, if a list of elements has been passed, store it in the items slot.
     (when elements
-      (setf items elements))
+      (setf children elements))
     (when layout
       (calculate-positions layout)
-      (setf items (flatten-items layout)))
+      (setf children (flatten-items layout)))
     ;; Check that only elements are passed to a form.
-    (when (notevery (lambda (x) (typep x 'element)) items)
+    (when (notevery (lambda (x) (typep x 'element)) children)
       (error "Form init: All items passed to a form have to be element objects."))
-    (if items
+    (if children
         (progn
           ;; Initialize the current element as the first active element from the passed elements list.
           ;; we have to set the current element before we can change it with select-previous-element and select-next-element
-          (setf current-item-number (position-if #'activep items))
+          (setf current-item-number (position-if #'activep children))
           ;; mark the current element selected so it can be highlighted
           (setf (slot-value (current-item form) 'selectedp) t)
           ;; set the parent form slot of every element.
-          (loop for element in items
+          (loop for element in children
                 do (setf (slot-value element 'parent) form)))
         ;; if a list of elements was not passed, signal an error.
         (error "Form init: A list of elements is required to initialize a form."))))
 
-(defun elements (form)
-  (slot-value form 'items))
+(defmethod elements ((obj form))
+  (slot-value obj 'children))
+
+(defmethod (setf elements) (elements (obj form))
+  (setf (slot-value obj 'children) elements))
 
 ;; TODO: use both window-free forms and form-windows, window-free menus und menu-windows.
 (defclass form-window (extended-window form)

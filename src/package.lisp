@@ -60,6 +60,10 @@
    move-left
    move-right
 
+   node
+   parent
+   children
+
    collection
    select-previous-item
    select-next-item
@@ -67,6 +71,9 @@
    select-last-item
 
    layout
+   column-layout
+   row-layout
+
    form
    form-window
    msgbox
