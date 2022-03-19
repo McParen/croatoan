@@ -3973,3 +3973,105 @@ Press C-j, C-m, C-i, C-h to see the difference."
     (clear-rectangle scr '(7 42) '(4 8))
     (refresh scr)
     (get-char scr)))
+
+(defun t42 ()
+  "Add (a) to and remove (r) windows from a simple column layout.
+
+When a new window is added or removed, all windows are rebalanced."
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
+    (let ((h (height scr))
+          (w (width scr))
+          windows)
+      (setf (background scr) (make-instance 'complex-char :simple-char #\.))
+      (labels ((make-random-bg ()
+                 (make-instance 'complex-char :fgcolor :black :bgcolor (list :number (random 16))))
+               (add-window ()
+                 (let* ((len (length windows))
+                        ;; height after a new window is added
+                        (dh (floor (/ h (1+ len)))))
+                   (if windows
+                       (progn
+                         ;; resize and reposition existing windows (geometry = y x h w)
+                         ;; we only change y and h, x stays 0 and w is screen width
+                         (dotimes (i len)
+                           (resize (nth i (reverse windows)) dh w)
+                           (setf (position-y (nth i (reverse windows))) (* i dh)))
+                         ;; add a new window to fill the remaining height
+                         (push (make-instance 'window :height (- h (* len dh)) :width w :y (* len dh) :x 0 :background (make-random-bg)) windows))
+                       (progn
+                         ;; windows is empty
+                         (push (make-instance 'window :height h :width w :y 0 :x 0 :background (make-random-bg)) windows)))))
+               (remove-window ()
+                 (when windows
+                   (close (pop windows))
+                   (if windows
+                       (let* ((len (length windows))
+                              (dh (floor (/ h len))))
+                         ;; resize and reposition all windows but the last
+                         (dotimes (i (1- len))
+                           (resize (nth i (reverse windows)) dh w)
+                           (setf (position-y (nth i (reverse windows))) (* i dh))) ;)))))
+                         ;; resize the last to take up the remaining screen
+                         (resize (car windows) (- h (* (1- len) dh)) w)
+                         (setf (position-y (car windows)) (* (1- len) dh)))
+                       ;; when there are no more windows, display the screen
+                       (progn (touch scr) (refresh scr))))))
+        (event-case (scr event)
+          (#\a (add-window) (mapc #'touch windows) (mapc #'refresh windows))
+          (#\r (remove-window) (mapc #'touch windows) (mapc #'refresh windows))
+          (#\q (return-from event-case)))
+        (mapc #'close windows)))))
+
+(defun t42a ()
+  "Instead of a simple list, use a collection. Add a new window, select the previous or next window."
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
+    (let ((h (height scr))
+          (w (width scr))
+          ;; with a collection we can use select-next-item
+          (wins (make-instance 'collection)))
+      (with-accessors ((items items) (n current-item-number)) wins
+        (setf (background scr) (make-instance 'complex-char :simple-char #\.))
+        (labels ((make-random-bg ()
+                   (make-instance 'complex-char :fgcolor :black :bgcolor (list :number (random 16))))
+                 (mark-current-win ()
+                   (mapc #'clear items) (format (nth n (reverse items)) "*") (mapc #'refresh items))
+                 (add-window ()
+                   (let* ((len (length items))
+                          (dh (floor (/ h (1+ len))))) ; new window height after a new window is added
+                     (if items
+                         (progn
+                           ;; resize and reposition existing windows (geometry = y x h w)
+                           ;; we only change y and h, x = 0 and w = width
+                           (dotimes (i len)
+                             (resize (nth i (reverse items)) dh w)
+                             (setf (position-y (nth i (reverse items))) (* i dh)))
+                           ;; add a new window to fill the remaining height
+                           (push (make-instance 'window :height (- h (* len dh)) :width w :y (* len dh) :x 0 :background (make-random-bg)) items))
+                         ;; when windows is empty
+                         (progn
+                           ;; initialize collection counter
+                           (setf n 0)
+                           ;; add a first window
+                           (push (make-instance 'window :height h :width w :y 0 :x 0 :background (make-random-bg)) items)
+                           (mark-current-win))))))
+          (event-case (scr event)
+            (#\a (add-window) (mapc #'refresh items))
+            (#\n (when n (select-next-item wins) (mark-current-win)))
+            (#\p (when n (select-previous-item wins) (mark-current-win)))
+            (#\q (return-from event-case)))
+          (mapc #'close items))))))
+
+(defun t42b ()
+  "Initialize a flat list of windows from their plists."
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
+    (let* ((plists (list (list 'window :name :w1 :y 0 :x  0 :height 5 :width 10 :border t :fgcolor :red)
+                         (list 'window :name :w2 :y 0 :x 10 :height 5 :width 10 :border t :fgcolor :green)
+                         (list 'window :name :w3 :y 0 :x 20 :height 5 :width 10 :border t :fgcolor :blue)))
+           ;; make a new list from the initialized items from the plists
+           (wins (mapcar (lambda (i) (apply #'make-instance i)) plists)))
+      (mapc (lambda (w)
+              (add w "test" :position '(0 1))
+              (refresh w))
+            wins)
+      (get-char (car wins))
+      (mapc #'close wins))))
