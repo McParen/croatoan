@@ -339,3 +339,150 @@ Nested layouts are spliced in, nils removed and strings/symbols/numbers converte
                           (push (make-instance 'label :title (princ-to-string i)) items))))))
         (flatten (slot-value layout 'children))
         (nreverse items))))
+
+;; (split-size '(2 nil nil 2) 10) => (2 3 3 2)
+(defun split-size (hints parent-size)
+  "Take a list of size hints of one dimension, return a complete list.
+
+The missing elements are denoted by nil, their size is evenly split."
+  (let* ((n (count-if #'null hints))              ; _N_umber of children without a size
+         (g (loop for i in hints when i sum i))   ; sum of already _G_iven sizes
+         (s (- parent-size g))                    ; _S_pace left for all free children
+         (c (truncate s n))                       ; _C_alculated space for every child
+         (l (- s (* n c)))                        ; space _L_eft after truncation
+         (firstp t))                              ; flag for the first child
+    (loop for i in hints
+          collect (if i
+                      ;; if there is a size hint, take it
+                      i
+                      (if firstp
+                          ;; give the truncated space to the first child
+                          (progn (setq firstp nil) (+ c l))
+                          c)))))
+
+;; (2 4 3 6) => (0 2 6 9)
+(defun cumsum-predecessors (nums)
+  "Take a list, return a cumulative sum of previous elements.
+
+For every number, sum the numbers preceding it in the list.
+
+For example, for the list (2 4 3 6) we will get (0 2 6 9).
+
+For example, if (2 4 3 6) is a list of column widths in a table,
+then (0 2 6 9) is a list of x positions of each column."
+  (loop for i from 0 below (length nums)
+        collect (reduce #'+ (subseq nums 0 i))))
+
+(defun collect-width-hints (nodes)
+  (loop for i in nodes collect
+    (if (listp i)
+        (getf (cdr i) :width)
+        (slot-value i 'width))))
+
+(defun collect-height-hints (nodes)
+  (loop for i in nodes collect
+    (if (listp i)
+        (getf (cdr i) :height)
+        (slot-value i 'height))))
+
+(defgeneric calculate-layout (node)
+  (:documentation "Recursively calculate the missing geometry parameters for the node's children."))
+
+(defmethod calculate-layout ((node row-layout))
+  (let* ((y (if (position-y node) (position-y node) (position-y (parent node))))
+         (x (if (position-x node) (position-x node) (position-x (parent node))))
+
+         ;; we cant use the h/w accessors because they try to calc the h/w of the layout
+         ;; from the h/w of its children, which have not been initialized yet.
+         (h (if (slot-value node 'height) (slot-value node 'height) (height (parent node))))
+         (w (if (slot-value node 'width) (slot-value node 'width) (width (parent node))))
+
+         (children (children node))
+         (n (length children))
+         (hints (collect-width-hints children))
+         (ws (split-size hints w))
+         (hs (make-list n :initial-element h))
+         (ys (make-list n :initial-element y))
+         (xs (mapcar (lambda (i) (+ i x)) (cumsum-predecessors ws))))
+    ;; address every child as (nth i children), so we can setf it if its a plist.
+    (dotimes (i n)
+      ;; first set its newly calculated geometry
+      (if (listp (nth i children))
+          ;; if the child is a plist for a window
+          (setf (cdr (nth i (children node)))
+                (set-geometry-plist (cdr (nth i children))
+                                    (list (nth i ys)
+                                          (nth i xs)
+                                          (nth i hs)
+                                          (nth i ws))))
+          ;; if the child is not a plist, assume that it is a layout.
+          (progn
+            (setf (geometry (nth i children))
+                  (list (nth i ys)
+                        (nth i xs)
+                        (nth i hs)
+                        (nth i ws)))
+            ;; then recursively calculate and set its childrens geometries.
+            (when (children (nth i children))
+              (calculate-layout (nth i children))))))))
+
+(defmethod calculate-layout ((node column-layout))
+  (let* ((y (if (position-y node) (position-y node) (position-y (parent node))))
+         (x (if (position-x node) (position-x node) (position-x (parent node))))
+         (h (if (slot-value node 'height) (slot-value node 'height) (height (parent node))))
+         (w (if (slot-value node 'width) (slot-value node 'width) (width (parent node))))
+         (children (children node))
+         (n (length children))
+         (hints (collect-height-hints children))
+         (hs (split-size hints h))
+         (ws (make-list n :initial-element w))
+         (xs (make-list n :initial-element x))
+         (ys (mapcar (lambda (i) (+ i y)) (cumsum-predecessors hs))))
+    (dotimes (i n)
+      (if (listp (nth i children))
+          (setf (cdr (nth i (children node)))
+                (set-geometry-plist (cdr (nth i children))
+                                    (list (nth i ys)
+                                          (nth i xs)
+                                          (nth i hs)
+                                          (nth i ws))))
+          (progn
+            (setf (geometry (nth i children))
+                  (list (nth i ys)
+                        (nth i xs)
+                        (nth i hs)
+                        (nth i ws)))
+            (when (children (nth i children))
+              (calculate-layout (nth i children))))))))
+
+(defun initialize-leaves (node)
+  "Walk the layout tree given by node and initialize the leaf objects that are given as plists."
+  (when (and (typep node 'layout)
+             (children node))
+    (setf (children node)
+          ;; convert the plist children to clos objects.
+          (mapcar (lambda (i)
+                    (if (listp i) (apply #'make-instance i) i))
+                  (children node)))
+    ;; Recursively init the leaves of the sub-layouts.
+    (dolist (c (children node))
+      (when (typep c 'layout)
+        (initialize-leaves c)))))
+
+(defun leaves (root)
+  "Walk the layout tree given by the root node, return a list of leaves."
+  (let (stack
+        leaves)
+    (push root stack)
+    (loop
+      (if stack
+          (let ((node (pop stack)))
+            (if (typep node 'layout)
+                ;; queue means FIFO, so we can enqueue the children
+                ;; in the normal (left to right) order.
+                (when (children node)
+                  (dolist (c (reverse (children node)))
+                    (push c stack)))
+                ;; every object other than a layout is a leaf, so return it.
+                (push node leaves)))
+          (return (reverse leaves))))))

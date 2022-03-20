@@ -158,6 +158,7 @@
    #:t42
    #:t42a
    #:t42b
+   #:t43
 
    ;; clos.lisp
    #:snake

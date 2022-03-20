@@ -73,6 +73,9 @@
    layout
    column-layout
    row-layout
+   calculate-layout
+   initialize-leaves
+   leaves
 
    form
    form-window
@@ -93,6 +96,7 @@
    width
    height
    dimensions
+   geometry
    widget-position
    window-position ;deprecated
    position-y

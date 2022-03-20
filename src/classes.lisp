@@ -1155,15 +1155,60 @@ By default it is identical to the position of the sub-window."))
 (defmethod height ((obj symbol))
   1)
 
-;; TODO use getyx, the official macro interface
-;; TODO add a :dimensions initialization keyword, so we dont have to give height and width separately
-;; TODO check whether we can resize the window during run time or only during initialization
-;; TODO: add methods for menus, fields, textarea, etc.
-;; TODO: add mixin parent classes for all square objects that can have dimensions.
 (defgeneric dimensions (object)
   (:documentation "Return a two-element list with the height and width of the object.")
   (:method (object)
     (list (height object) (width object))))
+
+(defgeneric (setf dimensions) (dimensions object)
+  (:documentation "Take a list (height width) and an object, set its height and width."))
+
+(defmethod (setf dimensions) (dimensions (object window))
+  (destructuring-bind (h w) dimensions
+    (setf (height object) h
+          (width object)  w)))
+
+(defgeneric geometry (object)
+  (:documentation "Return the geometry of the object as a list (y x width height)."))
+
+(defgeneric (setf geometry) (geometry object)
+  (:documentation "Set the geometry (y x width height) of the object."))
+
+(defmethod geometry ((object layout))
+  (with-slots (position-y position-x height width) object
+    (list position-y position-x height width)))
+
+(defmethod (setf geometry) (geometry (object layout))
+  (with-slots (position-y position-x height width) object
+    (destructuring-bind (y x h w) geometry
+      (setf position-y y
+            position-x x
+            height     h
+            width      w))))
+
+(defmethod geometry ((object window))
+  (list (position-y object)
+        (position-x object)
+        (height object)
+        (width object)))
+
+(defmethod (setf geometry) (geometry (object window))
+  (destructuring-bind (y x h w) geometry
+    (setf (position-y object) y
+          (position-x object) x
+          (height object)     h
+          (width object)      w)))
+
+(defun set-geometry-plist (plist yxhw)
+  "Take a plist and a (y x h w) geometry list, return the updated plist."
+  (loop for i in '(:y :x :height :width)
+        for j in yxhw
+        do (setf (getf plist i) j))
+  plist)
+
+(defun get-geometry-plist (plist)
+  (loop for i in '(:y :x :height :width)
+        collect (getf plist i)))
 
 (defgeneric cursor-position (window))
 (defmethod cursor-position ((win window))

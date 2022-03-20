@@ -4075,3 +4075,35 @@ When a new window is added or removed, all windows are rebalanced."
             wins)
       (get-char (car wins))
       (mapc #'close wins))))
+
+(defun t43 ()
+  "Automatically calculate missing geometry (position and dimensions) of windows passed to a layout."
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
+    (flet ((make-random-bg ()
+             (make-instance 'complex-char :bgcolor (list :number (random 256)))))
+      (let ((wins (make-instance 'column-layout :parent scr :children
+                                 (list (list 'window :name :title :height 1)
+                                       (make-instance 'row-layout :children
+                                                      (list (list 'window :name :channels :width 10)
+                                                            (list 'window :name :output :border t)
+                                                            (make-instance 'column-layout :width 20 :children
+                                                                           (list (list 'window :name :nicklist)
+                                                                                 (list 'window :name :nickinfo :height 5)))))
+                                       (list 'window :name :input :height 1)))))
+        ;; calculate the missing parts of window geometries
+        (calculate-layout wins)
+        ;; initialize window objects from the plists, after the missing geometry has been calculated
+        (initialize-leaves wins)
+
+        (mapc (lambda (w)
+                (setf (background w) (make-random-bg))
+                (format w "~A" (name w))
+                (refresh w))
+              ;; windows are the leaves in the layout tree
+              (leaves wins))
+        (let ((win  (find :input  (leaves wins) :key #'name))
+              (wout (find :output (leaves wins) :key #'name)))
+          (put wout 2 4 "Reference a window by its name." :color-pair '(:yellow :green))
+          (refresh wout)
+          (get-char win))
+        (mapc #'close (leaves wins))))))
