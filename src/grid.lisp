@@ -256,6 +256,19 @@
   (:default-initargs :grid-height 1)
   (:documentation "A container of widgets organized in one column."))
 
+(defmethod current-item ((obj layout))
+  "If n is the current item number, return the nth leaf of a layout tree."
+  (with-accessors ((n current-item-number)) obj
+    (nth n (leaves obj))))
+
+(defmethod select-next-item ((obj layout))
+  (with-accessors ((n current-item-number)) obj
+    (setf n (mod (1+ n) (length (leaves obj))))))
+
+(defmethod select-previous-item ((obj layout))
+  (with-accessors ((n current-item-number)) obj
+    (setf n (mod (1- n) (length (leaves obj))))))
+
 (defmethod width ((obj layout))
   "The width of a layout consists of the max widths of the columns and the left and right padding."
   (with-slots ((n grid-width)
@@ -280,7 +293,7 @@
   (nth (sub2rmi dimensions position) list))
 
 (defun column-widths (list dimensions)
-  "Take a list of strings, return a list of max widths of every column."
+  "Take a list of objects, return a list of max widths of every column."
   (destructuring-bind (m n) dimensions
     (loop for j from 0 below n collect
       (loop for i from 0 below m maximize
@@ -288,7 +301,7 @@
           (width item))))))
 
 (defun row-heights (list dimensions)
-  "Take a list of strings, return a list of max heights of every row."
+  "Take a list of objects, return a list of max heights of every row."
   (destructuring-bind (m n) dimensions
     (loop for i from 0 below m collect
       (loop for j from 0 below n maximize
@@ -301,8 +314,8 @@
                (pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right) children) layout
     (let* ((widths (column-widths children (list m n)))
            (heights (row-heights children (list m n)))
-           (widths2 (loop for i from 0 to (length widths) collect (reduce #'+ (subseq widths 0 i))))
-           (heights2 (loop for i from 0 to (length heights) collect (reduce #'+ (subseq heights 0 i)))))
+           (widths2 (cumsum-predecessors widths))
+           (heights2 (cumsum-predecessors heights)))
       (loop for el from 0 below (length children) do
         (when (nth el children)
           (let* ((i (car (rmi2sub (list m n) el)))

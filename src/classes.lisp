@@ -867,10 +867,13 @@ absolute position and dimensions of the panel."))
     (when children
       (setf current-item-number 0))))
 
-(defun current-item (collection)
+(defgeneric current-item (collection))
+
+(defmethod current-item ((obj collection))
   "Return the current object from the collection."
-  (with-slots (children current-item-number) collection
-    (nth current-item-number children)))
+  (with-slots (children current-item-number) obj
+    (when children
+      (nth current-item-number children))))
 
 (defgeneric select-previous-item (collection)
   (:documentation "")

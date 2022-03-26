@@ -4107,3 +4107,31 @@ When a new window is added or removed, all windows are rebalanced."
           (refresh wout)
           (get-char win))
         (mapc #'close (leaves wins))))))
+
+(defun t43a ()
+  "A layout is a collection, press p or n to select the previous or next current window."
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
+    (let ((wins (make-instance 'column-layout :parent scr :children
+                               (list (list 'window :name :title :height 1)
+                                     (make-instance 'row-layout :children
+                                                    (list (list 'window :name :channels :width 10)
+                                                          (list 'window :name :output)
+                                                          (make-instance 'column-layout :width 20 :children
+                                                                         (list (list 'window :name :nicklist)
+                                                                               (list 'window :name :nickinfo :height 5)))))
+                                     (list 'window :name :input :height 1)))))
+      (with-accessors ((leaves leaves) (n current-item-number)) wins
+        (labels ((make-random-bg ()
+                   (make-instance 'complex-char :bgcolor (list :number (random 256))))
+                 (mark-current-win ()
+                   (mapc #'clear leaves) (format (nth n leaves) "***") (mapc #'refresh leaves)))
+          (calculate-layout wins)
+          (initialize-leaves wins)
+          (mapc (lambda (w) (setf (background w) (make-random-bg))) leaves)
+          (mark-current-win)
+          (let ((win (find :input (leaves wins) :key #'name)))
+            (event-case (win event)
+              (#\n (when n (select-next-item wins) (mark-current-win)))
+              (#\p (when n (select-previous-item wins) (mark-current-win)))
+              (#\q (return-from event-case))))
+          (mapc #'close leaves))))))

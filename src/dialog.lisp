@@ -34,7 +34,7 @@
 
 ;; also see menu.lisp / draw dialog-window
 (defmethod initialize-instance :after ((win dialog-window) &key color-pair center)
-  (with-slots (winptr items height width (y position-y) (x position-x) sub-window borderp max-item-length current-item-mark
+  (with-slots (winptr children height width (y position-y) (x position-x) sub-window borderp max-item-length current-item-mark
                fgcolor bgcolor message-pad message-text message-height message-pad-coordinates
                grid-height grid-width) win
     ;; only for dialog windows
@@ -44,7 +44,7 @@
         ;; if no layout was given, use a horizontal list (1 n).
         (unless (or grid-height grid-width)
           (setf grid-height 1
-                grid-width (length items)))
+                grid-width (length children)))
 
         ;; if height and width are not given as initargs, they will be calculated,
         ;; according to the number of rows +/- border, and _not_ maximized like normal windows.
@@ -128,13 +128,13 @@
    "A msgbox is a form-window presenting the user a message and an OK button to accept it."))
 
 (defmethod initialize-instance :before ((msgbox msgbox) &key)
-  (with-slots (items msg-area ok-button) msgbox
+  (with-slots (children msg-area ok-button) msgbox
     (setf msg-area (make-instance 'textarea :position '(1 1) :active nil))
     (setf ok-button (make-instance 'button :name :ok-button :title "  OK  "))
     (setf (callback ok-button) 'accept)
     ;; the elements list has to be assembled :before the primary form initialization method
     ;; otherwise the :after method for form doesnt work
-    (setf items (list msg-area ok-button))))
+    (setf children (list msg-area ok-button))))
 
 (defmethod initialize-instance :after ((msgbox msgbox) &key center (message-wrap t))
   (with-slots (winptr height width (y position-y) (x position-x) sub-window window message msg-area ok-button) msgbox
