@@ -44,8 +44,8 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
 
 ;; init for menus which aren't menu windows
 (defmethod initialize-instance :after ((menu menu) &key)
-  (with-slots (children grid-height grid-width region-height region-width region-position-y region-position-x) menu
-    (setf region-position-y 0 region-position-x 0)
+  (with-slots (children grid-rows grid-columns region-rows region-columns region-start-row region-start-column) menu
+    (setf region-start-row 0 region-start-column 0)
 
     ;; Convert strings and symbols to item objects
     (setf children (mapcar (lambda (item)
@@ -74,15 +74,15 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                         children))
 
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
-    (unless grid-height (setf grid-height (length children)))
-    (unless grid-width (setf grid-width 1))))
+    (unless grid-rows (setf grid-rows (length children)))
+    (unless grid-columns (setf grid-columns 1))))
 
 (defmethod width ((obj menu))
-  (with-slots (max-item-length grid-width) obj
-    (* grid-width max-item-length)))
+  (with-slots (max-item-length grid-columns) obj
+    (* grid-columns max-item-length)))
 
 (defmethod height ((obj menu))
-  (slot-value obj 'grid-height))
+  (slot-value obj 'grid-rows))
 
 (defclass menu-window (menu extended-window)
   ()
@@ -90,28 +90,27 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
 
 (defmethod initialize-instance :after ((win menu-window) &key color-pair)
   (with-slots (winptr children type height width (y position-y) (x position-x) sub-window borderp border-width
-               grid-height grid-width region-height region-width max-item-length current-item-mark fgcolor bgcolor) win
+               grid-rows grid-columns region-rows region-columns max-item-length current-item-mark fgcolor bgcolor) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
       (setf border-width (if borderp 1 0))
 
       ;; if no layout was given, use a vertical list (n 1)
-      (unless grid-height (setf grid-height (length children)))
-      (unless grid-width (setf grid-width 1))
+      (unless grid-rows (setf grid-rows (length children)))
+      (unless grid-columns (setf grid-columns 1))
 
       ;; if height and width are not given as initargs, they will be calculated,
       ;; according to no of rows +/- border, and _not_ maximized like normal windows.
-      (unless height (setf height (+ (* 2 border-width) (visible-grid-height win))))
-      (unless width  (setf width  (+ (* 2 border-width) (* (visible-grid-width win)
+      (unless height (setf height (+ (* 2 border-width) (visible-grid-rows win))))
+      (unless width  (setf width  (+ (* 2 border-width) (* (visible-grid-columns win)
                                                            (+ (length current-item-mark) max-item-length)))))
       (setf winptr (ncurses:newwin height width y x))
       (setf sub-window (make-instance 'sub-window :parent win
-                                                  :height (visible-grid-height win)
-                                                  :width (* (visible-grid-width win)
+                                                  :height (visible-grid-rows win)
+                                                  :width (* (visible-grid-columns win)
                                                             (+ (length current-item-mark) max-item-length))
                                                   :position (list border-width border-width)
                                                   :relative t))
-
       (cond ((or fgcolor bgcolor)
              (set-color-pair winptr (color-pair win))
              (setf (color-pair sub-window) (color-pair win)
@@ -138,11 +137,11 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
 (defmethod initialize-instance :after ((win menu-panel) &key)
   (when (eq (type-of win) 'menu-panel)
     (with-slots (winptr children type height width (y position-y) (x position-x) borderp border-width border-win
-                 shadow-win shadowp grid-height grid-width region-height region-width max-item-length current-item-mark) win
-      (unless grid-height (setf grid-height (length children)))
-      (unless grid-width (setf grid-width 1))
-      (unless height (setf height (visible-grid-height win)))
-      (unless width  (setf width  (* (visible-grid-width win)
+                 shadow-win shadowp grid-rows grid-columns region-rows region-columns max-item-length current-item-mark) win
+      (unless grid-rows (setf grid-rows (length children)))
+      (unless grid-columns (setf grid-width 1))
+      (unless height (setf height (visible-grid-rows win)))
+      (unless width  (setf width  (* (visible-grid-columns win)
                                      (+ (length current-item-mark) max-item-length))))
       (setf winptr (ncurses:newwin height width y x))
       (let* (;; main win
@@ -187,8 +186,6 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                do (setf (aref array i j) (nth (+ (* i n) j) list))))
       array)))
 
-;;; TODO see menu_format
-
 (defun rmi2sub (dimensions rmi)
   "Take array dimensions and an index in row-major order, return two subscripts.
 
@@ -216,8 +213,8 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                    (len max-item-length)
                    (pos widget-position)) menu
     ;; return the visible layout of the menu
-    (let* ((m (visible-grid-height menu))
-           (n (visible-grid-width menu))
+    (let* ((m (visible-grid-rows menu))
+           (n (visible-grid-columns menu))
            (w (* n len)))
       (clear-rectangle win (car pos) (cadr pos) m w))))
 
@@ -247,7 +244,6 @@ At the third position, display the item given by item-number."
             (if (= current-item-number item-number)
                 current-item-mark
                 (make-string (length current-item-mark) :initial-element #\space))
-
             ;; then add the item title
             (format-title (nth item-number items)) )))
 
@@ -291,13 +287,13 @@ At the third position, display the item given by item-number."
 ;; draws to any window, not just to a sub-window of a menu-window.
 (defun draw-menu (window menu)
   "Draw the menu to the window."
-  (with-slots (scrolling-enabled-p grid-height grid-width region-height region-width region-position-y region-position-x) menu
-    (let ((m  grid-height)
-          (n  grid-width)
-          (m0 region-position-y)
-          (n0 region-position-x)
-          (m1 region-height)
-          (n1 region-width))
+  (with-slots (scrolling-enabled-p grid-rows grid-columns region-rows region-columns region-start-row region-start-column) menu
+    (let ((m  grid-rows)
+          (n  grid-columns)
+          (m0 region-start-row)
+          (n0 region-start-column)
+          (m1 region-rows)
+          (n1 region-columns))
       (if scrolling-enabled-p
           ;; when the menu is too big to be displayed at once, only a part
           ;; is displayed, and the menu can be scrolled
@@ -366,12 +362,12 @@ At the third position, display the item given by item-number."
 ;;   return-from-menu
 (defun reset-menu (menu)
   "After the menu is closed reset it to its initial state."
-  (with-slots (children current-item-number grid-position-y grid-position-x region-position-y region-position-x menu-type) menu
+  (with-slots (children current-item-number grid-row grid-column region-start-row region-start-column menu-type) menu
     (setf current-item-number 0
-          grid-position-y 0
-          grid-position-x 0
-          region-position-y 0
-          region-position-x 0)
+          grid-row 0
+          grid-column 0
+          region-start-row 0
+          region-start-column 0)
     (when (eq menu-type :checklist)
       (loop for i in children if (checkedp i) do (setf (checkedp i) nil)))))
 
@@ -426,7 +422,6 @@ Return the value from select."
               (typep val 'symbol)
               (typep val 'number))
           (return-from-menu menu val))
-
          ;; if the item is a function object, call it.
          ((typep val 'function)
           (funcall val)
@@ -458,8 +453,18 @@ Return the value from select."
 
 (defun sync-collection-grid (obj)
   "Sync the position in 1D collection list with the yx position in a 2D grid."
-  (with-slots (current-item-number grid-height grid-width grid-position-y grid-position-x) obj
-    (setf current-item-number (sub2rmi (list grid-height grid-width) (list grid-position-y grid-position-x)))))
+  (with-slots (current-item-number grid-rows grid-columns grid-row grid-column) obj
+    (setf current-item-number (sub2rmi (list grid-rows grid-columns) (list grid-row grid-column)))))
+
+(defun sync-grid-collection (obj)
+  "Set the 2D yx grid position from the 1D position in the collection list."
+  (with-slots ((i current-item-number)
+               (m grid-rows)
+               (n grid-columns)
+               (y grid-row)
+               (x grid-column)) obj
+    (setf y (car (rmi2sub (list m n) i))
+          x (cadr (rmi2sub (list m n) i)))))
 
 (defmethod move-left ((obj menu))
   ;; update the grid
@@ -481,10 +486,10 @@ Return the value from select."
 
 (defmethod move-down ((obj menu))
   (call-next-method obj)
-  (with-slots (current-item-number grid-height grid-width grid-position-y grid-position-x) obj
+  (with-slots (current-item-number grid-rows grid-columns grid-row grid-column) obj
     (setf current-item-number
-          (sub2rmi (list grid-height grid-width)
-                   (list grid-position-y grid-position-x))))
+          (sub2rmi (list grid-rows grid-columns)
+                   (list grid-row grid-column))))
   (draw obj))
 
 ;; all of these take two arguments: menu event
@@ -512,7 +517,6 @@ Return the value from select."
 If the selected item is a menu object, recursively display the sub menu."
   ;; when the menu is selected, push it to the menu stack.
   (stack-push menu *menu-stack*)
-
   (draw menu)
 
   ;; here we can pass the menu to run-event-loop because it is a menu-window.
@@ -523,12 +527,10 @@ If the selected item is a menu object, recursively display the sub menu."
     ;; this can be done manually or by adding them to the main stack with :stacked t
     (unless (stack-empty-p *main-stack*)
       (refresh *main-stack*))
-
     ;; when we return from a menu, we pop the menu from the menu stack, then repain the remaining stack
     ;; that way a stack of open sub-menus is cleanly displayed
     (unless (stack-empty-p *menu-stack*)
       (refresh *menu-stack*))
-
     ;; the return value of select is the return value of run-event-loop
     ;; is the value thrown to the catch tag 'event-loop.
     val))

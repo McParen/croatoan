@@ -47,14 +47,14 @@
 
    grid
    cyclicp
-   grid-position-y
-   grid-position-x
-   grid-height
-   grid-width
-   region-position-y
-   region-position-x
-   region-height
-   region-width
+   grid-row
+   grid-column
+   grid-rows
+   grid-columns
+   region-start-row
+   region-start-column
+   region-rows
+   region-columns
    move-up
    move-down
    move-left

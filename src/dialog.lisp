@@ -36,22 +36,22 @@
 (defmethod initialize-instance :after ((win dialog-window) &key color-pair center)
   (with-slots (winptr children height width (y position-y) (x position-x) sub-window borderp max-item-length current-item-mark
                fgcolor bgcolor message-pad message-text message-height message-pad-coordinates
-               grid-height grid-width) win
+               grid-rows grid-columns) win
     ;; only for dialog windows
     (when (eq (type-of win) 'dialog-window)
       (let ((padding (if borderp 1 0))
             (item-length (+ (length current-item-mark) max-item-length)))
         ;; if no layout was given, use a horizontal list (1 n).
-        (unless (or grid-height grid-width)
-          (setf grid-height 1
-                grid-width (length children)))
+        (unless (or grid-rows grid-columns)
+          (setf grid-rows 1
+                grid-columns (length children)))
 
         ;; if height and width are not given as initargs, they will be calculated,
         ;; according to the number of rows +/- border, and _not_ maximized like normal windows.
         (unless height
-          (setf height (+ (if (zerop padding) 3 2) message-height (* 2 padding) grid-height)))
+          (setf height (+ (if (zerop padding) 3 2) message-height (* 2 padding) grid-rows)))
         (unless width
-          (setf width (+ (if (zerop padding) 2 4) (* grid-width item-length))))
+          (setf width (+ (if (zerop padding) 2 4) (* grid-columns item-length))))
 
         ;; if the key center was given, calculate position automatically, even if it was explicitely given.
         (when center
@@ -61,8 +61,8 @@
         (setf winptr (ncurses:newwin height width y x))
         (setf sub-window
               (make-instance 'sub-window
-                             :parent win :height grid-height
-                             :width (* grid-width item-length)
+                             :parent win :height grid-rows
+                             :width (* grid-columns item-length)
                              :position (list (+ 2 message-height padding) (+ padding 1)) :relative t))
 
         ;; if there is space reserved for a message, and the message is provided,

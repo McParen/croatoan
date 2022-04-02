@@ -2590,7 +2590,7 @@ will be more efficient to use a character array, a string."
                                 ;; instead of passing the elements in a element list, pass them within a layout object.
                                 ;; this will automatically calculate their positions during form initialization.
                                 ;; "nil" elements are represented as empty cells in the grid.
-                                :layout (make-instance 'layout :grid-height 6 :grid-width 3
+                                :layout (make-instance 'layout :grid-rows 6 :grid-columns 3
                                                                :padding '(0 1 0 1) :position '(2 4)
                                                                :items (append (list menu1 nil) buttons (list area nil labels1 nil field)))
                                 :style '(field (:background (:attributes (:reverse))
@@ -2986,7 +2986,7 @@ friend. It is my life. I must master it as I must master my life.")
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
                                      :position (list 0 25) :enable-scrolling t
                                      ;; the visible grid region replaces :scrolled-layout (list 6 1)
-                                     :region-height 6 :region-width 1
+                                     :region-rows 6 :region-columns 1
                                      ;;:color-pair (list :black #xcccccc)
                                      :fgcolor :blue :bgcolor :yellow :border nil
                                      :name :menu :border nil :enable-function-keys t)))
@@ -3081,7 +3081,7 @@ friend. It is my life. I must master it as I must master my life.")
                                      :menu-type :checklist))
            (fun1 (make-instance 'menu-item :name :fun1 :title "fun1" :value (lambda () (clear scr) (move scr 4 0))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
-           (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0)  :grid-height 1 :grid-width (length items2)
+           (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :grid-rows 1 :grid-columns (length items2)
                                              :max-item-length 15 :width (width scr) :border t :enable-function-keys t)))
       ;; start the output at line 4, below the menu bar.
       (move scr 4 0)

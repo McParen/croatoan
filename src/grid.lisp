@@ -1,20 +1,20 @@
 (in-package :de.anvi.croatoan)
 
 (defclass grid ()
-  ((grid-position-y
-    :initarg       :grid-y
+  ((grid-row
+    :initarg       :grid-row
     :initform      0
-    :type          (or null integer))
-   (grid-position-x
-    :initarg       :grid-x
+    :type          integer)
+   (grid-column
+    :initarg       :grid-column
     :initform      0
-    :type          (or null integer))
-   (grid-height
-    :initarg       :grid-height
+    :type          integer)
+   (grid-rows
+    :initarg       :grid-rows
     :initform      nil
     :type          (or null integer))
-   (grid-width
-    :initarg       :grid-width
+   (grid-columns
+    :initarg       :grid-columns
     :initform      nil
     :type          (or null integer))
    (cyclicp
@@ -25,52 +25,52 @@
     :initarg       :enable-scrolling
     :initform      nil
     :type          boolean)
-   (region-position-y
-    :initarg       :region-y
+   (region-start-row
+    :initarg       :region-start-row
     :initform      nil
     :type          (or null integer))
-   (region-position-x
-    :initarg       :region-x
+   (region-start-column
+    :initarg       :region-start-column
     :initform      nil
     :type          (or null integer))
-   (region-width
-    :initarg       :region-width
+   (region-rows
+    :initarg       :region-rows
     :initform      nil
     :type          (or null integer))
-   (region-height
-    :initarg       :region-height
+   (region-columns
+    :initarg       :region-columns
     :initform      nil
     :type          (or null integer)))
 
   (:documentation "Utility to track the display of items in a scrollable mxn grid, like a layout or a menu."))
 
 (defmethod initialize-instance :after ((obj grid) &key grid-position grid-dimensions grid-geometry region-dimensions)
-  (with-slots ((y grid-position-y) (x grid-position-x) (h grid-height) (w grid-width) (rh region-height) (rw region-width)) obj
-    ;; the keyword position overrides the keywords y and x
+  (with-slots (grid-row grid-column grid-rows grid-columns region-rows region-columns) obj
+    ;; the keyword position overrides the keywords row and column
     (when grid-position
-      (setf y (car  grid-position)
-            x (cadr grid-position)))
-    ;; the keyword dimensions overrides width and height
+      (setf grid-row    (car  grid-position)
+            grid-column (cadr grid-position)))
+    ;; the keyword dimensions overrides rows and columns
     (when grid-dimensions
-      (setf h (car  grid-dimensions)
-            w (cadr grid-dimensions)))
-    ;; geometry overrides y, x, width and height
+      (setf grid-rows    (car  grid-dimensions)
+            grid-columns (cadr grid-dimensions)))
+    ;; geometry overrides row, column, rows, columns
     (when grid-geometry
-      (setf y (nth 0 grid-geometry)
-            x (nth 1 grid-geometry)
-            h (nth 2 grid-geometry)
-            w (nth 3 grid-geometry)))
+      (setf grid-row     (nth 0 grid-geometry)
+            grid-column  (nth 1 grid-geometry)
+            grid-rows    (nth 2 grid-geometry)
+            grid-columns (nth 3 grid-geometry)))
     (when region-dimensions
-      (setf rh (car  region-dimensions)
-            rw (cadr region-dimensions)))))
+      (setf region-rows    (car  region-dimensions)
+            region-columns (cadr region-dimensions)))))
 
-(defun visible-grid-height (grid)
-  (with-slots (scrolling-enabled-p region-height grid-height) grid
-    (if scrolling-enabled-p region-height grid-height)))
+(defun visible-grid-rows (grid)
+  (with-slots (scrolling-enabled-p region-rows grid-rows) grid
+    (if scrolling-enabled-p region-rows grid-rows)))
 
-(defun visible-grid-width (grid)
-  (with-slots (scrolling-enabled-p region-width grid-width) grid
-    (if scrolling-enabled-p region-width grid-width)))
+(defun visible-grid-columns (grid)
+  (with-slots (scrolling-enabled-p region-columns grid-columns) grid
+    (if scrolling-enabled-p region-columns grid-columns)))
 
 (defgeneric move-left (obj)
   (:documentation "Move the current grid position one cell to the left."))
@@ -87,14 +87,14 @@
 (defmethod move-left ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
-               (m grid-height)
-               (n grid-width)
-               (i grid-position-y)
-               (j grid-position-x)
-               (m0 region-position-y)
-               (n0 region-position-x)
-               (m1 region-height)
-               (n1 region-width)) grid
+               (m grid-rows)
+               (n grid-columns)
+               (i grid-row)
+               (j grid-column)
+               (m0 region-start-row)
+               (n0 region-start-column)
+               (m1 region-rows)
+               (n1 region-columns)) grid
     (if scrolling-enabled-p
         (if cyclicp
             ;; first scroll to the end of the grid, then cycle
@@ -118,14 +118,14 @@
 (defmethod move-right ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
-               (m grid-height)
-               (n grid-width)
-               (i grid-position-y)
-               (j grid-position-x)
-               (m0 region-position-y)
-               (n0 region-position-x)
-               (m1 region-height)
-               (n1 region-width)) grid
+               (m grid-rows)
+               (n grid-columns)
+               (i grid-row)
+               (j grid-column)
+               (m0 region-start-row)
+               (n0 region-start-column)
+               (m1 region-rows)
+               (n1 region-columns)) grid
     (if scrolling-enabled-p
         (if cyclicp
             ;; first scroll to the end of the grid, then cycle
@@ -149,14 +149,14 @@
 (defmethod move-up ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
-               (n grid-width)
-               (m grid-height)
-               (i grid-position-y)
-               (j grid-position-x)
-               (m0 region-position-y)
-               (n0 region-position-x)
-               (m1 region-height)
-               (n1 region-width)) grid
+               (n grid-columns)
+               (m grid-rows)
+               (i grid-row)
+               (j grid-column)
+               (m0 region-start-row)
+               (n0 region-start-column)
+               (m1 region-rows)
+               (n1 region-columns)) grid
     (if scrolling-enabled-p
         (if cyclicp
             ;; first scroll to the end of the grid, then cycle
@@ -180,14 +180,14 @@
 (defmethod move-down ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
-               (n grid-width)
-               (m grid-height)
-               (i grid-position-y)
-               (j grid-position-x)
-               (m0 region-position-y)
-               (n0 region-position-x)
-               (m1 region-height)
-               (n1 region-width)) grid
+               (n grid-columns)
+               (m grid-rows)
+               (i grid-row)
+               (j grid-column)
+               (m0 region-start-row)
+               (n0 region-start-column)
+               (m1 region-rows)
+               (n1 region-columns)) grid
     (if scrolling-enabled-p
         (if cyclicp
             ;; first scroll to the end of the grid, then cycle
@@ -232,7 +232,7 @@
 
 (defmethod initialize-instance :after ((obj layout) &key padding)
   (with-slots (padding-top padding-bottom padding-left padding-right
-               (gh grid-height) (gw grid-width) children) obj
+               (gr grid-rows) (gc grid-columns) children) obj
     ;; the padding initarg (top bottom left right) overrides the individual slot initargs.
     (when padding
       (destructuring-bind (top bottom left right) padding
@@ -241,19 +241,19 @@
               padding-left   left
               padding-right  right)))
     ;; if the height is not given, deduce it from the width and the items length
-    (cond ((and (null gw) gh)
-           (setf gw (ceiling (length children) gh)))
-          ((and (null gh) gw)
-           (setf gh (ceiling (length children) gw))))))
+    (cond ((and (null gc) gr)
+           (setf gc (ceiling (length children) gr)))
+          ((and (null gr) gc)
+           (setf gr (ceiling (length children) gc))))))
 
 (defclass column-layout (layout)
   ()
-  (:default-initargs :grid-width 1)
+  (:default-initargs :grid-columns 1)
   (:documentation "A container of widgets organized in one column."))
 
 (defclass row-layout (layout)
   ()
-  (:default-initargs :grid-height 1)
+  (:default-initargs :grid-rows 1)
   (:documentation "A container of widgets organized in one column."))
 
 (defmethod current-item ((obj layout))
@@ -271,9 +271,9 @@
 
 (defmethod width ((obj layout))
   "The width of a layout consists of the max widths of the columns and the left and right padding."
-  (with-slots ((n grid-width)
-               (m grid-height)
-               (y grid-position-y)
+  (with-slots ((n grid-columns)
+               (m grid-rows)
+               (y grid-row)
                (pl padding-left)
                (pr padding-right)
                children) obj
@@ -281,8 +281,8 @@
 
 (defmethod height ((obj layout))
   "The height of a layout consists of the max heights of the rows and the top and bottom padding."
-  (with-slots ((n grid-width)
-               (m grid-height)
+  (with-slots ((n grid-columns)
+               (m grid-rows)
                (pt padding-top)
                (pb padding-bottom)
                children) obj
@@ -308,9 +308,10 @@
         (let ((item (nth2d (list i j) dimensions list)))
           (height item))))))
 
+;; used in initialize-instance form
 (defun calculate-positions (layout)
   "Recursively set the position (y x) of each of the layout's children."
-  (with-slots ((m grid-height) (n grid-width) (y position-y) (x position-x)
+  (with-slots ((m grid-rows) (n grid-columns) (y position-y) (x position-x)
                (pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right) children) layout
     (let* ((widths (column-widths children (list m n)))
            (heights (row-heights children (list m n)))
