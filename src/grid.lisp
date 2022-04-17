@@ -240,7 +240,7 @@
               padding-bottom bottom
               padding-left   left
               padding-right  right)))
-    ;; if the height is not given, deduce it from the width and the items length
+    ;; if the grid height is not given, deduce it from the width and the items length
     (cond ((and (null gc) gr)
            (setf gc (ceiling (length children) gr)))
           ((and (null gr) gc)
@@ -308,7 +308,7 @@
         (let ((item (nth2d (list i j) dimensions list)))
           (height item))))))
 
-;; used in initialize-instance form
+;; used in initialize-instance form to layout form elements, tested in t16j2
 (defun calculate-positions (layout)
   "Recursively set the position (y x) of each of the layout's children."
   (with-slots ((m grid-rows) (n grid-columns) (y position-y) (x position-x)
@@ -318,6 +318,7 @@
            (widths2 (cumsum-predecessors widths))
            (heights2 (cumsum-predecessors heights)))
       (loop for el from 0 below (length children) do
+        ;; layouts can contain nil, so check for a nil element
         (when (nth el children)
           (let* ((i (car (rmi2sub (list m n) el)))
                  (j (cadr (rmi2sub (list m n) el))))
@@ -388,16 +389,19 @@ then (0 2 6 9) is a list of x positions of each column."
         collect (reduce #'+ (subseq nums 0 i))))
 
 (defun collect-width-hints (nodes)
+  "Take a list of plists or objects, return a list of their widths.
+
+If the width is nil for a node, it will be calculated by split-size."
   (loop for i in nodes collect
     (if (listp i)
         (getf (cdr i) :width)
-        (slot-value i 'width))))
+        (slot-value i 'initial-dimension-hint))))
 
 (defun collect-height-hints (nodes)
   (loop for i in nodes collect
     (if (listp i)
         (getf (cdr i) :height)
-        (slot-value i 'height))))
+        (slot-value i 'initial-dimension-hint))))
 
 (defgeneric calculate-layout (node)
   (:documentation "Recursively calculate the missing geometry parameters for the node's children."))
@@ -405,12 +409,10 @@ then (0 2 6 9) is a list of x positions of each column."
 (defmethod calculate-layout ((node row-layout))
   (let* ((y (if (position-y node) (position-y node) (position-y (parent node))))
          (x (if (position-x node) (position-x node) (position-x (parent node))))
-
          ;; we cant use the h/w accessors because they try to calc the h/w of the layout
          ;; from the h/w of its children, which have not been initialized yet.
          (h (if (slot-value node 'height) (slot-value node 'height) (height (parent node))))
-         (w (if (slot-value node 'width) (slot-value node 'width) (width (parent node))))
-
+         (w (if (slot-value node 'width)  (slot-value node 'width)  (width  (parent node))))
          (children (children node))
          (n (length children))
          (hints (collect-width-hints children))
@@ -418,6 +420,14 @@ then (0 2 6 9) is a list of x positions of each column."
          (hs (make-list n :initial-element h))
          (ys (make-list n :initial-element y))
          (xs (mapcar (lambda (i) (+ i x)) (cumsum-predecessors ws))))
+    (dotimes (i n)
+      (when (listp (nth i children))
+        ;; if there is a width and no hint, save the width as the initial hint
+        ;; the width and the hint in the plist are then passed to the object
+        (when (and (getf (cdr (nth i (children node))) :width)
+                   (null (getf (cdr (nth i (children node))) :initial-dimension-hint)))
+          (setf (getf (cdr (nth i (children node))) :initial-dimension-hint)
+                (getf (cdr (nth i (children node))) :width)))))
     ;; address every child as (nth i children), so we can setf it if its a plist.
     (dotimes (i n)
       ;; first set its newly calculated geometry
@@ -429,22 +439,23 @@ then (0 2 6 9) is a list of x positions of each column."
                                           (nth i xs)
                                           (nth i hs)
                                           (nth i ws))))
-          ;; if the child is not a plist, assume that it is a layout.
           (progn
+            ;; set the new geometry to the current node
             (setf (geometry (nth i children))
                   (list (nth i ys)
                         (nth i xs)
                         (nth i hs)
                         (nth i ws)))
-            ;; then recursively calculate and set its childrens geometries.
-            (when (children (nth i children))
+            ;; if the node is a layout, recursively recalculate its children.
+            (when (and (typep (nth i children) 'layout)
+                       (children (nth i children)))
               (calculate-layout (nth i children))))))))
 
 (defmethod calculate-layout ((node column-layout))
   (let* ((y (if (position-y node) (position-y node) (position-y (parent node))))
          (x (if (position-x node) (position-x node) (position-x (parent node))))
          (h (if (slot-value node 'height) (slot-value node 'height) (height (parent node))))
-         (w (if (slot-value node 'width) (slot-value node 'width) (width (parent node))))
+         (w (if (slot-value node 'width)  (slot-value node 'width)  (width  (parent node))))
          (children (children node))
          (n (length children))
          (hints (collect-height-hints children))
@@ -452,6 +463,12 @@ then (0 2 6 9) is a list of x positions of each column."
          (ws (make-list n :initial-element w))
          (xs (make-list n :initial-element x))
          (ys (mapcar (lambda (i) (+ i y)) (cumsum-predecessors hs))))
+    (dotimes (i n)
+      (when (listp (nth i children))
+        (when (and (getf (cdr (nth i (children node))) :height)
+                   (null (getf (cdr (nth i (children node))) :initial-dimension-hint)))
+          (setf (getf (cdr (nth i (children node))) :initial-dimension-hint)
+                (getf (cdr (nth i (children node))) :height)))))
     (dotimes (i n)
       (if (listp (nth i children))
           (setf (cdr (nth i (children node)))
@@ -466,7 +483,8 @@ then (0 2 6 9) is a list of x positions of each column."
                         (nth i xs)
                         (nth i hs)
                         (nth i ws)))
-            (when (children (nth i children))
+            (when (and (typep (nth i children) 'layout)
+                       (children (nth i children)))
               (calculate-layout (nth i children))))))))
 
 (defun initialize-leaves (node)

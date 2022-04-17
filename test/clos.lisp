@@ -4133,5 +4133,9 @@ When a new window is added or removed, all windows are rebalanced."
             (event-case (win event)
               (#\n (when n (select-next-item wins) (mark-current-win)))
               (#\p (when n (select-previous-item wins) (mark-current-win)))
+              (:resize
+               ;; in case of a terminal resize, the window and layout geometries have to be recalculated
+               (calculate-layout wins)
+               (mapc #'refresh (leaves wins)))
               (#\q (return-from event-case))))
           (mapc #'close leaves))))))

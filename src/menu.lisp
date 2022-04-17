@@ -139,7 +139,7 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
     (with-slots (winptr children type height width (y position-y) (x position-x) borderp border-width border-win
                  shadow-win shadowp grid-rows grid-columns region-rows region-columns max-item-length current-item-mark) win
       (unless grid-rows (setf grid-rows (length children)))
-      (unless grid-columns (setf grid-width 1))
+      (unless grid-columns (setf grid-columns 1))
       (unless height (setf height (visible-grid-rows win)))
       (unless width  (setf width  (* (visible-grid-columns win)
                                      (+ (length current-item-mark) max-item-length))))
@@ -287,26 +287,26 @@ At the third position, display the item given by item-number."
 ;; draws to any window, not just to a sub-window of a menu-window.
 (defun draw-menu (window menu)
   "Draw the menu to the window."
-  (with-slots (scrolling-enabled-p grid-rows grid-columns region-rows region-columns region-start-row region-start-column) menu
-    (let ((m  grid-rows)
-          (n  grid-columns)
-          (m0 region-start-row)
-          (n0 region-start-column)
-          (m1 region-rows)
-          (n1 region-columns))
-      (if scrolling-enabled-p
-          ;; when the menu is too big to be displayed at once, only a part
-          ;; is displayed, and the menu can be scrolled
-          (loop for i from 0 to (1- m1)
-             do (loop for j from 0 to (1- n1)
-                   do (let ((item-number (sub2rmi (list m n) (list (+ m0 i) (+ n0 j)))))
-                        ;; the menu is given as a flat list, so we have to access it as a 2d array in row major order
-                        (draw-menu-item window menu item-number i j))))
-          ;; when there is no scrolling, and the whole menu is displayed at once
-          (loop for i from 0 to (1- m)
-             do (loop for j from 0 to (1- n)
-                   do (let ((item-number (sub2rmi (list m n) (list i j))))
-                        (draw-menu-item window menu item-number i j)))) ))
+  (with-slots (scrolling-enabled-p
+               (m  grid-rows)
+               (n  grid-columns)
+               (m0 region-start-row)
+               (n0 region-start-column)
+               (m1 region-rows)
+               (n1 region-columns)) menu
+    (if scrolling-enabled-p
+        ;; when the menu is too big to be displayed at once, only a part
+        ;; is displayed, and the menu can be scrolled
+        (dogrid ((i 0 m1)
+                 (j 0 n1))
+          (let ((item-number (sub2rmi (list m n) (list (+ m0 i) (+ n0 j)))))
+            ;; the menu is given as a flat list, so we have to access it as a 2d array in row major order
+            (draw-menu-item window menu item-number i j)))
+        ;; when there is no scrolling, and the whole menu is displayed at once
+        (dogrid ((i 0 m)
+                 (j 0 n))
+          (let ((item-number (sub2rmi (list m n) (list i j))))
+            (draw-menu-item window menu item-number i j))))
     (refresh window)))
 
 (defmethod draw ((menu menu))

@@ -211,15 +211,28 @@ field, textarea:
     :initarg       :height
     :initform      nil
     :type          (or null integer)
-    :documentation "The height (first, vertical, y dimension), number of rows."))
+    :documentation "The height (first, vertical, y dimension), number of rows.")
+
+   (initial-dimension-hint
+    :initarg       :initial-dimension-hint
+    :initform      nil
+    :type          (or null integer)
+    :documentation
+"Internal variable to hold the initial dimension hint for layouts whose geometry
+is recalculated.
+
+It can be either a width or height, which is interpreted by whether it is part
+of a row or column layout."))
 
   (:documentation
-   "A widget is a visible component defined by its dimensions (h w) and displayed at a given position (y x).
+   "A widget is a visible component defined by its dimensions (h w) and displayed
+at a given position (y x).
 
-It represents a visible region on the screen, either a window, or a form element like a button or input field."))
+It represents a visible region on the screen, either a window, or a form element
+like a button or input field."))
 
 (defmethod initialize-instance :after ((obj widget) &key position dimensions geometry)
-  (with-slots (height width (y position-y) (x position-x)) obj
+  (with-slots (height width (y position-y) (x position-x) initial-dimension-hint) obj
     ;; the keyword position overrides the keywords y and x
     (when position
       (setf y (car position)
@@ -233,7 +246,15 @@ It represents a visible region on the screen, either a window, or a form element
       (setf y (nth 0 geometry)
             x (nth 1 geometry)
             height (nth 2 geometry)
-            width (nth 3 geometry)))))
+            width (nth 3 geometry)))
+    ;; if _neither_ width nor height are given, the hint stays nil.
+    ;; if _only_one_ of width and height has been given, save it as the initial dimension hint.
+    ;; if _both_ width and height are given, the hint stays nil. (window is free)
+    ;; if _both_ are given, and the hint is given, keep the hint. (window given as plist)
+    (cond ((and height (null width))
+           (setf initial-dimension-hint height))
+          ((and (null height) width)
+           (setf initial-dimension-hint width)))))
 
 (defclass window (widget fundamental-character-input-stream fundamental-character-output-stream)
   (;; has to be a 2el-list so we can use 1 arg with setf.
@@ -338,8 +359,14 @@ foreground attributes. To prevent this, set the background char with attributes 
 
 #|
 :around - most specific first (call-next-method)
+
 :before - most specific first
+              screen
+            window
+          widget
+
 primary - most specific first (call-next-method)
+
 :after  - most specific LAST = all window type after methods start here
           widget
             window
@@ -371,7 +398,7 @@ primary - most specific first (call-next-method)
 ;; this has to be called after other aux methods because the windows (winptrs) have to be created first.
 (defmethod initialize-instance :around ((win window) &key frame-rate)
   ;; before :before, :after and primary.
-  (let ((result (call-next-method)))
+  (let ((result (call-next-method))) ; this calls the primary method, which creates the winptr
     ;; after :before, :after and primary.
     (with-slots (winptr input-blocking function-keys-enabled-p scrolling-enabled-p borderp stackedp style) win
       ;; the frame rate argument, if available, takes precedence over input blocking
@@ -913,9 +940,10 @@ absolute position and dimensions of the panel."))
 
 (defmethod initialize-instance :after ((form form) &key layout elements)
   (with-slots (children current-item-number) form
-    ;; For backward compatibility, if a list of elements has been passed, store it in the items slot.
+    ;; For backward compatibility, if a list of elements has been passed, store it in the children slot.
     (when elements
       (setf children elements))
+    ;; When a layout has been passed, calculate the positions of the elements.
     (when layout
       (calculate-positions layout)
       (setf children (flatten-items layout)))
@@ -1158,29 +1186,85 @@ By default it is identical to the position of the sub-window."))
 (defmethod height ((obj symbol))
   1)
 
+(defgeneric (setf height) (new-height object)
+  (:documentation "Resize the object to have the new height.")
+  (:method (new-height object)
+    "The default method sets the height slot of the object."
+    (with-slots (height) object
+      (setf height new-height))))
+
+(defmethod (setf height) (new-height (win window))
+  (with-slots (width) win
+    ;; set the slots first
+    (when (next-method-p)
+      (call-next-method))
+    (resize win new-height width)))
+
+(defgeneric (setf width) (new-width object)
+  (:documentation "Resize the object to have the new width.")
+  (:method (new-width object)
+    "The default method sets the width slot of the object."
+    (with-slots (width) object
+      (setf width new-width))))
+
+(defmethod (setf width) (new-width (win window))
+  (with-slots (height) win
+    ;; set the slots first
+    (when (next-method-p)
+      (call-next-method))
+    (resize win height new-width)))
+
 (defgeneric dimensions (object)
   (:documentation "Return a two-element list with the height and width of the object.")
   (:method (object)
     (list (height object) (width object))))
 
 (defgeneric (setf dimensions) (dimensions object)
-  (:documentation "Take a list (height width) and an object, set its height and width."))
+  (:documentation "Take a list (height width) and an object, set its height and width.")
+  (:method (dimensions object)
+    (with-slots (height width) object
+      (destructuring-bind (h w) dimensions
+        (setf height h
+              width  w)))))
 
-(defmethod (setf dimensions) (dimensions (object window))
-  (destructuring-bind (h w) dimensions
-    (setf (height object) h
-          (width object)  w)))
+(defmethod (setf dimensions) (dimensions (win window))
+  (destructuring-bind (height width) dimensions
+    ;; set the slots first
+    (when (next-method-p)
+      (call-next-method))
+    (resize win height width)))
 
 (defgeneric geometry (object)
-  (:documentation "Return the geometry of the object as a list (y x width height)."))
-
-(defgeneric (setf geometry) (geometry object)
-  (:documentation "Set the geometry (y x width height) of the object."))
+  (:documentation "Return the geometry of the object as a list (y x width height).")
+  (:method (object)
+    (with-slots (position-y position-x height width) object
+      (list position-y position-x height width))))
 
 (defmethod geometry ((object layout))
   (with-slots (position-y position-x height width) object
     (list position-y position-x height width)))
 
+(defmethod geometry ((object window))
+  "Return the geometry (y x h w) as returned by ncurses, not the slots."
+  (list (position-y object)
+        (position-x object)
+        (height object)
+        (width object)))
+
+(defgeneric (setf geometry) (geometry object)
+  (:documentation
+   "Set the geometry (y x width height) of the object.
+
+The default method sets the slots of the object.")
+  (:method (geometry object)
+    (with-slots (position-y position-x height width) object
+      (destructuring-bind (y x h w) geometry
+        (setf position-y y
+              position-x x
+              height     h
+              width      w)))))
+
+;; the method for layout objects just sets the slots.
 (defmethod (setf geometry) (geometry (object layout))
   (with-slots (position-y position-x height width) object
     (destructuring-bind (y x h w) geometry
@@ -1189,18 +1273,15 @@ By default it is identical to the position of the sub-window."))
             height     h
             width      w))))
 
-(defmethod geometry ((object window))
-  (list (position-y object)
-        (position-x object)
-        (height object)
-        (width object)))
-
-(defmethod (setf geometry) (geometry (object window))
+(defmethod (setf geometry) (geometry (win window))
+  ;; first set the slots
+  (when (next-method-p)
+    (call-next-method))
   (destructuring-bind (y x h w) geometry
-    (setf (position-y object) y
-          (position-x object) x
-          (height object)     h
-          (width object)      w)))
+    ;; then resize the window, then reposition, strictly in that order to
+    ;; prevent parts of the the window from leaving the screen.
+    (resize win h w)
+    (ncurses:mvwin (winptr win) y x)))
 
 (defun set-geometry-plist (plist yxhw)
   "Take a plist and a (y x h w) geometry list, return the updated plist."
