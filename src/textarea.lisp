@@ -91,26 +91,28 @@
   "Set the buffer of the area to the string new-value."
   (setf (slot-value area 'buffer) (coerce new-value 'list)))
 
-(defmethod clear ((area textarea) &key)
-  "Clear the textarea by overwriting the underlying window with #\space.
+(defmethod clear ((obj textarea) &key)
+  "Clear the area by overwriting the underlying window area with the background char.
+
+The default background char is #\space.
 
 The char can be set by setting the :background and :selected-background style.
 
 If the underlying window has a background char, that will be used to
-clear the window."
+clear the window instead of #\space."
   (with-accessors ((pos widget-position) (width width) (height height)
-                   (win window) (selected selectedp) (style style)) area
+                   (selected selectedp) (win window) (style style)) obj
     (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
            (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
-      (setf (cursor-position win) pos)
+      (goto win pos)
       ;; return to the start of the area after the clearing
       (save-excursion win
-        (loop for i from 0 to (1- height) do
-          (loop for j from 0 to (1- width) do
-            (goto win pos (list i j))
-            ;; adding a simple space inherits the attributes and colors
-            ;; from the background char of the window.
-            (add win bg-char :style bg-style)))))))
+        (dogrid ((i 0 height)
+                 (j 0 width))
+          (goto win pos (list i j))
+          ;; clearing with a simple space inherits the attributes and colors
+          ;; from the background char of the window.
+          (add win bg-char :style bg-style))))))
 
 (defmethod reset ((area textarea))
   "Clear the textarea and reset its internal buffers and pointers."
@@ -133,7 +135,7 @@ clear the window."
           (x 0))
       ;; start at (0 0)
       (goto win pos (list y x))
-      (loop for i from 0 to (1- (length inbuf)) do
+      (dotimes (i (length inbuf)) do
         (if (char= (nth i inbuf) #\newline)
             (progn
               ;; when we encounter the newline char, go to the beginning of the next line.
@@ -148,7 +150,8 @@ clear the window."
                   ;; otherwise just move to the right
                   (setq x (1+ x)))))
         (goto win pos (list (- y dptr) x))
-        (when (>= (- y dptr) height) (return)) ))
+        (when (>= (- y dptr) height)
+          (return))))
     (update-cursor-position area)))
 
 ;; (= (1- inptr) width)
@@ -255,6 +258,6 @@ return the number of chars between the pointer and the first newline before the 
   ;; clear and reset the textarea
   (#\dc2 'reset)
 
-  (#\soh 'accept)
-  (#\can 'cancel)
+  (#\soh 'accept) ; C-a
+  (#\can 'cancel) ; C-x
   (t 'textarea-add-char))

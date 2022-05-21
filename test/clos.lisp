@@ -3978,6 +3978,71 @@ Press C-j, C-m, C-i, C-h to see the difference."
     (refresh scr)
     (get-char scr)))
 
+(defparameter *t35-style*
+  '(field (:foreground (:fgcolor :yellow :bgcolor :red)
+           :background (:attributes (:reverse))
+           :selected-background (:bgcolor :blue))
+    label (:foreground (:fgcolor :white :bgcolor :blue)
+           :background (:fgcolor :blue :bgcolor :white))
+    button (:foreground (:attributes (:reverse))
+            :selected-foreground (:bgcolor :blue))))
+
+(defun t35 ()
+  "Test drawing of multiline labels."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :use-terminal-colors t :enable-function-keys t :input-blocking t)
+    (let* ((field1 (make-instance 'field :name :f1 :title "Forename" :position (list 0 19) :width 15))
+           (field2 (make-instance 'field :name :f2 :title "Surname"  :position (list 2 19) :width 15))
+           (field3 (make-instance 'field :name :f3 :title "Nickname" :position (list 5 19) :width 15))
+           (l1     (make-instance 'label :name :l1 :reference :f1    :position (list 0 0)  :width 18))
+           (l2     (make-instance 'label :name :l2 :title (format nil "Hello there ~%Dear John")                             :position (list 2 0) :width 18))
+           (l3     (make-instance 'label :name :l3 :title (wrap-string "Hello there, dear john, prescious bodily fluids" 18) :position (list 5 0) :width 18))
+           (form   (make-instance 'form :window scr :elements (list field1 field2 field3 l1 l2 l3) :style *t35-style*)))
+      (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair '(:black :cyan)))
+      (edit form))))
+
+;; labels and fields are not vertically aligned because each is treated as a separate column
+;; to "couple" their heights, put them in the same grid, see t36b.
+(defun t35a ()
+  "Use a layout instead of positioning manually."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :use-terminal-colors t :enable-function-keys t :input-blocking t)
+    (let* ((fields (make-instance 'column-layout :padding '(0 1 0 0)
+                                  :children (mapcar (lambda (name title)
+                                                      (make-instance 'field :name name :title title :width 15))
+                                                    (list :f1 :f2 :f3)
+                                                    (list "Forename" "Surname" "Nickname"))))
+           (labels- (make-instance 'column-layout :padding '(0 1 0 0)
+                                   :children (mapcar (lambda (name title)
+                                                       (make-instance 'label :name name :title title :width 18 :height 4))
+                                                     (list :l1 :l2 :l3)
+                                                     (list "test"
+                                                           (format nil "Hello there ~%Dear John")
+                                                           (wrap-string "Hello there, dear john, prescious bodily fluids" 18)))))
+           (form (make-instance 'form :window scr :style *t35-style*
+                                      :layout (make-instance 'row-layout :position '(0 0) :padding '(0 0 0 1)
+                                                                         :children (list labels- fields)))))
+      (edit form))))
+
+;; to put the labels and fields in the same grid, interleave them in a list (l1 f1 l2 f2 l3 f3)
+;; and pass them to the form layout
+(defun t35b ()
+  "Use a layout instead of positioning manually."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :use-terminal-colors t :enable-function-keys t :input-blocking t)
+    (let* ((fields (mapcar (lambda (name title)
+                             (make-instance 'field :name name :title title :width 15))
+                           (list :f1 :f2 :f3)
+                           (list "Forename" "Surname" "Nickname")))
+           (labels- (mapcar (lambda (name title)
+                              (make-instance 'label :name name :title title :width 18 :height nil))
+                            (list :l1 :l2 :l3)
+                            (list "test"
+                                  (format nil "Hello there ~%Dear John")
+                                  (wrap-string "Hello there, dear john, prescious bodily fluids" 18))))
+           (form (make-instance 'form :window scr :style *t35-style*
+                                      :layout (make-instance 'layout :grid-columns 2 :position '(0 0) :padding '(0 1 0 1)
+                                                                     ;; interleave labels and fields: (l1 f1 l2 f2 l3 f3)
+                                                                     :children (mapcan (lambda (a b) (list a b)) labels- fields)))))
+      (edit form))))
+
 (defun t42 ()
   "Add (a) to and remove (r) windows from a simple column layout.
 

@@ -66,31 +66,49 @@ Place the cursor between the brackets [_] of the current item."
 (defgeneric draw (object)
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
-(defmethod draw ((label label))
-  (with-accessors ((pos widget-position) (win window) (name name) (title title) (width width) (style style) (reference reference)
-                   (parent parent)) label
-    ;; pick the string to write in the following order
-    ;;   title of the label
-    ;;   title of the referenced element
-    ;;   name of the referenced element
-    ;;   name of the label
-    (let* ((text (or title
-                     (and reference (title (find-element parent reference)))
-                     (and reference (name (find-element parent reference)))
-                     name))
-           (string (when text (format nil "~A" text)))
+(defmethod clear ((obj label) &key)
+  "Clear the label by overwriting the underlying window area with the background char.
+
+The default background char is #\space.
+
+The char can be set by setting the :background and :selected-background style.
+
+If the underlying window has a background char, that will be used to
+clear the window instead of #\space."
+  (with-accessors ((pos widget-position) (width width) (height height)
+                   (selected selectedp) (win window) (style style)) obj
+    (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
+           (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
+      (goto win pos)
+      ;; return to the start of the label after the clearing
+      (save-excursion win
+        (dogrid ((i 0 height)
+                 (j 0 width))
+          (goto win pos (list i j))
+          ;; clearing with a space inherits the attributes and colors
+          ;; from the background char of the window.
+          (add win bg-char :style bg-style))))))
+
+(defmethod draw ((obj label))
+  (with-accessors ((pos widget-position) (win window) (width width) (style style)) obj
+    (clear obj)
+    (let* ((text (label-text obj))
+           (lines (count-lines text))
            (fg-style (getf style :foreground))
-           (bg-style (getf style :background))
-           (bg-char (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
-      (when string
-        ;; first draw the background, but only if width > string
-        (when (and width
-                   (> width (length string)))
-          (apply #'move win pos)
-          (add win bg-char :style bg-style :n width))
-        ;; then the label over the background
-        (apply #'move win pos)
-        (add-string win string :style fg-style)))))
+           (y 0)
+           (x 0))
+      (goto win pos (list y x))
+      (dotimes (i (length text))
+        (if (char= (char text i) #\newline)
+            (progn
+              (setq y (1+ y) x 0)
+              ;; if we have more lines than height, only print height lines
+              (when (and (slot-value obj 'height)
+                         (>= y (slot-value obj 'height)))
+                (return))
+              (goto win pos (list y x)))
+            (progn
+              (add-char win (char text i) :style fg-style)))))))
 
 (defmethod draw ((button button))
   (with-accessors ((pos widget-position) (name name) (title title) (win window) (selected selectedp) (style style)) button

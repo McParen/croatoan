@@ -1137,7 +1137,6 @@ By default it is identical to the position of the sub-window."))
 (defmethod height ((window window))
   (ncurses:getmaxy (slot-value window 'winptr)))
 
-
 (defmethod width ((obj button))
   (with-slots (title name) obj
     (length (format nil "<~A>" (if title title name)))))
@@ -1145,8 +1144,41 @@ By default it is identical to the position of the sub-window."))
 (defmethod height ((obj button))
   1)
 
+(defun count-lines (str)
+  "Take a string, return the number of lines it will need to be displayed without wrapping.
+
+It is basically the number of newline characters plus one."
+  (1+ (count #\newline str)))
+
+(defun label-text (label)
+  "Decide what text to display in a label.
+
+If the label title was given, display the label title.
+
+If no title was given, display the title or name of the referenced element.
+
+Otherwise display the label name."
+  (with-accessors ((name name) (title title) (reference reference) (parent parent)) label
+    ;; pick the string to write in the following order
+    ;;   title of the label
+    ;;   title of the referenced element
+    ;;   name of the referenced element
+    ;;   name of the label
+    (let* ((text (or title
+                     (and reference (title (find-element parent reference)))
+                     (and reference (name (find-element parent reference)))
+                     name)))
+      (when text
+        (format nil "~A" text)))))
+
 (defmethod height ((obj label))
-  1)
+  "If the label was given an explicit height, return the given height.
+
+Otherwise calculate the height from the displayed text."
+  (with-slots (height) obj
+    (if height
+        height
+        (count-lines (label-text obj)))))
 
 (defmethod height ((obj (eql nil)))
   0)
@@ -1156,17 +1188,12 @@ By default it is identical to the position of the sub-window."))
   0)
 
 (defmethod width ((obj label))
-  (with-slots (width title name reference parent) obj
+  (with-slots (width) obj
     (if width
-        ;; if the object was initialized with a width, take that
         width
+        ;; if the object was initialized with a width, take that
         ;; otherwise calc the width from the title or name
-        (let* ((text (or title
-                         (title (find-element parent reference))
-                         (name (find-element parent reference))
-                         name))
-               (string (when text (format nil "~A" text))))
-          (length string)))))
+        (length (label-text obj)))))
 
 (defmethod width ((obj string))
   (length obj))
