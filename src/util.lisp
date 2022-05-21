@@ -6,7 +6,7 @@
 
 (defgeneric char-to-string (char)
   (:documentation
-   "Return a string representing the char. 
+   "Return a string representing the char.
    Control characters are displayed using the ^X notation.
    Function keys are not represented by this routine. Use key-to-string instead."))
 
@@ -33,7 +33,7 @@ The char can be a printable, graphical char or a control char in the caret ^A no
 
 (defgeneric key-to-string (key)
   (:documentation
-   "Return a string representing the key. 
+   "Return a string representing the key.
 
 The key can be a printable character, a control character or a function key.
 
@@ -80,6 +80,8 @@ This ncurses function has the same purpose as cl:clear-input."
   (ncurses:flushinp))
 
 ;; Original source: Lisp cookbook, author unknown, license MIT.
+;; (split-string "a b c") => ("a" "b" "c")
+;; (split-string "  a  b  c  ") => ("a" "b" "c")
 (defun split-string (str &optional (ch #\space))
   "Split the string into a list of words separated by one or more chars."
   (loop for i = 0 then (1+ j)
@@ -93,6 +95,8 @@ This ncurses function has the same purpose as cl:clear-input."
   "Split a string containing newlines into a list of strings."
   (split-string str #\newline))
 
+;; (join-strings (list "a" "b" "c")) => "a b c"
+;; (join-strings (split-string " a  b  c ")) => "a b c"
 (defun join-strings (list &optional ch)
   (if ch
       ;; every has to be put in the control string first.
@@ -154,12 +158,3 @@ All pre-existing newlines and multiple spaces are removed."
 (defun wrap-lines (lines width)
   "Wrap a list of strings so that no single line exceeds the given width."
   (split-lines (wrap-string (join-lines lines) width)))
-
-;;; NOTES
-
-;; Also see ncurses:use-legacy-coding in legacy_coding.lisp.
-
-;;; TODOs
-
-;; [ ] putwin, getwin, FILE pointer.
-;; [ ] wunctrl, key_name, for wide chars.

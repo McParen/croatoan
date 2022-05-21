@@ -1828,8 +1828,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
                 (format w "~A ~A ~A~%" e (event-key e) (event-code e)))))
     (run-event-loop scr)))
 
-;; resize event: the standard screen size is resized automatically.
 (defun t15 ()
+  "Resize event: screen dimensions are updated automatically."
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil :enable-colors t)
     (add-string scr "Current standard screen dimensions (Y x X):" :y 0 :x 0)
     (loop
@@ -1838,17 +1838,17 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (case event
                (:resize (move scr 1 0)
                         (format scr "~A Y lines x ~A X columns." (height scr) (width scr))
-                        ;; the environment variables get updated on a resize event too.
+                        ;; the environment variables also get updated on a resize event.
                         (format scr "~%~A Y lines x ~A X cols." ncurses:LINES ncurses:COLS)
                         (refresh scr))
                (#\q (return)))
              (progn
                (sleep 0.1)))))))
 
-;; resize event: arrange window _positions_ relative to the screen size.
 (defun t15a ()
+  "Resize event: arrange window positions relative to the changed screen size."
   (with-screen (scr :input-echoing nil :input-blocking nil :enable-function-keys t :cursor-visible nil :enable-colors t)
-    (add-string scr "Current standard screen geometry (Y x X):" :y 0 :x 0)
+    (add-string scr "Current screen dimensions (Y x X):" :y 0 :x 0)
     (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (let ((time 0)
           ;; place a window in the center of the screen.
@@ -1858,15 +1858,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (let ((event (event-key (get-event scr))))
            (if event
                (case event
-                 (:resize ;; if the screen is resized, relocate the window to the new center.
-                          (move-window win (round (/ (height scr) 2)) (round (/ (width scr) 2)))
-                          ;; better differentiation of types with methods.
-                          (move win 0 0)
-                          (format win "Y:~A X:~A" (height scr) (width scr))
-                          ;; repaint all windows completely by touching them before refreshing.
-                          ;; overlapping windows have to be refreshed in reverse stacking order.
-                          (mapc #'(lambda (w) (touch w) (refresh w))
-                                (list scr win)))
+                 (:resize
+                  ;; if the screen is resized, relocate the window to the new center.
+                  (move-window win (round (/ (height scr) 2)) (round (/ (width scr) 2)))
+                  ;; better differentiation of types with methods.
+                  (move win 0 0)
+                  (format win "Y:~A X:~A" (height scr) (width scr))
+                  ;; repaint all windows completely by touching them before refreshing.
+                  ;; overlapping windows have to be refreshed in reverse stacking order.
+                  (mapc #'(lambda (w) (touch w) (refresh w))
+                        (list scr win)))
                  (#\q (return)))
                (progn
                  (sleep 0.01)
@@ -1889,14 +1890,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (let ((event (event-key (get-event scr))))
            (if event
                (case event
-                 (:resize ;; resize the window on every terminal resize.
-                          (resize win (- (height scr) 4) (- (width scr) 6))
-                          (move win 0 0)
-                          (format win "Y:~A X:~A" (height scr) (width scr))
-                          ;; when updating several overlapping windows, using mark-for-refresh and
-                          ;; batch-refresh instead of several calls to refresh prevents flickering.
-                          (mapc #'(lambda (w) (touch w) (mark-for-refresh w)) (list scr win))
-                          (refresh-marked))
+                 (:resize
+                  ;; resize the window on every terminal resize.
+                  (resize win (- (height scr) 4) (- (width scr) 6))
+                  (clear win)
+                  (move win 0 0)
+                  (format win "Y:~A X:~A" (height scr) (width scr))
+                  ;; when updating several overlapping windows, using mark-for-refresh and
+                  ;; batch-refresh instead of several calls to refresh prevents flickering.
+                  (mapc #'(lambda (w) (touch w) (mark-for-refresh w)) (list scr win))
+                  (refresh-marked))
                  (#\q (return)))
                (progn
                  (sleep 0.01)
@@ -2582,7 +2585,7 @@ will be more efficient to use a character array, a string."
            ;; show 6 labels in a grid nested within the main grid.
            (labels1
              ;; The padding is the number of spaces added to each element, (top bottom left right).
-             (make-instance 'layout :grid-dimensions '(3 2) :padding '(0 1 0 1) :items
+             (make-instance 'layout :grid-dimensions '(3 2) :padding '(0 1 0 1) :children
                (loop for i from 0 to 5 collect
                  (make-instance 'label :active nil :title (format nil "hello ~r" (random 20))))))
            (form (make-instance 'form
@@ -2590,9 +2593,10 @@ will be more efficient to use a character array, a string."
                                 ;; instead of passing the elements in a element list, pass them within a layout object.
                                 ;; this will automatically calculate their positions during form initialization.
                                 ;; "nil" elements are represented as empty cells in the grid.
-                                :layout (make-instance 'layout :grid-rows 6 :grid-columns 3
+                                :layout (make-instance 'layout ;;:grid-rows 6
+                                                               :grid-columns 3
                                                                :padding '(0 1 0 1) :position '(2 4)
-                                                               :items (append (list menu1 nil) buttons (list area nil labels1 nil field)))
+                                                               :children (append (list menu1 nil) buttons (list area nil labels1 nil field)))
                                 :style '(field (:background (:attributes (:reverse))
                                                 :selected-background (:bgcolor :blue))
                                          textarea (:background (:attributes (:reverse))

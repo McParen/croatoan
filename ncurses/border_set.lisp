@@ -23,17 +23,17 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("border_set" border-set) :int 
-  (ls (:pointer (:struct cchar_t))) 
-  (rs (:pointer (:struct cchar_t))) 
-  (ts (:pointer (:struct cchar_t))) 
+(cffi:defcfun ("border_set" border-set) :int
+  (ls (:pointer (:struct cchar_t)))
+  (rs (:pointer (:struct cchar_t)))
+  (ts (:pointer (:struct cchar_t)))
   (bs (:pointer (:struct cchar_t)))
-  (tl (:pointer (:struct cchar_t))) 
-  (tr (:pointer (:struct cchar_t))) 
-  (bl (:pointer (:struct cchar_t))) 
+  (tl (:pointer (:struct cchar_t)))
+  (tr (:pointer (:struct cchar_t)))
+  (bl (:pointer (:struct cchar_t)))
   (br (:pointer (:struct cchar_t))))
 
-(cffi:defcfun ("wborder_set" wborder-set) :int 
+(cffi:defcfun ("wborder_set" wborder-set) :int
   (win window)
   (ls (:pointer (:struct cchar_t)))
   (rs (:pointer (:struct cchar_t)))

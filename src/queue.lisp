@@ -26,7 +26,7 @@
     :initarg       :form
     :initform      (error "Form required")
     :documentation "The form that failed to execute")
-   
+
    (error
     :initarg       :error
     :initform      (error "Error required")
@@ -95,7 +95,7 @@ called from the SLIME repl thread directly."
 (defun process ()
   "Process the contents of the job queue in the current thread, then exit.
 
-Process should be called from the main thread, which should be the only thread 
+Process should be called from the main thread, which should be the only thread
 interfacing ncurses directly, and should be running in a terminal."
   (loop :for (fn . form) := (dequeue *job-queue*)
         :while fn
@@ -135,3 +135,11 @@ interfacing ncurses directly, and should be running in a terminal."
   (with-slots (head) queue
     (when (cdr head)
       (car (setf head (cdr head))))))
+
+(defun emptyp (queue)
+  (with-slots (head) queue
+    (null (cdr head))))
+
+(defun queue-items (queue)
+  (with-slots (head) queue
+    (cdr head)))

@@ -15,7 +15,7 @@ If no border chars are given, the default ncurses WACS chars will be used."
                               (br '(:struct ncurses:cchar_t))
                               (wch 'ncurses:wchar_t 5))
     (apply #'ncurses:wborder-set
-           (winptr window) 
+           (winptr window)
 
            ;; take a list of (wide) character codes and empty cchar_t pointers, return a list of cchar_t pointers or null pointers.
            (mapcar #'(lambda (char ptr)
@@ -24,7 +24,8 @@ If no border chars are given, the default ncurses WACS chars will be used."
                            ;; if not nil, pointer to cchar_t
                            (progn
                              ;; blank the wch array in the struct
-                             (dotimes (ii 5) (setf (cffi:mem-aref wch 'ncurses:wchar_t ii) 0))
+                             (dotimes (i 5)
+                               (setf (cffi:mem-aref wch 'ncurses:wchar_t i) 0))
                              ;; copy the char code to the wch array
                              (setf (cffi:mem-aref wch 'ncurses:wchar_t) char)
                              ;; assemble the cchar_t using %setcchar

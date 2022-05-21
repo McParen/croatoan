@@ -75,8 +75,8 @@ Place the cursor between the brackets [_] of the current item."
     ;;   name of the referenced element
     ;;   name of the label
     (let* ((text (or title
-                     (title (find-element parent reference))
-                     (name (find-element parent reference))
+                     (and reference (title (find-element parent reference)))
+                     (and reference (name (find-element parent reference)))
                      name))
            (string (when text (format nil "~A" text)))
            (fg-style (getf style :foreground))
@@ -84,7 +84,8 @@ Place the cursor between the brackets [_] of the current item."
            (bg-char (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
       (when string
         ;; first draw the background, but only if width > string
-        (when width
+        (when (and width
+                   (> width (length string)))
           (apply #'move win pos)
           (add win bg-char :style bg-style :n width))
         ;; then the label over the background
