@@ -413,6 +413,33 @@ Also replaces the last n characters (where n is the length of
 
 It defaults to ..., but can be nil or the empty string."))
 
+(defmethod text-ellipsize ((object string) len &key (truncate-string "..."))
+  (if (= (count-lines object) 1)
+      ;; lines = 1
+      (let* ((str object)
+             (strlen (length str))
+             (trlen (length truncate-string)))
+        (cond ((<= strlen len)
+               str)
+              ((< len trlen)
+               (subseq str 0 len))
+              (t
+               (concatenate 'string
+                            (subseq str 0 (- len trlen))
+                            truncate-string))))
+      ;; lines > 1
+      (let* ((str (subseq object 0 (position #\newline object)))
+             (strlen (length str))
+             (trlen (length truncate-string)))
+        (cond ((<= (+ strlen trlen) len)
+               (concatenate 'string str truncate-string))
+              ((< len trlen)
+               (subseq str 0 len))
+              (t
+               (concatenate 'string
+                            (subseq str 0 (- len trlen))
+                            truncate-string))))))
+
 (defmethod text-ellipsize ((object complex-string) len &key (truncate-string "..."))
   (let ((string-len (text-width object)))
     (cond

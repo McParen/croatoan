@@ -94,21 +94,26 @@ clear the window instead of #\space."
     (clear obj)
     (let* ((text (label-text obj))
            (lines (count-lines text))
+           (height (slot-value obj 'height))
            (fg-style (getf style :foreground))
            (y 0)
            (x 0))
       (goto win pos (list y x))
-      (dotimes (i (length text))
-        (if (char= (char text i) #\newline)
-            (progn
-              (setq y (1+ y) x 0)
-              ;; if we have more lines than height, only print height lines
-              (when (and (slot-value obj 'height)
-                         (>= y (slot-value obj 'height)))
-                (return))
-              (goto win pos (list y x)))
-            (progn
-              (add-char win (char text i) :style fg-style)))))))
+      (if (or (and height (= height 1))
+              (= lines 1))
+          ;; single line label
+          (add-string win (text-ellipsize text width) :style fg-style)
+          ;; multiline label
+          (dotimes (i (length text))
+            (if (char= (char text i) #\newline)
+                (progn
+                  (setq y (1+ y) x 0)
+                  ;; if we have more lines than the given height, stop printing new lines
+                  (when (and height (>= y height))
+                    (return))
+                  (goto win pos (list y x)))
+                (progn
+                  (add-char win (char text i) :style fg-style))))))))
 
 (defmethod draw ((button button))
   (with-accessors ((pos widget-position) (name name) (title title) (win window) (selected selectedp) (style style)) button
