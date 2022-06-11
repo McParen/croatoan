@@ -230,7 +230,16 @@ The default background char is #\space."
       (incf dptr))
     (draw field)))
 
-(defun delete-previous-char (field)
+(defgeneric delete-previous-char (object)
+  (:documentation "Delete the previous char, moving the cursor to the left."))
+
+(defgeneric delete-next-char (object)
+  (:documentation
+   "Delete the next char (the char under the cursor), without moving the cursor.
+
+Instead of moving the cursor, the rest of the line is moved one cell to the left."))
+
+(defmethod delete-previous-char ((field field))
   "Delete the previous char in the field, moving the cursor to the left."
   (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)) field
     (when (> inptr 0)
@@ -241,7 +250,7 @@ The default background char is #\space."
     ;; we dont have to redraw the complete form, just the changed field.
     (draw field)))
 
-(defun delete-next-char (field)
+(defmethod delete-next-char ((field field))
   "Delete the next char (char under the cursor) in the field, not moving the cursor."
   (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)) field
     ;; we can only delete to the right if the inptr is not at the end of the inbuf.
