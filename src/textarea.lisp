@@ -75,13 +75,6 @@
    For now, control characters other than newline are not interpreted.
    The main difference to a window is the ability to scroll the buffer."))
 
-(defmethod initialize-instance :after ((area textarea) &key dimensions)
-  (with-slots (width height) area
-    ;; the keyword dimensions overrides width and height
-    (when dimensions
-      (setf height (car dimensions)
-            width (cadr dimensions)))))
-
 (defmethod value ((area textarea))
   "If the buffer is empty, return nil, otherwise return the buffer as a string."
   (when (slot-value area 'buffer)
@@ -128,9 +121,10 @@ clear the window instead of #\space."
 
 (defmethod draw ((area textarea))
   (with-accessors ((pos widget-position) (w width) (h height) (inbuf buffer)
-                   (selected selectedp) (dptr display-pointer) (win window) (style style)) area
+                   (selectedp selectedp) (dptr display-pointer) (win window)
+                   (style style)) area
     (clear area)
-    (let ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground)))
+    (let ((fg-style (if selectedp (getf style :selected-foreground) (getf style :foreground)))
           (y 0)
           (x 0))
       ;; start at (0 0)
@@ -139,15 +133,20 @@ clear the window instead of #\space."
         (let ((ch (nth i inbuf)))
           (if (char= ch #\newline)
               (progn
-                ;; when we encounter the newline char, go to the beginning of the next line.
-                (setq y (1+ y)
-                      x 0))
+                ;; when we encounter the newline char, go to the beginning of the next line,
+                ;; but only if the previous line isn't full.
+                (unless (and (= x 0)
+                             (> i 0)
+                             (char/= (nth (1- i) inbuf) #\newline))
+                  (setq y (1+ y)
+                        x 0)))
               (progn
                 ;; all other (graphic) chars
                 (when (>= y dptr)
-                  (add-char win ch :style fg-style))
+                  (add-wide-char win ch :style fg-style))
+                ;; if we're at the last column
                 (if (= x (1- w))
-                    ;; if we're at the last column, set the next x to 0 and move downward.
+                    ;; set x to 0 and move downward.
                     (setq y (1+ y) x 0)
                     ;; otherwise just move to the right
                     (setq x (1+ x)))))
@@ -157,83 +156,45 @@ clear the window instead of #\space."
             (return))))
       (update-cursor-position area))))
 
-;; (= (1- inptr) width)
-(defun multiplep (a b)
-  (zerop (mod a b)))
-
 (defun previous-char= (area char)
   "Return t if char is the previous char in the buffer of textarea."
   (with-accessors ((inbuf buffer) (inptr input-pointer)) area
     (char= (nth (1- inptr) inbuf) char)))
 
-(defmethod delete-next-char ((area textarea))
+(defun multiplep (a b)
+  (and (> a 0)
+       (zerop (mod a b))))
+
+(defun debug-textarea (yy xx area)
   (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)
-                   (y cursor-position-y) (x cursor-position-x) (w width)) area
-    (when (> (length inbuf) inptr)
-      (setf inbuf (remove-nth inptr inbuf))
-      (draw area))))
+                   (y cursor-position-y) (x cursor-position-x) (w width) (win window)) area
+      (move win yy xx)
+      (format win "                                                         ")
+      (move win yy xx)
+      (format win "~2A ~2A ~2A ~2A ~2A" y x inptr (input-pointer-x area) (previous-line-length inbuf inptr))))
 
-(defmethod delete-previous-char ((area textarea))
-  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)
-                   (y cursor-position-y) (x cursor-position-x) (w width)) area
-    (when (> inptr 0)
-      (cond
-        ((and (previous-char= area #\newline)
-              (= x 0))
-         (decf inptr)
-         (setf y (1- y)
-               x (input-pointer-x area))
-         (when (< y dptr)
-           (decf dptr)))
-        ((and (= x 0)
-              (multiplep (input-pointer-x area) w))
-         (decf inptr)
-         (setf y (1- y)
-               x (1- w))
-         (when (< y dptr)
-           (decf dptr)))
-        (t
-         (decf inptr)
-         (decf x)))
-      (setf inbuf (remove-nth inptr inbuf))
-      (draw area))))
+(defun previous-line-length (buf ptr)
+  (let* (;; if the last char is a \n, start counting at the second last
+         (start (if (and buf
+                         (> (length buf) 1)
+                         ;;(char= (car (last buf)) #\newline))
+                         (if (> ptr 0)
+                             (char= (car (last (subseq buf 0 ptr))) #\newline)
+                             (char= (car (last buf)) #\newline)))
+                    2
+                    1))
+         (pos1 (loop for i from (- ptr start) downto 0
+                     if (char= (nth i buf) #\newline) return i))
+         (pos2 (if pos1
+                   (- (- ptr start) pos1)
+                   (- ptr (- start 1)))))
+    ;;(format t "~A ~A ~A" start pos1 pos2)
+    (if (minusp pos2)
+        0
+        pos2)))
 
-(defmethod move-previous-char ((area textarea))
-  "Move the cursor to the previous char in the textarea."
-  (with-accessors ((width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
-                   (win window) (y cursor-position-y) (x cursor-position-x)) area
-    (when (> inptr 0)
-      (cond
-        ;; beginning of line after a newline, half full previous line
-        ((and (previous-char= area #\newline)
-              (= x 0))
-         (decf inptr)
-         (setf y (1- y)
-               ;; how to decide where to put x when we go to the previous row?
-               ;; we need to know how many chars are on the previous line
-               x (input-pointer-x area))
-         (when (< y dptr)
-           (decf dptr)))
-        ;; beginning of line, full previous line
-        ;; a line is full when the distance to the previous newline is a multiple of the width
-        ((and (= x 0)
-              (multiplep (input-pointer-x area) width))
-         (decf inptr)
-         (setf y (1- y)
-               x (1- width)) ;; put the cursor on the last column of the previous line
-         (when (< y dptr)
-           (decf dptr)))
-         ;; when inptr is on a normal char, just move the cursor to the left
-        (t
-         (decf inptr)
-         (decf x)))))
-  (draw area))
-
-(defun input-pointer-x (area)
-  "Take an input pointer (integer) and a textarea buffer (list of characters),
-
-return the number of columns between the pointer and the first newline before the pointer."
-  (with-accessors ((width width) (inbuf buffer) (inptr input-pointer)) area
+(defun distance-to-newline (area)
+  (with-accessors ((inbuf buffer) (inptr input-pointer)) area
     (let* (;; position of the newline left from inptr, or nil if there is no previous newline
            (pos1 (loop for i from (1- inptr) downto 0
                        if (char= (nth i inbuf) #\newline) return i))
@@ -243,48 +204,167 @@ return the number of columns between the pointer and the first newline before th
                      (- (1- inptr) pos1)
                      ;; if there is no newline, return the pointer
                      inptr)))
-      ;; if the distance to the previous newline is > width
-      (if (> pos2 width)
-          ;; return the x position of the last char after the line has been wrapped to width
-          (mod pos2 width)
-          (mod pos2 width)))))
+      pos2)))
+
+(defun input-pointer-x (area)
+  "Take an input pointer (integer) and a textarea buffer (list of characters),
+
+return the number of columns between the pointer and the first newline before the pointer."
+  (with-accessors ((width width)) area
+    (mod (distance-to-newline area) width)))
+
+(defmethod delete-previous-char ((area textarea))
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)
+                   (y cursor-position-y) (x cursor-position-x) (width width)) area
+    (when (> inptr 0)
+      (cond
+        ;; beginning of a line after a newline char with a full previous line
+        ((and (= x 0)
+              (previous-char= area #\newline)
+              (multiplep (previous-line-length inbuf inptr) width))
+         ;; delete the newline char without moving the cursor
+         (decf inptr))
+
+        ;; beginning of line after a newline, half full previous line
+        ((and (= x 0)
+              (previous-char= area #\newline))
+         (decf inptr)
+         (setf y (1- y)
+               x (input-pointer-x area))
+         (when (< y dptr)
+           (decf dptr)))
+
+        ;; beginning of line, full previous line, but no newline
+        ((and (= x 0)
+              (multiplep (previous-line-length inbuf inptr) width))
+         (decf inptr)
+         (setf y (1- y)
+               x (1- width))
+         (when (< y dptr)
+           (decf dptr)))
+
+        (t
+         (decf inptr)
+         (decf x)))
+      (setf inbuf (remove-nth inptr inbuf)))
+    (draw area)))
+
+(defmethod delete-next-char ((area textarea))
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)) area
+    (when (> (length inbuf) inptr)
+      (setf inbuf (remove-nth inptr inbuf))
+      (draw area))))
+
+(defmethod move-previous-char ((area textarea))
+  "Move the cursor to the previous char in the textarea."
+  (with-accessors ((width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
+                   (y cursor-position-y) (x cursor-position-x)) area
+    (when (> inptr 0)
+      (cond
+        ;; beginning of a line after a newline char with a full previous line
+        ((and (= x 0)
+              (previous-char= area #\newline)
+              (multiplep (previous-line-length inbuf inptr) width))
+         ;; jump over the newline char, do not make an extra step for it
+         (decf inptr 2)
+         (setf y (1- y)
+               x (1- width))
+         (when (< y dptr)
+           (decf dptr)))
+
+        ;; beginning of line after a newline, half full previous line
+        ((and (= x 0)
+              (previous-char= area #\newline))
+         (decf inptr)
+         (setf y (1- y)
+               ;; how to decide where to put x when we go to the previous row?
+               ;; we need to know how many chars are on the previous line
+               x (input-pointer-x area))
+         (when (< y dptr)
+           (decf dptr)))
+
+        ;; beginning of line, full previous line, but no newline
+        ;; a line is full when the distance to the previous newline is a multiple of the width
+        ((and (= x 0)
+              (multiplep (previous-line-length inbuf inptr) width))
+         (decf inptr)
+         (setf y (1- y)
+               x (1- width)) ;; put the cursor on the last column of the previous line
+         (when (< y dptr)
+           (decf dptr)))
+
+        ;; when inptr is on a normal char, just move the cursor to the left
+        (t
+         (decf inptr)
+         (decf x)))))
+  (draw area))
 
 (defmethod move-next-char ((area textarea))
   "Move the cursor to the next char in the textarea."
   (with-accessors ((width width) (height height) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
-                   (win window) (y cursor-position-y) (x cursor-position-x)) area
+                   (y cursor-position-y) (x cursor-position-x)) area
     (when (< inptr (length inbuf))
-      (if (or (char= (nth inptr inbuf) #\newline)
-              (= x (1- width)))
-          ;; when inptr is on a newline or on the last char on a line
-          (progn
-            (incf inptr)
-            (setf y (1+ y) x 0)
-            (when (> (- y dptr) (1- height)) (incf dptr)))
-          ;; when inptr is on a normal char, just move the cursor to the right
-          (progn
-            (incf inptr)
-            (incf x)))))
+      (cond
+        ;; newline at the beginning of a line
+        ((and (= x 0)
+              (char= (nth inptr inbuf) #\newline))
+         (incf inptr)
+         (setf y (1+ y)
+               x 0)
+         (when (> (- y dptr) (1- height))
+           (incf dptr)))
+
+        ;; newline in the middle of a line
+        ((char= (nth inptr inbuf) #\newline)
+         (incf inptr)
+         (setf y (1+ y)
+               x 0)
+         (when (> (- y dptr) (1- height))
+           (incf dptr)))
+
+        ;; last column in a line
+        ((= x (1- width))
+         (if (and (nth (1+ inptr) inbuf)
+                  (char= (nth (1+ inptr) inbuf) #\newline))
+             ;; if a newline follows the line wrap, jump over the newline
+             (incf inptr 2)
+             (incf inptr 1))
+         (setf y (1+ y)
+               x 0)
+         (when (> (- y dptr) (1- height))
+           (incf dptr)))
+
+        (t
+         (incf inptr)
+         (incf x)))))
   (draw area))
 
 (defun textarea-add-char (area event)
+  "Add a character to the current cursor position in textarea, then move the cursor forward.
+
+Currently only graphic characters and newline are supported."
   (with-accessors ((char event-key)) event
     (with-accessors ((inbuf buffer) (inptr input-pointer) (width width) (height height)
                      (dptr display-pointer) (y cursor-position-y) (x cursor-position-x)) area
-      (when (characterp char)
+      (when (and (characterp char)
+                 (or (graphic-char-p char)
+                     (char= char #\newline)))
         (cond ((or (char= char #\newline)
                    (= x (1- width)))
-               (setf y (1+ y)
-                     x 0)
-               (when (> (- y dptr) (1- height))
-                 (incf dptr)))
+               (unless (and (= x 0)
+                            (> inptr 0)
+                            (char/= (nth (1- inptr) inbuf) #\newline))
+                 (setq y (1+ y)
+                       x 0)
+                 (when (> (- y dptr) (1- height))
+                   (incf dptr))))
               (t
                (incf x)))
         (if (insert-mode-p area)
             (setf inbuf (insert-nth inptr char inbuf))
             (setf inbuf (replace-nth inptr char inbuf)))
-        (incf inptr)))
-    (draw area)))
+        (incf inptr))))
+  (draw area))
 
 (define-keymap textarea-map
   (:left 'move-previous-char)
