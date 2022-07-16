@@ -333,102 +333,104 @@
         (setf (frame-rate scr) 30)
         (run-event-loop scr)))))
 
-;; initialize ncurses, deinitialize ncurses
-;; tests initialize-instance
 (defun t00 ()
+  "Minimal example, initialize and finalize an instance of a screen object."
+  ;;This is a general pattern implemented in the macro with-screen.
   (let ((scr (make-instance 'screen)))
+    ;; unwind protect makes sure that ncurses is ended in any case.
     (unwind-protect
          nil
+      ;; The ncurses screen object has to be deallocated by end-screen or close.
+      ;; This is done by the with-screen macro.
       (close scr))))
 
-;; clos screen, accessors, unwind-protect.
 (defun t01 ()
+  "Make a CLOS screen object within unwind-protect, test accessors."
   (unwind-protect
        (let ((scr (make-instance 'screen :enable-colors t)))
          (clear scr)
          (move scr 0 0)
+         ;; normal, unrendered chars in default colors (white on black)
+         (add-string scr "Hello there!")
+         (refresh scr)
 
-         ;; normal, unrendered chars in default colors.
-         (add-string scr "hello there!")
-
-         ;; the text will be red on yellow.
-         ;; this affects only new characters, not the whole window.
+         ;; set the color for new chars to red on yellow.
+         ;; the color is added to chars and not affected by later changes to the background.
          (setf (color-pair scr) '(:red :yellow))
 
-         (move scr 5 5)
-         (add-string scr "dear john!")
+         (move scr 3 10)
+         (add-string scr "Dear john!")
          (refresh scr)
 
-         ;; wait for keypress, works only in blocking mode, which is the default.
-         (get-char scr)
+         ;; set the background character (color, attributes, space char)
+         (if (eql (code-char (get-char scr)) #\t)
+             ;; if the optional argument is t, apply it to every cell in the window.
+             ;; the colors and attributes are applied to every unrendered cell of the screen
+             ;; already rendered chars keep their colors and attributes
+             (setf (background scr t)   (make-instance 'complex-char :simple-char #\- :color-pair '(:white :green)))
+             ;; if the optional argument is nil, only apply it to new characters.
+             (setf (background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:white :green))))
 
-         ;; set the background character for new characters
-         ;; the optional argument nil prevents it from being applied to every window cell.
-         ;; a newline sets the background till the end of the line.
-         (setf (background scr nil) (make-instance 'complex-char :simple-char #\- :color-pair '(:white :green)))
-         (format scr "~%Hello again!~%")
-         (refresh scr)
-         (get-char scr)
-
-         ;; finally, set the background for the whole window.
-         ;; the change is applied only to empty cells and to
-         ;; characters that have no already set attributes or colors.
-         (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
+         ;; for every newline character, the background character is applied till the end of the line.
+         ;; in addition to ncurses functions like add-string, a window can be passed as a stream to lisp IO functions.
+         (format scr "~%Call me maybe!~%")
          (refresh scr)
          (get-char scr)
-         (setf (background scr) (make-instance 'complex-char :simple-char #\- :color-pair '(:red :white)))
-         (refresh scr)
 
-         ;; wait for the next keypress, then end.
+         ;; if the background char has been set by a previous call, it is only updated where it is present on the screen.
+         ;; if it is called for the first time, it is set to all empty cells in the screen.
+         (setf (background scr) (make-instance 'complex-char :simple-char #\- :color-pair '(:red :blue)))
+         (refresh scr)
+         ;; wait (block) till keypress, then end.
+         ;; works only when :input-blocking t, which is the default.
          (get-char scr))
-
-    ;; unwind protect makes sure that ncurses is ended at all cost.
     (end-screen)))
 
-;; the same as t01, but hides the window creation and ncurses ending by utilizing the with-screen macro.
-(defun t02 ()
+(defun t01a ()
+  "The same as t01, but hides the screen creation and ncurses ending within the with-screen macro."
   (with-screen (scr :color-pair (list :yellow :red))
     (clear scr)
-    (move scr 0 0)
-    (add-string scr "hello there!")
-    (move scr 3 6)
-    (add-string scr "dear john!")
+    ;; instead of explicitely using move, the cursor position can be passed to add-string
+    (add-string scr "Hello there!" :position '(0 0))
+    (add-string scr "Dear john!" :position '(3 6))
+    ;; render new characters red on yellow
     (setf (color-pair scr) '(:red :yellow))
-    (move scr 3 3 :relative t)
-    (add-string scr "call me maybe!")
-    ;; setting the cursor position directly instead of using move
+    ;; a relative move doesnt move _to_ a position, but _by_ a number of rows and cols.
+    (move scr 3 0 :relative t)
+    (add-string scr "Call me maybe!")
+    ;; setting the cursor position with the accessor instead of using move
     (setf (cursor-position scr) (list 9 12))
-    (add-string scr "welcome to tijuana")
+    ;; text colors can also be passed directly to the add functions
+    (add-string scr "Welcome to tijuana" :color-pair '(:white :blue))
     (refresh scr)
     (get-char scr)
 
+    ;; apply the bg char to all unrendered cells in the screen
+    ;; already rendered chars are not affected.
     (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:green :white)))
     (refresh scr)
     (get-char scr)
 
+    ;; change all previous background chars to new background chars
     (setf (background scr) (make-instance 'complex-char :simple-char #\, :color-pair '(:white :green)))
     (refresh scr)
-    (get-char scr) ))
+    (get-char scr)))
 
-(defun t02a ()
+(defun t01b ()
   "Separately set the window foreground and background color pairs."
   (with-screen (scr :fgcolor :yellow :bgcolor :red)
     (clear scr)
-    (move scr 0 0)
-    (add-string scr "hello there!")
-
+    ;; the cursor row and column positions can also be set separately
+    (add-string scr "Hello there!" :y 0 :x 0)
+    ;; window colors are added to every new character
     (setf (color-pair scr) '(:red :yellow))
-    (move scr 3 6)
-    (add-string scr "dear john!")
-
+    (add-string scr "Dear john!" :y 3 :x 10)
+    ;; the window foreground color pair can also be set separately
     (setf (fgcolor scr) :yellow
           (bgcolor scr) :red)
     (move scr 3 3 :relative t)
-    (add-string scr "call me maybe!")
-
-    ;; setting the cursor position directly instead of using move
-    (setf (cursor-position scr) (list 9 12))
-    (add-string scr "welcome to tijuana")
+    (add-string scr "Call me maybe!")
+    (add-string scr "Welcome to tijuana" :position '(3 12))
     (refresh scr)
     (get-char scr)
 
@@ -439,34 +441,13 @@
     ;; setting bg to green will set the fg to the default white
     (setf (background scr) (make-instance 'complex-char :simple-char #\, :bgcolor :green))
 
-    ;; text will still use the window color pair
+    ;; new text will still use the window color pair, which overrides background colors.
     (move scr 3 3 :relative t)
     (add scr "hasta siempre")
-
-    (refresh scr)
-    (get-char scr) ))
-
-(defun t02b ()
-  "Set and get a wide character background."
-  (with-screen (scr)
-    ;; #x2592 = 9618
-    (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair '(:yellow :red)))
-    (move scr 0 0)
-    ;; the low-level function returns the code.
-    (let ((ch (de.anvi.croatoan::get-background-cchar_t scr)))
-      (format scr "ch: ~A~%" ch)
-      (format scr "~A ~A ~A" (char-code (simple-char ch)) (attributes ch) (color-pair ch)))
-    (move scr 2 0)
-    ;; the high level interface returns what was set by the high-level setf.
-    ;; TODO: when we set background to :board, should it return :board or the numeric code point?
-    (let ((ch (background scr)))
-      (if ch
-          (format scr "~A ~A ~A" (simple-char ch) (attributes ch) (color-pair ch))
-          (format scr "ch: ~A" ch)))
     (refresh scr)
     (get-char scr)))
 
-(defun t02c ()
+(defun t01c ()
   (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :use-terminal-colors t)
     ;; simple chars added to a window without a rendered style.
     (add-string scr "Hello there!")
@@ -498,7 +479,26 @@
     (format scr "I'm sorry, Dave.")
     (fresh-line scr) (refresh scr) (get-char scr)))
 
-(defun t02d ()
+(defun t02 ()
+  "Set and get a wide character background."
+  (with-screen (scr)
+    ;; #x2592 = 9618
+    (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair '(:yellow :red)))
+    (move scr 0 0)
+    ;; the low-level function returns the code.
+    (let ((ch (de.anvi.croatoan::get-background-cchar_t scr)))
+      (format scr "ch: ~A~%" ch)
+      (format scr "1: ~A ~A ~A~%" (char-code (simple-char ch)) (attributes ch) (color-pair ch)))
+    (move scr 2 0)
+    ;; the high level interface returns what was set by the high-level setf.
+    (let ((ch (background scr)))
+      (if ch
+          (format scr "2: ~A ~A ~A~%" (simple-char ch) (attributes ch) (color-pair ch))
+          (format scr "ch: ~A" ch)))
+    (refresh scr)
+    (get-char scr)))
+
+(defun t02a ()
   "Test precedence of the background char. Compare with nctest9."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
     (let* ((win1 (make-instance 'window :height 10 :width 20 :position (list 3  5) :border t))
@@ -515,7 +515,7 @@
       (add-wide-char win1 #\space :fgcolor :red    :y 5 :x 1 :n 10)
       ;; the fgcolor overrides the background color
       (add-wide-char win1 #\.     :fgcolor :red    :y 7 :x 1 :n 10)
-      ;; the space character is displayed when used with a fgcolor
+      ;; the space character is displayed when used with a bgcolor
       (add-wide-char win2 #\space :bgcolor :yellow :y 1 :x 1 :n 10)
       (refresh win1)
       (refresh win2)
@@ -523,7 +523,7 @@
       (close win1)
       (close win2))))
 
-(defun t02d2 ()
+(defun t02b ()
   "Test setting window properties from the window style."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
     (let* ((win1 (make-instance 'window :height 10 :width 20 :y 3 :x 5 :border t))
@@ -534,9 +534,14 @@
       (setf (style win1) '(:foreground (:fgcolor :white :bgcolor :black :attributes (:underline))
                            :background (:simple-char #\. :fgcolor :yellow :attributes ())))
 
+      ;; note that the border of win1 is yellow on black = background
+      ;; and that the border of win2 is black on white = foreground
+      ;; the border is drawn during init, so the bg of win1 is applied afer the border is drawn.
+      ;; the fg/bg of win2 is applied before the border is drawn, so the fg overrides the bg.
+
       (add-string win1 "test" :y 2 :x 2)
       (add-string win2 "test" :y 2 :x 2)
-      (add-string win2 "best" :y 4 :x 4 :fgcolor :cyan)
+      (add-string win2 "best" :y 4 :x 4 :fgcolor :cyan) ; fg overrides the bg
 
       (refresh win1)
       (refresh win2)
@@ -544,7 +549,8 @@
       (close win1)
       (close win2))))
 
-(defun t02e ()
+(defun t02c ()
+  "A panel is a fancy window with a separate border and drop shadow."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
     (let ((win (make-instance 'panel :height 10 :width 20 :position (list 3 5) :border t :border-width 1 :shadow t)))
       (with-slots (border-win shadow-win) win
@@ -554,7 +560,6 @@
                 :shadow (:background  (:fgcolor :black :bgcolor :black))
                 :foreground (:fgcolor :blue :bgcolor :cyan)
                 :background (:simple-char #\. :fgcolor :black :bgcolor :white)))
-
         (setf (background scr) (make-instance 'complex-char :simple-char :board :fgcolor :cyan))
         (refresh scr)
         (move win 1 1) (add-string win "hello there")
@@ -564,64 +569,64 @@
         (get-char scr)
         (close win)))))
 
-;; read and display chars until a q is pressed, blocking version.
 (defun t03 ()
+  "Read and display chars until a q is pressed, blocking version."
   (with-screen (scr :input-echoing nil :input-blocking t)
     (clear scr)
     (add-string scr "Type chars. Type q to quit. ")
     (refresh scr)
 
     (loop for ch = (get-char scr)
-       while (not (equal (code-char ch) #\q))
-       do (add-char scr ch))
+          while (not (equal (code-char ch) #\q))
+          do (add-char scr ch))
 
     (add-string scr "You pressed q. Now press any char to quit.")
+    ;; Wait until the next event, then exit. Blocks only when :input-blocking is t.
     (get-char scr)))
 
-;; read and display chars until a q is pressed, non-blocking version (leads to 100% CPU usage).
-;; wait for keyboard using get-char makes no sense in non-blocking code because it doesnt wait.
 (defun t03a ()
+  "Read and display chars until a q is pressed, non-blocking version (leads to 100% CPU usage)."
   (with-screen (scr :input-echoing nil :input-blocking nil)
     (clear scr)
     (add-string scr "Type chars. Type q to quit. ")
     (refresh scr)
 
     (loop for ch = (get-char scr)
-       while (or (= ch -1) (not (equal (code-char ch) #\q)))
-       do (unless (= ch -1) (add-char scr ch)))))
-
-;; test which integer is returned by ncurses on a non-blocking nil event.
-;; when get-char is used, -1 is returned,
-;; when get-wide-char is used, 0 is returned.
-(defun t03a2 ()
-  (with-screen (scr :input-echoing nil :input-blocking nil)
-    (clear scr)
-    (add-string scr "Type chars. Type q to quit. ")
-    (refresh scr)
-    (loop for ch = (get-char scr)
-       while (not (equal ch 113)) ; 113 = q
-       do (princ ch scr))))
+          while (or (= ch -1) (not (equal (code-char ch) #\q)))
+          do (unless (= ch -1) (add-char scr ch)))))
+;; Waiting for a keyboard event using get-char makes no sense in
+;; non-blocking code because it doesnt wait.
 
 (defun t03b ()
-  "Read and display chars until a q is pressed.
+  "Test which integer is returned by ncurses on a non-blocking nil event.
 
-Non-blocking version (leads to 100% CPU usage), uses get-event for event handling."
+get-char returns -1, get-wide-char returns 0."
   (with-screen (scr :input-echoing nil :input-blocking nil)
     (clear scr)
     (add-string scr "Type chars. Type q to quit. ")
+    (refresh scr)
+    (loop for ch = (get-char scr)
+          while (not (equal ch 113)) ; 113 = q
+          do (princ ch scr))))
+
+(defun t03c ()
+  "Read and display chars until a q is pressed, using get-event instead of get-char."
+  (with-screen (scr :input-echoing nil :input-blocking nil)
+    (clear scr)
+    (add-string scr "Type chars. Type q to quit.")
     (refresh scr)
     (loop (let ((event (event-key (get-event scr))))
             (when event
               (case event
                 (#\q (return))
-                (otherwise (add-char scr (char-code event)))))))))
+                (otherwise
+                 (add-char scr (char-code event)))))))))
 
-;; 200119
-(defun t03b1 ()
+(defun t03d ()
   "Show the integer key code of an event and the event key type."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-scrolling t)
     (clear scr)
-    (format scr "get-char:~%")
+    (format scr "get-event:~%")
     (refresh scr)
     (loop
       (let ((event (get-event scr)))
@@ -629,9 +634,10 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
           (when key
             (case key
               (#\q (return))
-              (otherwise (format scr "~A ~A ~A~%" key code (type-of key))))))))
+              (otherwise
+               (format scr "~A ~A ~A~%" key code (type-of key))))))))
     (clear scr)
-    (format scr "get-wide-char:~%")
+    (format scr "get-wide-event:~%")
     (refresh scr)
     (loop
       (let ((event (get-wide-event scr)))
@@ -639,23 +645,26 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
           (when key
             (case key
               (#\q (return))
-              (otherwise (format scr "~A ~A ~A~%" key code (type-of key))))))))))
+              (otherwise
+               (format scr "~A ~A ~A~%" key code (type-of key))))))))))
 
-;; using the event-case macro to simplify the event loop.
-;; do not use ((nil) nil) with input-blocking nil, it leads to 100% CPU usage.
-;; if nothing happens in the nil case anyway, we can use blocking.
-(defun t03b2 ()
+(defun t03e ()
+  "Use the event-case macro to hide the loop-get-event-case pattern."
   (with-screen (scr :input-echoing nil :input-blocking t)
     (clear scr)
-    (add-string scr "Type chars. Type q to quit. ")
+    (add-string scr "Type chars. Type q to quit.")
     (refresh scr)
     (event-case (scr event)
+      ;; do not use ((nil) nil) with input-blocking nil, it leads to 100% CPU usage.
+      ;; if nothing happens in the nil case anyway, we can use blocking.
       ;; ((nil) nil)
-      (#\q (return-from event-case))
-      (otherwise (add-char scr (event-code event))))))
+      (#\q
+       (return-from event-case))
+      (otherwise
+       (add-char scr (event-code event))))))
 
-;; slightly improved t03b2 pasted as an example to the cliki croatoan page
-(defun t03b3 ()
+(defun t03f ()
+  "Slightly improved t03e pasted as an example to the cliki croatoan page."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t)
     (clear scr)
     (move scr 2 0)
@@ -665,27 +674,33 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
           (attributes scr) '(:bold))
     (event-case (scr event)
       (#\q (return-from event-case))
-      (otherwise (princ (event-key event) scr)
-                 (refresh scr)))))
+      (otherwise
+       (princ (event-key event) scr)
+       (refresh scr)))))
 
-;; read and display chars until a q is pressed, blocking + gray stream version.
-;; the stream reading function wont work in non-blocking mode and with non-char keys.
-;; stream reading and writing uses wide-char functions.
-(defun t03c ()
+(defun t03g ()
+  "Read and display chars until q is pressed, blocking + gray stream version.
+
+read-char only reads characters, and will not properly return non-character function keys.
+
+Stream reading and writing uses wide-char ncurses functions."
   (with-screen (scr :input-echoing nil :input-blocking t)
     (clear scr)
     (princ "Type chars. Type q to quit." scr)
+    (terpri scr)
     (refresh scr)
 
     (loop for ch = (read-char scr)
        while (not (equal ch #\q))
        do (princ ch scr))
 
+    (terpri scr)
     (princ "You pressed q. Now press any char to quit." scr)
+    (terpri scr)
     (read-char scr)))
 
-(defun t03d ()
-  "Read and display wide (multi-byte) characters until q is pressed."
+(defun t03h ()
+  "Add and extract a wide complex character and its components."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visible nil)
     (clear scr)
     (refresh scr)
@@ -696,25 +711,50 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
          ;; display the human-readable version of a wide char.
          (add-wide-char scr ch             :attributes (list :underline) :fgcolor :yellow :bgcolor :red  :y 0 :x 0)
          (add-wide-char scr (code-char ch) :attributes (list :bold)      :color-pair (list :yellow :red) :y 0 :x 2)
-         ;; extract the wide char again.
+         ;; extract the wide char out of the window.
          (let ((ch2 (extract-wide-char scr :y 0 :x 0)))
            ;; display the lisp-readable version of the extracted complex wide char
-           (move scr 1 0)
+           (move scr 2 0)
            ;; TODO: prin1, print and ~S should print unreadable #<..>
            ;; only princ and ~A should render complex chars
            (prin1 (simple-char ch2) scr)
            ;; print the slots of the extracted complex wide char
            (princ (attributes ch2) scr)
            (princ (color-pair ch2) scr)
-           ;; display the rendered complex wide char again
-           (add-wide-char scr ch2 :y 3 :x 0) ))))
+           ;; display the extracted complex wide char again
+           (add-wide-char scr ch2 :y 4 :x 0) ))))
 
-;; gray stream version of t03d
-;; we can not use ~C and write-char to write complex-chars, but it works for wide chars, which are normal lisp chars.
-;; princ and ~A should work, because they rely on specialized print-object.
-;; also see t08c
-(defun t03d2 ()
-  "Use gray stream functions to read and display wide (multi-byte) characters until q is pressed."
+#|
+
+According to SBCL devs, write-char and format ~C are not supposed to
+work with complex chars, because according to the standard, only lisp
+characters should be accepted as arguments by write-char, and any other
+object like a complex-char should signal an error.
+
+It still works as of SBCL 2.2.2, though.
+
+princ, print and format ~A can output complex chars, because they rely
+on a specialized print-object method.
+
+|#
+
+(defun t03i ()
+  "Write complex chars to standard output using lisp output functions + gray streams."
+  (with-screen (scr :cursor-visible nil)
+    (let ((*standard-output* scr)
+          (ch (make-instance 'complex-char :simple-char #\a
+                                           :attributes '(:bold :underline)
+                                           :color-pair '(:green :black))))
+      (write-char #\a) (terpri)
+      (write-char ch)  (terpri)
+      (princ ch)       (terpri)
+      (print ch)       (terpri)
+      (format t "~%Format:~%~S~%~A" ch ch))
+    (refresh scr)
+    (get-char scr)))
+
+(defun t03j ()
+  "Read, display and extract wide (multi-byte) characters using the gray streams interface."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-colors t :cursor-visible nil)
     (clear scr)
     (refresh scr)
@@ -724,59 +764,47 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
          (clear scr)
          (move scr 0 0)
          ;; we only can write-char if it is a lisp character.
+         (add-string scr "Write read char in color: ")
+         (terpri scr)
+         (setf (color-pair scr) '(:white :blue))
          (write-char ch scr)
+         (setf (color-pair scr) nil)
          ;; the extracted "char" is not a lisp character any more, but a complex-char
-         (let ((ch2 (extract-wide-char scr :y 0 :x 0))
+         (let ((ch2 (extract-wide-char scr :y 1 :x 0))
                (*standard-output* scr))
-           ;; this soon will not work with sbcl and complex chars.
-           ;; write-char only takes characters, no other objects.
+           ;; write-char is supposed to only take characters, no other objects,
            ;; even if we specialize stream-write-char to complex-chars
-           ;;(move scr 1 0)
-           ;;(write-char ch2 scr)
-           ;; this will work because it uses print-objectm, since print-object can be
+           ;; but it still works to output rendered complex chars.
+           (move scr 2 0)
+           (add-string scr "Write extracted complex char: ")
+           (write-char ch2 scr)
+           ;; write to the standard output, which was linked to the screen
+           (write-char ch2)
+
+           ;; this will work because it uses print-object, since print-object can be
            ;; specialized on complex-chars.
-           (move scr 1 0)
+           (move scr 3 0)
+           (format scr "Princ read char: ")
            (princ ch scr)
            (princ ch)
-           (move scr 2 0)
+
+           (move scr 4 0)
+           (format scr "Princ extracted char: ")
            (princ ch2 scr)
            (princ ch2)
+           (terpri)
+
            ;; aestethic ~A can be used, since it uses princ underneath
-           ;; standard ~S can not  because it cant be read back in
-           ;; character ~C can not be used because it requires characters.
-           (move scr 3 0)
-           (format scr "~A ~A" ch ch2)
-           (move scr 4 0)
-           (format t "~A ~A" ch ch2)
-           (refresh scr) ))))
+           (format scr "Format A: ~A ~A~%" ch ch2)
+           ;; standard ~S be used for output, but it cant be read back in
+           (format t "Format S: ~S ~S~%" ch ch2)
+           ;; character ~C can not be officially used for extracted
+           ;; chars because it requires lisp characters, not complex chars.
+           (format t "Format C: ~C~%" ch)
+           (refresh scr)))))
 
-;;           | cooked | cbreak | raw
-;; ----------+--------+--------+-----
-;; buffering | t      | nil    | nil
-;; ----------+--------+--------+-----
-;; control   | t      | t      | nil
-;;
-(defun t03e ()
-  "Test switching between input modes and control char processing."
-  (with-screen (scr :input-echoing nil :input-blocking t :input-buffering nil :process-control-chars nil)
-    (with-accessors ((input-buffering input-buffering-p) (process-control-chars process-control-chars-p)) scr
-      (clear scr)
-      (format scr "buffering ~A process-control-chars ~A (raw)~%" input-buffering process-control-chars)
-      (format scr "ch1: ~A~%" (get-char scr))
-      (setf (process-control-chars-p scr) t)
-      (format scr "buffering ~A process-control-chars ~A (cbreak)~%" input-buffering process-control-chars)
-      (format scr "ch2: ~A~%" (get-char scr))
-      (setf (input-buffering-p scr) t)
-      (format scr "buffering ~A process-control-chars ~A (cooked)~%" input-buffering process-control-chars)
-      (format scr "ch3: ~A~%" (get-char scr))
-      ;; ignore the typed enter key
-      (get-char scr)
-      ;; wait for one keypress before exiting.
-      (get-char scr))))
-
-;; take a function given as symbol name and display its docstring. press q to exit.
-;; Example: (a:t04 'cdr)
 (defun t04 (&optional (name 'car))
+  "Take a function given as symbol name and display its docstring."
   (unwind-protect
        (let ((scr (make-instance 'screen)))
          (clear scr)
@@ -798,8 +826,8 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
          (get-char scr))
     (end-screen)))
 
-;; adding and removing attributes.
 (defun t04a ()
+  "Test adding and removing attributes of the screen."
   (unwind-protect
        (let ((scr (make-instance 'screen :enable-colors t)))
          (clear scr)
@@ -836,8 +864,8 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
          (get-char scr))
     (end-screen)))
 
-;; a more concise way to write t04a
 (defun t04b ()
+  "A more concise way to write t04a."
   (with-screen (scr :enable-colors t :cursor-visible nil)
     (clear scr)
 
@@ -868,67 +896,106 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
     (refresh scr)
     (get-char scr)))
 
-;; Make sure we shut down ncurses and dont mess up the terminal when an error is signaled.
+#|
+          | cooked | cbreak | raw
+----------+--------+--------+-----
+buffering | t      | nil    | nil
+----------+--------+--------+-----
+control   | t      | t      | nil
+
+|#
 (defun t05 ()
+  "Test switching between input modes and control char processing."
+  (with-screen (scr :input-echoing nil :input-blocking t :input-buffering nil :process-control-chars nil)
+    (with-accessors ((input-buffering input-buffering-p) (process-control-chars process-control-chars-p)) scr
+      (clear scr)
+      (format scr "buffering ~A process-control-chars ~A (raw)~%" input-buffering process-control-chars)
+      (format scr "ch1: ~A~%" (get-char scr))
+      (setf (process-control-chars-p scr) t)
+      (format scr "buffering ~A process-control-chars ~A (cbreak)~%" input-buffering process-control-chars)
+      (format scr "ch2: ~A~%" (get-char scr))
+      (setf (input-buffering-p scr) t)
+      (format scr "buffering ~A process-control-chars ~A (cooked)~%" input-buffering process-control-chars)
+      (format scr "ch3: ~A~%" (get-char scr))
+      ;; ignore the typed enter key
+      (get-char scr)
+      ;; wait for one keypress before exiting.
+      (get-char scr))))
+
+(defun t06 ()
+  "Cleanly end ncurses and don't mess up the terminal _after_ we exit the debugger."
   (unwind-protect
        (let ((scr (make-instance 'screen)))
          (add-string scr "press any char to signal an error and go to the debugger in a messed up screen!")
          (refresh scr)
          (get-char scr)
          (error "zu huelf!"))
-    ;; this will be executed after we somehow return from the debugger.
+    ;; ncurses will be cleanly exited after we return from the debugger.
+    ;; entering the debugger will still mess up the screen though.
     (end-screen)))
 
-;; End ncurses cleanly _before_ getting into the debugger when an error is signalled.
-;; get into the debugger, but only after we are back to the repl.
-(defun t06 ()
+(defun t06a ()
+  "End ncurses cleanly _before_ getting into the debugger when an error is signalled."
   (let ((*debugger-hook* #'(lambda (c h)
-                             (declare (ignore c)) (declare (ignore h)) (end-screen))))
+                             (declare (ignore c h))
+                             (end-screen))))
     (unwind-protect
          (let ((scr (make-instance 'screen)))
-           (add-string scr "press a char to signal an error. ncurses will be ended before going to the debugger.")
+           (add-string scr "Press a char to signal an error. ncurses will be ended before going to the debugger.")
            (refresh scr)
            (get-char scr)
            (error "zu huelf!"))
       (end-screen))))
 
-;; The debugger hook is added to with-screen.
-;; When an error is signalled in a ncurses app, we cleanly exit ncurses first, we dont get
-;; into the debugger and we merely print the signalled condition to the REPL.
-(defun t06a ()
+#|
+
+The debugger hook is availabe as an option in the with-screen macro.
+
+When an error is signalled in a ncurses app, we cleanly exit ncurses
+first, we dont get into the debugger and we merely print the signalled
+condition to the REPL.
+
+|#
+(defun t06b ()
+  "Enable or disable the hook to cleanly exit ncurses before getting into the debugger."
   (with-screen (scr :bind-debugger-hook nil)
     (add-string scr "press a char to signal an error. ncurses will be ended before going to the debugger.")
     (refresh scr)
     (get-char scr)
     (error "zu huelf!")))
 
-;; display a new window on the stadard screen.
-;; problem: deleting different windows is not standardized. (problem solved, example obsolete)
 (defun t07 ()
+  "Test the gray streams interface, which allows windows to be treated as lisp streams."
   (unwind-protect
-       (let ((scr (make-instance 'screen :enable-colors t)))
+       (let ((scr (make-instance 'screen)))
          (clear scr)
-         (add-string scr "Standard screen")
+         (write-char #\a)     ; writes a to the repl. wont be visible until we quit ncurses.
+         (write-char #\b scr) ; writes b to scr.
+         (terpri scr)
+         (princ "hello")      ; writes to the repl. wont be visible until we quit ncurses.
+         (princ "hello" scr)
+         (terpri scr)         ; 3 calls, 3 new lines will be added.
+         (terpri scr)
+         (terpri scr)
+         (princ "there" scr)
+         (terpri scr)
+         (write-string "dear john" scr :start 0 :end 4)
+         (terpri scr)
+         (write-string "dear john" scr :start 5)
+         (fresh-line scr)     ; we call it 3 times, but only one newline will be added.
+         (fresh-line scr)
+         (fresh-line scr)
+         (format scr "--~%~r~%--" 1234) ; each % will add a newline.
+         (write-char #\newline scr) ; this is the char that actually gets displayed each time terpri is called.
          (refresh scr)
-         (get-char scr)
-
-         (let ((win (make-instance 'window :height 15 :width 50 :position '(5 5))))
-           (setf (background win) (make-instance 'complex-char :color-pair '(:red :blue)))
-           (add-string win "Window 1")
-           (refresh win)
-           (get-char win)))
-           ;(delete-window win) ; this is missing, we have to properly delete windows manually.
-
-    ;; this will be executed after we somhow return from the debugger.
+         (get-char scr))
+    ;; This ends the ncurses screen without explicitely receiving the scr pointer.
     (end-screen)))
 
-;; close now closes both windows and the main screen.
-;; but the creation of a window/screen now has to be outside the unwind-protect form.
 (defun t07a ()
+  "Use the stream function `close' to properly close ncurses windows and screen."
   (let ((scr (make-instance 'screen :enable-colors t :cursor-visible nil)))
-    ;; since windows are streams now, we can use close on tem too.
-    ;; in order to be able to close scr, as compared to end-screen without arguments in t07,
-    ;; we have to move unwind-protect inside the let scope.
+    ;; since windows and screens are streams, we can use close on them.
     (unwind-protect
          (progn
            (clear scr)
@@ -941,61 +1008,35 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
              (add-string win "Window 1" :y 2 :x 4 :fgcolor :red :bgcolor :yellow)
              (refresh win)
              (get-char win)
+             ;; close is defined by the gray stream interface.
              (close win))
 
            (clear scr)
            (refresh scr)
            (get-char scr))
-      ;; close is defined by the gray stream interface.
+      ;; alternatively we can use end-screen, which does not need the scr pointer.
       (close scr))))
 
-;; test the gray streams interface.
-(defun t08 ()
-  (unwind-protect
-       (let ((scr (make-instance 'screen)))
-         (clear scr)
+#|
 
-         (write-char #\a)     ; writes a to the repl. wont be visible until we quit ncurses.
+When we define windows as streams, we can rebind the *standard-output*
+to print to a ncurses window.
 
-         (write-char #\b scr) ; writes b to scr.
-         (terpri scr)
+This only works with standard lisp output functions, format, write-char,
+terpri, print, etc.
 
-         (princ "hello")      ; writes to the repl. wont be visible until we quit ncurses.
+We still have to explicitely pass a window to ncurses functions clear,
+close, refresh, etc. though.
 
-         (princ "hello" scr)
-         (terpri scr)         ; 3 calls, 3 new lines will be added.
-         (terpri scr)
-         (terpri scr)
-
-         (princ "there" scr)
-
-         (terpri scr)
-         (write-string "dear john" scr :start 0 :end 4)
-         (terpri scr)
-         (write-string "dear john" scr :start 5)
-
-         (fresh-line scr)     ; we call it 3 times, but only one newline will be added.
-         (fresh-line scr)
-         (fresh-line scr)
-
-         (format scr "--~%~r~%--" 1234) ; each % will add a newline.
-
-         (write-char #\newline scr) ; this is the char that actually gets displayed each time terpri is called.
-
-         (refresh scr)
-         (get-char scr))
-    (end-screen)))
-
-;; when we define windows as streams, we can rebind the *standard-output* to print to a ncurses window.
-;; this only works with standard lisp output functions, format, write-char, terpri, print, etc.
-;; we still have to explicitely ncurses functions clear, close, refresh, etc. though.
-(defun t08a ()
+|#
+(defun t07b ()
+  "Bind standard output to a window stream."
   (let ((scr (make-instance 'screen)))
     (unwind-protect
          (progn
            (clear scr)
 
-           ;; writes explicitely to scr
+           ;; write explicitely to scr
            (write-char #\a scr)
            (terpri scr)
            (princ "hello" scr)
@@ -1003,7 +1044,7 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
            (format scr "~r" 1234)
            (terpri scr)
 
-           ;; writes to *standard-output*, which here is scr.
+           ;; writes to *standard-output*, which here is bound to scr.
            (let ((*standard-output* scr))
              (write-char #\b)
              (terpri)
@@ -1016,7 +1057,7 @@ Non-blocking version (leads to 100% CPU usage), uses get-event for event handlin
            (get-char scr))
       (close scr))))
 
-(defun t08b ()
+(defun t07c ()
   "Use colors on *standard-output* with standard lisp printing functions.
 
 Test whether a window (stream) was closed."
@@ -1037,41 +1078,27 @@ Test whether a window (stream) was closed."
              (format t "~r" 1985)
              (refresh win)
              (get-char win)
-             (format t "~%before close: streamp: ~A open-stream-p: ~A" (streamp win) (open-stream-p win))
+             (format t
+                     "~%before close: streamp: ~A open-stream-p: ~A"
+                     (streamp win)
+                     (open-stream-p win))
              (refresh win)
              (get-char win)
-             (format scr "~%after close: close: ~A streamp: ~A open-stream-p: ~A" (close win) (streamp win) (open-stream-p win))
+             (format scr
+                     "~%after close: close: ~A streamp: ~A open-stream-p: ~A"
+                     (close win)
+                     (streamp win)
+                     (open-stream-p win))
              (refresh scr)
              (get-char scr))
 
-           ;; *standard-output*is now again scr.
+           ;; *standard-output* is now again bound to scr.
            (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (terpri)
            (format t "~r" 1984)
            (refresh scr)
            (get-char scr))
       (close scr))))
-
-;; Write complex chars to standard output using standard lisp output functions + gray streams.
-;; According to SBCL devs, write-char and ~C are not supposed to work, because according to the
-;; standard, only lisp characters should be accepted s arguments by write-char, and any other
-;; object like a complex-char should signal an error.
-(defun t08c ()
-  (with-screen (scr)
-    (let ((*standard-output* scr)
-          (ch (make-instance 'complex-char :simple-char #\a :attributes '(:bold :underline) :color-pair '(:green :black))))
-      (write-char #\a)
-      (terpri)
-      ;;(write-char ch)
-      (terpri)
-      (princ ch)
-      (terpri)
-      (print ch)
-      (terpri)
-      (format t "~%Format:~%~S~%~A" ch ch)
-      (terpri))
-    (refresh scr)
-    (get-char scr)))
 
 ;; box, move
 (defun t09 ()
