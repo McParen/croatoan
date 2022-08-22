@@ -8,6 +8,30 @@ If any parameter is nil or zero, the default ACS char will be used."
   (let ((winptr (winptr window)))
     (ncurses:box winptr hline-char vline-char)))
 
+(defun draw-hline (win y x length &optional char &rest keys &key &allow-other-keys)
+  (let ((ch (if (null char)
+                (acs :horizontal-line)
+                char)))
+    (dotimes (i length)
+      (apply #'put-char win y (+ x i) ch keys))))
+
+(defun draw-vline (win y x length &optional char &rest keys &key &allow-other-keys)
+  (let ((ch (if (null char)
+                (acs :vertical-line)
+                char)))
+    (dotimes (i length)
+      (apply #'put-char win (+ y i) x ch keys))))
+
+(defun draw-rectangle (win y x h w &rest keys &key &allow-other-keys)
+  (apply #'put-char win    y          x       (acs :upper-left-corner)  keys)
+  (apply #'put-char win    y       (+ x w -1) (acs :upper-right-corner) keys)
+  (apply #'put-char win (+ y h -1)    x       (acs :lower-left-corner)  keys)
+  (apply #'put-char win (+ y h -1) (+ x w -1) (acs :lower-right-corner) keys)
+  (apply #'draw-vline win (1+ y)    x       (- h 2) nil keys)
+  (apply #'draw-vline win (1+ y) (+ x w -1) (- h 2) nil keys)
+  (apply #'draw-hline win    y       (1+ x) (- w 2) nil keys)
+  (apply #'draw-hline win (+ y h -1) (1+ x) (- w 2) nil keys))
+
 (defun draw-border (window &key left right top bottom                        ;; lines
                                 top-left top-right bottom-left bottom-right) ;; corners
   "Draw a border around the window using single-byte line-drawing characters.

@@ -84,29 +84,6 @@
   "Set the buffer of the area to the string new-value."
   (setf (slot-value area 'buffer) (coerce new-value 'list)))
 
-(defmethod clear ((obj textarea) &key)
-  "Clear the area by overwriting the underlying window area with the background char.
-
-The default background char is #\space.
-
-The char can be set by setting the :background and :selected-background style.
-
-If the underlying window has a background char, that will be used to
-clear the window instead of #\space."
-  (with-accessors ((pos widget-position) (width width) (height height)
-                   (selected selectedp) (win window) (style style)) obj
-    (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
-           (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
-      (goto win pos)
-      ;; return to the start of the area after the clearing
-      (save-excursion win
-        (dogrid ((i 0 height)
-                 (j 0 width))
-          (goto win pos (list i j))
-          ;; clearing with a simple space inherits the attributes and colors
-          ;; from the background char of the window.
-          (add win bg-char :style bg-style))))))
-
 (defmethod reset ((area textarea))
   "Clear the textarea and reset its internal buffers and pointers."
   (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer) (y cursor-position-y) (x cursor-position-x)) area
@@ -114,19 +91,24 @@ clear the window instead of #\space."
     (setf inbuf nil inptr 0 dptr 0 y 0 x 0)))
 
 (defmethod update-cursor-position ((area textarea))
-  (with-accessors ((pos widget-position) (win window) (dptr display-pointer)
+  (with-accessors ((pos content-position) (win window) (dptr display-pointer)
                    (y cursor-position-y) (x cursor-position-x)) area
-    (apply #'move win (mapcar #'+ pos (list (- y dptr) x)))
+    (goto win pos (list (- y dptr) x))
     (refresh win)))
 
 (defmethod draw ((area textarea))
-  (with-accessors ((pos widget-position) (w width) (h height) (inbuf buffer)
+  (with-accessors ((pos content-position) (w width) (h height) (inbuf buffer)
                    (selectedp selectedp) (dptr display-pointer) (win window)
-                   (style style)) area
-    (clear area)
+                   (style style) (borderp borderp)) area
     (let ((fg-style (if selectedp (getf style :selected-foreground) (getf style :foreground)))
+          (border-style (if selectedp (getf style :selected-border) (getf style :border)))
           (y 0)
           (x 0))
+      (clear area)
+
+      (when borderp
+        (draw-rectangle win (position-y area) (position-x area) (external-height area) (external-width area) :style border-style))
+
       ;; start at (0 0)
       (goto win pos (list y x))
       (dotimes (i (length inbuf))

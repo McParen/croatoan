@@ -1,7 +1,7 @@
 (in-package :de.anvi.ncurses)
 
 ;;; border
-;;; create curses borders, horizontal and vertical lines 
+;;; create curses borders, horizontal and vertical lines
 ;;; http://invisible-island.net/ncurses/man/curs_border.3x.html
 ;;; http://linux.die.net/man/3/box
 
@@ -23,25 +23,25 @@
 
 ;;; Low-level CFFI wrappers
 
-(cffi:defcfun ("border" border) :int 
-  (ls chtype) 
-  (rs chtype) 
-  (ts chtype) 
+(cffi:defcfun ("border" border) :int
+  (ls chtype)
+  (rs chtype)
+  (ts chtype)
   (bs chtype)
-  (tl chtype) 
-  (tr chtype) 
-  (bl chtype) 
+  (tl chtype)
+  (tr chtype)
+  (bl chtype)
   (br chtype))
 
-(cffi:defcfun ("wborder" wborder) :int 
+(cffi:defcfun ("wborder" wborder) :int
   (win window)
-  (ls chtype) 
-  (rs chtype) 
-  (ts chtype) 
+  (ls chtype)
+  (rs chtype)
+  (ts chtype)
   (bs chtype)
-  (tl chtype) 
-  (tr chtype) 
-  (bl chtype) 
+  (tl chtype)
+  (tr chtype)
+  (bl chtype)
   (br chtype))
 
 (cffi:defcfun ("box"       box)      :int (win window) (verch chtype) (horch chtype))

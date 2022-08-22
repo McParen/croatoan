@@ -11,7 +11,7 @@
     :type           integer
     :accessor       origin-x
     :documentation "The x coordinate of this shape's point of origin.")
-		
+
    (origin-y
     :initform      0
     :initarg       :y0
@@ -215,7 +215,7 @@
       ;; decide to which octant we are drawing
       (if (> abs-dx abs-dy)
           ;; x is the fast direction => y step in the fast direction is 0
-          (setq dfast abs-dx 
+          (setq dfast abs-dx
                 dslow abs-dy
                 step-fast-x sig-dx
                 step-fast-y 0

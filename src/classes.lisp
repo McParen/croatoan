@@ -767,6 +767,69 @@ absolute position and dimensions of the panel."))
     :accessor      selectedp
     :documentation "Flag denoting whether the element is currently selected in a form.")
 
+   (padding-top
+    :initarg       :padding-top
+    :initform      0
+    :type          integer
+    :accessor      padding-top
+    :documentation "Additional space added above the content area of a widget, with the same background style.")
+
+   (padding-bottom
+    :initarg       :padding-bottom
+    :initform      0
+    :type          integer
+    :accessor      padding-bottom
+    :documentation "Additional space added below the content area of a widget, with the same background style.")
+
+   (padding-left
+    :initarg       :padding-left
+    :initform      0
+    :type          integer
+    :accessor      padding-left
+    :documentation "Additional space added to the left of content area of a widget, with the same background style.")
+
+   (padding-right
+    :initarg       :padding-right
+    :initform      0
+    :type          integer
+    :accessor      padding-right
+    :documentation "Additional space added to the right of the content area of a widget, with the same background style.")
+
+   (borderp
+    :initarg       :border
+    :initform      nil
+    :type          boolean
+    :reader        borderp
+    :documentation "Border width, similar to padding, but with a drawn border.")
+
+   (border-width-top
+    :initarg       :border-width-top
+    :initform      1
+    :type          integer
+    :accessor      border-width-top
+    :documentation "")
+
+   (border-width-bottom
+    :initarg       :border-width-bottom
+    :initform      1
+    :type          integer
+    :accessor      border-width-bottom
+    :documentation "")
+
+   (border-width-left
+    :initarg       :border-width-left
+    :initform      1
+    :type          integer
+    :accessor      border-width-left
+    :documentation "")
+
+   (border-width-right
+    :initarg       :border-width-right
+    :initform      1
+    :type          integer
+    :accessor      border-width-right
+    :documentation "")
+
    (activep
     :initarg       :active
     :initform      t
@@ -789,6 +852,52 @@ absolute position and dimensions of the panel."))
     :documentation "If the element is not part of a form, a window can also be associated with the stand-alone element."))
 
   (:documentation "An element of a form, like a field or button."))
+
+(defmethod initialize-instance :after ((obj element) &key padding border-width)
+  (when padding
+    (typecase padding
+      (list
+       (case (length padding)
+         (4
+          (with-slots ((pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right)) obj
+            (setf pt (nth 0 padding)
+                  pb (nth 1 padding)
+                  pl (nth 2 padding)
+                  pr (nth 3 padding))))
+         (2
+          (with-slots ((pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right)) obj
+            (setf pt (nth 0 padding)
+                  pb (nth 0 padding)
+                  pl (nth 1 padding)
+                  pr (nth 1 padding))))))
+      (integer
+       (with-slots ((pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right)) obj
+         (setf pt padding
+               pb padding
+               pl padding
+               pr padding)))))
+  (when border-width
+    (typecase border-width
+      (list
+       (case (length border-width)
+         (4
+          (with-slots ((bt border-width-top) (bb border-width-bottom) (bl border-width-left) (br border-width-right)) obj
+            (setf bt (nth 0 border-width)
+                  bb (nth 1 border-width)
+                  bl (nth 2 border-width)
+                  br (nth 3 border-width))))
+         (2
+          (with-slots ((bt border-width-top) (bb border-width-bottom) (bl border-width-left) (br border-width-right)) obj
+            (setf bt (nth 0 border-width)
+                  bb (nth 0 border-width)
+                  bl (nth 1 border-width)
+                  br (nth 1 border-width))))))
+      (integer
+       (with-slots ((bt border-width-top) (bb border-width-bottom) (bl border-width-left) (br border-width-right)) obj
+         (setf bt border-width
+               bb border-width
+               bl border-width
+               br border-width))))))
 
 (defclass button (element)
   ((callback

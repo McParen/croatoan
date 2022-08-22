@@ -28,6 +28,12 @@ Instead of the name, another key can be provided to identify the element."
     (setf (cursor-position (window object)) (widget-position object))
     (refresh (window object))))
 
+(defmethod update-cursor-position ((obj button))
+  "Update the cursor position of a button."
+  (with-accessors ((pos content-position) (win window)) obj
+    (goto win pos)
+    (refresh win)))
+
 ;; when the form element is an embedded selection menu or checklist
 ;; will not work for menu-windows, which arent yet embedded in forms.
 ;; we need a separate update-cursor-position for menu-window.
@@ -66,38 +72,97 @@ Place the cursor between the brackets [_] of the current item."
 (defgeneric draw (object)
   (:documentation "Draw objects (form, field, menu) to their associated window."))
 
-(defmethod clear ((obj label) &key)
-  "Clear the label by overwriting the underlying window area with the background char.
+(defmethod clear ((obj element) &key)
+  "Clear the element by overwriting the underlying window with the background char.
 
 The default background char is #\space.
 
-The char can be set by setting the :background and :selected-background style.
-
 If the underlying window has a background char, that will be used to
-clear the window instead of #\space."
-  (with-accessors ((pos widget-position) (width width) (height height)
-                   (selected selectedp) (win window) (style style)) obj
-    (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
-           (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
-      (goto win pos)
-      ;; return to the start of the label after the clearing
-      (save-excursion win
-        (dogrid ((i 0 height)
-                 (j 0 width))
-          (goto win pos (list i j))
-          ;; clearing with a space inherits the attributes and colors
-          ;; from the background char of the window.
-          (add win bg-char :style bg-style))))))
+clear the window instead of #\space.
+
+The char, attributes and colors can be set by providing the following styles:
+
+:border
+:selected-border
+:background
+:selected-background
+
+If an element is inactive, for example the label, the selected style is not applied."
+  (with-accessors ((x position-x) (y position-y) (ew external-width) (eh external-height) (vw visible-width) (vh visible-height)
+                   (bt border-width-top) (bl border-width-left) (borderp borderp) (selectedp selectedp) (win window) (style style)) obj
+    (let* ((bg-style (if selectedp
+                         (getf style :selected-background)
+                         (getf style :background)))
+           (border-style (if selectedp
+                             (getf style :selected-border)
+                             (getf style :border))))
+      (if borderp
+          ;; first draw the border background, then the content background.
+          (progn
+            ;; external border rectangle
+            (fill-rectangle win (apply #'make-instance 'complex-char border-style) y x eh ew)
+            ;; visible bg inside the border
+            (fill-rectangle win (apply #'make-instance 'complex-char bg-style) (+ y bt) (+ x bl) vh vw))
+          ;; visible bg without a border
+          (fill-rectangle win (apply #'make-instance 'complex-char bg-style) y x vh vw)))))
+
+(defun content-position (element)
+  "Return the inner position of the content area of the widget.
+
+content position = widget position + border + padding"
+  (with-accessors ((pos widget-position)
+                   (bt border-width-top) (bl border-width-left)
+                   (pl padding-left) (pt padding-top) (borderp borderp)) element
+    (list (+ (car pos)  pt (if borderp bt 0))
+          (+ (cadr pos) pl (if borderp bl 0)))))
+
+(defun visible-width (element)
+  "visible width = content width + padding"
+  (with-accessors ((w width) (pl padding-left) (pr padding-right)) element
+    (+ w
+       pl pr)))
+
+(defun visible-height (element)
+  "visible width = content width + padding"
+  (with-accessors ((h height) (pt padding-top) (pb padding-bottom)) element
+    (+ h
+       pt pb)))
+
+;; use this in grid/colomn-widths instead of width
+(defun external-width (element)
+  "external-width = content width + padding + border-width"
+  (with-accessors ((w width) (pl padding-left) (pr padding-right)
+                   (borderp borderp) (bl border-width-left) (br border-width-right)) element
+    (+ w
+       pl pr
+       (if borderp (+ bl br) 0))))
+
+(defun external-height (element)
+  "external-width = content width + padding + border-width"
+  (with-accessors ((h height) (pt padding-top) (pb padding-bottom)
+                   (borderp borderp) (bt border-width-top) (bb border-width-bottom)) element
+    (+ h
+       pt pb
+       (if borderp (+ bt bb) 0))))
 
 (defmethod draw ((obj label))
-  (with-accessors ((pos widget-position) (win window) (width width) (style style)) obj
+  (with-accessors ((pos content-position) (win window) (y position-y) (x position-x) (width width)
+                   (style style) (selectedp selectedp) (borderp borderp)) obj
     (clear obj)
     (let* ((text (label-text obj))
            (lines (count-lines text))
            (height (slot-value obj 'height))
-           (fg-style (getf style :foreground))
+           (border-style (if selectedp (getf style :selected-border) (getf style :border)))
+           (fg-style (if selectedp (getf style :selected-foreground) (getf style :foreground)))
            (y 0)
            (x 0))
+
+      ;; when the border flag is t, draw the border line
+      ;; what we want next is here to use all the same arguments as add
+      ;; just add "dimensions", which is the only difference between add-char and draw-rectangle
+      (when borderp
+        (draw-rectangle win y x (external-height obj) (external-width obj) :style border-style))
+
       (goto win pos (list y x))
       (if (or (and height (= height 1))
               (= lines 1))
@@ -116,18 +181,22 @@ clear the window instead of #\space."
                   (add-char win (char text i) :style fg-style))))))))
 
 (defmethod draw ((button button))
-  (with-accessors ((pos widget-position) (name name) (title title) (win window) (selected selectedp) (style style)) button
-    (apply #'move win pos)
-    (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground))))
-      ;; if a title is given, display it, otherwise use the name.
-      (add-string win (format nil "<~A>" (if title title name)) :style fg-style))))
+  (with-accessors ((pos content-position) (y position-y) (x position-x) (name name) (title title) (win window) (selectedp selectedp) (style style) (borderp borderp)) button
+    (let ((border-style (if selectedp (getf style :selected-border) (getf style :border))))
+      (clear button)
+      (when borderp
+        (draw-rectangle win y x (external-height button) (external-width button) :style border-style))
+      (goto win pos)
+      (let* ((fg-style (if selectedp (getf style :selected-foreground) (getf style :foreground))))
+        ;; if a title is given, display it, otherwise use the name.
+        (add-string win (format nil "<~A>" (if title title name)) :style fg-style)))))
 
 ;; TODO: for a checkbox, we need a style for checked and unchecked
 (defmethod draw ((checkbox checkbox))
-  (with-accessors ((pos widget-position) (name name) (win window) (selected selectedp) (style style)
+  (with-accessors ((pos widget-position) (name name) (win window) (selectedp selectedp) (style style)
                    (checkedp checkedp)) checkbox
-    (apply #'move win pos)
-    (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground))))
+    (goto win pos)
+    (let* ((fg-style (if selectedp (getf style :selected-foreground) (getf style :foreground))))
       (add-string win (format nil "[~A]" (if checkedp "X" "_")) :style fg-style)
       (update-cursor-position checkbox))))
 

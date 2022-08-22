@@ -1122,9 +1122,7 @@ Test whether a window (stream) was closed."
              (setf (background w2) (make-instance 'complex-char :color-pair '(:black :white)))
              (setf (background w3) (make-instance 'complex-char :color-pair '(:white :black)))
 
-             (box w1)
-             (box w2)
-             (box w3)
+             (mapc #'box (list w1 w2 w3))
 
              (move w1 1 1)
              (princ 1 w1)
@@ -1133,10 +1131,7 @@ Test whether a window (stream) was closed."
              (move w3 1 1)
              (princ 3 w3)
 
-             (refresh w1)
-             (refresh w2)
-             (refresh w3)
-
+             (mapc #'refresh (list w1 w2 w3))
              (get-char w1)
 
              ;; todo: before we can refresh w2 to raise it, we have to "touch" it.
@@ -1152,9 +1147,7 @@ Test whether a window (stream) was closed."
              (refresh w3)
              (get-char w3)
 
-             (close w1)
-             (close w2)
-             (close w3))
+             (mapc #'close (list w1 w2 w3)))
 
            (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
 
@@ -1192,6 +1185,7 @@ Test whether a window (stream) was closed."
              (loop (let ((event (event-key (get-event scr))))
                      (when event
                        (case event
+                         ;; touch + refresh "raises" the window to the top.
                          (#\1 (touch w1) (refresh w1))
                          (#\2 (touch w2) (refresh w2))
                          (#\3 (touch w3) (refresh w3))
@@ -2229,9 +2223,9 @@ will be more efficient to use a character array, a string."
            (s4 (list :simple-char #\. :fgcolor :red))
            (s5 (list :foreground s1 :background s2 :selected-foreground s3 :selected-background s4))
            (fs (list 'field s5 'textarea s5))
-           (field1 (make-instance 'field  :position '(3 5)  :name :f1 :width 10))
-           (area (make-instance 'textarea :position '(8 5)  :name :a1 :dimensions '(6 15)))
-           (button (make-instance 'button :position '(16 5) :name :b1 :title "Accept" :callback 'accept))
+           (field1 (make-instance 'field  :position '(3 5)  :name :f1 :width 10 :border t))
+           (area (make-instance 'textarea :position '(8 5)  :name :a1 :dimensions '(6 15) :border t :border-width '(1 2) :padding '(1 1)))
+           (button (make-instance 'button :position '(18 5) :name :b1 :title "Accept" :callback 'accept :border t))
            (form (make-instance 'form :elements (list field1 area button) :style fs :window scr)))
       (refresh scr)
       (if (prog1 (edit form) (clear scr))
@@ -2243,6 +2237,7 @@ will be more efficient to use a character array, a string."
     (get-char scr)))
 
 (defun t16e6 ()
+  "Accept and display the contents of an area, reset it or exit the edit."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t :enable-function-keys t)
     (let* ((area (make-instance 'textarea :position '(1 2) :dimensions '(6 19) :window scr
                                           :style '(:background (:attributes (:reverse))))))
@@ -2256,7 +2251,7 @@ will be more efficient to use a character array, a string."
               ;; ^R resets the area manually
               (reset area)
               (refresh scr))
-            ;; ^X cancel exits the edit
+            ;; ^X cancel returns nil and this exits the edit
             (loop-finish))))))
 
 (defun t16f ()
@@ -2611,24 +2606,30 @@ will be more efficient to use a character array, a string."
            (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h) :grid-dimensions '(4 2) :max-item-length 3))
            ;; show 6 labels in a grid nested within the main grid.
            (labels1
-             ;; The padding is the number of spaces added to each element, (top bottom left right).
-             (make-instance 'layout :grid-dimensions '(3 2) :padding '(0 1 0 1) :children
+             ;; The gap is the number of spaces added between each element, (row column) or gap.
+             (make-instance 'layout :grid-dimensions '(3 2) :grid-gap '(1 1) :children
                (loop for i from 0 to 5 collect
-                 (make-instance 'label :active nil :title (format nil "hello ~r" (random 20))))))
+                 (make-instance 'label :active nil :border t :padding 1
+                                       :title (format nil "hello ~r" (random 20))))))
            (form (make-instance 'form
                                 :window scr
                                 ;; instead of passing the elements in a element list, pass them within a layout object.
                                 ;; this will automatically calculate their positions during form initialization.
                                 ;; "nil" elements are represented as empty cells in the grid.
-                                :layout (make-instance 'layout ;;:grid-rows 6
+                                :layout (make-instance 'layout ;;:grid-rows 3
                                                                :grid-columns 3
-                                                               :padding '(0 1 0 1) :position '(2 4)
+                                                               :grid-gap '(1 2) :position '(2 4)
                                                                :children (append (list menu1 nil) buttons (list area nil labels1 nil field)))
                                 :style '(field (:background (:attributes (:reverse))
                                                 :selected-background (:bgcolor :blue))
                                          textarea (:background (:attributes (:reverse))
                                                    :selected-background (:bgcolor :blue))
-                                         label (:foreground (:fgcolor :red :bgcolor :yellow))
+                                         label (:foreground (:fgcolor :red :bgcolor :yellow)
+                                                :background (:fgcolor :yellow :bgcolor :red)
+                                                :border (:fgcolor :red :bgcolor :yellow)
+                                                :selected-border (:fgcolor :yellow :bgcolor :red)
+                                                :selected-foreground (:fgcolor :yellow :bgcolor :red)
+                                                :selected-background (:fgcolor :red :bgcolor :yellow))
                                          button (:foreground (:attributes (:reverse))
                                                  :selected-foreground (:bgcolor :blue))))))
       (edit form))))
@@ -4032,20 +4033,20 @@ Press C-j, C-m, C-i, C-h to see the difference."
 (defun t35a ()
   "Use a layout instead of positioning manually."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :use-terminal-colors t :enable-function-keys t :input-blocking t)
-    (let* ((fields (make-instance 'column-layout :padding '(0 1 0 0)
+    (let* ((fields (make-instance 'column-layout :grid-gap 2
                                   :children (mapcar (lambda (name title)
                                                       (make-instance 'field :name name :title title :width 15))
                                                     (list :f1 :f2 :f3)
                                                     (list "Forename" "Surname" "Nickname"))))
-           (labels- (make-instance 'column-layout :padding '(0 1 0 0)
+           (labels- (make-instance 'column-layout :grid-gap '(1 0)
                                    :children (mapcar (lambda (name title)
                                                        (make-instance 'label :name name :title title :width 18 :height 4))
                                                      (list :l1 :l2 :l3)
                                                      (list "test"
-                                                           (format nil "Hello there ~%Dear John")
+                                                           (format nil "Hello there Dear John")
                                                            (wrap-string "Hello there, dear john, prescious bodily fluids" 18)))))
            (form (make-instance 'form :window scr :style *t35-style*
-                                      :layout (make-instance 'row-layout :position '(0 0) :padding '(0 0 0 1)
+                                      :layout (make-instance 'row-layout :position '(0 0) :grid-gap 2
                                                                          :children (list labels- fields)))))
       (edit form))))
 
@@ -4064,10 +4065,14 @@ Press C-j, C-m, C-i, C-h to see the difference."
                             (list "test"
                                   (format nil "Hello there ~%Dear John")
                                   (wrap-string "Hello there, dear john, prescious bodily fluids" 18))))
+           (btns (mapcar (lambda (name title)
+                           (make-instance 'button :name name :title title))
+                         (list :b1 :b2 :b2)
+                         (list "Accept" "Cancel" "Reset")))
            (form (make-instance 'form :window scr :style *t35-style*
-                                      :layout (make-instance 'layout :grid-columns 2 :position '(0 0) :padding '(0 1 0 1)
-                                                                     ;; interleave labels and fields: (l1 f1 l2 f2 l3 f3)
-                                                                     :children (mapcan (lambda (a b) (list a b)) labels- fields)))))
+                                      :layout (make-instance 'layout :grid-columns 3 :position '(0 0) :grid-gap '(1 1)
+                                                                     ;; interleave labels, fields and buttons: (l1 f1 l2 f2 l3 f3)
+                                                                     :children (mapcan (lambda (a b c) (list a b c)) labels- fields btns)))))
       (edit form))))
 
 (defun t42 ()

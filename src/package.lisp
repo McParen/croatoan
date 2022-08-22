@@ -221,6 +221,9 @@
    ;; border / create curses borders, horizontal and vertical lines
    box
    draw-border
+   draw-rectangle
+   draw-hline
+   draw-vline
 
    ;; border_set / create curses borders or lines using complex characters and renditions
    draw-wide-border

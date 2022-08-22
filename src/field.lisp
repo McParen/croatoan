@@ -114,23 +114,6 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (cons element (cdr list))
       (cons (car list) (replace-nth (1- n) element (cdr list)))))
 
-
-;; this is the only place we set the background style for the field
-;; TODO: how to access the default fg and bg of a form,
-;; if the field is not part of a form? by having a form slot in the field.
-;; TODO: this doesnt really clear the field contents, it just overwrites the field display with the background style
-;; TODO: rename to (setf (background field) ...)
-(defmethod clear ((field field) &key)
-  "Clear the field by overwriting it with the background char.
-
-The default background char is #\space."
-  (with-accessors ((pos widget-position) (width width) (selected selectedp) (win window) (style style)) field
-    (let* ((bg-style (if selected (getf style :selected-background) (getf style :background)))
-           (bg-char  (if (getf bg-style :simple-char) (getf bg-style :simple-char) #\space)))
-      (setf (cursor-position win) pos)
-      (add win bg-char :style bg-style :n width)
-      (setf (cursor-position win) pos))))
-
 (defmethod reset ((field field))
   (clear field)
   (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)) field
@@ -138,7 +121,7 @@ The default background char is #\space."
 
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
-  (with-accessors ((pos widget-position) (inptr input-pointer) (dptr display-pointer) (win window)) field
+  (with-accessors ((pos content-position) (inptr input-pointer) (dptr display-pointer) (win window)) field
     (move win
           ;; TODO: assumes a single-line field.
           (car pos)
@@ -149,16 +132,17 @@ The default background char is #\space."
     ;; because this is the latest movement when drawing
 
     ;; TODO: replace refresh with update+noutrefresh so we can do a series of refreshes before and end the refresh here.
-    (refresh win) ))
+    (refresh win)))
 
 ;; TODO: use draw-field with a window argument, and draw for the object with an assocated window.
 ;; TODO: apply this also to menu functions, where it is the other way around.
 ;; TODO: rewrite clear-field in terms of draw field. simply draw an empty string.
 (defmethod draw ((field field))
   "Clear and redraw the field and its contents and background."
-  (with-accessors ((pos widget-position) (width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
-                   (selected selectedp) (win window) (title title) (style style)) field
-    (let* ((fg-style (if selected (getf style :selected-foreground) (getf style :foreground)))
+  (with-accessors ((pos content-position) (y position-y) (x position-x) (width width) (inbuf buffer) (inptr input-pointer) (dptr display-pointer)
+                   (selectedp selectedp) (win window) (title title) (style style) (borderp borderp)) field
+    (let* ((fg-style (if selectedp (getf style :selected-foreground) (getf style :foreground)))
+           (border-style (if selectedp (getf style :selected-border) (getf style :border)))
            (len (length inbuf))
            (val (value field))
            (str (if (< len width)
@@ -172,6 +156,8 @@ The default background char is #\space."
                                          ;; if the remaining substring is shorter than width, just display it.
                                          len) ))))
       (clear field)
+      (when borderp
+        (draw-rectangle win y x (external-height field) (external-width field) :style border-style))
       (apply #'move win pos)
       (add-string win str :style fg-style)
       (update-cursor-position field))))

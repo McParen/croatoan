@@ -207,39 +207,30 @@
             (setf i (min (1+ i) (1- m)))))))
 
 (defclass layout (widget grid collection)
-  ((padding-top
-    :initarg       :padding-top
+  ((grid-row-gap
+    :initarg       :grid-row-gap
     :initform      0
     :type          integer
-    :documentation "Padding on the top of every item in the layout.")
-   (padding-bottom
-    :initarg       :padding-bottom
+    :documentation "Gap between rows in a grid.")
+   (grid-column-gap
+    :initarg       :grid-column-gap
     :initform      0
     :type          integer
-    :documentation "Number of spaces added to the bottom of every item in the layout.")
-   (padding-left
-    :initarg       :padding-left
-    :initform      0
-    :type          integer
-    :documentation "The padding added to the left of every item in the layout.")
-   (padding-right
-    :initarg       :padding-right
-    :initform      0
-    :type          integer
-    :documentation "The padding added to the right of every item in the layout."))
+    :documentation "Gap between columns in a grid."))
 
   (:documentation "A layout is a container widget containing items positioned in a grid. Layouts can be nested."))
 
-(defmethod initialize-instance :after ((obj layout) &key padding)
-  (with-slots (padding-top padding-bottom padding-left padding-right
+(defmethod initialize-instance :after ((obj layout) &key grid-gap)
+  (with-slots (grid-row-gap grid-column-gap
                (gr grid-rows) (gc grid-columns) children) obj
-    ;; the padding initarg (top bottom left right) overrides the individual slot initargs.
-    (when padding
-      (destructuring-bind (top bottom left right) padding
-        (setf padding-top    top
-              padding-bottom bottom
-              padding-left   left
-              padding-right  right)))
+    ;; the grid-gap initarg (gap or (row column)) overrides the individual slot initargs.
+    (when grid-gap
+      (if (listp grid-gap)
+          (destructuring-bind (row column) grid-gap
+            (setf grid-row-gap    row
+                  grid-column-gap column))
+          (setf grid-row-gap    grid-gap
+                grid-column-gap grid-gap)))
     ;; if the grid height is not given, deduce it from the width and the items length
     (cond ((and (null gc) gr)
            (setf gc (ceiling (length children) gr)))
@@ -270,23 +261,20 @@
     (setf n (mod (1- n) (length (leaves obj))))))
 
 (defmethod width ((obj layout))
-  "The width of a layout consists of the max widths of the columns and the left and right padding."
+  "The width of a layout consists of the max widths of the columns and gaps between them."
   (with-slots ((n grid-columns)
                (m grid-rows)
-               (y grid-row)
-               (pl padding-left)
-               (pr padding-right)
+               (cg grid-column-gap)
                children) obj
-    (apply #'+ (* n pl) (* n pr) (column-widths children (list m n)))))
+    (apply #'+ (* (1- n) cg) (column-widths children (list m n)))))
 
 (defmethod height ((obj layout))
-  "The height of a layout consists of the max heights of the rows and the top and bottom padding."
+  "The height of a layout consists of the max heights of the rows and the gaps between them."
   (with-slots ((n grid-columns)
                (m grid-rows)
-               (pt padding-top)
-               (pb padding-bottom)
+               (rg grid-row-gap)
                children) obj
-    (apply #'+ (* m pt) (* m pb) (row-heights children (list m n)))))
+    (apply #'+ (* (1- m) rg) (row-heights children (list m n)))))
 
 (defun nth2d (position dimensions list)
   "Return the position (y x) of list by assuming grid dimensions (m n) and row major order."
@@ -298,7 +286,9 @@
     (loop for j from 0 below n collect
       (loop for i from 0 below m maximize
         (let ((item (nth2d (list i j) dimensions list)))
-          (width item))))))
+          (if (typep item 'element)
+              (external-width item)
+              (width item)))))))
 
 (defun row-heights (list dimensions)
   "Take a list of objects, return a list of max heights of every row."
@@ -306,33 +296,31 @@
     (loop for i from 0 below m collect
       (loop for j from 0 below n maximize
         (let ((item (nth2d (list i j) dimensions list)))
-          (height item))))))
+          (if (typep item 'element)
+              (external-height item)
+              (height item)))))))
 
 ;; used in initialize-instance form to layout form elements, tested in t16j2
 (defun calculate-positions (layout)
   "Recursively set the position (y x) of each of the layout's children."
   (with-slots ((m grid-rows) (n grid-columns) (y position-y) (x position-x)
-               (pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right) children) layout
+               (rg grid-row-gap) (cg grid-column-gap) children) layout
     (let* ((widths (column-widths children (list m n)))
            (heights (row-heights children (list m n)))
-           (widths2 (cumsum-predecessors widths))
-           (heights2 (cumsum-predecessors heights)))
-      (loop for el from 0 below (length children) do
+           (xs (cumsum-predecessors widths))
+           (ys (cumsum-predecessors heights)))
+      (dotimes (el (length children))
         ;; layouts can contain nil, so check for a nil element
         (when (nth el children)
-          (let* ((i (car (rmi2sub (list m n) el)))
+          (let* ((child (nth el children))
+                 (i (car (rmi2sub (list m n) el)))
                  (j (cadr (rmi2sub (list m n) el))))
-            (setf (widget-position (nth el children))
-                  (list (+ y (+ (* pt (1+ i))
-                                (* pb i)
-                                (nth i heights2)))
-                        (+ x (+ (* pl (1+ j))
-                                (* pr j)
-                                (nth j widths2))))))
-          ;; after setting the position, check if the element is a layout object,
-          ;; then recursively set the positions of its child elements.
-          (when (typep (nth el children) 'layout)
-            (calculate-positions (nth el children))))))))
+            (setf (position-y child) (+ y (+ (* rg i) (nth i ys)))
+                  (position-x child) (+ x (+ (* cg j) (nth j xs))))
+            ;; after setting the position, check if the element is a layout object,
+            ;; then recursively set the positions of its child elements.
+            (when (typep child 'layout)
+              (calculate-positions child))))))))
 
 (defun flatten-items (layout)
   "Take a layout object, return a flattened list of elements to be passed to a form.
