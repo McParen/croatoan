@@ -5,7 +5,7 @@
 ;; http://invisible-island.net/ncurses/man/menu.3x.html
 
 ;; default size of ncurses menus is 16 rows, 1 col.
-(defclass menu (element collection grid)
+(defclass menu (element layout)
   ((menu-type
     :initarg       :menu-type
     :initform      :selection
@@ -28,6 +28,13 @@
     :reader        current-item-mark
     :type          string
     :documentation "A string prefixed to the current item in the menu.")
+
+   (tablep
+    :initarg       :table
+    :initform      nil
+    :reader        tablep
+    :type          boolean
+    :documentation "If t, table row and column lines are drawn between the items.")
 
    (max-item-length
     :initarg       :max-item-length
@@ -78,11 +85,52 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
     (unless grid-columns (setf grid-columns 1))))
 
 (defmethod width ((obj menu))
-  (with-slots (max-item-length grid-columns) obj
-    (* grid-columns max-item-length)))
+  (with-accessors ((len max-item-length)
+                   (tablep tablep)
+                   (n visible-grid-columns)) obj
+    (let* ((w (* n len))
+           ;; if a table is drawn, we have n-1 row lines
+           (tc (if tablep (1- n) 0)))
+      (+ w tc))))
 
 (defmethod height ((obj menu))
-  (slot-value obj 'grid-rows))
+  (with-accessors ((len max-item-length)
+                   (tablep tablep)
+                   (m visible-grid-rows)) obj
+    (let* ((tr (if tablep (1- m) 0)))
+      (+ m tr))))
+
+(defmethod external-width ((obj menu))
+  (with-accessors ((w width) (borderp borderp) (tablep tablep) (bl border-width-left) (br border-width-right) (pl padding-left) (pr padding-right)) obj
+    (cond (tablep
+           (+ w bl br))
+          (borderp
+           (+ w pl pr bl br))
+          (t
+           (+ w pl pr)))))
+
+(defmethod external-height ((obj menu))
+  (with-accessors ((h height) (borderp borderp) (tablep tablep) (bt border-width-top) (bb border-width-bottom) (pt padding-top) (pb padding-bottom)) obj
+    (cond (tablep
+           (+ h bt bb))
+          (borderp
+           (+ h pt pb bt bb))
+          (t
+           (+ h pt pb)))))
+
+(defmethod visible-width ((obj menu))
+  (with-accessors ((w width) (borderp borderp) (tablep tablep) (bl border-width-left) (br border-width-right) (pl padding-left) (pr padding-right)) obj
+    (cond (tablep
+           (+ w bl br))
+          (t
+           (+ w pl pr)))))
+
+(defmethod visible-height ((obj menu))
+  (with-accessors ((h height) (borderp borderp) (tablep tablep) (bt border-width-top) (bb border-width-bottom) (pt padding-top) (pb padding-bottom)) obj
+    (cond (tablep
+           (+ h bt bb))
+          (t
+           (+ h pt pb)))))
 
 (defclass menu-window (menu extended-window)
   ()
@@ -189,6 +237,8 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
 (defun rmi2sub (dimensions rmi)
   "Take array dimensions and an index in row-major order, return two subscripts.
 
+This works analogous to cl:row-major-aref.
+
 Example: (rmi2sub '(2 3) 5) => (1 2)"
   (let ((m (car dimensions))
         (n (cadr dimensions)))
@@ -199,6 +249,8 @@ Example: (rmi2sub '(2 3) 5) => (1 2)"
 (defun sub2rmi (dimensions subs)
   "Take array dimensions and two subscripts, return an index in row-major order.
 
+This works analogous to cl:array-row-major-index.
+
 Example: (sub2rmi '(2 3) '(1 2)) => 5"
   (let ((m (car dimensions))
         (n (cadr dimensions))
@@ -207,18 +259,79 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
     (assert (and (< i m) (< j n)))
     (+ (* i n) j)))
 
-(defmethod clear ((menu menu) &key)
-  "Overwrite the displayed menu with spaces."
-  (with-accessors ((win window)
-                   (len max-item-length)
-                   (pos widget-position)) menu
-    ;; return the visible layout of the menu
-    (let* ((m (visible-grid-rows menu))
-           (n (visible-grid-columns menu))
-           (w (* n len)))
-      (clear-rectangle win (car pos) (cadr pos) m w))))
+(defmethod clear ((obj menu) &key)
+  (with-accessors ((x position-x) (y position-y) (ew external-width) (eh external-height) (vw visible-width) (vh visible-height) (tablep tablep)
+                   (bt border-width-top) (bl border-width-left) (borderp borderp) (selectedp selectedp) (win window) (style style)) obj
+    (let* ((bg-style (if selectedp
+                         (getf style :selected-background)
+                         (getf style :background)))
+           (border-style (if selectedp
+                             (getf style :selected-border)
+                             (getf style :border))))
+      (cond (tablep
+             (fill-rectangle win (apply #'make-instance 'complex-char bg-style) y x vh vw))
+            (borderp
+             (fill-rectangle win (apply #'make-instance 'complex-char border-style) y x eh ew)
+             (fill-rectangle win (apply #'make-instance 'complex-char bg-style) (+ y bt) (+ x bl) vh vw))
+            (t
+             (fill-rectangle win (apply #'make-instance 'complex-char bg-style) y x vh vw))))))
 
-(defun format-menu-item (menu item-number)
+(defmethod clear ((obj menu-window) &key)
+  (with-accessors ((sub-win sub-window)) obj
+    (clear sub-win)))
+
+(defun draw-table-top (win widths)
+  "Draw the top line of a table at the current position using ANSI drawing characters."
+  (add-char win :upper-left-corner)
+  (dolist (n (butlast widths))
+    (add-char win :horizontal-line :n n)
+    (add-char win :tee-pointing-down))
+  (add-char win :horizontal-line :n (car (last widths)))
+  (add-char win :upper-right-corner))
+
+(defun draw-table-row-separator (win widths)
+  (crt:add-char win :tee-pointing-right)
+  (dolist (n (butlast widths))
+    (crt:add-char win :horizontal-line :n n)
+    (crt:add-char win :crossover-plus))
+  (add-char win :horizontal-line :n (car (last widths)))
+  (add-char win :tee-pointing-left))
+
+(defun draw-table-bottom (win widths)
+  "Draw the top line of a table at the current position using ANSI drawing characters."
+  (add-char win :lower-left-corner)
+  (dolist (n (butlast widths))
+    (add-char win :horizontal-line :n n)
+    (add-char win :tee-pointing-up))
+  (add-char win :horizontal-line :n (car (last widths)))
+  (add-char win :lower-right-corner))
+
+(defun draw-table-lines (win y x m1 n1 rg cg bt bl widths heights)
+  ;;; draw the n1+1 vertical lines (plain, without endings and crossings)
+  ;; first vline
+  (draw-vline win (1+ y) x (1- (* m1 2)))
+  ;; last n1 vlines
+  (dotimes (j n1)
+    (draw-vline win
+                (1+ y)
+                (+ x bl (* j cg) (loop for i from 0 to j sum (nth i widths)))
+                (1- (* m1 2))))
+
+  ;;; draw m1+1 horizontal lines (with endings and crossings)
+  ;; top horizontal line of the table
+  (move win y x)
+  (draw-table-top win widths)
+  ;; m1-1 row separators
+  (dotimes (i (- m1 1))
+    (move win
+          (+ y bt (* i rg) (loop for j from 0 to i sum (nth j heights)))
+          x)
+    (draw-table-row-separator win widths))
+  ;; bottom line
+  (move win (+ y (* 2 m1)) x)
+  (draw-table-bottom win widths))
+
+(defun format-menu-item (menu item selectedp)
   "Take a menu and return item item-number as a properly formatted string.
 
 If the menu is a checklist, return [ ] or [X] at the first position.
@@ -227,8 +340,7 @@ If a mark is set for the current item, display the mark at the second position.
 Display the same number of spaces for other items.
 
 At the third position, display the item given by item-number."
-  (with-accessors ((items items)
-                   (type menu-type)
+  (with-accessors ((type menu-type)
                    (current-item-number current-item-number)
                    (current-item-mark current-item-mark)) menu
     ;; return as string
@@ -236,78 +348,101 @@ At the third position, display the item given by item-number."
             ;; two types of menus: :selection or :checklist
             ;; show the checkbox before the item in checklists
             (if (eq type :checklist)
-                (if (checkedp (nth item-number items)) "[X] " "[ ] ")
+                (if (checkedp item) "[X] " "[ ] ")
                 "")
 
             ;; for the current item, draw the current-item-mark
             ;; for all other items, draw a space
-            (if (= current-item-number item-number)
+            (if selectedp
                 current-item-mark
                 (make-string (length current-item-mark) :initial-element #\space))
             ;; then add the item title
-            (format-title (nth item-number items)) )))
-
-;; this is the only function that actually positions items on the screen (using move)
-(defun draw-menu-item (win menu item-number i j)
-  "Draw the item given by item-number at item position (i j) in the window."
-  (with-accessors ((current-item-number current-item-number)
-                   (current-item-mark current-item-mark)
-                   (current-item-position current-item-position)
-                   (max-item-length max-item-length)
-                   (widget-position widget-position)
-                   (style style)) menu
-    (let* (pos-y
-           pos-x
-           (item-selected-p (= item-number current-item-number))
-           (len (+ (length current-item-mark) max-item-length)))
-      (if (typep menu 'window)
-          ;; if the menu is a menu-window or a menu-panel, assume the (0 0) position
-          (setq pos-y i
-                pos-x (* j len))
-          ;; otherwise, the menu itself can be positioned
-          (setq pos-y (+ i         (car  widget-position))
-                pos-x (+ (* j len) (cadr widget-position))))
-      (move win pos-y pos-x)
-      ;; save the position of the current item, to be used in update-cursor-position.
-      (when item-selected-p
-        (setf current-item-position (list pos-y pos-x)))
-      (let ((fg-style (if style
-                          (getf style (if item-selected-p :selected-foreground :foreground))
-                          ;; default foreground style
-                          (if item-selected-p (list :attributes (list :reverse)) nil)))
-            (bg-style (if style
-                          (getf style (if item-selected-p :selected-background :background))
-                          ;; default background style
-                          (if item-selected-p (list :attributes (list :reverse)) nil))))
-        ;; write an empty string as the background.
-        (save-excursion win (add win #\space :style bg-style :n len))
-        ;; display it in the window associated with the menu
-        (add win (format-menu-item menu item-number) :style fg-style)))))
+            (format-title item))))
 
 ;; draws to any window, not just to a sub-window of a menu-window.
-(defun draw-menu (window menu)
+(defun draw-menu (win menu)
   "Draw the menu to the window."
   (with-slots (scrolling-enabled-p
+               (cmark current-item-mark)
+               (cpos current-item-position)
+               (len max-item-length)
+               (items children)
+               (borderp borderp)
+               (tablep tablep)
+               ;;(y position-y)
+               ;;(x position-x)
+               (r grid-row)
+               (c grid-column)
                (m  grid-rows)
                (n  grid-columns)
                (m0 region-start-row)
                (n0 region-start-column)
                (m1 region-rows)
-               (n1 region-columns)) menu
-    (if scrolling-enabled-p
-        ;; when the menu is too big to be displayed at once, only a part
-        ;; is displayed, and the menu can be scrolled
-        (dogrid ((i 0 m1)
-                 (j 0 n1))
-          (let ((item-number (sub2rmi (list m n) (list (+ m0 i) (+ n0 j)))))
+               (n1 region-columns)
+               (rg grid-row-gap)
+               (cg grid-column-gap)
+               (bt border-width-top)
+               (bl border-width-left)) menu
+    (with-accessors ((style style)) menu
+      (clear menu)
+      ;; start and end indexes
+      (destructuring-bind (m0 n0 m1 n1)
+          ;; when the menu is too big to be displayed at once, only a part
+          ;; is displayed, and the menu can be scrolled
+          (if scrolling-enabled-p (list m0 n0 m1 n1) (list 0 0 m n))
+        (let* (;; change to account for variable width menus
+               (widths (loop for i below n1 collect len))
+               (heights (loop for i below m1 collect 1))
+               ;; height of one item is just 1.
+               (h 1)
+               ;; width of the item
+               (w (+ (length cmark) len))
+               (y (car (content-position menu)))
+               (x (cadr (content-position menu))))
+          ;; draw a border and table only to simple menus (at the moment)
+          (when (and (not (typep menu 'window))
+                     borderp)
+            (draw-rectangle win (position-y menu) (position-x menu) (external-height menu) (external-width menu) :style (getf style :border)))
+
+          (when (and (not (typep menu 'window))
+                     tablep)
+            ;; to draw table lines between the grid cells, a grid gap is required.
+            (when (zerop rg) (setf rg 1))
+            (when (zerop cg) (setf cg 1))
+            (draw-table-lines win y x m1 n1 rg cg bt bl widths heights))
+
+          (dogrid ((i 0 m1)
+                   (j 0 n1))
             ;; the menu is given as a flat list, so we have to access it as a 2d array in row major order
-            (draw-menu-item window menu item-number i j)))
-        ;; when there is no scrolling, and the whole menu is displayed at once
-        (dogrid ((i 0 m)
-                 (j 0 n))
-          (let ((item-number (sub2rmi (list m n) (list i j))))
-            (draw-menu-item window menu item-number i j))))
-    (refresh window)))
+            (let* ((item (ref2d items (list m n) (+ m0 i) (+ n0 j)))
+                   (selectedp (and (= i (- r m0)) (= j (- c n0))))
+                   ;; calculated position of the item
+                   posy posx)
+              (if (typep menu 'window)
+                  ;; if the menu is a menu-window or a menu-panel, assume the (0 0) position
+                  (setq posy i
+                        posx (* j w))
+                  ;; otherwise, the menu itself can be positioned
+                  (progn
+                    (setq posy (+ y (if tablep bt 0) (* i rg) (* i h))
+                          posx (+ x (if tablep bl 0) (* j cg) (* j w)))))
+              (move win posy posx)
+              ;; save the position of the current item, to be used in update-cursor-position.
+              (when selectedp
+                (setf cpos (list posy posx)))
+              (let ((fg-style (if style
+                                  (getf style (if selectedp :selected-foreground :foreground))
+                                  ;; default foreground style
+                                  (if selectedp (list :attributes (list :reverse)) nil)))
+                    (bg-style (if style
+                                  (getf style (if selectedp :selected-background :background))
+                                  ;; default background style
+                                  (if selectedp (list :attributes (list :reverse)) nil))))
+                ;; write an empty string as the background.
+                (save-excursion win (add win #\space :style bg-style :n w))
+                ;; display it in the window associated with the menu
+                (add win (format-menu-item menu item selectedp) :style fg-style)))))
+        (refresh win)))))
 
 (defmethod draw ((menu menu))
   "Draw the menu to its associated window."
@@ -422,6 +557,7 @@ Return the value from select."
               (typep val 'symbol)
               (typep val 'number))
           (return-from-menu menu val))
+
          ;; if the item is a function object, call it.
          ((typep val 'function)
           (funcall val)
@@ -517,6 +653,7 @@ Return the value from select."
 If the selected item is a menu object, recursively display the sub menu."
   ;; when the menu is selected, push it to the menu stack.
   (stack-push menu *menu-stack*)
+
   (draw menu)
 
   ;; here we can pass the menu to run-event-loop because it is a menu-window.

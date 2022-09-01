@@ -106,47 +106,86 @@ If an element is inactive, for example the label, the selected style is not appl
           ;; visible bg without a border
           (fill-rectangle win (apply #'make-instance 'complex-char bg-style) y x vh vw)))))
 
-(defun content-position (element)
-  "Return the inner position of the content area of the widget.
+(defgeneric content-position (element))
+
+(defmethod content-position ((element element))
+  "Return the inner position of the content area of the element.
 
 content position = widget position + border + padding"
-  (with-accessors ((pos widget-position)
+  (with-accessors ((x position-x) (y position-y)
                    (bt border-width-top) (bl border-width-left)
                    (pl padding-left) (pt padding-top) (borderp borderp)) element
-    (list (+ (car pos)  pt (if borderp bt 0))
-          (+ (cadr pos) pl (if borderp bl 0)))))
+    (if borderp
+        ;; if we have a border, content is shifted by border width and padding
+        (list (+ y pt bt)
+              (+ x pl bl))
+        ;; if we have no border, content is shifted only by padding
+        (list (+ y pt)
+              (+ x pl)))))
 
-(defun visible-width (element)
+(defmethod content-position ((obj menu))
+  "Return the inner position of the content area of the menu.
+
+content position = widget position + border + padding"
+  (with-accessors ((x position-x) (y position-y) (pos widget-position) (borderp borderp) (tablep tablep)
+                   (bt border-width-top) (bl border-width-left)
+                   (pl padding-left) (pt padding-top)) obj
+    (cond (tablep
+           ;; the table of the menu, including the table border, is part of the "content",
+           ;; it has neither a boder width nor content padding
+           pos)
+          (borderp
+           (list (+ y pt bt)
+                 (+ x pl bl)))
+          (t
+           (list (+ y pt)
+                 (+ x pl))))))
+
+(defgeneric visible-width (element))
+(defgeneric visible-height (element))
+
+(defmethod visible-width ((element element))
   "visible width = content width + padding"
   (with-accessors ((w width) (pl padding-left) (pr padding-right)) element
     (+ w
        pl pr)))
 
-(defun visible-height (element)
+(defmethod visible-height ((element element))
   "visible width = content width + padding"
   (with-accessors ((h height) (pt padding-top) (pb padding-bottom)) element
     (+ h
        pt pb)))
 
+(defun visible-dimensions (element)
+  (list (visible-height element)
+        (visible-width element)))
+
+(defgeneric external-width (element))
+(defgeneric external-height (element))
+
 ;; use this in grid/colomn-widths instead of width
-(defun external-width (element)
+(defmethod external-width ((obj element))
   "external-width = content width + padding + border-width"
   (with-accessors ((w width) (pl padding-left) (pr padding-right)
-                   (borderp borderp) (bl border-width-left) (br border-width-right)) element
+                   (borderp borderp) (bl border-width-left) (br border-width-right)) obj
     (+ w
        pl pr
        (if borderp (+ bl br) 0))))
 
-(defun external-height (element)
+(defmethod external-height ((obj element))
   "external-width = content width + padding + border-width"
   (with-accessors ((h height) (pt padding-top) (pb padding-bottom)
-                   (borderp borderp) (bt border-width-top) (bb border-width-bottom)) element
+                   (borderp borderp) (bt border-width-top) (bb border-width-bottom)) obj
     (+ h
        pt pb
        (if borderp (+ bt bb) 0))))
 
+(defun external-dimensions (element)
+  (list (external-height element)
+        (external-width element)))
+
 (defmethod draw ((obj label))
-  (with-accessors ((pos content-position) (win window) (y position-y) (x position-x) (width width)
+  (with-accessors ((pos content-position) (win window) (width width)
                    (style style) (selectedp selectedp) (borderp borderp)) obj
     (clear obj)
     (let* ((text (label-text obj))
@@ -161,7 +200,7 @@ content position = widget position + border + padding"
       ;; what we want next is here to use all the same arguments as add
       ;; just add "dimensions", which is the only difference between add-char and draw-rectangle
       (when borderp
-        (draw-rectangle win y x (external-height obj) (external-width obj) :style border-style))
+        (draw-rectangle win (position-y obj) (position-x obj) (external-height obj) (external-width obj) :style border-style))
 
       (goto win pos (list y x))
       (if (or (and height (= height 1))
@@ -202,7 +241,7 @@ content position = widget position + border + padding"
 
 (defmethod draw ((form form))
   "Draw the form by drawing the elements, then moving the cursor to the current element."
-  (with-accessors ((elements elements) (window window)) form
+  (with-accessors ((elements elements)) form
     ;; TODO: try with mapc instead of loop.
     (loop for element in elements do
       (draw element))

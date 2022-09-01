@@ -276,26 +276,52 @@
                children) obj
     (apply #'+ (* (1- m) rg) (row-heights children (list m n)))))
 
-(defun nth2d (position dimensions list)
-  "Return the position (y x) of list by assuming grid dimensions (m n) and row major order."
+(defun nth2d (list dimensions position)
+  "Return the position (i j) of list by assuming grid dimensions (m n) and row major order."
   (nth (sub2rmi dimensions position) list))
 
-(defun column-widths (list dimensions)
-  "Take a list of objects, return a list of max widths of every column."
+(defun ref2d (list dimensions i j)
+  "Return the position (i j) of list by assuming grid dimensions (m n) and row major order."
+  (nth (sub2rmi dimensions (list i j)) list))
+
+(defgeneric column-widths (obj dimensions))
+(defgeneric row-heights (obj dimensions))
+
+(defmethod column-widths ((obj array) dimensions)
+  "Take a table (2D array), return a list of max widths of every column."
   (destructuring-bind (m n) dimensions
     (loop for j from 0 below n collect
       (loop for i from 0 below m maximize
-        (let ((item (nth2d (list i j) dimensions list)))
+        (let ((item (aref obj i j)))
           (if (typep item 'element)
               (external-width item)
               (width item)))))))
 
-(defun row-heights (list dimensions)
+(defmethod row-heights ((obj array) dimensions)
+  (destructuring-bind (m n) dimensions
+    (loop for i from 0 below m collect
+      (loop for j from 0 below n maximize
+        (let ((item (aref obj i j)))
+          (if (typep item 'element)
+              (external-height item)
+              (height item)))))))
+
+(defmethod column-widths ((obj list) dimensions)
+  "Take a list of objects, return a list of max widths of every column."
+  (destructuring-bind (m n) dimensions
+    (loop for j from 0 below n collect
+      (loop for i from 0 below m maximize
+        (let ((item (nth2d obj dimensions (list i j))))
+          (if (typep item 'element)
+              (external-width item)
+              (width item)))))))
+
+(defmethod row-heights ((obj list) dimensions)
   "Take a list of objects, return a list of max heights of every row."
   (destructuring-bind (m n) dimensions
     (loop for i from 0 below m collect
       (loop for j from 0 below n maximize
-        (let ((item (nth2d (list i j) dimensions list)))
+        (let ((item (nth2d obj dimensions (list i j))))
           (if (typep item 'element)
               (external-height item)
               (height item)))))))
@@ -319,7 +345,8 @@
                   (position-x child) (+ x (+ (* cg j) (nth j xs))))
             ;; after setting the position, check if the element is a layout object,
             ;; then recursively set the positions of its child elements.
-            (when (typep child 'layout)
+            (when (and (typep child 'layout)
+                       (not (typep child 'menu)))
               (calculate-positions child))))))))
 
 (defun flatten-items (layout)
@@ -329,11 +356,14 @@ Nested layouts are spliced in, nils removed and strings/symbols/numbers converte
     (let (items)
       (labels ((flatten (list)
                  (dolist (i list)
-                   (cond ((typep i 'layout)
+                   (cond ((typep i 'element)
+                          ;; element has to be first, because a menu
+                          ;; is an element and a layout and we want to
+                          ;; push the menu, not flatten menu items
+                          (push i items))
+                         ((typep i 'layout)
                           ;; push items of a nested layout recursively
                           (flatten (slot-value i 'children)))
-                         ((typep i 'element)
-                          (push i items))
                          ((null i)
                           ;; ignore nil layout placeholders
                           nil)
