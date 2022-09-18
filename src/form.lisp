@@ -235,7 +235,7 @@ content position = widget position + border + padding"
   (with-accessors ((pos widget-position) (name name) (title title) (win window) (selectedp selectedp) (style style) (checkedp checkedp)) checkbox
     (goto win pos)
     (let* ((fg-style (if selectedp (getf style :selected-foreground) (getf style :foreground))))
-      (add-string win (format nil "[~A]" (if checkedp "X" "_") (if title title name )) :style fg-style)
+      (add-string win (format nil "[~A] ~A" (if checkedp "X" "_") (if title title name )) :style fg-style)
       (update-cursor-position checkbox))))
 
 (defmethod draw ((form form))
