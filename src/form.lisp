@@ -232,11 +232,10 @@ content position = widget position + border + padding"
 
 ;; TODO: for a checkbox, we need a style for checked and unchecked
 (defmethod draw ((checkbox checkbox))
-  (with-accessors ((pos widget-position) (name name) (win window) (selectedp selectedp) (style style)
-                   (checkedp checkedp)) checkbox
+  (with-accessors ((pos widget-position) (name name) (title tile) (win window) (selectedp selectedp) (style style) (checkedp checkedp)) checkbox
     (goto win pos)
     (let* ((fg-style (if selectedp (getf style :selected-foreground) (getf style :foreground))))
-      (add-string win (format nil "[~A]" (if checkedp "X" "_")) :style fg-style)
+      (add-string win (format nil "[~A]" (if checkedp "X" "_") (if title title name )) :style fg-style)
       (update-cursor-position checkbox))))
 
 (defmethod draw ((form form))
