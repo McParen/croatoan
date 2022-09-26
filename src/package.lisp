@@ -59,6 +59,11 @@
    move-down
    move-left
    move-right
+   column-widths
+   row-heights
+   cumsum-predecessors
+   nth2d
+   ref2d
 
    node
    parent
@@ -69,6 +74,9 @@
    select-next-item
    select-first-item
    select-last-item
+   remove-item
+   push-item
+   append-item
 
    layout
    column-layout
@@ -145,6 +153,7 @@
    message-height
    message-pad-coordinates
    menu-map
+   draw-table-lines
 
    ;; form
    buffer

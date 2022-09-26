@@ -975,23 +975,15 @@ absolute position and dimensions of the panel."))
     :initform      nil
     :accessor      current-item-number
     :type          (or null integer)
-    :documentation "Number (row-major mode) of the currently selected item, nil if the list is empty."))
+    :documentation "Number (row-major mode) of the currently selected item, nil if the list is empty.")
 
-  (:documentation "Base for objects that contain a list of other objects that can be selected."))
+   (cyclicp
+    :initarg       :cyclic
+    :initform      nil
+    :type          boolean
+    :documentation ""))
 
-(defmethod initialize-instance :after ((obj collection) &key)
-  (with-slots (items) obj
-    ;; if items has been passed as an initarg, init the current item pointer
-    (when items
-      (setf (current-item-number obj) 0))))
-
-(defmethod items ((obj collection))
-  "The children of a collection can be accessed as items."
-  (slot-value obj 'children))
-
-(defmethod (setf items) (items (obj collection))
-  "The children of a collection can be accessed as items."
-  (setf (slot-value obj 'children) items))
+  (:documentation "A collection contains other objects that can be selected in order."))
 
 (defmethod initialize-instance :after ((obj collection) &key items)
   (with-slots (children current-item-number) obj
@@ -1003,37 +995,102 @@ absolute position and dimensions of the panel."))
     (when children
       (setf current-item-number 0))))
 
+;; this is just an alias for the children accessor
+(defmethod items ((obj collection))
+  "The children of a collection can be accessed as items."
+  (slot-value obj 'children))
+
+;; this is just an alias for the children accessor
+(defmethod (setf items) (items (obj collection))
+  "The children of a collection can be accessed as items."
+  (setf (slot-value obj 'children) items))
+
 (defgeneric current-item (collection))
 
 (defmethod current-item ((obj collection))
   "Return the current object from the collection."
-  (with-slots (children current-item-number) obj
+  (with-slots (children (n current-item-number)) obj
     (when children
-      (nth current-item-number children))))
+      (nth n children))))
 
 (defgeneric select-previous-item (collection)
   (:documentation "")
   (:method (collection)
-    (with-accessors ((items items) (current-item-number current-item-number)) collection
-      (setf current-item-number (mod (1- current-item-number) (length items))))))
+    (with-accessors ((items items) (n current-item-number)) collection
+      (setf n (mod (1- n) (length items))))))
 
 (defgeneric select-next-item (collection)
   (:documentation "")
   (:method (collection)
-    (with-accessors ((items items) (current-item-number current-item-number)) collection
-      (setf current-item-number (mod (1+ current-item-number) (length items))))))
+    (with-accessors ((items items) (n current-item-number)) collection
+      (setf n (mod (1+ n) (length items))))))
 
 (defgeneric select-first-item (collection)
   (:documentation "")
   (:method (collection)
-    (with-accessors ((items items) (current-item-number current-item-number)) collection
-      (setf current-item-number 0))))
+    (with-accessors ((items items) (n current-item-number)) collection
+      (setf n 0))))
 
 (defgeneric select-last-item (collection)
   (:documentation "")
   (:method (collection)
-    (with-accessors ((items items) (current-item-number current-item-number)) collection
-      (setf current-item-number (1- (length items))))))
+    (with-accessors ((items items) (n current-item-number)) collection
+      (setf n (1- (length items))))))
+
+(defun remove-nth (n list)
+  "Remove the nth element from the list."
+  (cond ((null list)
+         nil)
+        ((zerop n)
+         (cdr list))
+        (t
+         (cons (car list)
+               (remove-nth (1- n) (cdr list))))))
+
+(defgeneric remove-item (collection &optional number))
+
+(defmethod remove-item ((obj collection) &optional number)
+  "Remove the item given by its number from the collection list.
+
+If the item number is not given, remove the current element.
+
+Current number is decreased when we remove an item before the current
+or when we remove the last item, when it is current."
+  (with-slots (children current-item-number) obj
+    (let* ((n (if number number current-item-number))
+           (len (length children)))
+      (when (or (< n current-item-number)
+                (= n current-item-number (1- len)))
+        (decf current-item-number))
+      (setf children (remove-nth n children)))))
+
+(defun push-item (collection item)
+  "Add the item at the front of the collection list.
+
+This increases the current item number."
+  (with-slots (children (n current-item-number)) collection
+    (if children
+        (progn
+          (push item children)
+          ;; pushing new items to the fromt moves the current item number
+          (incf n))
+        (progn
+          (push item children)
+          ;; the first item added sets the current item
+          (setf n 0)))
+    children))
+
+(defun append-item (collection item)
+  "Append the item at the end of the collection list.
+
+This does not change the current item number."
+  (with-slots (children (n current-item-number)) collection
+    (if children
+        (rplacd (last children) (list item))
+        (progn
+          (push item children)
+          (setf n 0)))
+    children))
 
 (defclass form (component collection)
   ((window

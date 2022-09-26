@@ -114,11 +114,6 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
       (cons element (cdr list))
       (cons (car list) (replace-nth (1- n) element (cdr list)))))
 
-(defmethod reset ((field field))
-  (clear field)
-  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)) field
-    (setf inbuf nil inptr 0 dptr 0)))
-
 (defmethod update-cursor-position ((field field))
   "Update the cursor position of a field."
   (with-accessors ((pos content-position) (inptr input-pointer) (dptr display-pointer) (win window)) field
@@ -133,6 +128,12 @@ Example: (replace-nth 3 'x '(a b c d e)) => (A B C X E)"
 
     ;; TODO: replace refresh with update+noutrefresh so we can do a series of refreshes before and end the refresh here.
     (refresh win)))
+
+(defmethod reset ((field field))
+  (clear field)
+  (with-accessors ((inbuf buffer) (inptr input-pointer) (dptr display-pointer)) field
+    (setf inbuf nil inptr 0 dptr 0))
+  (update-cursor-position field))
 
 ;; TODO: use draw-field with a window argument, and draw for the object with an assocated window.
 ;; TODO: apply this also to menu functions, where it is the other way around.
