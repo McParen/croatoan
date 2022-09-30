@@ -407,7 +407,10 @@ primary - most specific first (call-next-method)
       (if frame-rate
           (setf (frame-rate win) frame-rate)
           (set-input-blocking winptr input-blocking))
-      (ncurses:scrollok winptr scrolling-enabled-p)
+      ;; if the window is a menu-window or -panel, disable the scrolling.
+      ;; we dont need to scroll the window AND the menu at the same time.
+      (unless (typep win 'menu)
+        (ncurses:scrollok winptr scrolling-enabled-p))
       (ncurses:keypad winptr function-keys-enabled-p)
       (when stackedp (stack-push win *main-stack*))
       ;; if there is a style parameter, it overrides any other arg (fgcolor, bgcolor, background, attributes)
@@ -975,25 +978,31 @@ absolute position and dimensions of the panel."))
     :initform      nil
     :accessor      current-item-number
     :type          (or null integer)
-    :documentation "Number (row-major mode) of the currently selected item, nil if the list is empty.")
+    :documentation "Number (row major mode) of the currently selected item, nil if the list is empty.")
 
    (cyclicp
     :initarg       :cyclic
     :initform      nil
+    :accessor      cyclicp
     :type          boolean
-    :documentation ""))
+    :documentation "If true, the first element is selected after the last."))
 
-  (:documentation "A collection contains other objects that can be selected in order."))
+  (:documentation
+   "A collection is a list keeping track of the currently selected item.
+
+Methods on collecion objects allow selecting the previous item, next
+item, etc. The main use is keeping track of the currently selected
+element in a form or a layout."))
 
 (defmethod initialize-instance :after ((obj collection) &key items)
-  (with-slots (children current-item-number) obj
+  (with-slots (children (n current-item-number)) obj
     ;; the children slot can be initialized with the :items initarg.
     (when items
       (setf children items))
     ;; if the children have been initialized, initialize the counter.
     ;; if the children are added later, the counter has to be initialized manually.
     (when children
-      (setf current-item-number 0))))
+      (setf n 0))))
 
 ;; this is just an alias for the children accessor
 (defmethod items ((obj collection))
@@ -1005,37 +1014,69 @@ absolute position and dimensions of the panel."))
   "The children of a collection can be accessed as items."
   (setf (slot-value obj 'children) items))
 
-(defgeneric current-item (collection))
+(defgeneric current-item (collection)
+  (:documentation "Return the current object from the collection.")
+  (:method (collection)
+    (with-slots (children (n current-item-number)) collection
+      (when children
+        (nth n children)))))
 
-(defmethod current-item ((obj collection))
-  "Return the current object from the collection."
-  (with-slots (children (n current-item-number)) obj
-    (when children
-      (nth n children))))
+(defun previous-item-p (collection)
+  "Return t if a previous item can be selected, nil otherwise."
+  (with-accessors ((n current-item-number) (cyclicp cyclicp)) collection
+    (if cyclicp
+        t
+        (if (> n 0)
+            t
+            nil))))
+
+(defun next-item-p (collection)
+  "Return t if a next item can be selected, nil otherwise."
+  (with-accessors ((items items) (n current-item-number) (cyclicp cyclicp)) collection
+    (if cyclicp
+        t
+        (if (< n (1- (length items)))
+            t
+            nil))))
 
 (defgeneric select-previous-item (collection)
   (:documentation "")
   (:method (collection)
-    (with-accessors ((items items) (n current-item-number)) collection
-      (setf n (mod (1- n) (length items))))))
+    (with-accessors ((items items) (n current-item-number) (cyclicp cyclicp)) collection
+      (if cyclicp
+          (setf n (mod (1- n) (length items)))
+          (when (> n 0)
+            (decf n))))))
 
 (defgeneric select-next-item (collection)
   (:documentation "")
   (:method (collection)
-    (with-accessors ((items items) (n current-item-number)) collection
-      (setf n (mod (1+ n) (length items))))))
+    (with-accessors ((items items) (n current-item-number) (cyclicp cyclicp)) collection
+      (if cyclicp
+          (setf n (mod (1+ n) (length items)))
+          (when (< n (1- (length items)))
+            (incf n))))))
 
 (defgeneric select-first-item (collection)
   (:documentation "")
   (:method (collection)
     (with-accessors ((items items) (n current-item-number)) collection
-      (setf n 0))))
+      (when items
+        (setf n 0)))))
 
 (defgeneric select-last-item (collection)
   (:documentation "")
   (:method (collection)
     (with-accessors ((items items) (n current-item-number)) collection
-      (setf n (1- (length items))))))
+      (when items
+        (setf n (1- (length items)))))))
+
+(defgeneric last-item-number (collection)
+  (:documentation "")
+  (:method (collection)
+    (with-accessors ((items items)) collection
+      (when items
+        (1- (length items))))))
 
 (defun remove-nth (n list)
   "Remove the nth element from the list."
@@ -1067,16 +1108,16 @@ or when we remove the last item, when it is current."
 (defun push-item (collection item)
   "Add the item at the front of the collection list.
 
-This increases the current item number."
+This increments the current item number."
   (with-slots (children (n current-item-number)) collection
     (if children
         (progn
           (push item children)
-          ;; pushing new items to the fromt moves the current item number
+          ;; pushing new items to the front moves the current item number
           (incf n))
         (progn
+          ;; the first added item sets the current item number
           (push item children)
-          ;; the first item added sets the current item
           (setf n 0)))
     children))
 
@@ -1088,6 +1129,7 @@ This does not change the current item number."
     (if children
         (rplacd (last children) (list item))
         (progn
+          ;; the first added item sets the current item number
           (push item children)
           (setf n 0)))
     children))
@@ -1100,7 +1142,7 @@ This does not change the current item number."
     :accessor      window
     :documentation "Window created separately and then associated with the form."))
 
-  (:default-initargs :keymap 'form-map)
+  (:default-initargs :keymap 'form-map :cyclic t)
   (:documentation
    "A form is a collection of elements like fields, textareas, checkboxes, menus and buttons."))
 

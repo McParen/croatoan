@@ -252,13 +252,19 @@
   (with-accessors ((n current-item-number)) obj
     (nth n (leaves obj))))
 
-(defmethod select-next-item ((obj layout))
-  (with-accessors ((n current-item-number)) obj
-    (setf n (mod (1+ n) (length (leaves obj))))))
-
 (defmethod select-previous-item ((obj layout))
   (with-accessors ((n current-item-number)) obj
-    (setf n (mod (1- n) (length (leaves obj))))))
+    (if (cyclicp obj)
+        (setf n (mod (1- n) (length (leaves obj))))
+        (when (> n 0)
+          (decf n)))))
+
+(defmethod select-next-item ((obj layout))
+  (with-accessors ((n current-item-number)) obj
+    (if (cyclicp obj)
+        (setf n (mod (1+ n) (length (leaves obj))))
+        (when (< n (1- (length (leaves obj))))
+          (incf n)))))
 
 (defmethod width ((obj layout))
   "The width of a layout consists of the max widths of the columns and gaps between them."

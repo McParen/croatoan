@@ -178,7 +178,8 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
   (ncurses:delwin (winptr (sub-window stream)))
   (ncurses:delwin (winptr stream)))
 
-(defclass menu-panel (menu panel)
+;; panel precedes menu because we need clear to clear the main window, not the menu contents.
+(defclass menu-panel (panel menu)
   ()
   (:documentation "A menu-panel is a panel providing a list of items to be selected by the user."))
 

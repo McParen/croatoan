@@ -344,7 +344,8 @@ When title is t instead of a title string, display the symbol name of the widget
     ;; ignore inactive elements like labels.
     (if (activep current-item)
         (setf (selectedp current-item) t)
-        (select-previous-item form))))
+        (when (previous-item-p form)
+          (select-previous-item form)))))
 
 (defun select-previous-element (form)
   (select-previous-item form)
@@ -359,7 +360,8 @@ When title is t instead of a title string, display the symbol name of the widget
     ;; ignore inactive elements like labels.
     (if (activep current-item)
         (setf (selectedp current-item) t)
-        (select-next-item form))))
+        (when (next-item-p form)
+          (select-next-item form)))))
 
 (defun select-next-element (form)
   (select-next-item form)
