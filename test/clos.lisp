@@ -1106,39 +1106,32 @@ Test whether a window (stream) was closed."
     (unwind-protect
          (progn
            (clear scr)
-
            (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (box scr)
            (move scr 1 1)
            (princ 0 scr)
-
            (refresh scr)
 
            (let ((w1 (make-instance 'window :height 10 :width 30 :position '(3 5)))
                  (w2 (make-instance 'window :height 10 :width 30 :position '(6 10)))
                  (w3 (make-instance 'window :dimensions '(10 30) :position '(9 15))))
-
              (setf (background w1) (make-instance 'complex-char :color-pair '(:white :black)))
              (setf (background w2) (make-instance 'complex-char :color-pair '(:black :white)))
              (setf (background w3) (make-instance 'complex-char :color-pair '(:white :black)))
 
              (mapc #'box (list w1 w2 w3))
 
-             (move w1 1 1)
-             (princ 1 w1)
-             (move w2 1 1)
-             (princ 2 w2)
-             (move w3 1 1)
-             (princ 3 w3)
+             (move w1 1 1) (princ 1 w1)
+             (move w2 1 1) (princ 2 w2)
+             (move w3 1 1) (princ 3 w3)
 
              (mapc #'refresh (list w1 w2 w3))
              (get-char w1)
 
-             ;; todo: before we can refresh w2 to raise it, we have to "touch" it.
+             ;; before we can refresh w2 to raise it, we have to "touch" it.
              ;; if we dont touch it, only the changed parts of it will be redrawn.
              (touch w2)
              (refresh w2)
-
              (get-char w1)
 
              ;; move the whole window 3. note that this doesnt refresh the windows below,
@@ -1148,9 +1141,7 @@ Test whether a window (stream) was closed."
              (get-char w3)
 
              (mapc #'close (list w1 w2 w3)))
-
            (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
-
            (refresh scr)
            (get-char scr))
 
@@ -2193,8 +2184,8 @@ contents of the area as a single string."
 (defun t16e4 ()
   "Initially, the buffer of the textarea is just a list of characters.
 
-For smll buffer sizes, this is sufficient, but at some later point, it
-will be more efficient to use a character array, a string."
+For small buffer sizes, this is sufficient, but at some later point,
+it will be more efficient to use a character array, a string."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let ((area (make-instance 'textarea :position '(5 5) :dimensions '(3 20) :window scr
                                :buffer (concatenate 'list
@@ -2339,7 +2330,7 @@ will be more efficient to use a character array, a string."
            (label4 (make-instance 'label :name :l4 :reference :c1 :width 18 :position (list 9 1)))
            (label5 (make-instance 'label :name :l5 :reference :m1 :width 18 :position (list 11 1)))
 
-           (button1 (make-instance 'button :name :b1 :title "Hello"  :position (list 14 10)))
+           (button1 (make-instance 'button :name :b1 :title "Hello"  :position (list 13 10) :border t))
            (button2 (make-instance 'button :name :b2 :title "Accept" :position (list 14 20)))
            (button3 (make-instance 'button :name :b3 :title "Cancel" :position (list 14 30)))
 
@@ -2592,6 +2583,7 @@ will be more efficient to use a character array, a string."
                                                         :selected-background (:bgcolor :blue))
                                                  button (:foreground (:attributes (:reverse))
                                                          :selected-foreground (:bgcolor :blue))))))
+      (setf (background scr) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :yellow)))
       (format scr "Edit returned:~%~S" (prog1 (multiple-value-list (edit form)) (clear scr)))
       (refresh scr)
       (wait-for-event scr))))
@@ -2599,11 +2591,13 @@ will be more efficient to use a character array, a string."
 (defun t16j2 ()
   "Pass elements to a form within a grid layout to automatically calculate their positions."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-    (let* ((buttons (loop for i from 0 to 9 collect
+    (let* ((buttons (loop for i from 0 to 3 collect
                       (make-instance 'button :title (format nil "~R" (random 200)) :callback 'accept)))
-           (field (make-instance 'field :name :f1 :width 25))
-           (area (make-instance 'textarea :name :a1 :dimensions '(5 20)))
-           (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h) :grid-dimensions '(4 2) :max-item-length 3))
+           (field (make-instance 'field :name :f1 :width 25 :border t))
+           (area (make-instance 'textarea :name :a1 :dimensions '(5 20) :border t))
+           (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h i j k l) :grid-dimensions '(4 3) :max-item-length 3
+                                       :border t :enable-scrolling t :region-dimensions '(2 3)))
+           (menu2 (make-instance 'menu :name :m1 :items '(1 2 3 4 5 6) :grid-dimensions '(3 2) :max-item-length 3 :table t))
            ;; show 6 labels in a grid nested within the main grid.
            (labels1
              ;; The gap is the number of spaces added between each element, (row column) or gap.
@@ -2611,19 +2605,19 @@ will be more efficient to use a character array, a string."
                (loop for i from 0 to 5 collect
                  (make-instance 'label :active nil :border t :padding 1
                                        :title (format nil "hello ~r" (random 20))))))
-           (form (make-instance 'form
-                                :window scr
+           (form (make-instance 'form :window scr :cyclic t
                                 ;; instead of passing the elements in a element list, pass them within a layout object.
                                 ;; this will automatically calculate their positions during form initialization.
                                 ;; "nil" elements are represented as empty cells in the grid.
-                                :layout (make-instance 'layout ;;:grid-rows 3
+                                :layout (make-instance 'layout ;;:grid-rows 3 ; number of rows is calculated from the columns
                                                                :grid-columns 3
                                                                :grid-gap '(1 2) :position '(2 4)
-                                                               :children (append (list menu1 nil) buttons (list area nil labels1 nil field)))
+                                                               :children (append (list menu1 menu2) buttons (list area nil labels1 nil field)))
                                 :style '(field (:background (:attributes (:reverse))
                                                 :selected-background (:bgcolor :blue))
                                          textarea (:background (:attributes (:reverse))
                                                    :selected-background (:bgcolor :blue))
+                                         menu (:selected-background (:attributes (:reverse)))
                                          label (:foreground (:fgcolor :red :bgcolor :yellow)
                                                 :background (:fgcolor :yellow :bgcolor :red)
                                                 :border (:fgcolor :red :bgcolor :yellow)
@@ -2779,9 +2773,35 @@ friend. It is my life. I must master it as I must master my life.")
       (refresh scr)
       (get-char scr) )))
 
+(defun t17b ()
+  "Set the fg of the sub window."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    ;; Leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3).
+    (let* ((win1 (make-instance 'window     :dimensions '(10 20) :position '(2 2) :border t))
+           (win2 (make-instance 'sub-window :dimensions '(5 10)  :position '(2 4) :relative t :parent win1)))
+      (setf (background win1) (make-instance 'complex-char :simple-char #\- :fgcolor :white :bgcolor :black))
+      (setf (background win2) (make-instance 'complex-char :simple-char #\. :fgcolor :yellow :bgcolor :black))
+
+      ;; we have to clear otherwise the bg of win2 wont update
+      ;; at the same time this erases any border around the sub....
+      (clear win2)
+
+      (setf (color-pair win1) (list :red :yellow))
+      ;; we have to set the fg of the subwindow explicitely, the fg of the win wont get passed down to the sub
+      (setf (color-pair win2) (list :red :yellow))
+
+      (princ "win1" win1)
+      (princ "win2" win2)
+      (refresh win1)
+      (refresh win2)
+      (get-char win1)
+      (close win2)
+      (close win1))))
+
 ;; Display misc system information
 ;; https://github.com/rudolfochrist/dotfiles/blob/master/.rc.lisp
 (defun t18 ()
+  "Display misc system information."
   (with-screen (scr)
     (format scr "Lisp implementation type:    ~A~%" (lisp-implementation-type))
     (format scr "Lisp implementation version: ~A~%" (lisp-implementation-version))
@@ -2901,11 +2921,14 @@ friend. It is my life. I must master it as I must master my life.")
   "Use a fancy styled menu-panel to select an item."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :stacked t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (sub-menu (make-instance 'menu-panel :items choices :position (list 5 27) :enable-function-keys t :border t :shadow t :title "sub-menu"))
+           (sub-menu (make-instance 'menu-panel :items choices :position (list 5 27) :enable-function-keys t
+                                                :border t :shadow t :title "sub-menu"))
            (menu (make-instance 'menu-panel :items (cons sub-menu choices)
                                             :position (list 5 10)
                                             :title "t19b1"
-                                            :cyclic t
+                                            :enable-scrolling t
+                                            :region-rows 4 :region-columns 1
+                                            :cyclic nil
                                             :border t
                                             :border-width 2
                                             :shadow t
@@ -2929,11 +2952,12 @@ friend. It is my life. I must master it as I must master my life.")
   "Display a menu associated with a separate window. Display submenus ranger-style to the right of the parent."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items3 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666" "Choice 7" "Choice 88"))
-           (menu3 (make-instance 'menu :items items3 :name :sm3 :title "sub-menu 3" :max-item-length 20 :position (list 7 50) :menu-type :checklist))
+           (menu3 (make-instance 'menu :items items3 :name :sm3 :title "sub-menu 3" :max-item-length 20 :position (list 7 50) :menu-type :checklist
+                                       :border t :padding '(0 1)))
            (items2 (list "Item 0" menu3 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8"))
-           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 6 30)))
-           (items1 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09" "Item 10"))
-           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10))))
+           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 6 30) :border t :padding '(0 1)))
+           (items1 (list "Item 00" menu2 "Item 01" 222 "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09" "Item 10"))
+           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10) :border t :padding '(0 1))))
 
       ;; associate the same window with all three menus.
       (setf (window menu1) scr
@@ -2947,11 +2971,13 @@ friend. It is my life. I must master it as I must master my life.")
   "Display submenus in-place, on top of the parent menu."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items3 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666" "Choice 7" "Choice 88" "Choice 999" ))
-           (menu3 (make-instance 'menu :items items3 :name :sm1 :title "sub-menu 1" :max-item-length 20 :position (list 5 10) :menu-type :checklist :grid-dimensions '(5 2)))
+           (menu3 (make-instance 'menu :items items3 :name :sm1 :title "sub-menu 1" :max-item-length 20 :position (list 5 10) :menu-type :checklist
+                                       :grid-dimensions '(5 2) :table t :padding '(0 1)))
            (items2 (list "Item 0" menu3 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8"))
-           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 5 10)))
+           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 5 10) :table t :padding '(0 1)))
            (items1 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09" "Item 10"))
-           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10) :grid-dimensions '(4 3))))
+           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10) :grid-dimensions '(4 3)
+                                       :table t :padding '(0 1))))
 
       ;; associate the same underlying window with all three menus.
       (setf (window menu1) scr
@@ -3872,7 +3898,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 (defun t31b ()
   "Test color pair completion for fgcolor and bgcolor window properties."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
-    (format scr "default colors~%") (refresh scr) (get-char scr)
+    (format scr "default colors (white on black or custom terminal defaults)~%") (refresh scr) (get-char scr)
 
     (setf (fgcolor scr) :yellow)
     (format scr "fgcolor yellow~%") (refresh scr) (get-char scr)
@@ -3881,7 +3907,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (format scr "fgcolor yellow bgcolor red~%") (refresh scr) (get-char scr)
 
     (setf (color-pair scr) nil)
-    (format scr "color pair nil~%") (refresh scr) (get-char scr)
+    (format scr "color pair nil = back to default colors~%") (refresh scr) (get-char scr)
 
     (setf (bgcolor scr) :red)
     (add-string scr "fgcolor cyan bgcolor red" :fgcolor :cyan) (refresh scr) (get-char scr)
@@ -3893,6 +3919,11 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     ;; when the window bgcolor is removed, the background simple-char is displayed instead of spaces
     (setf (bgcolor scr) nil)
+    (format scr "color-pair nil | background blue on white~%") (refresh scr) (get-char scr)
+
+    (setf (fgcolor scr) nil
+          (bgcolor scr) nil)
+    (setf (background scr) (make-instance 'complex-char :simple-char #\. :color-pair '(:white :red)))
     (format scr "color-pair nil | background blue on white~%") (refresh scr) (get-char scr)))
 
 (defun t31c ()
@@ -3993,9 +4024,11 @@ Press C-j, C-m, C-i, C-h to see the difference."
                 0 18)
         (get-char scr)))))
 
+;; see clear.lisp for clear-rectangle and fill-rectangle
 (defun t34 ()
   "Fill and clear a rectangular area in a window."
   (with-screen (scr)
+    ;; overwrite the scr with the current background char (or the default space)
     (clear scr)
     ;; fill and clear rectangles given by 4 coordinates of the position and dimensions.
     (fill-rectangle scr #\. 5 10 10 20)
@@ -4003,6 +4036,11 @@ Press C-j, C-m, C-i, C-h to see the difference."
     ;; fill and clear rectangles given by a position and dimensions given by 2-element lists
     (fill-rectangle scr #\* '(5 40) '(10 20))
     (clear-rectangle scr '(7 42) '(4 8))
+
+    ;; filling with a complex char works as expected.
+    (fill-rectangle scr (make-instance 'complex-char :simple-char #\+ :fgcolor :red :bgcolor :yellow) '(5 70) '(10 20))
+    (clear-rectangle scr '(7 72) '(4 8))
+
     (refresh scr)
     (get-char scr)))
 
@@ -4010,7 +4048,8 @@ Press C-j, C-m, C-i, C-h to see the difference."
   '(field (:foreground (:fgcolor :yellow :bgcolor :red)
            :background (:attributes (:reverse))
            :selected-background (:bgcolor :blue))
-    label (:foreground (:fgcolor :white :bgcolor :blue)
+    label (:border (:fgcolor :red)
+           :foreground (:fgcolor :white :bgcolor :blue)
            :background (:fgcolor :blue :bgcolor :white))
     button (:foreground (:attributes (:reverse))
             :selected-foreground (:bgcolor :blue))))
@@ -4056,17 +4095,17 @@ Press C-j, C-m, C-i, C-h to see the difference."
   "Use a layout instead of positioning manually."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :use-terminal-colors t :enable-function-keys t :input-blocking t)
     (let* ((fields (mapcar (lambda (name title)
-                             (make-instance 'field :name name :title title :width 15))
+                             (make-instance 'field :name name :title title :width 15 :border t :border-width '(1 2)))
                            (list :f1 :f2 :f3)
                            (list "Forename" "Surname" "Nickname")))
            (labels- (mapcar (lambda (name title)
-                              (make-instance 'label :name name :title title :width 18 :height nil))
+                              (make-instance 'label :name name :title title :width 18 :height nil :border t))
                             (list :l1 :l2 :l3)
                             (list "test"
                                   (format nil "Hello there ~%Dear John")
                                   (wrap-string "Hello there, dear john, prescious bodily fluids" 18))))
            (btns (mapcar (lambda (name title)
-                           (make-instance 'button :name name :title title))
+                           (make-instance 'button :name name :title title :border t))
                          (list :b1 :b2 :b2)
                          (list "Accept" "Cancel" "Reset")))
            (form (make-instance 'form :window scr :style *t35-style*
