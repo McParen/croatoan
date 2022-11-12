@@ -1,4 +1,4 @@
-;; (in-package :de.anvi.ncurses)
+(in-package :de.anvi.ncurses)
 
 ;;; getyx
 ;;; get curses cursor and window coordinates
@@ -13,7 +13,10 @@
 
 ;;; Low-level CFFI wrappers
 
-;; see legacy.lisp
+(cffi:defcfun ("getyx"    getyx)    :void (win window) (y :int) (x :int))
+(cffi:defcfun ("getparyx" getparyx) :void (win window) (y :int) (x :int))
+(cffi:defcfun ("getbegyx" getbegyx) :void (win window) (y :int) (x :int))
+(cffi:defcfun ("getmaxyx" getmaxyx) :void (win window) (y :int) (x :int))
 
 ;;; NOTES
 

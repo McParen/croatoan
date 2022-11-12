@@ -18,6 +18,7 @@
 
 ;;; Low-level CFFI wrappers
 
+(cffi:defcfun ("getattrs" getattrs) :int (win window))
 (cffi:defcfun ("getbegx" getbegx) :int (win window))
 (cffi:defcfun ("getbegy" getbegy) :int (win window))
 (cffi:defcfun ("getcurx" getcurx) :int (win window))

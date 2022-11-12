@@ -191,7 +191,10 @@
    mvwgetnstr
 
    ;; getyx / get curses cursor and window coordinates
-   ;; --> legacy
+   getyx
+   getparyx
+   getbegyx
+   getmaxyx
 
    ;; inch / get a character and attributes from a curses window
    inch
