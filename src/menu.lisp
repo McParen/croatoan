@@ -60,8 +60,10 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
 
 ;; init for menus which aren't menu windows
 (defmethod initialize-instance :after ((menu menu) &key)
-  (with-slots (children grid-rows grid-columns region-rows region-columns region-start-row region-start-column) menu
-    (setf region-start-row 0 region-start-column 0)
+  (with-slots (children grid-rows grid-columns region-rows region-columns region-start-row region-start-column
+               tablep grid-row-gap) menu
+    (setf region-start-row 0
+          region-start-column 0)
 
     ;; Convert strings and symbols to item objects
     (setf children (mapcar (lambda (item)
@@ -90,8 +92,15 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                         children))
 
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
-    (unless grid-rows (setf grid-rows (length children)))
-    (unless grid-columns (setf grid-columns 1))))
+    (unless grid-rows
+      (setf grid-rows (length children)))
+    (unless grid-columns
+      (setf grid-columns 1))
+
+    ;; If table lines have to be drawn, a gap between the items also has to be set.
+    (when (and tablep
+               (zerop grid-row-gap))
+      (setf grid-row-gap 1))))
 
 (defmethod width ((obj menu))
   (with-accessors ((len max-item-length)
@@ -125,14 +134,15 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                              (+ len 4)
                              len)))
                  ;; if a table is drawn, we have n-1 row lines
-                 (gaps (if cg (* (1- n) cg) 0)))
+                 (gaps (if (plusp cg) (* (1- n) cg) 0)))
             (+ w gaps))))))
 
 (defmethod height ((obj menu))
-  (with-accessors ((len max-item-length)
-                   (m visible-grid-rows)) obj
+  (with-accessors ((m visible-grid-rows)) obj
     (with-slots ((rg grid-row-gap)) obj
       (let* ((gaps (if (plusp rg) (* (1- m) rg) 0)))
+        ;; the height of the menu is a sum of m items of height 1
+        ;; and the m-1 gaps between the items
         (+ m gaps)))))
 
 (defmethod external-width ((obj menu))
