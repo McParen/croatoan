@@ -53,7 +53,8 @@ Place the cursor between the brackets [_] of the current item."
   (with-accessors ((pos current-item-position) (win window)) object
     (move win
           (car pos)
-          (1+ (cadr pos))) ;; put the cursor after the [
+          ;; put the cursor after the [ in "[ ] ".
+          (+ (cadr pos) 1 (slot-value object 'item-padding-left)))
     (refresh win)))
 
 (defmethod update-cursor-position ((checkbox checkbox))

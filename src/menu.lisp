@@ -36,6 +36,18 @@ This can be used to position the cursor on the current item after the menu is dr
     :type          boolean
     :documentation "If t, table row and column lines are drawn between the items.")
 
+   (item-padding-left
+    :initarg       :item-padding-left
+    :initform      0
+    :type          integer
+    :documentation "Additional space added to the left of the item title, with the same background style.")
+
+   (item-padding-right
+    :initarg       :item-padding-right
+    :initform      0
+    :type          integer
+    :documentation "Additional space added to the right of the item title, with the same background style.")
+
    (variable-column-width-p
     :initarg       :variable-column-width
     :initform      nil
@@ -61,7 +73,7 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
 ;; init for menus which aren't menu windows
 (defmethod initialize-instance :after ((menu menu) &key)
   (with-slots (children grid-rows grid-columns region-rows region-columns region-start-row region-start-column
-               tablep grid-row-gap) menu
+               tablep grid-row-gap grid-column-gap) menu
     (setf region-start-row 0
           region-start-column 0)
 
@@ -98,9 +110,11 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
       (setf grid-columns 1))
 
     ;; If table lines have to be drawn, a gap between the items also has to be set.
-    (when (and tablep
-               (zerop grid-row-gap))
-      (setf grid-row-gap 1))))
+    (when tablep
+      (when (zerop grid-row-gap)
+        (setf grid-row-gap 1))
+      (when (zerop grid-column-gap)
+        (setf grid-column-gap 1)))))
 
 (defmethod width ((obj menu))
   (with-accessors ((len max-item-length)
@@ -108,6 +122,8 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                    (items items)) obj
     (with-slots (scrolling-enabled-p
                  menu-type
+                 item-padding-left
+                 item-padding-right
                  (m  grid-rows)
                  (n  grid-columns)
                  (cg grid-column-gap)
@@ -116,12 +132,12 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                  (m1 region-rows)
                  (n1 region-columns)) obj
       (if variable-column-width-p
-
           ;; variable column width
           (destructuring-bind (m0 n0 m1 n1) (if scrolling-enabled-p (list m0 n0 m1 n1) (list 0 0 m n))
-            (let* ((widths- (if variable-column-width-p
-                                (subseq (column-widths items (list m n)) n0 (+ n0 n1))
-                                (loop for i below n1 collect len)))
+            (let* ((widths- (mapcar (lambda (i) (+ i item-padding-left item-padding-right))
+                                    (if variable-column-width-p
+                                        (subseq (column-widths items (list m n)) n0 (+ n0 n1))
+                                        (loop for i below n1 collect len))))
                    (widths (if (eq menu-type :checklist)
                                (mapcar (lambda (i) (+ i 4)) widths-)
                                widths-))
@@ -135,7 +151,10 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                              len)))
                  ;; if a table is drawn, we have n-1 row lines
                  (gaps (if (plusp cg) (* (1- n) cg) 0)))
-            (+ w gaps))))))
+            (+ w
+               gaps
+               (* n item-padding-left)
+               (* n item-padding-right)))))))
 
 (defmethod height ((obj menu))
   (with-accessors ((m visible-grid-rows)) obj
@@ -416,6 +435,8 @@ At the third position, display the item given by item-number."
   (with-slots (scrolling-enabled-p
                variable-column-width-p
                menu-type
+               item-padding-left
+               item-padding-right
                (cmark current-item-mark)
                (cpos current-item-position)
                (len max-item-length)
@@ -441,9 +462,10 @@ At the third position, display the item given by item-number."
           ;; when the menu is too big to be displayed at once, only a part
           ;; is displayed, and the menu can be scrolled
           (if scrolling-enabled-p (list m0 n0 m1 n1) (list 0 0 m n))
-        (let* ((widths- (if variable-column-width-p
-                            (subseq (column-widths items (list m n)) n0 (+ n0 n1))
-                            (loop for i below n1 collect len)))
+        (let* ((widths- (mapcar (lambda (i) (+ i item-padding-left item-padding-right))
+                                (if variable-column-width-p
+                                    (subseq (column-widths items (list m n)) n0 (+ n0 n1))
+                                    (loop for i below n1 collect len))))
                (widths (if (eq menu-type :checklist)
                            (mapcar (lambda (i) (+ i 4)) widths-)
                            widths-))
@@ -460,8 +482,6 @@ At the third position, display the item given by item-number."
               (draw-rectangle win (position-y menu) (position-x menu) (external-height menu) (external-width menu) :style (getf style :border)))
             (when tablep
               ;; to draw table lines between the grid cells, a grid gap is required.
-              (when (zerop rg) (setf rg 1))
-              (when (zerop cg) (setf cg 1))
               (draw-table-lines win y x m1 n1 rg cg bt bl widths heights)))
 
           (dogrid ((i 0 m1)
@@ -496,7 +516,16 @@ At the third position, display the item given by item-number."
                 ;; write an empty string as the background.
                 (save-excursion win (add win #\space :style bg-style :n (nth j widths)))
                 ;; display it in the window associated with the menu
-                (add win (format-menu-item menu item selectedp) :style fg-style)))))
+                (add win
+                     (format nil
+                             (concatenate 'string
+                                          (make-string item-padding-left :initial-element #\space)
+                                          ;; "~v,,,' @A" to right-justify
+                                          "~v,,,' A"
+                                          (make-string item-padding-right :initial-element #\space))
+                             (- (nth j widths) item-padding-left item-padding-right)
+                             (format-menu-item menu item selectedp))
+                     :style fg-style)))))
         (refresh win)))))
 
 (defmethod draw ((menu menu))
