@@ -52,7 +52,7 @@ Place the cursor, when it is visible, on the first char of the current item."
 Place the cursor between the brackets [_] of the current item."
   (with-accessors ((pos current-item-position) (win window)) object
     (move win
-          (car pos)
+          (+ (car pos) (slot-value object 'item-padding-top))
           ;; put the cursor after the [ in "[ ] ".
           (+ (cadr pos) 1 (slot-value object 'item-padding-left)))
     (refresh win)))

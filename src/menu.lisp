@@ -36,6 +36,18 @@ This can be used to position the cursor on the current item after the menu is dr
     :type          boolean
     :documentation "If t, table row and column lines are drawn between the items.")
 
+   (item-padding-top
+    :initarg       :item-padding-top
+    :initform      0
+    :type          integer
+    :documentation "Additional space added to the top of the item title, with the same background style.")
+
+   (item-padding-bottom
+    :initarg       :item-padding-bottom
+    :initform      0
+    :type          integer
+    :documentation "Additional space added below the item title, with the same background style.")
+
    (item-padding-left
     :initarg       :item-padding-left
     :initform      0
@@ -158,11 +170,16 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
 
 (defmethod height ((obj menu))
   (with-accessors ((m visible-grid-rows)) obj
-    (with-slots ((rg grid-row-gap)) obj
+    (with-slots ((rg grid-row-gap)
+                 item-padding-top
+                 item-padding-bottom) obj
       (let* ((gaps (if (plusp rg) (* (1- m) rg) 0)))
         ;; the height of the menu is a sum of m items of height 1
-        ;; and the m-1 gaps between the items
-        (+ m gaps)))))
+        ;; m-1 gaps between the items, and m top and bottom paddings.
+        (+ m
+           gaps
+           (* m item-padding-top)
+           (* m item-padding-bottom))))))
 
 (defmethod external-width ((obj menu))
   (with-accessors ((w width) (borderp borderp) (tablep tablep) (bl border-width-left) (br border-width-right) (pl padding-left) (pr padding-right)) obj
@@ -373,17 +390,18 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   (add-char win :horizontal-line :n (car (last widths)))
   (add-char win :lower-right-corner))
 
-(defun draw-table-lines (win y x m1 n1 rg cg bt bl widths heights)
+(defun draw-table-lines (win y x m1 n1 rg cg bt bl pt pb widths heights)
   ;;; draw the n1+1 vertical lines (plain, without endings and crossings)
   ;; first vline
-  (draw-vline win (1+ y) x (1- (* m1 2)))
+  (draw-vline win (1+ y) x (+ (1- (* m1 2))
+                              (* m1 (+ pt pb))))
   ;; last n1 vlines
   (dotimes (j n1)
     (draw-vline win
                 (1+ y)
                 (+ x bl (* j cg) (loop for i from 0 to j sum (nth i widths)))
-                (1- (* m1 2))))
-
+                (+ (1- (* m1 2))
+                   (* m1 (+ pt pb)))))
   ;;; draw m1+1 horizontal lines (with endings and crossings)
   ;; top horizontal line of the table
   (move win y x)
@@ -395,7 +413,7 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
           x)
     (draw-table-row-separator win widths))
   ;; bottom line
-  (move win (+ y (* 2 m1)) x)
+  (move win (+ y (* 2 m1) (* m1 (+ pt pb))) x)
   (draw-table-bottom win widths))
 
 (defun format-menu-item (menu item selectedp)
@@ -435,6 +453,8 @@ At the third position, display the item given by item-number."
   (with-slots (scrolling-enabled-p
                variable-column-width-p
                menu-type
+               item-padding-top
+               item-padding-bottom
                item-padding-left
                item-padding-right
                (cmark current-item-mark)
@@ -470,9 +490,9 @@ At the third position, display the item given by item-number."
                            (mapcar (lambda (i) (+ i 4)) widths-)
                            widths-))
                (xs (cumsum-predecessors widths))
-               (heights (loop for i below m1 collect 1))
-               ;; height of one item is just 1.
-               (h 1)
+               ;; height of one item is 1 and the padding.
+               (h (+ 1 item-padding-top item-padding-bottom))
+               (heights (loop for i below m1 collect h))
                (y (car (content-position menu)))
                (x (cadr (content-position menu))))
 
@@ -482,7 +502,7 @@ At the third position, display the item given by item-number."
               (draw-rectangle win (position-y menu) (position-x menu) (external-height menu) (external-width menu) :style (getf style :border)))
             (when tablep
               ;; to draw table lines between the grid cells, a grid gap is required.
-              (draw-table-lines win y x m1 n1 rg cg bt bl widths heights)))
+              (draw-table-lines win y x m1 n1 rg cg bt bl item-padding-top item-padding-bottom widths heights)))
 
           (dogrid ((i 0 m1)
                    (j 0 n1))
@@ -501,6 +521,7 @@ At the third position, display the item given by item-number."
                   (progn
                     (setq posy (+ y (if tablep bt 0) (* i rg) (* i h))
                           posx (+ x (if tablep bl 0) (* j cg) (nth j xs)))))
+
               (move win posy posx)
               ;; save the position of the current item, to be used in update-cursor-position.
               (when selectedp
@@ -513,6 +534,13 @@ At the third position, display the item given by item-number."
                                   (getf style (if selectedp :selected-background :background))
                                   ;; default background style
                                   (if selectedp (list :attributes (list :reverse)) nil))))
+
+                (when (plusp item-padding-top)
+                  (dotimes (k item-padding-top)
+                    (move win (+ posy k) posx)
+                    (add win #\space :style bg-style :n (nth j widths))))
+
+                (move win (+ posy item-padding-top) posx)
                 ;; write an empty string as the background.
                 (save-excursion win (add win #\space :style bg-style :n (nth j widths)))
                 ;; display it in the window associated with the menu
@@ -525,7 +553,12 @@ At the third position, display the item given by item-number."
                                           (make-string item-padding-right :initial-element #\space))
                              (- (nth j widths) item-padding-left item-padding-right)
                              (format-menu-item menu item selectedp))
-                     :style fg-style)))))
+                     :style fg-style)
+
+                (when (plusp item-padding-bottom)
+                  (dotimes (k item-padding-bottom)
+                    (move win (+ posy item-padding-top 1 k) posx)
+                    (add win #\space :style bg-style :n (nth j widths))))))))
         (refresh win)))))
 
 (defmethod draw ((menu menu))
