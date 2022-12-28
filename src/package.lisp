@@ -37,9 +37,7 @@
    menu
    checklist
    menu-window
-   menu-panel
    menu-item
-   dialog-window
    pad
    sub-pad
    field
@@ -153,6 +151,7 @@
    message-height
    message-pad-coordinates
    menu-map
+   menu-window-map
    draw-table-lines
 
    ;; form
@@ -431,4 +430,21 @@
    complex-string->chars-string
    text-ellipsize
    text-right-pad
-   ))
+
+   row-layout
+   column-layout
+   calculate-positions
+   flatten-items
+   border-width
+   selectedp))
+
+(defpackage #:de.anvi.croatoan.dialog
+  (:documentation "Dialog windows allow simple user input.")
+  (:use #:common-lisp #:croatoan)
+  (:shadow #:checklist)
+  (:nicknames #:dialog #:dlg)
+  (:export
+   msgbox
+   menubox
+   checklist
+   inputbox))

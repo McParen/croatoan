@@ -16,7 +16,6 @@
    (:file "grid")             ; Utility to track the display of items in a scrollable mxn grid
    (:file "classes")
    (:file "croatoan")         ; macros, event handling
-   (:file "dialog")           ; misc dialog boxes
    (:file "menu")             ; curses extension for programming menus
    (:file "form")             ; curses extension for programming forms
    (:file "field")
@@ -25,6 +24,7 @@
    (:file "queue")            ; simple thread-safe queue
    (:file "gray_streams")
    (:file "utf8")
+   (:file "dialog")           ; misc dialog boxes
 
    ;; Ncurses core functions
    (:file "addch")

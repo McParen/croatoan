@@ -30,8 +30,6 @@ component +--> widget ---+--> window  +--> screen
           |              |            |
           |              |            +--> menu +--> menu-window --> dialog-window
           |              |                      |
-          |              |                      +--> menu-panel
-          |              |                      |
           |              |                      +--> checklist
           |              |
           |              +--> layout
@@ -561,6 +559,7 @@ primary - most specific first (call-next-method)
 (defclass extended-window (window)
   ((border-width
     :initform      0 ; default should be 0 and only set to 1 if :border is t.
+    :initarg       :border-width
     :type          integer
     :reader        border-width
     :documentation "")
@@ -601,8 +600,7 @@ behaves more like a simple window."))
                                                   :relative t)))))
 
 (defclass panel (window)
-  (;; TODO 210701 use default initargs instead of a separate slot
-   (border-width
+  ((border-width
     :initarg       :border-width
     :initform      1
     :type          integer
@@ -634,7 +632,7 @@ absolute position and dimensions of the panel."))
 ;; make :position the position of the whole panel, not just of the main window.
 ;; how would it be possible to delay winptr creation, to introduce lazyness???
 (defmethod initialize-instance :after ((win panel) &key)
-  (with-slots (winptr width height (y position-y) (x position-x) borderp border-win shadowp shadow-win border-width style) win
+  (with-slots (winptr width height (y position-y) (x position-x) borderp border-win shadowp shadow-win border-width) win
     ;; only for panels
     (when (eq (type-of win) 'panel)
       (let* ((y1 y) ; main
@@ -649,7 +647,9 @@ absolute position and dimensions of the panel."))
         (setf winptr (ncurses:newwin height width y1 x1))
         ;; check if border is t, if nil, do not create the border window
         (when borderp
-          (setf border-win (make-instance 'window :height h2 :width w2 :position (list y2 x2) :border t)))
+          (setf border-win (make-instance 'window :height h2 :width w2 :position (list y2 x2)))
+          ;; we have to set the border _after_ the window creation because only then the proper style has been set...
+          (when borderp (ncurses:box (winptr border-win) 0 0)))
         ;; check if shadow is t, if nil, do not create the shadow window
         (when shadowp
           (setf shadow-win (make-instance 'window :height h2 :width w2 :position (list y3 x3))))))))
@@ -714,7 +714,7 @@ absolute position and dimensions of the panel."))
               (attributes (sub-window win)) attr)))))
 
 (defmethod (setf style) (style (win panel))
-  ;; first set the style of the window
+  ;; first set the style of the main window
   (call-next-method)
   ;; then set the style of the border and shadow windows
   (with-slots (borderp border-win shadowp shadow-win style) win
@@ -1135,7 +1135,14 @@ This does not change the current item number."
     children))
 
 (defclass form (component collection)
-  ((window
+  ((layout
+    :initarg       :layout
+    :initform      nil
+    :type          (or null layout)
+    :accessor      layout
+    :documentation "The elements of a form can be passed in a layout object.")
+
+   (window
     :initarg       :window
     :initform      nil
     :type          (or null window)
@@ -1146,8 +1153,8 @@ This does not change the current item number."
   (:documentation
    "A form is a collection of elements like fields, textareas, checkboxes, menus and buttons."))
 
-(defmethod initialize-instance :after ((form form) &key layout elements)
-  (with-slots (children current-item-number) form
+(defmethod initialize-instance :after ((form form) &key elements)
+  (with-slots (children layout current-item-number) form
     ;; For backward compatibility, if a list of elements has been passed, store it in the children slot.
     (when elements
       (setf children elements))
@@ -1158,18 +1165,35 @@ This does not change the current item number."
     ;; Check that only elements are passed to a form.
     (when (notevery (lambda (x) (typep x 'element)) children)
       (error "Form init: All items passed to a form have to be element objects."))
-    (if children
-        (progn
-          ;; Initialize the current element as the first active element from the passed elements list.
-          ;; we have to set the current element before we can change it with select-previous-element and select-next-element
-          (setf current-item-number (position-if #'activep children))
-          ;; mark the current element selected so it can be highlighted
-          (setf (slot-value (current-item form) 'selectedp) t)
-          ;; set the parent form slot of every element.
-          (loop for element in children
-                do (setf (slot-value element 'parent) form)))
-        ;; if a list of elements was not passed, signal an error.
-        (error "Form init: A list of elements is required to initialize a form."))))
+    (when children
+      ;; Initialize the current element as the first active element from the passed elements list.
+      ;; we have to set the current element before we can change it with select-previous-element and select-next-element
+      (setf current-item-number (position-if #'activep children))
+      ;; mark the current element selected so it can be highlighted
+      (setf (slot-value (current-item form) 'selectedp) t)
+      ;; set the parent form slot of every element.
+      (dolist (element children)
+        (setf (slot-value element 'parent) form)))))
+
+(defun add-child (parent child)
+  ""
+  (setf (children parent)
+        (nconc (children parent) (list child))))
+
+(defun find-node (name1 tree)
+  "Return the first node that matches the name."
+  (labels ((dfs (name node)
+             ;; check node
+             (when (and node ;; ignore the nil nodes
+                        (eq name (name node)))
+               (return-from find-node node))
+             ;; check node's children
+             (dolist (ch (children node))
+               (when (and ch ;; children can contain nil, but we ignore those
+                          ;; only nodes have children
+                          (typep ch 'node))
+                 (dfs name ch)))))
+    (dfs name1 tree)))
 
 (defmethod elements ((obj form))
   (slot-value obj 'children))
@@ -1450,12 +1474,18 @@ Otherwise calculate the height from the displayed text."
     (resize win height new-width)))
 
 (defgeneric dimensions (object)
-  (:documentation "Return a two-element list with the height and width of the object.")
+  (:documentation
+   "Return a two-element list with the height and width of the object.")
   (:method (object)
     (list (height object) (width object))))
 
 (defgeneric (setf dimensions) (dimensions object)
-  (:documentation "Take a list (height width) and an object, set its height and width.")
+  (:documentation
+   "Take a list (height width) and an object, set its height and width.
+
+The default method just sets the slots height and width of a widget, so
+call-next-method should be called for ncurses-based widgets in addition
+to underlying ncurses calls.")
   (:method (dimensions object)
     (with-slots (height width) object
       (destructuring-bind (h w) dimensions

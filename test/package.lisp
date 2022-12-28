@@ -176,6 +176,13 @@
    #:pong
    #:tetris
 
+   ;; dialog.lisp
+   #:dlg01
+   #:dlg02
+   #:dlg03
+   #:dlg04
+   #:dlg05
+
    ;; evolution.lisp
    #:evolve5
    #:evolve6

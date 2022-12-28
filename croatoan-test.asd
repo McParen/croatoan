@@ -11,11 +11,12 @@
   ((:file "package")
 
    ;; core ncurses tests
-   (:file "ncurses")   
+   (:file "ncurses")
    (:file "unicode")
-                         
+
    ;; high-level clos api
    (:file "clos")
+   (:file "dialog")
    (:file "tetris")
    (:file "evolution")
    (:file "game-of-life")))

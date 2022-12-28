@@ -307,6 +307,7 @@
    key-defined
 
    ;; legacy / get curses cursor and window coordinates, attributes
+   getattrs
    getbegx
    getbegy
    getcurx

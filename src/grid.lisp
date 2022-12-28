@@ -138,7 +138,7 @@
                         n0 0)))
             ;; only scroll the region, no cycling
             (progn
-              (when(< j (1- n)) (incf j))         ; when not in last column, move one column right
+              (when (< j (1- n)) (incf j))        ; when not in last column, move one column right
               (when (>= j (+ n0 n1)) (incf n0)))) ; when right of region, move region one column right
         (if cyclicp
             ;; no scrolling, cycle
@@ -221,8 +221,7 @@
   (:documentation "A layout is a container widget containing items positioned in a grid. Layouts can be nested."))
 
 (defmethod initialize-instance :after ((obj layout) &key grid-gap)
-  (with-slots (grid-row-gap grid-column-gap
-               (gr grid-rows) (gc grid-columns) children) obj
+  (with-slots (grid-row-gap grid-column-gap (gr grid-rows) (gc grid-columns) children) obj
     ;; the grid-gap initarg (gap or (row column)) overrides the individual slot initargs.
     (when grid-gap
       (if (listp grid-gap)
