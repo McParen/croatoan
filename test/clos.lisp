@@ -553,21 +553,20 @@
   "A panel is a fancy window with a separate border and drop shadow."
   (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t)
     (let ((win (make-instance 'panel :height 10 :width 20 :position (list 3 5) :border t :border-width 1 :shadow t)))
-      (with-slots (border-win shadow-win) win
-        (setf (style win)
-              '(:border (;:foreground  (:fgcolor :black :bgcolor :white)  ; this would be the style of the drawn border
-                         :background  (:fgcolor :blue :bgcolor :white))   ; this of the rest of the border window
-                :shadow (:background  (:fgcolor :black :bgcolor :black))
-                :foreground (:fgcolor :blue :bgcolor :cyan)
-                :background (:simple-char #\. :fgcolor :black :bgcolor :white)))
-        (setf (background scr) (make-instance 'complex-char :simple-char :board :fgcolor :cyan))
-        (refresh scr)
-        (move win 1 1) (add-string win "hello there")
-        ;; since a panel is a window, it can be used with stream output functions
-        (move win 3 3) (format win "dear john")
-        (refresh win)
-        (get-char scr)
-        (close win)))))
+      (setf (style win)
+            '(:border (;:foreground (:fgcolor :red :bgcolor :yellow)  ; this would be the style of the drawn border
+                       :background  (:fgcolor :blue :bgcolor :white)) ; this of the rest of the border window
+              :shadow (:background  (:fgcolor :black :bgcolor :black))
+              :foreground (:fgcolor :blue :bgcolor :cyan)
+              :background (:simple-char #\. :fgcolor :black :bgcolor :white)))
+      (setf (background scr) (make-instance 'complex-char :simple-char :board :fgcolor :cyan))
+      (refresh scr)
+      (move win 1 1) (add-string win "hello there")
+      ;; since a panel is a window, it can be used with stream output functions
+      (move win 3 3) (format win "dear john")
+      (refresh win)
+      (get-char scr)
+      (close win))))
 
 (defun t03 ()
   "Read and display chars until a q is pressed, blocking version."
@@ -2342,10 +2341,6 @@ it will be more efficient to use a character array, a string."
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
       (bind form :f4 'crt::debug-print-field-buffer)
 
-      ;; remove q and newline from the menu map because enter exits the main menu loop
-      (unbind (find-keymap 'menu-map) #\q)
-      (unbind (find-keymap 'menu-map) #\newline)
-
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda (b e)
                                  (declare (ignore b e))
@@ -2596,13 +2591,25 @@ it will be more efficient to use a character array, a string."
            (field (make-instance 'field :name :f1 :width 25 :border t))
            (area (make-instance 'textarea :name :a1 :dimensions '(5 20) :border t))
            (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h i j k l) :grid-dimensions '(4 3) :max-item-length 3
-                                       :border t :enable-scrolling t :region-dimensions '(2 3)))
-           (menu2 (make-instance 'menu :name :m1 :items '(1 2 3 4 5 6) :grid-dimensions '(3 2) :max-item-length 3 :table t))
+                                       ;:border t
+                                       :padding '(1 1)
+                                       :table t
+                                       ;:grid-gap '(0 1)
+                                       :item-padding-left 1
+                                       :item-padding-right 1
+                                       :variable-column-width t
+                                       :enable-scrolling nil :region-dimensions '(2 3)))
+           (menu2 (make-instance 'menu :name :m2 :items (list 1 2 3 4 5 6) :grid-dimensions '(3 2) :max-item-length 3 :table t
+                                       :variable-column-width t
+                                       :item-padding-left 2
+                                       :item-padding-right 2
+                                       :item-padding-top 1
+                                       :item-padding-bottom 1))
            ;; show 6 labels in a grid nested within the main grid.
            (labels1
              ;; The gap is the number of spaces added between each element, (row column) or gap.
-             (make-instance 'layout :grid-dimensions '(3 2) :grid-gap '(1 1) :children
-               (loop for i from 0 to 5 collect
+             (make-instance 'layout :grid-dimensions '(3 2) :grid-gap '(1 1) :name :lay1 :children
+               (loop for i from 0 to 4 collect
                  (make-instance 'label :active nil :border t :padding 1
                                        :title (format nil "hello ~r" (random 20))))))
            (form (make-instance 'form :window scr :cyclic t
@@ -2617,7 +2624,10 @@ it will be more efficient to use a character array, a string."
                                                 :selected-background (:bgcolor :blue))
                                          textarea (:background (:attributes (:reverse))
                                                    :selected-background (:bgcolor :blue))
-                                         menu (:selected-background (:attributes (:reverse)))
+                                         menu (:foreground (:bgcolor :green)
+                                               :background (:bgcolor :cyan)
+                                               :selected-foreground (:fgcolor :white :bgcolor :blue)
+                                               :selected-background (:fgcolor :red :bgcolor :yellow))
                                          label (:foreground (:fgcolor :red :bgcolor :yellow)
                                                 :background (:fgcolor :yellow :bgcolor :red)
                                                 :border (:fgcolor :red :bgcolor :yellow)
@@ -2653,41 +2663,15 @@ friend. It is my life. I must master it as I must master my life.")
       (setf (value area1) *t16k-message*
             ;; second area with string wrapping
             (value area2) (wrap-string *t16k-message* 49))
-      (setf (crt::activep area1) nil)
+      (setf (activep area1) nil)
       (setf (background form) (make-instance 'complex-char :simple-char #\space :color-pair '(:black :white)))
       (refresh scr)
       (setf (callback button1) 'accept)
       (edit form)
       (close form))))
 
-(defparameter *t16k1-style*
-  ;; default element styles, since the msgbox is a form
-  '(button   (:selected-foreground (:fgcolor :white :bgcolor :blue))
-    textarea (:foreground (:fgcolor :blue :bgcolor :white)
-              :background (:fgcolor :blue :bgcolor :green :simple-char #\.))
-    ;; but since it is also a form-window, it has additional properties that can be styled
-    :title (:fgcolor :black :bgcolor :yellow :attributes (:bold))
-    :foreground (:fgcolor :red :bgcolor :yellow)
-    :background (:fgcolor :white :bgcolor :black :simple-char #\*)))
-
-(defun t16k1 ()
-  "Use the msgbox class directly."
-  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-    (let ((msgbox (make-instance 'msgbox :title "This is a msgbox dialog" :message *t16k-message*
-                                         :center t :height 10 :width 50 :style *t16k1-style*)))
-      ;; chars will be added in the fg style of the form window
-      (add-char (sub-window msgbox) #\x :y 0 :x 1)
-      (add-char msgbox #\x :y 4 :x 0)
-
-      (setf (cursor-visible-p scr) nil)
-      (edit msgbox)
-      (setf (cursor-visible-p scr) t)
-      (close msgbox))))
-
-;; creating sub-windows and how they share memory with the parent window.
-;; leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3)
 (defun t17 ()
-  "Show how to creating sub-windows and how they share memory with the parent window."
+  "Show how to create sub-windows and how they share memory with the parent window."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     ;; Leaving out the size of a window maxes it out to the right (win1) and to the bottom (win1, win3).
     (let* ((win1 (make-instance 'window :position '(2 2) :border t))
@@ -2798,7 +2782,6 @@ friend. It is my life. I must master it as I must master my life.")
       (close win2)
       (close win1))))
 
-;; Display misc system information
 ;; https://github.com/rudolfochrist/dotfiles/blob/master/.rc.lisp
 (defun t18 ()
   "Display misc system information."
@@ -2909,38 +2892,14 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
            (menu (make-instance 'menu-window :items choices :position (list 0 20) :title "t19b"
-                                             :cyclic t :border t :enable-function-keys t)))
-      (let ((result (select menu)))
-        (format scr "You chose ~A" result)
-        (touch scr)
-        (refresh scr)
-        (get-char scr))
-      (close menu))))
-
-(defun t19b1 ()
-  "Use a fancy styled menu-panel to select an item."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :stacked t)
-    (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666"))
-           (sub-menu (make-instance 'menu-panel :items choices :position (list 5 27) :enable-function-keys t
-                                                :border t :shadow t :title "sub-menu"))
-           (menu (make-instance 'menu-panel :items (cons sub-menu choices)
-                                            :position (list 5 10)
-                                            :title "t19b1"
-                                            :enable-scrolling t
-                                            :region-rows 4 :region-columns 1
-                                            :cyclic nil
-                                            :border t
-                                            :border-width 2
-                                            :shadow t
-                                            :enable-function-keys t)))
-      (setf (background scr) (make-instance 'complex-char :simple-char :board :fgcolor :cyan))
-      (refresh scr)
-      (setf (style menu)
-            '(:border (:background  (:fgcolor :white :bgcolor :blue))
-              :shadow (:background  (:fgcolor :black :bgcolor :black))
-              :selected-foreground (:attributes (:reverse))
-              :background (:fgcolor :black :bgcolor :cyan)
-              :selected-background (:attributes (:reverse))))
+                                             :variable-column-width t
+                                             ;:cyclic t
+                                             :border t
+                                             :padding '(0 1)
+                                             ;:table t
+                                             :item-padding-left 1 :item-padding-right 1
+                                             :item-padding-top 1 :item-padding-bottom 1
+                                             :enable-function-keys t)))
       (let ((result (select menu)))
         (format scr "You chose ~A" result)
         (touch scr)
@@ -2949,15 +2908,53 @@ friend. It is my life. I must master it as I must master my life.")
       (close menu))))
 
 (defun t19b2 ()
-  "Display a menu associated with a separate window. Display submenus ranger-style to the right of the parent."
+  "Display stacked menus and submenus manually associated with a window."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items3 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666" "Choice 7" "Choice 88"))
-           (menu3 (make-instance 'menu :items items3 :name :sm3 :title "sub-menu 3" :max-item-length 20 :position (list 7 50) :menu-type :checklist
-                                       :border t :padding '(0 1)))
+           (menu3 (make-instance 'checklist :items items3 :name :sm3 :title "sub-menu 3" :max-item-length 20 :position (list 7 50)
+                                            :border t
+                                            ;:table t
+                                            :variable-column-width t
+                                            ;:item-padding-top 1
+                                            ;:item-padding-bottom 1
+                                            :item-padding-left 1
+                                            :item-padding-right 1
+                                            ;:grid-gap '(1 0)
+                                            ;:padding '(0 1)
+                                            :style '(:foreground (:fgcolor :red)
+                                                     :selected-foreground (:attributes (:reverse))
+                                                     :background (:bgcolor :yellow)
+                                                     :border (:bgcolor :blue))
+                                            :enable-scrolling t :region-rows 6 :region-columns 1
+                                            :keymap 'menu-window-map))
            (items2 (list "Item 0" menu3 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8"))
-           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 6 30) :border t :padding '(0 1)))
+           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 6 30)
+                                       :border t
+                                       ;:table t
+                                       ;:variable-column-width t
+                                       ;:item-padding-top 1
+                                       ;:item-padding-bottom 1
+                                       :item-padding-left 1
+                                       :item-padding-right 1
+                                       ;:grid-gap '(1 0)
+                                        ;:padding '(0 1)
+                                       ;:style '(:background (:bgcolor :yellow) :border (:bgcolor :red))
+                                       :enable-scrolling t :region-rows 6 :region-columns 1
+                                       :keymap 'menu-window-map))
            (items1 (list "Item 00" menu2 "Item 01" 222 "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09" "Item 10"))
-           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10) :border t :padding '(0 1))))
+           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10)
+                                       :border t
+                                       ;:table t
+                                       ;:variable-column-width t
+                                       :item-padding-top 1
+                                       :item-padding-bottom 1
+                                       :item-padding-left 1
+                                       :item-padding-right 1
+                                       ;;:grid-gap '(1 0)
+                                       ;:padding '(0 1)
+                                       ;:style '(:border (:fgcolor :black :bgcolor :green))
+                                       :enable-scrolling t :region-rows 4 :region-columns 1
+                                       :keymap 'menu-window-map)))
 
       ;; associate the same window with all three menus.
       (setf (window menu1) scr
@@ -2968,26 +2965,51 @@ friend. It is my life. I must master it as I must master my life.")
       (select menu1))))
 
 (defun t19b3 ()
-  "Display submenus in-place, on top of the parent menu."
+  "Display submenus in-place, replacing the parent and sub menu when moving through the stack."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items3 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666" "Choice 7" "Choice 88" "Choice 999" ))
-           (menu3 (make-instance 'menu :items items3 :name :sm1 :title "sub-menu 1" :max-item-length 20 :position (list 5 10) :menu-type :checklist
-                                       :grid-dimensions '(5 2) :table t :padding '(0 1)))
+           (menu3 (make-instance 'checklist :items items3 :name :sm1 :title "sub-menu 1" :max-item-length 20 :position (list 5 10)
+                                            :grid-dimensions '(5 2)
+                                            :border t
+                                            ;:table t
+                                            :draw-stack nil
+                                            :variable-column-width t
+                                            :item-padding-top 1
+                                            :item-padding-bottom 1
+                                            :item-padding-left 1
+                                            :item-padding-right 1
+                                            :grid-gap '(0 1)
+                                            :padding '(0 1)
+                                            :keymap 'menu-window-map))
            (items2 (list "Item 0" menu3 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8"))
-           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 5 10) :table t :padding '(0 1)))
+           (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 5 10)
+                                       :table t
+                                       :draw-stack nil
+                                       :variable-column-width t
+                                       :item-padding-left 1
+                                       :item-padding-right 1
+                                       ;:border t
+                                       :grid-gap '(0 1)
+                                       :padding '(0 1)
+                                       :keymap 'menu-window-map))
            (items1 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09" "Item 10"))
            (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10) :grid-dimensions '(4 3)
-                                       :table t :padding '(0 1))))
+                                       :table t
+                                       :draw-stack nil
+                                        ;:border t
+                                       :variable-column-width t
+                                       :item-padding-top 2
+                                       :item-padding-bottom 2
+                                       :item-padding-left 1
+                                       :item-padding-right 1
+                                       :grid-gap '(0 1)
+                                       :padding '(0 1) ; only active with a border, not with a table
+                                       :keymap 'menu-window-map)))
 
       ;; associate the same underlying window with all three menus.
       (setf (window menu1) scr
             (window menu2) scr
             (window menu3) scr)
-
-      ;; in order to display a submenu in place of the parent, the parent has to be cleared first.
-      ;; clear after a submenu is selected (in menu.lisp accept-selection)
-      (hook menu1 'before-submenu-hook (lambda (obj) (clear obj)))
-      (hook menu2 'before-submenu-hook (lambda (obj) (clear obj)))
 
       ;; select an item and return it.
       (select menu1))))
@@ -3004,7 +3026,9 @@ friend. It is my life. I must master it as I must master my life.")
                              :selected-foreground (list :attributes (list :reverse))
                              :selected-background (list :attributes (list :reverse))))
            (menu (make-instance 'menu-window :items choices :position (list 0 25) :region-dimensions (list 6 1)
-                                             :title "t19c" :border t :enable-function-keys t :enable-scrolling t
+                                             :table t
+                                             :item-padding-left 1 :item-padding-right 1
+                                             :enable-function-keys t :enable-scrolling t
                                              :style menu-style)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
@@ -3031,14 +3055,15 @@ friend. It is my life. I must master it as I must master my life.")
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
                                      :bgcolor :red
-                                     :name :sub2-name :title t :border t :enable-function-keys t))
+                                     :table t :item-padding-left 1 :item-padding-right 1
+                                     :name :sub2-name :enable-function-keys t))
            ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
                                      :items (cons sub-menu2 choices) ;; first item is a submenu
                                      :position (list 1 41) :region-dimensions (list 6 1) :enable-scrolling t
                                      ;;:color-pair (list :black #x999999)
                                      :fgcolor :green
-                                     :name :sub1 :title "Sub1 title" :border t :enable-function-keys t))
+                                     :name :sub1 :border t :padding '(0 1) :enable-function-keys t))
            ;; finally, create the main menu containing sub-menu1 as an item
            (menu      (make-instance 'menu-window
                                      :items (cons sub-menu1 choices)  ;; first item is a submenu
@@ -3072,11 +3097,12 @@ friend. It is my life. I must master it as I must master my life.")
     (let* ((choices '("Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                       "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
            (menu (make-instance 'menu-window :items choices :position (list 0 25)
-                                :region-dimensions (list 6 1) :enable-scrolling t
-                                :title "t19c3" :border t :enable-function-keys t
-                                :menu-type :checklist
-                                :max-item-length 20
-                                :color-pair (list :yellow :red) )))
+                                             :region-dimensions (list 6 1) :enable-scrolling t
+                                             :title "t19c3" :border t :enable-function-keys t
+                                             :menu-type :checklist
+                                             :max-item-length 20
+                                             :table t
+                                             :color-pair (list :yellow :red))))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
         (#\a (let ((result (select menu)))
@@ -3095,7 +3121,15 @@ friend. It is my life. I must master it as I must master my life.")
            (menu (make-instance 'menu-window
                                 :items items :position '(0 0) :grid-dimensions '(20 10)
                                 :region-dimensions '(10 4) :enable-scrolling t
-                                :cyclic nil :max-item-length 9 :title "t19d" :border t
+                                :cyclic nil :max-item-length 15
+                                ;:grid-column-gap 1
+                                ;:grid-row-gap 1
+                                :table t
+                                :item-padding-left 1 :item-padding-right 1
+                                ;:item-padding-top 1 :item-padding-bottom 1
+                                ;:border t
+                                :padding '(0 1)
+                                :variable-column-width t
                                 :enable-function-keys t)))
       (event-case (scr event)
         ;; "a" draws the menu and enters a new menu-only event loop
@@ -3112,10 +3146,12 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items '("Item 0" "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8" "Item 9"))
            (menu (make-instance 'menu-window :input-blocking t :items items :position (list 0 0)
-                                :grid-dimensions (list 1 (length items))
-                                :region-dimensions (list 1 6) :enable-scrolling t
-                                ;;:color-pair (list :black :yellow)
-                                :max-item-length 10 :width (width scr) :border t :enable-function-keys t)))
+                                             :grid-dimensions (list 1 (length items))
+                                             :region-dimensions (list 1 6) :enable-scrolling t
+                                             ;;:color-pair (list :black :yellow)
+                                             :max-item-length 10 :width (width scr)
+                                             :border t
+                                             :enable-function-keys t)))
       ;; start the output below the menu
       (move scr 4 0)
       ;; exit the infinite loop by exiting the menu with q.
@@ -3132,15 +3168,20 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items1 (list "Choice 0" "Choice 11" "Choice 222" "Choice 3333" "Choice 44444" "Choice 555555"
                          "Choice 6666666" "Choice 7" "Choice 88" "Choice 999"))
-           (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 30) :region-dimensions (list 6 1) :enable-scrolling t
-                                     :name :sub1-name :title nil :border t :enable-function-keys t :visible nil :menu-type :selection))
-           (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 45) :region-dimensions (list 6 1) :enable-scrolling t
-                                     :max-item-length 20 :name :sub2 :title "Sub2 title" :border t :enable-function-keys t :visible nil
+           (sub-menu1 (make-instance 'menu-window :items items1 :position (list 2 33) :region-dimensions (list 6 1) :enable-scrolling t
+                                     :name :sub1-name :border t :enable-function-keys t :visible nil :menu-type :selection))
+           (sub-menu2 (make-instance 'menu-window :items items1 :position (list 2 49) :region-dimensions (list 6 1) :enable-scrolling t
+                                     :variable-column-width t :name :sub2 :border t :enable-function-keys t :visible nil
                                      :menu-type :checklist))
            (fun1 (make-instance 'menu-item :name :fun1 :title "fun1" :value (lambda () (clear scr) (move scr 4 0))))
            (items2 (list "Item 0" fun1 sub-menu1 sub-menu2))
            (menu (make-instance 'menu-window :input-blocking t :items items2 :position (list 0 0) :grid-rows 1 :grid-columns (length items2)
-                                             :max-item-length 15 :width (width scr) :border t :enable-function-keys t)))
+                                             :max-item-length 15
+                                             :width (width scr)
+                                             :bgcolor :red
+                                             :border t
+                                             :item-padding-left 1
+                                             :enable-function-keys t)))
       ;; start the output at line 4, below the menu bar.
       (move scr 4 0)
       (refresh scr)
@@ -3152,87 +3193,6 @@ friend. It is my life. I must master it as I must master my life.")
               (format scr "You chose ~A~%" result)
               (refresh scr)))
       (mapc #'close (list menu sub-menu1 sub-menu2)))))
-
-(defun t19f (&optional (border t))
-  "A more fancy version of t19a, a yes-no dialog using the class dialog-window."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
-    (let* ((items (list "Yes" "No" "OK" 'cancel))
-           (menu (make-instance 'dialog-window
-                                :input-blocking t
-                                :items items
-                                ;; when center is t for a dialog window, we do not need to pass the position explicitely.
-                                ;;:position (list 5 15)
-                                :center t
-                                :grid-dimensions (list 1 4)
-                                :max-item-length 12
-                                :current-item-mark "> "
-                                :color-pair (list :yellow :red)
-
-                                ;; width and height will be automatically calculated if they are not given here
-                                ;;:width 68
-                                ;;:dimensions '(10 80)
-
-                                :border border
-                                :enable-function-keys t
-
-                                :name :t19f
-                                ;; if the title is given as a string, it overrides the default title = name
-                                ;; :title "this is a selection dialog"
-                                :title t
-
-                                :message-height 2
-                                :message-text "Press <- or -> to choose. Enter to confirm choice.~%Press q to exit.")))
-
-      (setf (background scr) (make-instance 'complex-char :simple-char :board :color-pair (list :black :white)))
-
-      (refresh scr)
-      (loop named menu-case
-         do (let ((result (select menu)))
-              (unless result (return-from menu-case))
-              (format scr "You chose ~A~%" result)
-              (refresh scr)))
-      (close menu))))
-
-(defun t19g (&optional (border t))
-  "A checklist dialog."
-  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t :use-terminal-colors t)
-    (let* ((items (list "Yes" "No" "OK" 'cancel "Maybe" 'hello))
-           (menu (make-instance 'dialog-window
-                                :input-blocking t
-                                :items items
-                                ;; when a menu or dialog type is a checklist, items can be checked and unchecked with x/space.
-                                :menu-type :checklist
-                                ;; a dialog window can be automatically centered in the terminal window.
-                                ;;:position (list 5 15)
-                                :center t
-                                ;; an error is signaled if h*w of the grid does not match the length of items
-                                ;;:grid-dimensions (list 2 3)
-                                :color-pair (list :yellow :red)
-                                ;; we do not need an item mark in a checklist
-                                :current-item-mark ""
-
-                                ;; the default dimensions of the dialog are calculated from the
-                                ;; grid dimensions (layout) and the max-item-length
-                                :max-item-length 60
-                                ;;:dimensions '(20 80)
-                                ;;:width 60
-
-                                :border border
-                                :enable-function-keys t
-                                :title "this is a checkbox dialog"
-
-                                :message-height 4
-                                :message-text "Press <- or -> to choose. Enter to confirm choice. Press q to exit. Press <- or -> to choose. Enter to confirm choice. Press q to exit.")))
-      ;; #x2592 = :board
-      (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
-      (refresh scr)
-      (loop named menu-case
-         do (let ((result (select menu)))
-              ;; TODO: returning an empty list exits the loop.
-              (unless result (return-from menu-case))
-              (format scr "You chose ~A~%" (mapcar #'value result))
-              (refresh scr)))
-      (close menu))))
 
 ;; Passing the color attribute directly to a character.
 (defun t20 ()
@@ -3678,6 +3638,8 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (format scr "Type a, s or d. Type ^X k. Type q to quit.~%")
     (refresh scr)
 
+    ;; see waiting (input-blocking t) vs polling (input-blocking nil)
+    ;; http://www.meandmark.com/sdlopenglpart6.html
     (run-event-loop scr)))
 
 (defun t28a ()
@@ -4099,7 +4061,7 @@ Press C-j, C-m, C-i, C-h to see the difference."
                            (list :f1 :f2 :f3)
                            (list "Forename" "Surname" "Nickname")))
            (labels- (mapcar (lambda (name title)
-                              (make-instance 'label :name name :title title :width 18 :height nil :border t))
+                              (make-instance 'label :name name :title title :width 18 :height nil :border t :border-width '(1 2)))
                             (list :l1 :l2 :l3)
                             (list "test"
                                   (format nil "Hello there ~%Dear John")
@@ -4183,7 +4145,8 @@ When a new window is added or removed, all windows are rebalanced."
                            ;; resize and reposition existing windows (geometry = y x h w)
                            ;; we only change y and h, x = 0 and w = width
                            (dotimes (i len)
-                             (resize (nth i (reverse items)) dh w)
+                             ;;(resize (nth i (reverse items)) dh w)
+                             (setf (height (nth i (reverse items))) dh)
                              (setf (position-y (nth i (reverse items))) (* i dh)))
                            ;; add a new window to fill the remaining height
                            (push (make-instance 'window :height (- h (* len dh)) :width w :y (* len dh) :x 0 :background (make-random-bg)) items))
@@ -4234,7 +4197,6 @@ When a new window is added or removed, all windows are rebalanced."
         (calculate-layout wins)
         ;; initialize window objects from the plists, after the missing geometry has been calculated
         (initialize-leaves wins)
-
         (mapc (lambda (w)
                 (setf (background w) (make-random-bg))
                 (format w "~A" (name w))
@@ -4264,7 +4226,9 @@ When a new window is added or removed, all windows are rebalanced."
         (labels ((make-random-bg ()
                    (make-instance 'complex-char :bgcolor (list :number (random 256))))
                  (mark-current-win ()
-                   (mapc #'clear leaves) (format (nth n leaves) "***") (mapc #'refresh leaves)))
+                   (mapc #'clear leaves)
+                   (format (nth n leaves) "*** ~A" n)
+                   (mapc #'refresh leaves)))
           (calculate-layout wins)
           (initialize-leaves wins)
           (mapc (lambda (w) (setf (background w) (make-random-bg))) leaves)
