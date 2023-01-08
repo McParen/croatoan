@@ -16,7 +16,8 @@
           "libncursesw.dylib"
           "libcurses.dylib"))
     (:unix
-     (:or "libncursesw.so.6.3"
+     (:or "libncursesw.so.6.4"
+          "libncursesw.so.6.3"
           "libncursesw.so.6.2"
           "libncursesw.so.6.1"
           "libncursesw.so.6.0"
@@ -42,7 +43,8 @@
           "libncurses.dylib"
           "libcurses.dylib"))
     (:unix
-     (:or "libncurses.so.6.3"
+     (:or "libncurses.so.6.4"
+          "libncurses.so.6.3"
           "libncurses.so.6.2"
           "libncurses.so.6.1"
           "libncurses.so.6.0"
@@ -168,7 +170,7 @@ Excerpt from /usr/include/ncurses.h
 /*
  * cchar_t stores an array of CCHARW_MAX wide characters.  The first is
  * normally a spacing character.  The others are non-spacing.  If those
- * (spacing and nonspacing) do not fill the array, a null L'\0' follows. 
+ * (spacing and nonspacing) do not fill the array, a null L'\0' follows.
  * Otherwise, a null is assumed to follow when extracting via getcchar().
  */
 #define CCHARW_MAX	5
