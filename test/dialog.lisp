@@ -21,30 +21,33 @@ must master my life.")
     :background (:fgcolor :white :bgcolor :black :simple-char #\-)))
 
 (defun dlg01 ()
+  "A message box displays a (wrapped) message and one default OK button."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let* ((dlg (make-instance 'dlg:msgbox
-                               :title "Form window"
-                               :message *t16k-message*
-                               :buttons '("OK")
+                               :title "Msgbox dialog"
+                               :message *dialog-message*
+                               :buttons '((:ok . t) (:cancel . nil))
                                :style *dialog-style*)))
       (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
       (refresh scr)
-      (format scr "~A" (edit dlg))
+      (format scr "~A" (prog1 (edit dlg) (clear scr)))
       (refresh scr)
       (get-char scr)
       (close dlg))))
 
 (defun dlg02 ()
+  "A menu box displays a list of items as a menu and buttons to accept the selection."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let* ((dlg (make-instance 'dlg:menubox
-                               :title "Checklist dialog"
-                               :message *t16k-message*
+                               :title "Menubox dialog"
+                               :message *dialog-message*
                                :choices (mapcar (lambda (i) (format nil "~R" i)) '(1 2 3 4 5 6 7 8 9))
-                               :buttons '("OK" "Cancel")
-                               :style *dialog-style*)))
+                               :buttons '(ok (cancel . nil)))))
       (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
       (refresh scr)
-      (format scr "~A" (edit dlg))
+      (multiple-value-bind (btn frm) (edit dlg)
+        (clear scr)
+        (format scr "~A~%~A" btn frm))
       (refresh scr)
       (get-char scr)
       (close dlg))))
@@ -53,27 +56,33 @@ must master my life.")
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let* ((dlg (make-instance 'dlg:checklist
                                :title "Checklist dialog"
-                               :message *t16k-message*
+                               :message *dialog-message*
                                :choices (mapcar (lambda (i) (format nil "~R" i)) '(1 2 3 4 5 6 7 8 9))
                                :buttons '("OK" "Cancel")
                                :style *dialog-style*)))
       (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
       (refresh scr)
-      (format scr "~A" (edit dlg))
+      (multiple-value-bind (btn frm) (edit dlg)
+        (clear scr)
+        (format scr "~A~%~A" btn frm))
       (refresh scr)
       (get-char scr)
       (close dlg))))
 
 (defun dlg04 ()
-  (let (result)
-    (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
-      (let* ((dlg (make-instance 'dlg:inputbox
-                                 :title "Inputbox dialog"
-                                 :message *t16k-message*
-                                 :buttons '("OK" "Cancel")
-                                 :style *dialog-style*)))
-        (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
-        (refresh scr)
-        (setq result (edit dlg))
-        (close dlg)))
-    (format t "~A" result)))
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let* ((dlg (make-instance 'dlg:inputbox
+                               :title "Inputbox dialog"
+                               :message *dialog-message*
+                               ;; One field is provided by default, additional fields can be added as a list of field names
+                               ;; At the moment, their names/titles are not displayed as labels, WIP.
+                               :fields '(f1 f2)
+                               :style *dialog-style*)))
+      (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
+      (refresh scr)
+      (multiple-value-bind (btn frm) (edit dlg)
+        (clear scr)
+        (format scr "~A~%~A" btn frm))
+      (refresh scr)
+      (get-char scr)
+      (close dlg))))

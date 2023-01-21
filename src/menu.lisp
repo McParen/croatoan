@@ -495,13 +495,22 @@ At the third position, display the item given by item-number."
                (heights (loop for i below m1 collect h)))
 
           (when borderp
-            (draw-rectangle win y x
-                            ;; If window dimensions have been explicitely given, override the calculated
-                            ;; menu dimensions. This allows to draw a "menu bar", which can be wider
-                            ;; than the sum of its items, see t19e2.
-                            (if (slot-value win 'height) (slot-value win 'height) (external-height menu))
-                            (if (slot-value win 'width) (slot-value win 'width) (external-width menu))
-                            :style (getf style :border)))
+            (if (typep menu 'window)
+                (draw-rectangle win y x
+                                ;; If window dimensions have been explicitely given, override the calculated
+                                ;; menu dimensions. This allows to draw a "menu bar", which can be wider
+                                ;; than the sum of its items, see t19e2.
+                                (if (slot-value win 'height)(slot-value win 'height) (external-height menu))
+                                (if (slot-value win 'width) (slot-value win 'width) (external-width menu))
+                                :style (getf style :border))
+                ;; if menu is a simple menu, we are not able to set
+                ;; the width manually to a value different than the
+                ;; calculated width
+                (draw-rectangle win y x
+                                (external-height menu)
+                                (external-width menu)
+                                :style (getf style :border))))
+
           (when tablep
             ;; to draw table lines between the grid cells, a grid gap is required.
             (draw-table-lines win y x m1 n1 rg cg bt bl item-padding-top item-padding-bottom widths heights))
@@ -570,12 +579,12 @@ At the third position, display the item given by item-number."
              (car (widget-position menu))
              (cadr (widget-position menu))
              menu)
-  ;; when menu is a part of a form:
-  ;; update-cursor-position = place the cursor on the current item
+  ;; when menu is a part of a form: update-cursor-position = place the cursor on the current item
   ;; if the menu is a checklist, place the cursor inside the [_], like it is done with a single checkbox.
   (update-cursor-position menu))
 
 (defmethod draw ((menu menu-window))
+  "Draw the menu to position (0 0) of its window."
   (draw-menu menu
              0
              0

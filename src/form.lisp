@@ -268,8 +268,11 @@ content position = widget position + border + padding"
 (defmethod format-title ((win window) &optional (beg "") (end ""))
   "If the title string is provided, use the title.
 
-If title is t, use the name. If title is nil, return an empty string."
-  (with-accessors ((title title) (name name)) win
+If title is t, use the name.
+
+If title is nil, return an empty string, dont display a title."
+  (with-accessors ((title title)
+                   (name name)) win
     (let ((str (cond ((and title
                            (stringp title))
                       title)
@@ -284,16 +287,14 @@ If title is t, use the name. If title is nil, return an empty string."
 ;; TODO 201025 add align: left right center
 ;; draw the background window according to the style sheet
 ;; styles: title, border
-(defun add-title (win &optional title)
+(defun add-title (win)
   "Draw a title to the first line of a window.
 
 Usually, this will be an extended-window with a border and the title on the top border.
 
 When title is t instead of a title string, display the symbol name of the widget."
   (add-string win
-              (if title
-                  title
-                  (format-title win "| " " |"))
+              (format-title win "| " " |")
               :y 0 :x 2 :style (getf (slot-value win 'style) :title)))
 
 (defmethod draw ((win extended-window))
@@ -446,20 +447,41 @@ allows to exit the form event loop and return any value."
         (values (value object)
                 (name object)))))
 
+(defun get-form-values (object)
+  "Return an alist of the names and values of active form elements.
+
+Buttons values are not returned, even though they are active elements."
+  (let ((form (if (typep object 'form)
+                  object
+                  (parent object))))
+    (loop for element in (elements form)
+          when (and (activep element)
+                    (not (typep element 'button)))
+            collect (cons (name element) (value element)))))
+
 (defun return-form-values (object)
   "Return an alist with element names as keys and element values as values.
 
 It is supposed to resemble GET params fname=John&lname=Doe from html forms.
 
+Only active elements are returned.
+
+Only the activated button is returned, other buttons are ignored.
+
 Bind this to an event or element to exit the event loop of a form."
-  (throw (if (typep object 'form)
-             object
-             (parent object))
-    (loop for element in (elements (if (typep object 'form)
-                                       object
-                                       (parent object)))
-          when (activep element)
-          collect (cons (name element) (value element)))))
+  (let ((form (if (typep object 'form)
+                  object
+                  (parent object))))
+    (throw form
+      (if (typep object 'form)
+          ;; if the object is a form, assume that the form has been accepted.
+          ;; return-form-values will mostly be bound to elements, not to the form directly.
+          (values t
+                  (get-form-values object))
+          ;; if the object is not a form, it can only be a button.
+          ;; (name . value) of the button with the form values.
+          (values (value object)
+                  (get-form-values form))))))
 
 (defgeneric reset (object)
   (:documentation "Clear user-editable form elements and reset its internal buffers and pointers."))
