@@ -5,17 +5,17 @@
 croatoan is a set of bindings to the ncurses terminal library for
 Common Lisp.
 
-It is inspired by, but not derived from, cl-ncurses and cl-charms.
+It is inspired by, but not derived from, =cl-ncurses= and =cl-charms=.
 
 The API is not yet stable, but the already finished parts are not
 expected to change much.
 
 It is developed and tested on Ubuntu 20.04 x86_64 and SBCL 2.1.10.
 
-The only supported ncurses version is 6.x --with-abi-version=6.
+The only supported ncurses version is 6.x =--with-abi-version=6=.
 The previous version 5.9 mostly works, but is not actively supported.
 
-If your distribution still ships ncurses --with-abi-version=5,
+If your distribution still ships ncurses =--with-abi-version=5=,
 for full compatibility (wide characters, 256 colors and extended
 mouse support), you will have to manually build ncurses 6.x.
 
@@ -25,7 +25,7 @@ Its main goal is to provide a higher-level, lispy/CLOSy interface,
 whereas the existing bindings clone the cryptic C API.
 
 As of now, the library is in an early, but hopefully usable stage. 
-Ncurses is old and huge and it will take a while to cover completely.
+Ncurses is old and huge, and will take a while to cover completely.
 
 A second goal is to reimplement the extension libraries forms, menu
 and dialog in Lisp instead of wrapping the C libraries.
@@ -69,7 +69,7 @@ A workaround is to pass all ncurses IO to the main thread via a
 thread-safe queue. Basic support for this has been implemented.
 
 A tutorial on interacting with ncurses from swank/slime is available
-in docs/slime.md
+in [[file:doc/slime.md][doc/slime.md]]
 
 * Contributing
 
