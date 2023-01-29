@@ -131,10 +131,6 @@ character."
   "Insert count newline characters into window."
   (loop repeat count do (add-char window (char-code #\newline))))
 
-;; pointer to the global/external c acs array, acs_map[].
-;; also see defcvar + get-var-pointer
-(defparameter acs-map-array (cffi:foreign-symbol-pointer "acs_map"))
-
 ;; ncurses maps those standard chars at runtime to the acs characters.
 ;; here we use it in the function acs.
 (defparameter acs-alist
@@ -236,13 +232,21 @@ extern NCURSES_EXPORT_VAR(chtype) acs_map[];
 
 |#
 
+;; pointer to the global/external c acs array, acs_map[].
+;; also see defcvar + get-var-pointer
+;; (defparameter acs-map-array (cffi:foreign-symbol-pointer "acs_map"))
+;; call foreign-symbol-pointer at run time instead of build time,
+;; because we cant allocate foreign memory _before_ building.
+
 ;; ACS, the alternative/extended character set for line drawing.
 ;; Used by functions: add-char, box and border.
-;; 
+;;
 ;; * http://www.melvilletheatre.com/articles/ncurses-extended-characters/index.html
 ;; * http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/misc.html
-;; 
+;;
 ;; Example: (acs 'ULCORNER)
 (defun acs (char-name)
   "Take a symbol, return the integer representing the acs char."
-  (cffi:mem-aref acs-map-array 'ncurses:chtype (char-code (cdr (assoc char-name acs-alist)))))
+  (cffi:mem-aref (cffi:foreign-symbol-pointer "acs_map")
+                 'ncurses:chtype
+                 (char-code (cdr (assoc char-name acs-alist)))))
