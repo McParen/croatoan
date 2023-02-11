@@ -8,7 +8,13 @@ must master my life.")
 (defparameter *dialog-style*
   '(:foreground (:fgcolor :red)
     :title (:fgcolor :black :bgcolor :yellow)
-    label  (:foreground (:fgcolor :yellow :bgcolor :green))
+    field  (:background (:simple-char #\.)
+            :selected-foreground (:fgcolor :yellow :attributes (:bold))
+            :selected-background (:fgcolor :yellow :attributes (:bold) :simple-char #\.))
+    checklist (:border (:fgcolor :blue)
+               :foreground (:fgcolor :yellow)
+               :selected-foreground (:bgcolor :yellow :attributes (:bold)))
+    label  (:foreground (:fgcolor :black :bgcolor :green))
     button (:selected-border (:fgcolor :cyan)
             :selected-foreground (:fgcolor :cyan))))
 
@@ -53,12 +59,13 @@ must master my life.")
       (close dlg))))
 
 (defun dlg03 ()
+  "A checklist dialog is similar to a menu, but allows to select zero or more items from a list."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let* ((dlg (make-instance 'dlg:checklist
                                :title "Checklist dialog"
                                :message *dialog-message*
                                :choices (mapcar (lambda (i) (format nil "~R" i)) '(1 2 3 4 5 6 7 8 9))
-                               :buttons '("OK" "Cancel")
+                               :buttons '("OK there" ("Cancel this" . nil))
                                :style *dialog-style*)))
       (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
       (refresh scr)
@@ -70,13 +77,15 @@ must master my life.")
       (close dlg))))
 
 (defun dlg04 ()
+  "An input box allows the user to enter one (default) or more values."
   (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
     (let* ((dlg (make-instance 'dlg:inputbox
                                :title "Inputbox dialog"
                                :message *dialog-message*
-                               ;; One field is provided by default, additional fields can be added as a list of field names
-                               ;; At the moment, their names/titles are not displayed as labels, WIP.
-                               :fields '(f1 f2)
+                               :width 50
+                               ;; If omitted, one field is provided by default, other fields can be provided as a list
+                               ;; of names or conses of names (to return in the alist) and titles (to display).
+                               :fields '(forename surname (address . "my address") :age)
                                :style *dialog-style*)))
       (setf (background scr) (make-instance 'complex-char :simple-char #x2592 :color-pair (list :white :black)))
       (refresh scr)

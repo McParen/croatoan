@@ -1158,25 +1158,29 @@ This does not change the current item number."
     ;; For backward compatibility, if a list of elements has been passed, store it in the children slot.
     (when elements
       (setf children elements))
-    ;; When a layout has been passed, calculate the positions of the elements.
+    ;; When a layout has been passed, set the children list, their parent and calc their positions
     (when layout
-      (calculate-positions layout)
-      (setf children (flatten-items layout)))
+      (setf children (flatten-items layout))
+      (dolist (element children)
+        (setf (slot-value element 'parent) form))
+      ;; positions can only be set after the parent slot has been set
+      (calculate-positions layout))
     ;; Check that only elements are passed to a form.
     (when (notevery (lambda (x) (typep x 'element)) children)
       (error "Form init: All items passed to a form have to be element objects."))
     (when children
-      ;; Initialize the current element as the first active element from the passed elements list.
+      ;; Initialize the current element as the first active element from the elements list.
       ;; we have to set the current element before we can change it with select-previous-element and select-next-element
       (setf current-item-number (position-if #'activep children))
       ;; mark the current element selected so it can be highlighted
       (setf (slot-value (current-item form) 'selectedp) t)
-      ;; set the parent form slot of every element.
+      ;; set the parent form slot of the children
+      ;; we have to do this again, in case the children have been given in a list instead of a layout
       (dolist (element children)
         (setf (slot-value element 'parent) form)))))
 
 (defun add-child (parent child)
-  ""
+  "Append an element to parent's children list."
   (setf (children parent)
         (nconc (children parent) (list child))))
 
@@ -1201,10 +1205,9 @@ This does not change the current item number."
 (defmethod (setf elements) (elements (obj form))
   (setf (slot-value obj 'children) elements))
 
-;; TODO: use both window-free forms and form-windows, window-free menus und menu-windows.
 (defclass form-window (extended-window form)
   ()
-  (:documentation ""))
+  (:documentation "A form window is an extended window displaying a form."))
 
 (defmethod initialize-instance :after ((win form-window) &key)
   (with-slots (winptr height width (y position-y) (x position-x) sub-window borderp border-width window) win

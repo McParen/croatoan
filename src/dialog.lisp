@@ -16,28 +16,26 @@
 ;; called after the primary methods of all dialogs
 (defmethod initialize-instance :after ((obj dialog) &key center message buttons wrap-message)
   (with-slots (winptr height width (y position-y) (x position-x) window layout sub-window current-item-number borderp border-width) obj
-    ;; layout positions
+    ;; form window settings, called for all derived dialog types
+
     ;; dimensions
-    (calculate-positions layout)
     (setf height (+ (* 2 border-width) (height layout)))
     (when center
       (setf y (- (round (/ ncurses:LINES 2)) (round (/ height 2)))
             x (- (round (/ ncurses:COLS  2)) (round (/ width  2)))))
 
-    ;; form window
+    ;; border requires a width of at least 1.
     (when (and borderp (zerop border-width))
       (setf border-width 1))
-    (setf winptr (ncurses:newwin (1- height) width y x))
-    (setf sub-window (make-instance 'sub-window :parent obj :height (- height (* 2 border-width)) :width (- width (* 2 border-width))
-                                                :position (list border-width border-width) :relative t :enable-function-keys t))
-    (setf window sub-window)
 
-    ;; form
-    (setf (children obj) (flatten-items layout))
-    (setf current-item-number (position-if #'activep (children obj)))
-    (setf (slot-value (current-item obj) 'selectedp) t)
-    (dolist (i (children obj))
-      (setf (slot-value i 'parent) obj))))
+    (setf winptr (ncurses:newwin (1- height) width y x))
+    (setf sub-window (make-instance 'sub-window :parent obj
+                                                :height (- height (* 2 border-width))
+                                                :width (- width (* 2 border-width))
+                                                :position (list border-width border-width)
+                                                :relative t
+                                                :enable-function-keys t))
+    (setf window sub-window)))
 
 (defclass msgbox (dialog)
   ()
@@ -69,13 +67,13 @@ use it as the title."
 (defun make-dialog-layout (width message wrapp buttons &rest elements)
   (make-instance 'column-layout
                  :position '(0 0)
+                 :grid-row-gap 1
                  :children
                  (append (list (make-instance 'label :title (if wrapp
                                                                 (wrap-string message (- width 6))
                                                                 message)
                                                      :width (- width 4)
-                                                     :border nil
-                                                     :padding-bottom 1))
+                                                     :border nil))
                          elements
                          (list (make-instance 'row-layout :children (mapcar #'make-dialog-button buttons))))))
 
@@ -123,7 +121,7 @@ use it as the title."
   ()
   (:default-initargs
    :buttons '((ok . t) (cancel . nil))
-   :fields '(:field))
+   :fields '(:input))
   (:documentation
    "An input box provides one or more input fields and buttons to accept or cancel the input."))
 
@@ -132,8 +130,18 @@ use it as the title."
   (with-slots (width layout) obj
     (unless width (setf width (round (* ncurses:COLS 2/3))))
     (setf layout (apply #'make-dialog-layout width message wrap-message buttons
-                        (loop for i in fields collect
-                          (make-instance 'field
-                                         :name i
-                                         :width (- width 8)
-                                         :border t))))))
+                        (list (make-instance 'layout :grid-columns 2
+                                                     :grid-gap '(1 1)
+                                                     :children
+                                                     ;; len is the max length of the field names
+                                                     (let ((len (loop for i in fields maximize (if (consp i)
+                                                                                                   (length (cdr i))
+                                                                                                   (length (symbol-name i))))))
+                                                       ;; if we have more than one input field
+                                                       ;; make an alternating list of labels and fields
+                                                       (loop for i in fields
+                                                             collect (make-instance 'label :reference (if (consp i) (car i) i)
+                                                                                           :width len)
+                                                             collect (make-instance 'field :name  (if (consp i) (car i) i)
+                                                                                           :title (if (consp i) (cdr i) nil)
+                                                                                           :width (- width 8 len))))))))))
