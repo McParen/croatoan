@@ -96,11 +96,31 @@ At the moment, this setting applies only to stacks of simple (non-window) menus)
 Item types can be strings, symbols, numbers, other menus or callback functions."))
 
 ;; init for menus which aren't menu windows
-(defmethod initialize-instance :after ((menu menu) &key)
+(defmethod initialize-instance :after ((menu menu) &key item-padding)
   (with-slots (children grid-rows grid-columns region-rows region-columns region-start-row region-start-column
                tablep grid-row-gap grid-column-gap) menu
     (setf region-start-row 0
           region-start-column 0)
+
+    ;; item-padding is either an integer, or a list (top-bottom left-right) or (top bottom left right).
+    (when item-padding
+      (with-slots ((pt item-padding-top) (pb item-padding-bottom) (pl item-padding-left) (pr item-padding-right)) menu
+        (typecase item-padding
+          (list
+           (case (length item-padding)
+             (4 (setf pt (nth 0 item-padding)
+                      pb (nth 1 item-padding)
+                      pl (nth 2 item-padding)
+                      pr (nth 3 item-padding)))
+             (2 (setf pt (nth 0 item-padding)
+                      pb (nth 0 item-padding)
+                      pl (nth 1 item-padding)
+                      pr (nth 1 item-padding)))))
+          (integer
+           (setf pt item-padding
+                 pb item-padding
+                 pl item-padding
+                 pr item-padding)))))
 
     ;; Convert strings and symbols to item objects
     (setf children (mapcar (lambda (item)
@@ -244,11 +264,6 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                grid-rows grid-columns region-rows region-columns max-item-length current-item-mark fgcolor bgcolor) win
     ;; only for menu windows
     (when (eq (type-of win) 'menu-window)
-      (setf border-width-top    (if (or borderp tablep) 1 0)
-            border-width-bottom (if (or borderp tablep) 1 0)
-            border-width-left   (if (or borderp tablep) 1 0)
-            border-width-right  (if (or borderp tablep) 1 0))
-
       ;; if no layout was given, use a vertical list (n 1)
       (unless grid-rows (setf grid-rows (length children)))
       (unless grid-columns (setf grid-columns 1))
@@ -363,7 +378,9 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
                (fill-rectangle obj (apply #'make-instance 'complex-char bg-style) y x vh vw)))))))
 
 (defun draw-table-top (win widths)
-  "Draw the top line of a table at the current position using ANSI drawing characters."
+  "Draw the top line of a table at the current position using ANSI drawing characters.
+
+The top line is only drawn when border is t."
   (add-char win :upper-left-corner)
   (dolist (n (butlast widths))
     (add-char win :horizontal-line :n n)
@@ -371,16 +388,25 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   (add-char win :horizontal-line :n (car (last widths)))
   (add-char win :upper-right-corner))
 
-(defun draw-table-row-separator (win widths)
-  (crt:add-char win :tee-pointing-right)
+(defun draw-table-row-separator (win widths borderp)
+  "Draw the horizontal line between table cells."
+  ;; the first char is only drawn for the border.
+  (when borderp
+    (crt:add-char win :tee-pointing-right))
+  ;; draw -- then + for every column.
   (dolist (n (butlast widths))
     (crt:add-char win :horizontal-line :n n)
     (crt:add-char win :crossover-plus))
+  ;; finally, thaw only -- for the last column.
   (add-char win :horizontal-line :n (car (last widths)))
-  (add-char win :tee-pointing-left))
+  ;; the last char is only drawn for the border.
+  (when borderp
+    (add-char win :tee-pointing-left)))
 
 (defun draw-table-bottom (win widths)
-  "Draw the top line of a table at the current position using ANSI drawing characters."
+  "Draw the top line of a table at the current position using ANSI drawing characters.
+
+The bottom line is only drawn when border is t."
   (add-char win :lower-left-corner)
   (dolist (n (butlast widths))
     (add-char win :horizontal-line :n n)
@@ -388,31 +414,75 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
   (add-char win :horizontal-line :n (car (last widths)))
   (add-char win :lower-right-corner))
 
-(defun draw-table-lines (win y x m1 n1 rg cg bt bl pt pb widths heights)
+(defun draw-table-lines (win y x m n rg cg bt bl pt pb widths heights borderp)
+  ;; y position
+  ;; x position
+  ;; m number of displayed rows
+  ;; n number of displayed columns
+  ;; rg row gap
+  ;; cg column-gap
+  ;; bt width of the top border
+  ;; bl width of the left border
+  ;; pt padding top
+  ;; pb padding bottom
+  ;; witdhs, leights - list of widths of columns
+
   ;;; draw the n1+1 vertical lines (plain, without endings and crossings)
-  ;; first vline
-  (draw-vline win (1+ y) x (+ (1- (* m1 2))
-                              (* m1 (+ pt pb))))
-  ;; last n1 vlines
-  (dotimes (j n1)
+
+  ;; first vline (left border)
+  (when borderp
     (draw-vline win
-                (1+ y)
+                ;; the first line is the top border, we start below the border.
+                (+ y bt)
+                x
+                ;; length of the vertical lines
+                (+ m                  ; rows
+                   (- m 1)            ; row separators
+                   (* m (+ pt pb))))) ; top and bottom padding
+
+  ;; n-1 column separator vlines
+  (dotimes (j (1- n))
+    (draw-vline win
+                (+ y bt)
                 (+ x bl (* j cg) (loop for i from 0 to j sum (nth i widths)))
-                (+ (1- (* m1 2))
-                   (* m1 (+ pt pb)))))
-  ;;; draw m1+1 horizontal lines (with endings and crossings)
-  ;; top horizontal line of the table
-  (move win y x)
-  (draw-table-top win widths)
-  ;; m1-1 row separators
-  (dotimes (i (- m1 1))
+                (+ (1- (* m 2))
+                   (* m (+ pt pb)))))
+
+  ;; last vline (right border)
+  (when borderp
+    (draw-vline win
+                ;; the first line is the border top, we start below the border.
+                (+ y bt)
+                (+ x
+                   bl
+                   (* (1- n) cg)
+                   (reduce #'+ widths))
+                ;; length of the vertical lines
+                (+ m                  ; rows
+                   (- m 1)            ; row separators
+                   (* m (+ pt pb)))))  ; top and bottom padding
+
+  ;;; draw m+1 horizontal lines (with endings and crossings)
+
+  ;; they have to be drawn _after_ the vertical lines, because the
+  ;; drawn vertical lines do not contain the crossover chars.
+
+  ;; top horizontal line of the table, only drawn if borderp is t.
+  (when borderp
+    (move win y x)
+    (draw-table-top win widths))
+
+  ;; m-1 row separators
+  (dotimes (i (- m 1))
     (move win
           (+ y bt (* i rg) (loop for j from 0 to i sum (nth j heights)))
           x)
-    (draw-table-row-separator win widths))
-  ;; bottom line
-  (move win (+ y (* 2 m1) (* m1 (+ pt pb))) x)
-  (draw-table-bottom win widths))
+    (draw-table-row-separator win widths borderp))
+
+  ;; bottom line, only drawn if borderp is t.
+  (when borderp
+    (move win (+ y (* 2 m) (* m (+ pt pb))) x)
+    (draw-table-bottom win widths)))
 
 (defun format-menu-item (menu item selectedp)
   "Take a menu and return item item-number as a properly formatted string.
@@ -513,7 +583,7 @@ At the third position, display the item given by item-number."
 
           (when tablep
             ;; to draw table lines between the grid cells, a grid gap is required.
-            (draw-table-lines win y x m1 n1 rg cg bt bl item-padding-top item-padding-bottom widths heights))
+            (draw-table-lines win y x m1 n1 rg cg bt bl item-padding-top item-padding-bottom widths heights borderp))
 
           (dogrid ((i 0 m1)
                    (j 0 n1))
@@ -524,12 +594,12 @@ At the third position, display the item given by item-number."
                    posy
                    posx)
               (setq posy (+ y
-                            (if (or tablep borderp) bt 0)
+                            (if borderp bt 0)
                             (if (and borderp (not tablep)) pt 0)
                             (* i rg)
                             (* i h))
                     posx (+ x
-                            (if (or tablep borderp) bl 0)
+                            (if borderp bl 0)
                             (if (and borderp (not tablep)) pl 0)
                             (* j cg)
                             (nth j xs)))

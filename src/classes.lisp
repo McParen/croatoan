@@ -807,28 +807,28 @@ absolute position and dimensions of the panel."))
 
    (border-width-top
     :initarg       :border-width-top
-    :initform      1
+    :initform      0
     :type          integer
     :accessor      border-width-top
     :documentation "")
 
    (border-width-bottom
     :initarg       :border-width-bottom
-    :initform      1
+    :initform      0
     :type          integer
     :accessor      border-width-bottom
     :documentation "")
 
    (border-width-left
     :initarg       :border-width-left
-    :initform      1
+    :initform      0
     :type          integer
     :accessor      border-width-left
     :documentation "")
 
    (border-width-right
     :initarg       :border-width-right
-    :initform      1
+    :initform      0
     :type          integer
     :accessor      border-width-right
     :documentation "")
@@ -857,50 +857,53 @@ absolute position and dimensions of the panel."))
   (:documentation "An element of a form, like a field or button."))
 
 (defmethod initialize-instance :after ((obj element) &key padding border-width)
+  ;; padding is either an integer, or a list (top-bottom left-right) or (top bottom left right).
   (when padding
-    (typecase padding
-      (list
-       (case (length padding)
-         (4
-          (with-slots ((pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right)) obj
-            (setf pt (nth 0 padding)
-                  pb (nth 1 padding)
-                  pl (nth 2 padding)
-                  pr (nth 3 padding))))
-         (2
-          (with-slots ((pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right)) obj
-            (setf pt (nth 0 padding)
-                  pb (nth 0 padding)
-                  pl (nth 1 padding)
-                  pr (nth 1 padding))))))
-      (integer
-       (with-slots ((pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right)) obj
+    (with-slots ((pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right)) obj
+      (typecase padding
+        (list
+         (case (length padding)
+           (4 (setf pt (nth 0 padding)
+                    pb (nth 1 padding)
+                    pl (nth 2 padding)
+                    pr (nth 3 padding)))
+           (2 (setf pt (nth 0 padding)
+                    pb (nth 0 padding)
+                    pl (nth 1 padding)
+                    pr (nth 1 padding)))))
+        (integer
          (setf pt padding
                pb padding
                pl padding
                pr padding)))))
+
   (when border-width
-    (typecase border-width
-      (list
-       (case (length border-width)
-         (4
-          (with-slots ((bt border-width-top) (bb border-width-bottom) (bl border-width-left) (br border-width-right)) obj
-            (setf bt (nth 0 border-width)
-                  bb (nth 1 border-width)
-                  bl (nth 2 border-width)
-                  br (nth 3 border-width))))
-         (2
-          (with-slots ((bt border-width-top) (bb border-width-bottom) (bl border-width-left) (br border-width-right)) obj
-            (setf bt (nth 0 border-width)
-                  bb (nth 0 border-width)
-                  bl (nth 1 border-width)
-                  br (nth 1 border-width))))))
-      (integer
-       (with-slots ((bt border-width-top) (bb border-width-bottom) (bl border-width-left) (br border-width-right)) obj
+    (with-slots ((bt border-width-top) (bb border-width-bottom) (bl border-width-left) (br border-width-right)) obj
+      (typecase border-width
+        (list
+         (case (length border-width)
+           (4 (setf bt (nth 0 border-width)
+                    bb (nth 1 border-width)
+                    bl (nth 2 border-width)
+                    br (nth 3 border-width)))
+           (2 (setf bt (nth 0 border-width)
+                    bb (nth 0 border-width)
+                    bl (nth 1 border-width)
+                    br (nth 1 border-width)))))
+        (integer
          (setf bt border-width
                bb border-width
                bl border-width
-               br border-width))))))
+               br border-width)))))
+
+  ;; if borderp is t, we need to have at least a border-width of 1, but only if it hasnt already be changed from the default 0.
+  ;; if there is no border, the default border width is 0.
+  (with-slots ((bt border-width-top) (bb border-width-bottom) (bl border-width-left) (br border-width-right) borderp) obj
+    (when borderp
+      (unless (plusp bt) (setf bt 1))
+      (unless (plusp bb) (setf bb 1))
+      (unless (plusp bl) (setf bl 1))
+      (unless (plusp br) (setf br 1)))))
 
 (defclass button (element)
   ((callback
@@ -929,8 +932,6 @@ absolute position and dimensions of the panel."))
     "If the name of a reference element is specified, the element's title will be displayed instead of the label's.
     If a title for the label is explicitely provided, it overrides the title of the reference element.")
 
-   ;; TODO: width, style should be element slots and not label slots because the label doesnt do anything with them.
-
    (width
     :initarg       :width
     :initform      nil
@@ -938,7 +939,6 @@ absolute position and dimensions of the panel."))
     :accessor      width
     :documentation "The width of the label.")
 
-   ;; TODO 201222 add default initargs instead of duplicating the slot
    (activep
     :initform      nil
     :documentation "Labels are by default not active and can not be selected when cycling through the elements."))
