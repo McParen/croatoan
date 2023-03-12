@@ -377,44 +377,44 @@ Example: (sub2rmi '(2 3) '(1 2)) => 5"
               (t
                (fill-rectangle obj (apply #'make-instance 'complex-char bg-style) y x vh vw)))))))
 
-(defun draw-table-top (win widths)
+(defun draw-table-top (win widths &key style)
   "Draw the top line of a table at the current position using ANSI drawing characters.
 
 The top line is only drawn when border is t."
-  (add-char win :upper-left-corner)
+  (add-char win :upper-left-corner :style style)
   (dolist (n (butlast widths))
-    (add-char win :horizontal-line :n n)
-    (add-char win :tee-pointing-down))
-  (add-char win :horizontal-line :n (car (last widths)))
-  (add-char win :upper-right-corner))
+    (add-char win :horizontal-line :n n :style style)
+    (add-char win :tee-pointing-down :style style))
+  (add-char win :horizontal-line :n (car (last widths)) :style style)
+  (add-char win :upper-right-corner :style style))
 
-(defun draw-table-row-separator (win widths borderp)
+(defun draw-table-row-separator (win widths borderp &key style)
   "Draw the horizontal line between table cells."
   ;; the first char is only drawn for the border.
   (when borderp
-    (crt:add-char win :tee-pointing-right))
+    (crt:add-char win :tee-pointing-right :style style))
   ;; draw -- then + for every column.
   (dolist (n (butlast widths))
-    (crt:add-char win :horizontal-line :n n)
-    (crt:add-char win :crossover-plus))
+    (crt:add-char win :horizontal-line :n n :style style)
+    (crt:add-char win :crossover-plus :style style))
   ;; finally, thaw only -- for the last column.
-  (add-char win :horizontal-line :n (car (last widths)))
+  (add-char win :horizontal-line :n (car (last widths)) :style style)
   ;; the last char is only drawn for the border.
   (when borderp
-    (add-char win :tee-pointing-left)))
+    (add-char win :tee-pointing-left :style style)))
 
-(defun draw-table-bottom (win widths)
+(defun draw-table-bottom (win widths &key style)
   "Draw the top line of a table at the current position using ANSI drawing characters.
 
 The bottom line is only drawn when border is t."
-  (add-char win :lower-left-corner)
+  (add-char win :lower-left-corner :style style)
   (dolist (n (butlast widths))
-    (add-char win :horizontal-line :n n)
-    (add-char win :tee-pointing-up))
-  (add-char win :horizontal-line :n (car (last widths)))
-  (add-char win :lower-right-corner))
+    (add-char win :horizontal-line :n n :style style)
+    (add-char win :tee-pointing-up :style style))
+  (add-char win :horizontal-line :n (car (last widths)) :style style)
+  (add-char win :lower-right-corner :style style))
 
-(defun draw-table-lines (win y x m n rg cg bt bl pt pb widths heights borderp)
+(defun draw-table-lines (win y x m n rg cg bt bl pt pb widths heights borderp &key style)
   ;; y position
   ;; x position
   ;; m number of displayed rows
@@ -438,7 +438,9 @@ The bottom line is only drawn when border is t."
                 ;; length of the vertical lines
                 (+ m                  ; rows
                    (- m 1)            ; row separators
-                   (* m (+ pt pb))))) ; top and bottom padding
+                   (* m (+ pt pb)))   ; top and bottom padding
+                nil
+                :style style))
 
   ;; n-1 column separator vlines
   (dotimes (j (1- n))
@@ -446,7 +448,9 @@ The bottom line is only drawn when border is t."
                 (+ y bt)
                 (+ x bl (* j cg) (loop for i from 0 to j sum (nth i widths)))
                 (+ (1- (* m 2))
-                   (* m (+ pt pb)))))
+                   (* m (+ pt pb)))
+                nil
+                :style style))
 
   ;; last vline (right border)
   (when borderp
@@ -460,7 +464,9 @@ The bottom line is only drawn when border is t."
                 ;; length of the vertical lines
                 (+ m                  ; rows
                    (- m 1)            ; row separators
-                   (* m (+ pt pb)))))  ; top and bottom padding
+                   (* m (+ pt pb)))   ; top and bottom padding
+                nil
+                :style style))
 
   ;;; draw m+1 horizontal lines (with endings and crossings)
 
@@ -470,21 +476,21 @@ The bottom line is only drawn when border is t."
   ;; top horizontal line of the table, only drawn if borderp is t.
   (when borderp
     (move win y x)
-    (draw-table-top win widths))
+    (draw-table-top win widths :style style))
 
   ;; m-1 row separators
   (dotimes (i (- m 1))
     (move win
           (+ y bt (* i rg) (loop for j from 0 to i sum (nth j heights)))
           x)
-    (draw-table-row-separator win widths borderp))
+    (draw-table-row-separator win widths borderp :style style))
 
   ;; bottom line, only drawn if borderp is t.
   (when borderp
     (move win (+ y (* 2 m) (* m (+ pt pb))) x)
-    (draw-table-bottom win widths)))
+    (draw-table-bottom win widths :style style)))
 
-(defun format-menu-item (menu item selectedp)
+(defun format-menu-item (menu item selectedp width)
   "Take a menu and return item item-number as a properly formatted string.
 
 If the menu is a checklist, return [ ] or [X] at the first position.
@@ -496,21 +502,27 @@ At the third position, display the item given by item-number."
   (with-accessors ((type menu-type)
                    (current-item-number current-item-number)
                    (current-item-mark current-item-mark)) menu
-    ;; return as string
-    (format nil "~A~A~A"
-            ;; two types of menus: :selection or :checklist
-            ;; show the checkbox before the item in checklists
-            (if (eq type :checklist)
-                (if (checkedp item) "[X] " "[ ] ")
-                "")
-
-            ;; for the current item, draw the current-item-mark
-            ;; for all other items, draw a space
-            (if selectedp
-                current-item-mark
-                (make-string (length current-item-mark) :initial-element #\space))
-            ;; then add the item title
-            (format-title item))))
+    (with-slots (item-padding-left item-padding-right) menu
+      ;; return as string
+      (format nil
+              ;; "~v,,,' @A" to right-justify
+              "~A~A~A~v,,,' A~A"
+              (make-string item-padding-left :initial-element #\space)
+              ;; two types of menus: :selection or :checklist
+              ;; show the checkbox before the item in checklists
+              (if (eq type :checklist)
+                  (if (checkedp item) "[X] " "[ ] ")
+                  "")
+              ;; for the current item, draw the current-item-mark
+              ;; for all other items, draw a space
+              (if selectedp
+                  current-item-mark
+                  (make-string (length current-item-mark) :initial-element #\space))
+              ;; the widths contain the paddings so we have to subtract them...
+              (- width item-padding-left item-padding-right)
+              ;; then add the item title
+              (format-title item)
+              (make-string item-padding-right :initial-element #\space)))))
 
 (defmethod external-width ((obj menu-item))
   (length (title obj)))
@@ -548,9 +560,9 @@ At the third position, display the item given by item-number."
     (with-accessors ((style style)) menu
       (clear menu)
       ;; start and end indexes
+      ;; when the menu is too big to be displayed at once, only a part
+      ;; is displayed, and the menu can be scrolled
       (destructuring-bind (m0 n0 m1 n1)
-          ;; when the menu is too big to be displayed at once, only a part
-          ;; is displayed, and the menu can be scrolled
           (if scrolling-enabled-p (list m0 n0 m1 n1) (list 0 0 m n))
         (let* ((widths- (mapcar (lambda (i) (+ i item-padding-left item-padding-right))
                                 (if variable-column-width-p
@@ -562,9 +574,14 @@ At the third position, display the item given by item-number."
                (xs (cumsum-predecessors widths))
                ;; height of one item is 1 and the padding.
                (h (+ 1 item-padding-top item-padding-bottom))
-               (heights (loop for i below m1 collect h)))
+               (heights (loop for i below m1 collect h))
 
-          (when borderp
+               (border-style (if (selectedp menu)
+                                 (getf style :selected-border)
+                                 (getf style :border))))
+          ;; draw the external border when table is nil.
+          ;; a table draws its own "connected" border.
+          (when (and borderp (not tablep))
             (if (typep menu 'window)
                 (draw-rectangle win y x
                                 ;; If window dimensions have been explicitely given, override the calculated
@@ -572,18 +589,20 @@ At the third position, display the item given by item-number."
                                 ;; than the sum of its items, see t19e2.
                                 (if (slot-value win 'height)(slot-value win 'height) (external-height menu))
                                 (if (slot-value win 'width) (slot-value win 'width) (external-width menu))
-                                :style (getf style :border))
+                                :style border-style)
                 ;; if menu is a simple menu, we are not able to set
                 ;; the width manually to a value different than the
                 ;; calculated width
                 (draw-rectangle win y x
                                 (external-height menu)
                                 (external-width menu)
-                                :style (getf style :border))))
+                                :style border-style)))
 
+          ;; draw table lines and if border is t, the table border.
           (when tablep
             ;; to draw table lines between the grid cells, a grid gap is required.
-            (draw-table-lines win y x m1 n1 rg cg bt bl item-padding-top item-padding-bottom widths heights borderp))
+            (draw-table-lines win y x m1 n1 rg cg bt bl item-padding-top item-padding-bottom widths heights borderp
+                              :style border-style))
 
           (dogrid ((i 0 m1)
                    (j 0 n1))
@@ -591,57 +610,43 @@ At the third position, display the item given by item-number."
             (let* ((item (ref2d items (list m n) (+ m0 i) (+ n0 j)))
                    (selectedp (and (= i (- r m0)) (= j (- c n0))))
                    ;; calculated position of the item
-                   posy
-                   posx)
-              (setq posy (+ y
+                   (posy (+ y
                             (if borderp bt 0)
                             (if (and borderp (not tablep)) pt 0)
                             (* i rg)
-                            (* i h))
-                    posx (+ x
+                            (* i h)))
+                   (posx (+ x
                             (if borderp bl 0)
                             (if (and borderp (not tablep)) pl 0)
                             (* j cg)
                             (nth j xs)))
+                   (fg (if style
+                           (getf style (if selectedp :selected-foreground :foreground))
+                           ;; default foreground style
+                           (if selectedp (list :attributes (list :reverse)) nil))))
+
               ;; save the position of the current item, to be used in update-cursor-position.
               (when selectedp
                 (setf cpos (list posy posx)))
-              (let ((fg-style (if style
-                                  (getf style (if selectedp :selected-foreground :foreground))
-                                  ;; default foreground style
-                                  (if selectedp (list :attributes (list :reverse)) nil)))
-                    (bg-style (if style
-                                  (getf style (if selectedp :selected-background :background))
-                                  ;; default background style
-                                  (if selectedp (list :attributes (list :reverse)) nil))))
 
-                ;; draw the top padding lines
-                (when (plusp item-padding-top)
-                  (dotimes (k item-padding-top)
-                    (move win (+ posy k) posx)
-                    (add win #\space :style bg-style :n (nth j widths))))
+              ;; draw the top padding lines
+              (when (plusp item-padding-top)
+                (dotimes (k item-padding-top)
+                  (move win (+ posy k) posx)
+                  (add win #\space :style fg :n (nth j widths))))
 
-                (move win (+ posy item-padding-top) posx)
-                ;; write an empty string as the background first.
-                (save-excursion win (add win #\space :style bg-style :n (nth j widths)))
-                ;; display the itemt in the window associated with the menu
-                (add win
-                     (format nil
-                             (concatenate 'string
-                                          (make-string item-padding-left :initial-element #\space)
-                                          ;; "~v,,,' @A" to right-justify
-                                          "~v,,,' A"
-                                          (make-string item-padding-right :initial-element #\space))
-                             (- (nth j widths) item-padding-left item-padding-right)
-                             (format-menu-item menu item selectedp))
-                     :style fg-style)
+              (move win (+ posy item-padding-top) posx)
+              ;; write an empty string as the background first.
+              (save-excursion win (add win #\space :style fg :n (nth j widths)))
+              ;; display the itemt in the window associated with the menu
+              (add win (format-menu-item menu item selectedp (nth j widths-)) :style fg)
 
-                ;; draw the bottom padding lines
-                (when (plusp item-padding-bottom)
-                  (dotimes (k item-padding-bottom)
-                    (move win (+ posy item-padding-top 1 k) posx)
-                    (add win #\space :style bg-style :n (nth j widths))))))))
-        (refresh win)))))
+              ;; draw the bottom padding lines
+              (when (plusp item-padding-bottom)
+                (dotimes (k item-padding-bottom)
+                  (move win (+ posy item-padding-top 1 k) posx)
+                  (add win #\space :style fg :n (nth j widths))))))))))
+  (refresh win))
 
 (defmethod draw ((menu menu))
   "Draw the menu to its associated window."

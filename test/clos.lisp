@@ -2321,7 +2321,7 @@ it will be more efficient to use a character array, a string."
                            :selected-foreground (list :fgcolor :yellow :attributes (list :bold))))
 
            (m1 (make-instance 'checklist :name :m1 :title "checklist" :items '(a b c d e f) :grid-dimensions '(2 3)
-                              :max-item-length 6 :position (list 11 20) :style m1-style))
+                              :max-item-length 3 :position (list 11 20) :style m1-style))
 
            (label1 (make-instance 'label :name :l1 :reference :f1 :width 18 :position (list 3 1)))
            (label2 (make-instance 'label :name :l2 :reference :f2 :width 18 :position (list 5 1)))
@@ -2590,15 +2590,17 @@ it will be more efficient to use a character array, a string."
                       (make-instance 'button :title (format nil "~R" (random 200)) :callback 'accept)))
            (field (make-instance 'field :name :f1 :width 25 :border t))
            (area (make-instance 'textarea :name :a1 :dimensions '(5 20) :border t))
-           (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h i j k l) :grid-dimensions '(4 3) :max-item-length 3
-                                       ;:border t
-                                       :padding '(1 1)
+           (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h i j k l) :grid-dimensions '(3 4)
+                                       :max-item-length 3
+                                       :border t
                                        :table t
-                                       ;:grid-gap '(0 1)
-                                       :item-padding-left 1
-                                       :item-padding-right 1
+                                       ;; padding is only visible when :table is nil.
+                                       ;; when :table is t, :item-padding should be used instead.
+                                       :padding '(1 1)
+                                       :item-padding '(1 1)
                                        :variable-column-width t
-                                       :enable-scrolling nil :region-dimensions '(2 3)))
+                                       :enable-scrolling nil
+                                       :region-dimensions '(2 2)))
            (menu2 (make-instance 'menu :name :m2 :items (list 1 2 3 4 5 6) :grid-dimensions '(3 2) :max-item-length 3 :table t
                                        :variable-column-width t
                                        :item-padding-left 2
@@ -2624,8 +2626,10 @@ it will be more efficient to use a character array, a string."
                                                 :selected-background (:bgcolor :blue))
                                          textarea (:background (:attributes (:reverse))
                                                    :selected-background (:bgcolor :blue))
-                                         menu (:foreground (:bgcolor :green)
-                                               :background (:bgcolor :cyan)
+                                         menu (:border (:fgcolor :blue :bgcolor :green)
+                                               :foreground (:fgcolor :black :bgcolor :green)    ; item style
+                                               :background (:bgcolor :cyan)                     ; around and between items when table is nil.
+                                               :selected-border (:fgcolor :blue :bgcolor :red)
                                                :selected-foreground (:fgcolor :white :bgcolor :blue)
                                                :selected-background (:fgcolor :red :bgcolor :yellow))
                                          label (:foreground (:fgcolor :red :bgcolor :yellow)
@@ -2636,6 +2640,68 @@ it will be more efficient to use a character array, a string."
                                                 :selected-background (:fgcolor :red :bgcolor :yellow))
                                          button (:foreground (:attributes (:reverse))
                                                  :selected-foreground (:bgcolor :blue))))))
+      (edit form))))
+
+(defun t16j3 ()
+  "Display menu elements with different settings."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let* ((buttons (loop for i from 0 to 3 collect
+                      (make-instance 'button :title (format nil "~R" (random 200)) :callback 'accept)))
+           (field (make-instance 'field :name :f1 :width 25 :border t))
+           (area (make-instance 'textarea :name :a1 :dimensions '(5 20) :border t))
+           (menu1 (make-instance 'menu :name :m1 :items '(a b c d e f g h i j k l) :grid-dimensions '(4 3)
+                                       :max-item-length 5
+                                       :border t
+                                       :border-width '(2 3)
+                                       ;; padding is only visible when :table is nil.
+                                       ;; when :table is t, :item-padding should be used instead.
+                                       :padding '(1 1)
+                                       :grid-gap '(1 1)
+                                       :item-padding '(1 1)
+                                       ;:variable-column-width t
+                                       :enable-scrolling t
+                                       :region-dimensions '(2 2)))
+           (menu2 (make-instance 'menu :name :m1 :items '(a b c d e f g h i j k l) :grid-dimensions '(4 3)
+                                       ;:max-item-length 5
+                                       :table t
+                                       :border t
+                                       ;:border-width '(2 3)
+                                       ;; padding is only visible when :table is nil.
+                                       ;; when :table is t, :item-padding should be used instead.
+                                       ;:padding '(1 1)
+                                       ;:grid-gap '(1 1)
+                                       :item-padding '(0 2)
+                                       :variable-column-width t
+                                       :enable-scrolling t
+                                       :region-dimensions '(2 2)))
+           (menu3 (make-instance 'checklist :name :m1 :items '(a b c d e f g h i j k l) :grid-dimensions '(4 3)
+                                       ;:max-item-length 5
+                                       ;:table t
+                                       :border t
+                                       ;:border-width '(2 3)
+                                       ;; padding is only visible when :table is nil.
+                                       ;; when :table is t, :item-padding should be used instead.
+                                       :padding '(1 1)
+                                       ;:grid-gap '(1 1)
+                                       :item-padding '(0 1)
+                                       :variable-column-width t
+                                       :enable-scrolling nil
+                                       :region-dimensions '(2 2)))
+           (form (make-instance 'form :window scr :cyclic t
+                                :layout (make-instance 'layout :grid-columns 3 :grid-gap '(1 2) :position '(0 0)
+                                                               :children (list menu1 menu2 menu3))
+                                :style '(menu (:border (:fgcolor :blue :bgcolor :green)
+                                               :foreground (:fgcolor :black :bgcolor :green)
+                                               :background (:bgcolor :cyan)
+                                               :selected-border (:fgcolor :blue :bgcolor :red :simple-char #\.)
+                                               :selected-foreground (:fgcolor :white :bgcolor :blue)
+                                               :selected-background (:fgcolor :red :bgcolor :yellow :simple-char #\.))
+                                         checklist (:border (:fgcolor :blue :bgcolor :green)
+                                                    :foreground (:fgcolor :black :bgcolor :green)
+                                                    :background (:bgcolor :cyan)
+                                                    :selected-border (:fgcolor :blue :bgcolor :red :simple-char #\.)
+                                                    :selected-foreground (:fgcolor :white :bgcolor :blue)
+                                                    :selected-background (:fgcolor :red :bgcolor :yellow :simple-char #\.))))))
       (edit form))))
 
 (defparameter *t16k-message*
@@ -2912,18 +2978,23 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((items3 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666" "Choice 7" "Choice 88"))
            (menu3 (make-instance 'checklist :items items3 :name :sm3 :title "sub-menu 3" :max-item-length 20 :position (list 7 50)
+
+;;; TODO 230225 border style is visible only when we dont turn on the table at the same time.
+
                                             :border t
+                                            :border-width 2
                                             ;:table t
                                             :variable-column-width t
-                                            ;:item-padding-top 1
-                                            ;:item-padding-bottom 1
+                                            :item-padding-top 1
+                                            :item-padding-bottom 1
                                             :item-padding-left 1
                                             :item-padding-right 1
                                             ;:grid-gap '(1 0)
-                                            ;:padding '(0 1)
-                                            :style '(:foreground (:fgcolor :red)
+                                            :padding '(1 1)
+                                            :style '(:foreground (:fgcolor :green :bgcolor :red)
                                                      :selected-foreground (:attributes (:reverse))
                                                      :background (:bgcolor :yellow)
+                                                     :selected-background (:attributes (:reverse))
                                                      :border (:bgcolor :blue))
                                             :enable-scrolling t :region-rows 6 :region-columns 1
                                             :keymap 'menu-window-map))
@@ -2961,6 +3032,9 @@ friend. It is my life. I must master it as I must master my life.")
             (window menu2) scr
             (window menu3) scr)
 
+      ;(setf (background scr) (make-instance 'complex-char :simple-char #\  :color-pair '(:green :white)))
+      ;(refresh scr)
+
       ;; select an item and return it.
       (select menu1))))
 
@@ -2970,8 +3044,8 @@ friend. It is my life. I must master it as I must master my life.")
     (let* ((items3 '("Choice 0" "Choice 11" :choice22 "Choice 3333" "Choice 44444" "Choice 555555" "Choice 6666666" "Choice 7" "Choice 88" "Choice 999" ))
            (menu3 (make-instance 'checklist :items items3 :name :sm1 :title "sub-menu 1" :max-item-length 20 :position (list 5 10)
                                             :grid-dimensions '(5 2)
-                                            :border t
-                                            ;:table t
+                                            ;:border t
+                                            :table t
                                             :draw-stack nil
                                             :variable-column-width t
                                             :item-padding-top 1
@@ -2983,27 +3057,32 @@ friend. It is my life. I must master it as I must master my life.")
                                             :keymap 'menu-window-map))
            (items2 (list "Item 0" menu3 "Item 1" "Item 2" "Item 3" "Item 4" "Item 5" "Item 6" "Item 7" "Item 8"))
            (menu2 (make-instance 'menu :items items2 :name :sm2 :title "sub-menu 2" :max-item-length 20 :position (list 5 10)
+                                        ;:border t
                                        :table t
                                        :draw-stack nil
                                        :variable-column-width t
                                        :item-padding-left 1
                                        :item-padding-right 1
-                                       ;:border t
                                        :grid-gap '(0 1)
                                        :padding '(0 1)
                                        :keymap 'menu-window-map))
            (items1 (list "Item 00" menu2 "Item 01" "Item 02" "Item 03" "Item 04" "Item 05" "Item 06" "Item 07" "Item 08" "Item 09" "Item 10"))
-           (menu1 (make-instance 'menu :items items1 :name :t19b2 :title "t19b2" :max-item-length 20 :position (list 5 10) :grid-dimensions '(4 3)
+           (menu1 (make-instance 'menu :items items1
+                                       :name :t19b2
+                                       :title "t19b2"
+                                       :max-item-length 20
+                                       :position (list 5 10)
+                                       :grid-dimensions '(4 3)
                                        :table t
                                        :draw-stack nil
-                                        ;:border t
+                                       ;:border t
                                        :variable-column-width t
                                        :item-padding-top 2
                                        :item-padding-bottom 2
                                        :item-padding-left 1
                                        :item-padding-right 1
                                        :grid-gap '(0 1)
-                                       :padding '(0 1) ; only active with a border, not with a table
+                                       ;:padding '(0 1) ; only active with a border, not with a table
                                        :keymap 'menu-window-map)))
 
       ;; associate the same underlying window with all three menus.
@@ -3055,7 +3134,7 @@ friend. It is my life. I must master it as I must master my life.")
                                      ;; for hex triplets to work, we need to start sbcl with:TERM=xterm-256color lisp.sh
                                      ;;:color-pair (list :black #x666666)
                                      :bgcolor :red
-                                     :table t :item-padding-left 1 :item-padding-right 1
+                                     :border t :table t :item-padding-left 1 :item-padding-right 1
                                      :name :sub2-name :enable-function-keys t))
            ;; then add that sub-menu menu as an item to the next menu, and so on.
            (sub-menu1 (make-instance 'menu-window
