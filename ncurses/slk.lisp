@@ -39,9 +39,9 @@
 (cffi:defcfun ("slk_attroff"     slk-attroff)     :int    (attrs chtype))
 (cffi:defcfun ("slk_attrset"     slk-attrset)     :int    (attrs chtype))
 
-(cffi:defcfun ("slk_attr_on"     slk-attr-on)     :int    (attrs attr)                     (opts (:pointer :void)))
-(cffi:defcfun ("slk_attr_off"    slk-attr-off)    :int    (attrs attr)                     (opts (:pointer :void)))
-(cffi:defcfun ("slk_attr_set"    slk-attr-set)    :int    (attrs attr) (color-pair :short) (opts (:pointer :void)))
+(cffi:defcfun ("slk_attr_on"     slk-attr-on)     :int    (attrs attr_t)                     (opts (:pointer :void)))
+(cffi:defcfun ("slk_attr_off"    slk-attr-off)    :int    (attrs attr_t)                     (opts (:pointer :void)))
+(cffi:defcfun ("slk_attr_set"    slk-attr-set)    :int    (attrs attr_t) (color-pair :short) (opts (:pointer :void)))
 
-(cffi:defcfun ("slk_attr"        slk-attr)        attr)
+(cffi:defcfun ("slk_attr"        slk-attr)        attr_t)
 (cffi:defcfun ("slk_color"       slk-color)       :int    (color-pair :short))

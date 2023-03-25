@@ -355,6 +355,11 @@
    ;; opaque / curses window properties
 
    ;; outopts / curses output options
+   redraw-on-clear-p
+   insert-delete-char-p
+   insert-delete-line-p
+   immediately-refresh-p
+   leave-cursor-on-refresh-p
 
    ;; pad / create and display curses pads
 

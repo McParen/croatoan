@@ -66,12 +66,12 @@ flicker that might occur if several refreshes are called in sequence."))
   (ncurses:wnoutrefresh (winptr win)))
 
 (defmethod mark-for-refresh ((win pad) &rest args)
-  "A pad requires 6 additional arguments to be refreshed. 
+  "A pad requires 6 additional arguments to be refreshed.
 
 The additional arguments are required to specify which part of the pad
 should be displayed and on which position on the screen.
 
-All 6 arguments have to be given, otherwise an error is signalled. 
+All 6 arguments have to be given, otherwise an error is signalled.
 We don't have default arguments."
   (if (= (length args) 6)
       (apply #'ncurses:pnoutrefresh (winptr win) args)
@@ -97,7 +97,7 @@ flicker that might occur if several windows are refreshed in sequence."
 (defun mark-for-redraw (window &key first-line no-of-lines)
   "Mark a whole window or a number of lines to be completely redrawn on the next refresh.
 
-It does not redraw, only marks for redrawing by refresh. 
+It does not redraw, only marks for redrawing by refresh.
 
 It assumes that the display on the terminal has been corrupted.
 

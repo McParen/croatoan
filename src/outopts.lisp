@@ -1,57 +1,54 @@
-(in-package :croatoan)
+(in-package :de.anvi.croatoan)
 
-;;; High-level Lisp wrappers
-
-;; old bindings not yet replaced, deprecated, not exported, not loaded, do not use.
-
-;; all defaults are FALSE
-
-(defun redraw-on-clear (window flag)
+;; to use clearok with curscr, use ncurses:clearok directly.
+(defun (setf redraw-on-clear-p) (flag window)
   "If flag is t, when refresh is called after clear, it will redraw the screen from scratch."
-  (%clearok window flag))
-;; for now, to use clearok with curscr, use %clearok directly.
+  (ncurses:clearok (winptr window) flag))
 
-(defun insert-delete-line (window flag)
-  "If flag is t, use the hardware insert/delete line feature of a terminal, if the terminal supports it.
+(defun redraw-on-clear-p (window)
+  "If t, the next refresh will redraw the screen from scratch."
+  (ncurses:is_cleared (winptr window)))
 
-It is disabled by default."
-  (%idlok window flag))
 
-(defun insert-delete-char (window flag)
-  "If flag is t, use the hardware insert/delete char feature of a terminal, if the terminal supports it.
+(defun (setf insert-delete-char-p) (flag window)
+  "If flag is t, use the hardware insert/delete char feature, if the terminal supports it.
 
 It is enabled by default."
-  (%idcok window flag))
+  (ncurses:idcok (winptr window) flag))
 
-(defun immediately-refresh (window flag)
+(defun insert-delete-char-p (window)
+  "If t, use the hardware insert/delete char feature, if the terminal supports it."
+  (ncurses:is_idcok (winptr window)))
+
+
+(defun (setf insert-delete-line-p) (flag window)
+  "If flag is t, use the hardware insert/delete line feature, if the terminal supports it.
+
+It is disabled by default."
+  (ncurses:idlok (winptr window) flag))
+
+(defun insert-delete-line-p (window)
+  "If t, use the hardware insert/delete line feature, if the terminal supports it."
+  (ncurses:is_idlok (winptr window)))
+
+
+(defun (setf immediately-refresh-p) (flag window)
   "If flag is t, any change to a window will automatically call refresh.
 
 It is disabled by default, since it can degrade performance."
-  (%immedok window flag))
+  (ncurses:immedok (winptr window) flag))
 
-(defun leave-cursor-on-refresh (window flag)
+(defun immediately-refresh-p (window)
+  "If t, any change to a window will automatically call refresh."
+  (ncurses:is_immedok (winptr window)))
+
+
+(defun (setf leave-cursor-on-refresh-p) (flag window)
   "If flag is t, don't move the cursor back to the position before refresh.
 
 It is disabled by default."
-  (%leaveok window flag))
+  (ncurses:leaveok (winptr window) flag))
 
-(defun enable-scrolling (window flag)
-  "Enables and disables window scrolling.
-
-If flag is t, when the curses moves below the bottom line of a window
-or scrolling region, the window/region is scrolled.
-
-If flag is nil, the cursor is left on the bottom line."
-  (%scrollok window flag))
-
-(defun set-scrolling-region (window top-margin bottom-margin)
-  "Set the margins of a scrolling region for a window if scrolling is enabled for that window."
-  (%wsetscrreg window top-margin bottom-margin))
-
-(defun newline-translation (flag)
-  "If status is t, enable translation of RET to NL on input, and NL to RET and LF on output.
-
-It is enabled by default."
-  (if flag
-      (%nl)
-      (%nonl)))
+(defun leave-cursor-on-refresh-p (window)
+  "If t, don't move the cursor back to the position before refresh."
+  (ncurses:is_leaveok (winptr window)))

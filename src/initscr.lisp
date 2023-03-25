@@ -22,10 +22,3 @@
 (defun set-current-terminal (new-screen)
   "Sets new-screen as the current terminal. Returns the old screen."
   (ncurses:set-term new-screen))
-
-
-;;; TODOs
-
-;; [ ] are files in lisp in newterm correctly represented by fd-s?
-;; [ ] add type info either to the docs or in asserts.
-;; [ ] document all possible return values and check for them.

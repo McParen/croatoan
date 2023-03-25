@@ -36,9 +36,9 @@ unused, generated keycode."
                       ;; we do not want one name associated with more than one code
                       (cdr (assoc key-name *key-alist*))
                       ;; if code is not given and name doesnt exist
-                      ;; add the new name and generate a new code                      
+                      ;; add the new name and generate a new code
                       (gen-unused-key-code)))))
-    
+
     ;; add name and code to the croatoan database
     (add-function-key key-name code)
     ;; add control sequence and code to the underlying ncurses database.

@@ -44,6 +44,7 @@
    (:file "kernel")           ; low-level curses routines
    (:file "keybound")         ; return definition of keycode
    (:file "key_defined")      ; check if a keycode is defined
+   (:file "keyok")            ; enable or disable a keycode
    (:file "legacy")           ; get curses cursor and window coordinates, attributes
    (:file "legacy_coding")    ; legacy coding
    (:file "mouse")            ; mouse interface through curses

@@ -14,13 +14,13 @@
 (cffi:defcfun ("getcchar" getcchar) :int
   (wcval      (:pointer (:struct cchar_t)))
   (wch        (:pointer wchar_t))
-  (attrs      (:pointer attr))
+  (attrs      (:pointer attr_t))
   (color_pair (:pointer :short))
   (opts       (:pointer :void)))
 
 (cffi:defcfun ("setcchar" setcchar) :int
   (wcval      (:pointer (:struct cchar_t)))
   (wch        (:pointer wchar_t))
-  (attrs      attr)
+  (attrs      attr_t)
   (color_pair :short)
   (opts       (:pointer :void)))

@@ -145,8 +145,6 @@ typedef uint32_t mmask_t;
 
 ;; typedef chtype attr_t;
 ;; TODO: rename this to attr_t
-(cffi:defctype attr :uint32
-  "The 32 bit integral type attr_t holds an OR-ed set of attributes.")
 (cffi:defctype attr_t :uint32
   "The 32 bit integral type attr_t holds an OR-ed set of attributes.")
 

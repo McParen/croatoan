@@ -39,38 +39,3 @@ Possible values are t, nil and a blocking duration in (positive integer) milisec
         ((and (typep status 'integer) (plusp status))
          (ncurses:wtimeout winptr status))
         (t (error "set-input-blocking error: possible blocking states: t, nil, delay in miliseconds"))))
-
-;; Not used in clos because too simple. obsolete.
-(defun set-input-echoing (flag)
-  "Set whether chars will be echoed on input."
-  (if flag
-      (ncurses:echo)
-      (ncurses:noecho)))
-
-;; Not used in clos because too simple. obsolete.
-(defun set-enable-fkeys (window flag)
-  "If flag is t, bind function keys to known codes when returned by get-char.
-
-If flag is nil, F keys will be system-dependent multi-character escape codes."
-  (ncurses:keypad (winptr window) flag))
-
-;; Obscure functions I never used before:
-
-(defun flush-on-interrupt (window flag)
-  (ncurses:intrflush window flag))
-
-(defun enable-8bit-char-input (window flag)
-  (ncurses:meta window flag))
-
-(defun io-queue-flush (flag)
-  (if flag
-      (ncurses:qiflush)
-      (ncurses:noqiflush)))
-
-;; if it would work at all, which it doesnt,
-;; it would work only for (function-keys win t)
-(defun escape-sequence-delay (window flag)
-  (ncurses:notimeout window flag))
-
-(defun type-ahead-fd (fd)
-  (ncurses:typeahead fd))

@@ -5,7 +5,3 @@
     (:beep (ncurses:beep))
     (:flash (ncurses:flash))
     (otherwise (error "Available alert types: :beep :flash"))))
-
-;;; TODOs
-
-;; [ ] Return values, errors.

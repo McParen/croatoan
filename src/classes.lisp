@@ -1686,18 +1686,37 @@ nil,0      t
                    (round (/ 1000.0 frame-rate))
                    nil)))))
 
-(defgeneric function-keys-enabled-p (window))
+(defgeneric function-keys-enabled-p (window)
+  (:documentation
+   "If t, function keys will be recognized when returned by get-char."))
+
 (defmethod function-keys-enabled-p ((window window))
-  (slot-value window 'function-keys-enabled-p))
-(defgeneric (setf function-keys-enabled-p) (status window))
+  ;;(slot-value window 'function-keys-enabled-p)
+  (ncurses:is-keypad (winptr window)))
+
+(defgeneric (setf function-keys-enabled-p) (status window)
+  (:documentation
+   "If flag is t, bind function keys to known codes when returned by get-char.
+
+If flag is nil, F keys will be system-dependent multi-character escape codes."))
+
 (defmethod (setf function-keys-enabled-p) (status (window window))
   (setf (slot-value window 'function-keys-enabled-p) status)
   (ncurses:keypad (slot-value window 'winptr) status))
 
-(defgeneric scrolling-enabled-p (window))
+(defgeneric scrolling-enabled-p (window)
+  (:documentation "If t, scrolling is enabled."))
 (defmethod scrolling-enabled-p ((window window))
-  (slot-value window 'scrolling-enabled-p))
-(defgeneric (setf scrolling-enabled-p) (status window))
+  ;;(slot-value window 'scrolling-enabled-p)
+  (ncurses:is-scrollok (winptr window)))
+(defgeneric (setf scrolling-enabled-p) (status window)
+  (:documentation
+   "Enables and disables window scrolling.
+
+If flag is t, when the curses moves below the bottom line of a window
+or scrolling region, the window/region is scrolled.
+
+If flag is nil, the cursor is left on the bottom line."))
 (defmethod (setf scrolling-enabled-p) (status (window window))
   (setf (slot-value window 'scrolling-enabled-p) status)
   (ncurses:scrollok (slot-value window 'winptr) status))
@@ -1716,11 +1735,13 @@ nil,0      t
 (defgeneric input-echoing-p (screen))
 (defmethod input-echoing-p ((screen screen))
   (slot-value screen 'input-echoing-p))
-(defgeneric (setf input-echoing-p) (status screen))
+(defgeneric (setf input-echoing-p) (status screen)
+  (:documentation "Set whether chars will be echoed on input."))
 (defmethod (setf input-echoing-p) (status (screen screen))
   (setf (slot-value screen 'input-echoing-p) status)
-  ;;(set-input-echoing status))
-  (if status (ncurses:echo) (ncurses:noecho)))
+  (if status
+      (ncurses:echo)
+      (ncurses:noecho)))
 
 (defgeneric input-buffering-p (screen))
 (defmethod input-buffering-p ((screen screen))
@@ -1751,10 +1772,16 @@ nil,0      t
 (defgeneric newline-translation-enabled-p (screen))
 (defmethod newline-translation-enabled-p ((screen screen))
   (slot-value screen 'newline-translation-enabled-p))
-(defgeneric (setf newline-translation-enabled-p) (status screen))
+(defgeneric (setf newline-translation-enabled-p) (status screen)
+  (:documentation
+   "If status is t, enable translation of RET to NL on input, and NL to RET and LF on output.
+
+It is enabled by default."))
 (defmethod (setf newline-translation-enabled-p) (status (screen screen))
   (setf (slot-value screen 'newline-translation-enabled-p) status)
-  (if status (ncurses:nl) (ncurses:nonl)))
+  (if status
+      (ncurses:nl)
+      (ncurses:nonl)))
 
 ;; TODO: change this to use wide chars, so we can use unicode chars additionally to the limited small set of ACS chars
 ;; (setf (background window nil) xchar)

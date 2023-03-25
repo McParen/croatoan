@@ -306,6 +306,9 @@
    ;; key_defined / check if a keycode is defined
    key-defined
 
+   ;; keyok / enable or disable a keycode
+   keyok
+
    ;; legacy / get curses cursor and window coordinates, attributes
    getattrs
    getbegx
@@ -469,6 +472,9 @@
    ESCDELAY
    LINES
    TABSIZE
+   curscr
+   newscr
+   stdscr
 
    ;; window / create curses windows
    newwin
