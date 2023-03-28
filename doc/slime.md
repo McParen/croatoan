@@ -59,7 +59,7 @@ sbcl --load scratch.lisp
 ```
 
 The user should now see a blank terminal window with the cursor placed
-at the top left corner. Time to connect to it from slime, form within
+at the top left corner. Time to connect to it from slime, from within
 emacs run:
 
 ```
