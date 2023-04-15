@@ -318,7 +318,9 @@
       (loop for i from 0 below m maximize
         (let ((item (nth2d obj dimensions (list i j))))
           (if (typep item 'element)
-              (external-width item)
+              (+ (external-width item)
+                 (margin-left item)
+                 (margin-right item))
               (width item)))))))
 
 (defmethod row-heights ((obj list) dimensions)
@@ -328,7 +330,9 @@
       (loop for j from 0 below n maximize
         (let ((item (nth2d obj dimensions (list i j))))
           (if (typep item 'element)
-              (external-height item)
+              (+ (external-height item)
+                 (margin-top item)
+                 (margin-bottom item))
               (height item)))))))
 
 ;; used in initialize-instance form to layout form elements, tested in t16j2
@@ -345,9 +349,11 @@
         (when (nth el children)
           (let* ((child (nth el children))
                  (i (car (rmi2sub (list m n) el)))
-                 (j (cadr (rmi2sub (list m n) el))))
-            (setf (position-y child) (+ y (+ (* rg i) (nth i ys)))
-                  (position-x child) (+ x (+ (* cg j) (nth j xs))))
+                 (j (cadr (rmi2sub (list m n) el)))
+                 (mt (if (typep child 'element) (margin-top child) 0))
+                 (ml (if (typep child 'element) (margin-left child) 0)))
+            (setf (position-y child) (+ mt y (+ (* rg i) (nth i ys)))
+                  (position-x child) (+ ml x (+ (* cg j) (nth j xs))))
             ;; after setting the position, check if the element is a layout object,
             ;; then recursively set the positions of its child elements.
             (when (and (typep child 'layout)

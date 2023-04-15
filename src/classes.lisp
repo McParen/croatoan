@@ -770,6 +770,34 @@ absolute position and dimensions of the panel."))
     :accessor      selectedp
     :documentation "Flag denoting whether the element is currently selected in a form.")
 
+   (margin-top
+    :initarg       :margin-top
+    :initform      0
+    :type          integer
+    :accessor      margin-top
+    :documentation "Additional space above the top border.")
+
+   (margin-bottom
+    :initarg       :margin-bottom
+    :initform      0
+    :type          integer
+    :accessor      margin-bottom
+    :documentation "Additional space below the bottom border.")
+
+   (margin-left
+    :initarg       :margin-left
+    :initform      0
+    :type          integer
+    :accessor      margin-left
+    :documentation "Additional space to the left of the left border.")
+
+   (margin-right
+    :initarg       :margin-right
+    :initform      0
+    :type          integer
+    :accessor      margin-right
+    :documentation "Additional space to the right of the right border.")
+
    (padding-top
     :initarg       :padding-top
     :initform      0
@@ -856,8 +884,28 @@ absolute position and dimensions of the panel."))
 
   (:documentation "An element of a form, like a field or button."))
 
-(defmethod initialize-instance :after ((obj element) &key padding border-width)
-  ;; padding is either an integer, or a list (top-bottom left-right) or (top bottom left right).
+(defmethod initialize-instance :after ((obj element) &key margin padding border-width)
+  ;; the keword arguments margin, padding and border-width are either an integer,
+  ;; or a list (top-bottom left-right) or (top bottom left right).
+  (when margin
+    (with-slots ((mt margin-top) (mb margin-bottom) (ml margin-left) (mr margin-right)) obj
+      (typecase margin
+        (list
+         (case (length margin)
+           (4 (setf mt (nth 0 margin)
+                    mb (nth 1 margin)
+                    ml (nth 2 margin)
+                    mr (nth 3 margin)))
+           (2 (setf mt (nth 0 margin)
+                    mb (nth 0 margin)
+                    ml (nth 1 margin)
+                    mr (nth 1 margin)))))
+        (integer
+         (setf mt margin
+               mb margin
+               ml margin
+               mr margin)))))
+
   (when padding
     (with-slots ((pt padding-top) (pb padding-bottom) (pl padding-left) (pr padding-right)) obj
       (typecase padding
