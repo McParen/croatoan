@@ -26,7 +26,7 @@ This can be used to position the cursor on the current item after the menu is dr
     :initarg       :current-item-mark
     :initform      ""
     :reader        current-item-mark
-    :type          string
+    :type          (or string cons)
     :documentation "A string prefixed to the current item in the menu.")
 
    (tablep
@@ -162,13 +162,15 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
         (setf grid-column-gap 1)))))
 
 (defmethod width ((obj menu))
+  "content width = column-widths + item marks + item padding + checkbox"
   (with-accessors ((len max-item-length)
                    (variable-column-width-p variable-column-width-p)
                    (items items)) obj
     (with-slots (scrolling-enabled-p
                  menu-type
-                 item-padding-left
-                 item-padding-right
+                 (cmark current-item-mark)
+                 (ipl item-padding-left)
+                 (ipr item-padding-right)
                  (m  grid-rows)
                  (n  grid-columns)
                  (cg grid-column-gap)
@@ -176,31 +178,33 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                  (n0 region-start-column)
                  (m1 region-rows)
                  (n1 region-columns)) obj
-      (if variable-column-width-p
-          ;; variable column width
-          (destructuring-bind (m0 n0 m1 n1) (if scrolling-enabled-p (list m0 n0 m1 n1) (list 0 0 m n))
-            (let* ((widths- (mapcar (lambda (i) (+ i item-padding-left item-padding-right))
-                                    (if variable-column-width-p
-                                        (subseq (column-widths items (list m n)) n0 (+ n0 n1))
-                                        (loop for i below n1 collect len))))
-                   (widths (if (eq menu-type :checklist)
-                               (mapcar (lambda (i) (+ i 4)) widths-)
-                               widths-))
-                   (gaps (if (plusp cg) (* (1- n1) cg) 0)))
+      ;; r0, c0 region start; r1, c1 region rows, cols
+      (destructuring-bind (r0 c0 r1 c1)
+          (if scrolling-enabled-p (list m0 n0 m1 n1) (list 0 0 m n))
+        (if variable-column-width-p
+            ;; variable column width
+            (let ((widths (mapcar (lambda (i)
+                                    (+ i ipl ipr
+                                       (typecase cmark
+                                         (string (length cmark))
+                                         (list (+ (length (car cmark))
+                                                  (length (cadr cmark)))))
+                                       (if (eq menu-type :checklist) 4 0))) ; "[ ] "
+                                   (subseq (column-widths items (list m n)) c0 (+ c0 c1))))
+                   (gaps (if (plusp cg) (* (1- c1) cg) 0)))
+              ;; width of the content of a menu is a sum of column widths and gaps.
               (+ gaps
-                 (loop for i in widths sum i))))
-
-          ;; fixed column width
-          (destructuring-bind (m0 n0 m1 n1) (if scrolling-enabled-p (list m0 n0 m1 n1) (list 0 0 m n))
-            (let* ((w (* n1 (if (eq menu-type :checklist)
-                                (+ len 4)
-                                len)))
+                 (loop for i in widths sum i)))
+            ;; fixed column width
+            (let ((widths (* c1 (+ len ipl ipr
+                                   (typecase cmark
+                                     (string (length cmark))
+                                     (list (+ (length (car cmark))
+                                              (length (cadr cmark)))))
+                                   (if (eq menu-type :checklist) 4 0)))) ; "[ ] "
                    ;; if a table is drawn, we have n-1 row lines
-                   (gaps (if (plusp cg) (* (1- n1) cg) 0)))
-              (+ w
-                 gaps
-                 (* n1 item-padding-left)
-                 (* n1 item-padding-right))))))))
+                   (gaps (if (plusp cg) (* (1- c1) cg) 0)))
+              (+ widths gaps)))))))
 
 (defmethod height ((obj menu))
   (with-accessors ((m visible-grid-rows)) obj
@@ -216,7 +220,10 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
            (* m item-padding-bottom))))))
 
 (defmethod visible-width ((obj menu))
-  "visible width = content width + padding"
+  "visible width = content width + element padding
+
+In contrast to element padding, the item padding is part of the
+content, so it is accounted for by (width menu)."
   (with-accessors ((w width) (borderp borderp) (tablep tablep) (bl border-width-left) (br border-width-right) (pl padding-left) (pr padding-right)) obj
     (cond (tablep
            ;; for tables, the outer border is part of the content
@@ -421,14 +428,14 @@ The bottom line is only drawn when border is t."
   ;; n number of displayed columns
   ;; rg row gap
   ;; cg column-gap
-  ;; bt width of the top border
-  ;; bl width of the left border
+  ;; bt width of the top border, currently assumed = 1
+  ;; bl width of the left border, currently assumed = 1
+  (assert (and (<= bt 1) (<= bl 1)))
   ;; pt padding top
   ;; pb padding bottom
   ;; witdhs, leights - list of widths of columns
 
   ;;; draw the n1+1 vertical lines (plain, without endings and crossings)
-
   ;; first vline (left border)
   (when borderp
     (draw-vline win
@@ -500,13 +507,13 @@ Display the same number of spaces for other items.
 
 At the third position, display the item given by item-number."
   (with-accessors ((type menu-type)
-                   (current-item-number current-item-number)
                    (current-item-mark current-item-mark)) menu
-    (with-slots (item-padding-left item-padding-right) menu
+    (with-slots (item-padding-left
+                 item-padding-right) menu
       ;; return as string
       (format nil
               ;; "~v,,,' @A" to right-justify
-              "~A~A~A~v,,,' A~A"
+              "~A~A~A~v,,,' A~A~A"
               (make-string item-padding-left :initial-element #\space)
               ;; two types of menus: :selection or :checklist
               ;; show the checkbox before the item in checklists
@@ -514,14 +521,28 @@ At the third position, display the item given by item-number."
                   (if (checkedp item) "[X] " "[ ] ")
                   "")
               ;; for the current item, draw the current-item-mark
-              ;; for all other items, draw a space
-              (if selectedp
-                  current-item-mark
-                  (make-string (length current-item-mark) :initial-element #\space))
-              ;; the widths contain the paddings so we have to subtract them...
-              (- width item-padding-left item-padding-right)
+              ;; for all other items, draw spaces
+              (let ((mark (typecase current-item-mark
+                            (string current-item-mark)
+                            (list (car current-item-mark)))))
+                (if selectedp
+                    mark
+                    (make-string (length mark) :initial-element #\space)))
+
+              ;; the width of the item title, given by the set column width
+              width
               ;; then add the item title
               (format-title item)
+
+              ;; if the mark is a list like ("> " "< ") draw the second mark
+              ;; after the menu item.
+              (let ((mark (typecase current-item-mark
+                            (string "")
+                            (list (cadr current-item-mark)))))
+                (if selectedp
+                    mark
+                    (make-string (length mark) :initial-element #\space)))
+
               (make-string item-padding-right :initial-element #\space)))))
 
 (defmethod external-width ((obj menu-item))
@@ -533,18 +554,18 @@ At the third position, display the item given by item-number."
   (with-slots (scrolling-enabled-p
                variable-column-width-p
                menu-type
-               item-padding-top
-               item-padding-bottom
-               item-padding-left
-               item-padding-right
+               (ipt item-padding-top)
+               (ipb item-padding-bottom)
+               (ipl item-padding-left)
+               (ipr item-padding-right)
                (pl padding-left)
                (pt padding-top)
                (cmark current-item-mark)
                (cpos current-item-position)
                (len max-item-length)
                (items children)
-               (borderp borderp)
-               (tablep tablep)
+               borderp
+               tablep
                (r grid-row)
                (c grid-column)
                (m grid-rows)
@@ -559,23 +580,29 @@ At the third position, display the item given by item-number."
                (bl border-width-left)) menu
     (with-accessors ((style style)) menu
       (clear menu)
-      ;; start and end indexes
       ;; when the menu is too big to be displayed at once, only a part
-      ;; is displayed, and the menu can be scrolled
-      (destructuring-bind (m0 n0 m1 n1)
+      ;; is displayed in a "region", and the menu can be scrolled
+      ;; r0, c0 region start;
+      ;; r1, c1 region rows, cols
+      (destructuring-bind (r0 c0 r1 c1)
           (if scrolling-enabled-p (list m0 n0 m1 n1) (list 0 0 m n))
-        (let* ((widths- (mapcar (lambda (i) (+ i item-padding-left item-padding-right))
-                                (if variable-column-width-p
-                                    (subseq (column-widths items (list m n)) n0 (+ n0 n1))
-                                    (loop for i below n1 collect len))))
-               (widths (if (eq menu-type :checklist)
-                           (mapcar (lambda (i) (+ i 4)) widths-)
-                           widths-))
+        (let* (;; widths of the item titles only
+               (widths- (if variable-column-width-p
+                            (subseq (column-widths items (list m n)) c0 (+ c0 c1))
+                            (loop for i below c1 collect len)))
+               ;; widths plus item padding, mark and checkbox
+               (widths (mapcar (lambda (i)
+                                 (+ i ipl ipr
+                                    (typecase cmark
+                                      (string (length cmark))
+                                      (list (+ (length (car cmark))
+                                               (length (cadr cmark)))))
+                                    (if (eq menu-type :checklist) 4 0)))
+                               widths-))
                (xs (cumsum-predecessors widths))
                ;; height of one item is 1 and the padding.
-               (h (+ 1 item-padding-top item-padding-bottom))
-               (heights (loop for i below m1 collect h))
-
+               (h (+ 1 ipt ipb))
+               (heights (loop for i below r1 collect h))
                (border-style (if (selectedp menu)
                                  (getf style :selected-border)
                                  (getf style :border))))
@@ -590,9 +617,8 @@ At the third position, display the item given by item-number."
                                 (if (slot-value win 'height)(slot-value win 'height) (external-height menu))
                                 (if (slot-value win 'width) (slot-value win 'width) (external-width menu))
                                 :style border-style)
-                ;; if menu is a simple menu, we are not able to set
-                ;; the width manually to a value different than the
-                ;; calculated width
+                ;; if menu is a simple menu, we are not able to set the width manually
+                ;; to a value different than the calculated width
                 (draw-rectangle win y x
                                 (external-height menu)
                                 (external-width menu)
@@ -601,14 +627,14 @@ At the third position, display the item given by item-number."
           ;; draw table lines and if border is t, the table border.
           (when tablep
             ;; to draw table lines between the grid cells, a grid gap is required.
-            (draw-table-lines win y x m1 n1 rg cg bt bl item-padding-top item-padding-bottom widths heights borderp
+            (draw-table-lines win y x r1 c1 rg cg bt bl ipt ipb widths heights borderp
                               :style border-style))
 
-          (dogrid ((i 0 m1)
-                   (j 0 n1))
+          (dogrid ((i 0 r1)
+                   (j 0 c1))
             ;; the menu is given as a flat list, so we have to access it as a 2d array in row major order
-            (let* ((item (ref2d items (list m n) (+ m0 i) (+ n0 j)))
-                   (selectedp (and (= i (- r m0)) (= j (- c n0))))
+            (let* ((item (ref2d items (list m n) (+ r0 i) (+ c0 j)))
+                   (selectedp (and (= i (- r r0)) (= j (- c c0))))
                    ;; calculated position of the item
                    (posy (+ y
                             (if borderp bt 0)
@@ -622,29 +648,29 @@ At the third position, display the item given by item-number."
                             (nth j xs)))
                    (fg (if style
                            (getf style (if selectedp :selected-foreground :foreground))
-                           ;; default foreground style
-                           (if selectedp (list :attributes (list :reverse)) nil))))
+                           ;; default selected-foreground style
+                           (if selectedp
+                               (list :attributes (list :reverse))
+                               nil))))
 
               ;; save the position of the current item, to be used in update-cursor-position.
               (when selectedp
                 (setf cpos (list posy posx)))
 
               ;; draw the top padding lines
-              (when (plusp item-padding-top)
-                (dotimes (k item-padding-top)
+              (when (plusp ipt)
+                (dotimes (k ipt)
                   (move win (+ posy k) posx)
                   (add win #\space :style fg :n (nth j widths))))
 
-              (move win (+ posy item-padding-top) posx)
-              ;; write an empty string as the background first.
-              (save-excursion win (add win #\space :style fg :n (nth j widths)))
-              ;; display the itemt in the window associated with the menu
+              (move win (+ posy ipt) posx)
+              ;; display the item in the window associated with the menu
               (add win (format-menu-item menu item selectedp (nth j widths-)) :style fg)
 
               ;; draw the bottom padding lines
-              (when (plusp item-padding-bottom)
-                (dotimes (k item-padding-bottom)
-                  (move win (+ posy item-padding-top 1 k) posx)
+              (when (plusp ipb)
+                (dotimes (k ipb)
+                  (move win (+ posy ipt 1 k) posx)
                   (add win #\space :style fg :n (nth j widths))))))))))
   (refresh win))
 

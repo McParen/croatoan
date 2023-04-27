@@ -263,7 +263,7 @@ content position = widget position + border + padding"
                       (symbol-name name))
                      (t
                       (prin1-to-string item)))))
-      str)))
+      (concatenate 'string beg str end))))
 
 (defmethod format-title ((win window) &optional (beg "") (end ""))
   "If the title string is provided, use the title.

@@ -775,7 +775,10 @@ absolute position and dimensions of the panel."))
     :initform      0
     :type          integer
     :accessor      margin-top
-    :documentation "Additional space above the top border.")
+    :documentation "Additional space above the top border.
+
+The margin is the space around the border of an element, i.e. the distance to other
+elements. It is only accounted for during calculate-position of layout.")
 
    (margin-bottom
     :initarg       :margin-bottom
