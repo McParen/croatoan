@@ -69,6 +69,18 @@ This can be used to position the cursor on the current item after the menu is dr
 
 If nil (default), use max-item-length as the width for every column.")
 
+   (align
+    :initarg       :align
+    :initform      :left
+    :type          keyword
+    :documentation
+    "Set how the item titles and thus the menu columns are aligned.
+
+Items can be aligned if they are shorter than the max-item-length or
+the calculated column width.
+
+Possible values are :left (default) or :right.")
+
    ;; see examples t19b2, t19b3.
    (draw-stack-p
     :initarg       :draw-stack
@@ -87,7 +99,25 @@ At the moment, this setting applies only to stacks of simple (non-window) menus)
     :initform      15
     :accessor      max-item-length
     :type          integer
-    :documentation "Max number of characters displayed for a single item."))
+    :documentation
+    "If the variable column width is nil, this is the default width of all items.
+
+If the variable column width is t, the width of every column is calculated from
+the item titles and the columns exceeding max item length are ellipsized or
+truncated.")
+
+   (ellipsis
+    :initarg       :ellipsis
+    :initform      (format nil "~C" #\horizontal_ellipsis)
+    :type          string
+    :documentation "Ellipsis/truncation string for too long item titles.
+
+If an item title is longer than max-item-length shorten the title by
+replacing the last characters with the ellipsis string.
+
+If the ellipsis is an empty string, the title will simply be truncated.
+
+The default value is the unicode ellipsis character (of length 1)."))
 
   (:default-initargs :keymap 'menu-map)
   (:documentation
@@ -184,7 +214,9 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
         (if variable-column-width-p
             ;; variable column width
             (let ((widths (mapcar (lambda (i)
-                                    (+ i ipl ipr
+                                    ;; if i > len, truncate (done in format-menu-item)
+                                    (+ (if (<= i len) i len)
+                                       ipl ipr
                                        (typecase cmark
                                          (string (length cmark))
                                          (list (+ (length (car cmark))
@@ -507,24 +539,31 @@ Display the same number of spaces for other items.
 
 At the third position, display the item given by item-number."
   (with-accessors ((type menu-type)
-                   (current-item-mark current-item-mark)) menu
-    (with-slots (item-padding-left
+                   (cmark current-item-mark)) menu
+    (with-slots (align
+                 ellipsis
+                 item-padding-left
                  item-padding-right) menu
       ;; return as string
       (format nil
-              ;; "~v,,,' @A" to right-justify
-              "~A~A~A~v,,,' A~A~A"
+              ;; "~A~A~A~v,,,' @A~A~A" :right
+              ;; "~A~A~A~v,,,' A~A~A"  :left
+              (concatenate 'string
+                           "~A~A~A~v,,,' "
+                           (case align (:left "") (:right "@"))
+                           "A~A~A")
               (make-string item-padding-left :initial-element #\space)
               ;; two types of menus: :selection or :checklist
               ;; show the checkbox before the item in checklists
               (if (eq type :checklist)
                   (if (checkedp item) "[X] " "[ ] ")
                   "")
+
               ;; for the current item, draw the current-item-mark
               ;; for all other items, draw spaces
-              (let ((mark (typecase current-item-mark
-                            (string current-item-mark)
-                            (list (car current-item-mark)))))
+              (let ((mark (typecase cmark
+                            (string cmark)
+                            (list (car cmark)))))
                 (if selectedp
                     mark
                     (make-string (length mark) :initial-element #\space)))
@@ -532,13 +571,16 @@ At the third position, display the item given by item-number."
               ;; the width of the item title, given by the set column width
               width
               ;; then add the item title
-              (format-title item)
+              (let* ((title (format-title item)))
+                (if (> (length title) width)
+                    (text-ellipsize title width :truncate-string ellipsis)
+                    title))
 
               ;; if the mark is a list like ("> " "< ") draw the second mark
               ;; after the menu item.
-              (let ((mark (typecase current-item-mark
+              (let ((mark (typecase cmark
                             (string "")
-                            (list (cadr current-item-mark)))))
+                            (list (cadr cmark)))))
                 (if selectedp
                     mark
                     (make-string (length mark) :initial-element #\space)))
@@ -592,7 +634,9 @@ At the third position, display the item given by item-number."
                             (loop for i below c1 collect len)))
                ;; widths plus item padding, mark and checkbox
                (widths (mapcar (lambda (i)
-                                 (+ i ipl ipr
+                                 ;; if i > len, truncate (done in format-menu-item)
+                                 (+ (if (<= i len) i len)
+                                    ipl ipr
                                     (typecase cmark
                                       (string (length cmark))
                                       (list (+ (length (car cmark))
@@ -614,8 +658,8 @@ At the third position, display the item given by item-number."
                                 ;; If window dimensions have been explicitely given, override the calculated
                                 ;; menu dimensions. This allows to draw a "menu bar", which can be wider
                                 ;; than the sum of its items, see t19e2.
-                                (if (slot-value win 'height)(slot-value win 'height) (external-height menu))
-                                (if (slot-value win 'width) (slot-value win 'width) (external-width menu))
+                                (if (slot-value win 'height) (slot-value win 'height) (external-height menu))
+                                (if (slot-value win 'width)  (slot-value win 'width)  (external-width menu))
                                 :style border-style)
                 ;; if menu is a simple menu, we are not able to set the width manually
                 ;; to a value different than the calculated width
@@ -665,7 +709,11 @@ At the third position, display the item given by item-number."
 
               (move win (+ posy ipt) posx)
               ;; display the item in the window associated with the menu
-              (add win (format-menu-item menu item selectedp (nth j widths-)) :style fg)
+              (add win (format-menu-item menu item selectedp
+                                         (if (<= (nth j widths-) len)
+                                             (nth j widths-)
+                                             len))
+                   :style fg)
 
               ;; draw the bottom padding lines
               (when (plusp ipb)
