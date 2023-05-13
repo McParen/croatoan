@@ -2,7 +2,7 @@
   :description "High-level Lisp CLOS bindings for the ncurses terminal library."
   :author "Anton Vidovic <anton.vidovic@gmx.de>"
   :licence "MIT"
-  :version "0.0.1"
+  :version "0.1"
   :depends-on (:croatoan-ncurses
                :trivial-gray-streams
                :bordeaux-threads

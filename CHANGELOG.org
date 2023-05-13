@@ -1,0 +1,55 @@
+* ChangeLog
+
+** v0.1 - Initial development release (230513)
+
+This version provides the first tagged development release.
+Notable changes since Quicklisp release 230214:
+
+*** Add a margin property to form elements (230415)
+
+Based on the CSS box model, every element now also has a margin
+property, which is a the transparent space outside of the border
+separating the element from other elements in the layout.
+
+*** Remove several files with obsolete pre-CLOS wrappers (230325)
+
+Removed some old, unused thin wrappers (inopts, outopts).
+The ncurses predicates can be used directly until properly
+wrapped.
+
+Croatoan:
+
+- Add docstrings to several window accessors
+- Move "opaqe" ncurses windows predicates to outopts.lisp.
+
+Ncurses:
+
+- Remove cffi type =attr=, use only =attr_t=
+- Add keyok
+- Add global variables curscr, newscr, stdscr
+
+*** Allow tables to use the border style (230312)
+
+Draw table lines using the border and selected-border styles.
+
+Draw menu items only using the foreground menu style, this
+includes the cells from item-padding.
+
+The menu background style is only visible when a padding or gap
+between the item rows/cols has been set.
+
+The menu background is not visible when table lines are drawn.
+In that case, we only see the border and foreground (items) colors.
+
+Modify examples t16j2, t19b2, t19b3, t19c2, add example t16j3.
+
+*** Decouple drawing of table lines and external borders (230304)
+    
+If border is nil, drawing a table now only draws the inner table
+lines, i.e. row and column separators.
+
+This now allows to draw menu tables withut borders. Before every
+table had an external border.
+
+Add a menu initarg item-padding, where 2 or 4 padding values can
+be passed in a list.
