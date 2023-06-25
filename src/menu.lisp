@@ -841,8 +841,10 @@ Return the value from select."
 
 (defun sync-collection-grid (obj)
   "Sync the position in 1D collection list with the yx position in a 2D grid."
-  (with-slots (current-item-number grid-rows grid-columns grid-row grid-column) obj
-    (setf current-item-number (sub2rmi (list grid-rows grid-columns) (list grid-row grid-column)))))
+  (with-slots (grid-rows grid-columns grid-row grid-column) obj
+    (setf (current-item-number obj)
+          (sub2rmi (list grid-rows grid-columns)
+                   (list grid-row grid-column)))))
 
 (defun sync-grid-collection (obj)
   "Set the 2D yx grid position from the 1D position in the collection list."
@@ -874,10 +876,7 @@ Return the value from select."
 
 (defmethod move-down ((obj menu))
   (call-next-method obj)
-  (with-slots (current-item-number grid-rows grid-columns grid-row grid-column) obj
-    (setf current-item-number
-          (sub2rmi (list grid-rows grid-columns)
-                   (list grid-row grid-column))))
+  (sync-collection-grid obj)
   (draw obj))
 
 ;; all of these take two arguments: menu event

@@ -1,9 +1,63 @@
 * ChangeLog
 
+** Notable changes since v0.1
+
+*** Add a selection-callback to collections (230625)
+
+This allows calling a function when a selection is changed, for
+example when a new menu item is selected.
+
+Add example t16j4: Use a menu to select a function name from
+a package and display its docstring in a text area.
+
+Add example t16j3a to test previously added element margins, ellipsis
+on long menu item titles, right current item mark and column
+alignment.
+
 ** v0.1 - Initial development release (230513)
 
 This version provides the first tagged development release.
+
 Notable changes since Quicklisp release 230214:
+
+*** Increment croatoan version to v0.1, add ChangeLog (230513)
+
+*** Add a way to align left/right and ellipsize menu item titles (230506)
+
+All the initarg :align, so that items can be aligned if they are
+shorter than the max-item-length or the calculated column width.
+
+Do not allow the length of the item title to exceed max-item-length,
+in that case the title is ellipsized or truncated.
+
+Add the initarg :ellipsis, where the string can be specified,
+which will replace the excess characters of a too long title.
+If the ellipsis is an empty string, the title will simply be
+truncated.
+
+This patch resolves the issue #39 opened on 210213 by Mr-X-666.
+
+*** Add a closing current item mark to menus (230427)
+
+In addition to being a single string, current-item-mark can now
+be given as a list of two strings, an opening and one closing mark
+for the current item in a menu:
+
+#+BEGIN_EXAMPLE
+:current-item-mark "* "
+
+   A
+ * B
+   C
+   D
+
+:current-item-mark '("> " " <")
+
+   A
+ > B <
+   C
+   D
+#+END_EXAMPLE
 
 *** Add a margin property to form elements (230415)
 
@@ -44,7 +98,7 @@ In that case, we only see the border and foreground (items) colors.
 Modify examples t16j2, t19b2, t19b3, t19c2, add example t16j3.
 
 *** Decouple drawing of table lines and external borders (230304)
-    
+
 If border is nil, drawing a table now only draws the inner table
 lines, i.e. row and column separators.
 

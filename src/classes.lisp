@@ -1027,9 +1027,15 @@ elements. It is only accounted for during calculate-position of layout.")
 (defclass collection (node)
   ((current-item-number
     :initform      nil
-    :accessor      current-item-number
     :type          (or null integer)
     :documentation "Number (row major mode) of the currently selected item, nil if the list is empty.")
+
+   (selection-callback
+    :initarg       :selection-callback
+    :initform      nil
+    :accessor      selection-callback
+    :type          (or null symbol function)
+    :documentation "Function called when a new item is selected.")
 
    (cyclicp
     :initarg       :cyclic
@@ -1041,7 +1047,7 @@ elements. It is only accounted for during calculate-position of layout.")
   (:documentation
    "A collection is a list keeping track of the currently selected item.
 
-Methods on collecion objects allow selecting the previous item, next
+Methods on collection objects allow selecting the previous item, next
 item, etc. The main use is keeping track of the currently selected
 element in a form or a layout."))
 
@@ -1054,6 +1060,22 @@ element in a form or a layout."))
     ;; if the children are added later, the counter has to be initialized manually.
     (when children
       (setf n 0))))
+
+(defun current-item-number (collection)
+  "Return the current item number of collection."
+  (slot-value collection 'current-item-number))
+
+(defun (setf current-item-number) (new collection)
+  "Set and return the new current item number of the collection.
+
+Run the selection-callback, if it is set."
+  (with-slots ((n current-item-number)
+               (callback selection-callback)) collection
+    (setf n new)
+    ;; callback can only be called after n is set.
+    (when callback
+      (funcall callback))
+    n))
 
 ;; this is just an alias for the children accessor
 (defmethod items ((obj collection))
@@ -1091,7 +1113,7 @@ element in a form or a layout."))
             nil))))
 
 (defgeneric select-previous-item (collection)
-  (:documentation "")
+  (:documentation "Select the previous item in the collection.")
   (:method (collection)
     (with-accessors ((items items) (n current-item-number) (cyclicp cyclicp)) collection
       (if cyclicp
@@ -1100,7 +1122,7 @@ element in a form or a layout."))
             (decf n))))))
 
 (defgeneric select-next-item (collection)
-  (:documentation "")
+  (:documentation "Select the next item in the collection.")
   (:method (collection)
     (with-accessors ((items items) (n current-item-number) (cyclicp cyclicp)) collection
       (if cyclicp
@@ -1109,21 +1131,21 @@ element in a form or a layout."))
             (incf n))))))
 
 (defgeneric select-first-item (collection)
-  (:documentation "")
+  (:documentation "Select the first item in the collection.")
   (:method (collection)
     (with-accessors ((items items) (n current-item-number)) collection
       (when items
         (setf n 0)))))
 
 (defgeneric select-last-item (collection)
-  (:documentation "")
+  (:documentation "Select the last item in the collection.")
   (:method (collection)
     (with-accessors ((items items) (n current-item-number)) collection
       (when items
         (setf n (1- (length items)))))))
 
 (defgeneric last-item-number (collection)
-  (:documentation "")
+  (:documentation "Return the last item number in the collection.")
   (:method (collection)
     (with-accessors ((items items)) collection
       (when items
@@ -1408,12 +1430,12 @@ By default it is identical to the position of the sub-window."))
   (ncurses:mvderwin (slot-value w 'winptr) (car position) (cadr position)))
 
 (defgeneric width (object)
-  (:documentation "")
+  (:documentation "Return the width of the object.")
   (:method (object)
     (slot-value object 'width)))
 
 (defgeneric height (object)
-  (:documentation "")
+  (:documentation "Return the height of the object.")
   (:method (object)
     (slot-value object 'height)))
 

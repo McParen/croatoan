@@ -2704,6 +2704,114 @@ it will be more efficient to use a character array, a string."
                                                     :selected-background (:fgcolor :red :bgcolor :yellow :simple-char #\.))))))
       (edit form))))
 
+(defun t16j3a ()
+  "Test element margins, ellipsis on long menu item titles, right current item mark and column alignment."
+  (with-screen (scr :input-echoing nil :cursor-visible t :enable-colors t :enable-function-keys t :input-blocking t)
+    (let* ((buttons (loop for i from 0 to 3 collect
+                      (make-instance 'button :title (format nil "~R" (random 200)) :callback 'accept)))
+           (field (make-instance 'field :name :f1 :width 25 :border t))
+           (area (make-instance 'textarea :name :a1 :dimensions '(5 20) :border t))
+           (items '(a23456789012345 b c d eeee f g h i j k lll))
+           (menu1 (make-instance 'menu :name :m1 :items items
+                                       ;;:grid-dimensions '(4 3)
+                                       :max-item-length 6
+                                       :align :right
+                                       :border t
+                                       :border-width '(2 3)
+
+                                       ;;:current-item-mark ">"
+                                       :current-item-mark '("[ " " ]")
+
+                                       ;; padding is only visible when :table is nil.
+                                       ;; when :table is t, :item-padding should be used instead.
+                                       ;:padding '(1 1)
+                                       :margin '(2 2)
+                                       ;;:margin-left 2 :margin-right 2 :margin-top 1
+                                       ;;:grid-gap '(1 1)
+                                       ;;:item-padding '(0 1)
+                                       :variable-column-width t
+                                       ;; when horizontal scrolling is enabled, the column widths have to be fixed.
+                                       ;;:enable-scrolling t
+                                       ;;:region-dimensions '(2 2)
+                                       ))
+           (menu2 (make-instance 'menu :name :m1 :items items :grid-dimensions '(4 3)
+                                       :max-item-length 8
+                                       ;;:table t
+                                       :border t
+                                       :current-item-mark '("> " " <")
+                                       ;;:border-width '(2 3)
+                                       ;; padding is only visible when :table is nil.
+                                       ;; when :table is t, :item-padding should be used instead.
+                                       ;:padding '(1 1)
+                                       ;:grid-gap '(1 1)
+                                       ;;:item-padding '(0 1)
+                                       ;;:variable-column-width t
+                                       :enable-scrolling t
+                                       :region-dimensions '(2 2)))
+           (menu3 (make-instance 'checklist :name :m1 :items items :grid-dimensions '(4 3)
+                                            :max-item-length 8
+                                            ;;:table t
+                                            :border t
+                                            :current-item-mark '("> " " <")
+                                            ;;:border-width '(2 3)
+                                            ;;:padding '(1 1)
+                                            ;;:grid-gap '(1 1)
+                                            :item-padding '(0 1)
+                                            ;;:variable-column-width t
+                                            :enable-scrolling t
+                                            :region-dimensions '(2 2)))
+           (form (make-instance 'form :window scr :cyclic t
+                                      :layout (make-instance 'layout :grid-columns 3
+                                                                     :grid-gap '(0 1)
+                                                                     :position '(0 0)
+                                                                     :children (list menu1 menu2 menu3))
+                                :style '(menu (:border (:fgcolor :blue :bgcolor :green)
+                                               :foreground (:fgcolor :black :bgcolor :green)
+                                               :background (:bgcolor :cyan)
+                                               :selected-border (:fgcolor :blue :bgcolor :red :simple-char #\.)
+                                               :selected-foreground (:fgcolor :white :bgcolor :blue)
+                                               :selected-background (:fgcolor :red :bgcolor :yellow :simple-char #\.))
+                                         checklist (:border (:fgcolor :blue :bgcolor :green)
+                                                    :foreground (:fgcolor :black :bgcolor :green)
+                                                    :background (:bgcolor :cyan)
+                                                    :selected-border (:fgcolor :blue :bgcolor :red :simple-char #\.)
+                                                    :selected-foreground (:fgcolor :white :bgcolor :blue)
+                                                    :selected-background (:fgcolor :red :bgcolor :yellow :simple-char #\.))))))
+      (edit form))))
+
+(defun t16j4 ()
+  "Use the selection-callback to perform an action when an item is selected.
+
+Use a menu to select functions from a package and then display their
+docstrings in a text area."
+  (with-screen (scr :input-blocking t :input-echoing nil :cursor-visible nil :enable-colors t :use-terminal-colors t)
+    (let (symbols)
+      (do-external-symbols (sym (find-package 'de.anvi.croatoan))
+        ;; add only function symbols to the list
+        (when (fboundp sym)
+          (push sym symbols)))
+      (let* ((area (make-instance 'textarea :name :a1
+                                            :dimensions (list (- (height scr) 2)
+                                                              (- (width scr) 24))
+                                            :padding '(0 1)
+                                            :border t))
+             (menu (make-instance 'menu :name :m1 :items symbols :border t :grid-columns 1
+                                        :enable-scrolling t
+                                        :item-padding '(0 1)
+                                        :region-dimensions (list (- (height scr) 2) 1)))
+             (form (make-instance 'form :window scr
+                                        :layout (make-instance 'layout :grid-columns 2
+                                                                       :position '(0 0)
+                                                                       :children (list menu area)))))
+        (setf (value area) (documentation (value (current-item menu)) 'function))
+        (draw area)
+
+        (setf (selection-callback menu)
+              (lambda ()
+                (setf (value area) (documentation (value (current-item menu)) 'function))
+                (draw area)))
+        (edit form)))))
+
 (defparameter *t16k-message*
   "This is my textarea. There are many like it, but this one is mine. My textarea is my best
 friend. It is my life. I must master it as I must master my life.")
