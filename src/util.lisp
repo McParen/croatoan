@@ -158,3 +158,33 @@ All pre-existing newlines and multiple spaces are removed."
 (defun wrap-lines (lines width)
   "Wrap a list of strings so that no single line exceeds the given width."
   (split-lines (wrap-string (join-lines lines) width)))
+
+(defun char-width (char)
+  "Return the number of columns required to display the wide char.
+
+If char is not printable, for example a control char, return nil.
+
+In order to get a meaningful result from wcwidth, the locale has to
+be set, see `setlocale'."
+  (let ((retval (ncurses:wcwidth (char-code char))))
+    ;; instead of possible return values 0 for #\nul and -1 for all
+    ;; other non-printable control chars, return nil.
+    (if (plusp retval)
+        retval
+        nil)))
+
+(defun string-width (str)
+  "Return the number of columns required to display the string.
+
+If the string contains a non-printable character, return nil."
+  (loop for ch across str
+        for cw = (char-width ch)
+        if cw
+          sum it
+        else
+          return nil))
+
+(defun control-char-p (char)
+  (let ((code (char-code char)))
+    (or (<= 0 code 31)
+        (<= 127 code 159))))

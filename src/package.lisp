@@ -416,6 +416,9 @@
    join-lines
    wrap-string
    wrap-lines
+   char-width
+   string-width
+   control-char-p
 
    ;; variables / curses global variables
 

@@ -4263,6 +4263,18 @@ Press C-j, C-m, C-i, C-h to see the difference."
                                                                      :children (mapcan (lambda (a b c) (list a b c)) labels- fields btns)))))
       (edit form))))
 
+(defun t37 ()
+  "Get the screen width of wide characters, which possibly cover two terminal cells."
+  (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
+    (let ((str0 "012345689")
+          (str1 (coerce (list #\tent #\sailboat #\fuel_pump (code-char 1217) #\B) 'string))
+          (str2 (coerce (list #\tent #\sailboat #\fuel_pump #\soh (code-char 1217) #\newline #\B) 'string)))
+      (format scr "~A  width = ~A~%"  str0 (string-width str0))
+      (format scr "~A   width = ~A~%" str1 (string-width str1))
+      (format scr "~A   width = ~A" str2 (string-width str2)) ; returns nil, because of ^A and #\newline
+      (refresh scr)
+      (get-char scr))))
+
 (defun t42 ()
   "Add (a) to and remove (r) windows from a simple column layout.
 

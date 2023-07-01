@@ -2,6 +2,25 @@
 
 ** Notable changes since v0.1
 
+*** Add functions to determine the displayed width of wide chars (230701)
+
+Add a CFFI wrapper for the libc function wcwidth, to determine the
+width of a char, which is useful for determining the widths of strings
+containing wide chars (modern emojis, asian characters) which cover
+more than one character cell in a terminal (mostly they need two).
+
+Add higher level functions char-width and string-width, which accept
+lisp chars and strings and return nil instead of -1, if the argument
+contains non-printable characters.
+
+Add helper predicate control-char-p, whcih returns t if the character
+code belongs to a control character, which is non-printable.
+
+Add example t37 to show the use of and test those functions.
+
+Fix Issue #53: Replace char ident #\horizontal_ellipsis by its code
+point point to avoid issues with LispWorks. (Thanks to Yehouda)
+
 *** Add a selection-callback to collections (230625)
 
 This allows calling a function when a selection is changed, for
@@ -21,7 +40,6 @@ This version provides the first tagged development release.
 Notable changes since Quicklisp release 230214:
 
 *** Increment croatoan version to v0.1, add ChangeLog (230513)
-
 *** Add a way to align left/right and ellipsize menu item titles (230506)
 
 All the initarg :align, so that items can be aligned if they are

@@ -507,4 +507,5 @@
    +LC-TELEPHONE+
    +LC-MEASUREMENT+
    +LC-IDENTIFICATION+
+   wcwidth
    ))

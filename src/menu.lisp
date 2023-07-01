@@ -108,7 +108,7 @@ truncated.")
 
    (ellipsis
     :initarg       :ellipsis
-    :initform      (format nil "~C" #\horizontal_ellipsis)
+    :initform      #.(format nil "~C" (code-char #x2026))
     :type          string
     :documentation "Ellipsis/truncation string for too long item titles.
 
@@ -117,7 +117,8 @@ replacing the last characters with the ellipsis string.
 
 If the ellipsis is an empty string, the title will simply be truncated.
 
-The default value is the unicode ellipsis character (of length 1)."))
+The default value is the unicode ellipsis character (of length 1),
+#\horizontal_ellipsis (code point #x2026)."))
 
   (:default-initargs :keymap 'menu-map)
   (:documentation

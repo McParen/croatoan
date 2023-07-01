@@ -34,3 +34,8 @@
 (defconstant +LC-TELEPHONE+      10)
 (defconstant +LC-MEASUREMENT+    11)
 (defconstant +LC-IDENTIFICATION+ 12)
+
+;; #include <wchar.h>
+;; int wcwidth(wchar_t wc);
+
+(cffi:defcfun ("wcwidth" wcwidth) :int (ucs wchar_t))
