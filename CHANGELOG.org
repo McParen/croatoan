@@ -2,6 +2,20 @@
 
 ** Notable changes since v0.1
 
+*** Add wrappers function-key-code and function-key-definition (230708)
+
+Add wrappers =function-key-code= (=ncurses:key-defined=) and
+=function-key-definition= (=ncurses:keybound=).
+
+Modify example t32 to display =ncurses:keyname= and key-definition
+of a function key.
+
+Allow =define-function-key= to accept a string containing the key
+sequence.
+
+Allow the event key to be a number, to account for events without a
+keyword name.
+
 *** Add functions to determine the displayed width of wide chars (230701)
 
 Add a CFFI wrapper for the libc function wcwidth, to determine the
@@ -13,12 +27,12 @@ Add higher level functions char-width and string-width, which accept
 lisp chars and strings and return nil instead of -1, if the argument
 contains non-printable characters.
 
-Add helper predicate control-char-p, whcih returns t if the character
+Add helper predicate =control-char-p=, which returns t if the character
 code belongs to a control character, which is non-printable.
 
 Add example t37 to show the use of and test those functions.
 
-Fix Issue #53: Replace char ident #\horizontal_ellipsis by its code
+Fix Issue #53: Replace char ident =#\horizontal_ellipsis= by its code
 point point to avoid issues with LispWorks. (Thanks to Yehouda)
 
 *** Add a selection-callback to collections (230625)
@@ -40,6 +54,7 @@ This version provides the first tagged development release.
 Notable changes since Quicklisp release 230214:
 
 *** Increment croatoan version to v0.1, add ChangeLog (230513)
+
 *** Add a way to align left/right and ellipsize menu item titles (230506)
 
 All the initarg :align, so that items can be aligned if they are

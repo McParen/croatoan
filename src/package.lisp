@@ -249,6 +249,8 @@
 
    ;; define_key / define a keycode
    define-function-key
+   function-key-code
+   function-key-definition
 
    ;; delch / delete character under the cursor in a curses window
    delete-char

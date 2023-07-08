@@ -4091,33 +4091,55 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (get-char scr)))
 
 (defun t32 ()
-  "Test/example of `croatoan:key-to-string' from util.lisp.
+  "Test/example of key-to-string, key-definition, key-code, etc.
 
 Press C-j, C-m, C-i, C-h to see the difference."
   (with-screen (scr :input-echoing         nil
                     :process-control-chars nil ; set to nil to be able to access C-s, C-c, C-z, C-q.
                     :input-blocking        t
                     :enable-function-keys  t
-                    :cursor-visible        nil)
+                    :cursor-visible        nil
+                    :use-terminal-colors   t)
+    (setf *print-right-margin* (width scr))
     (bind scr "^Q" 'exit-event-loop)
-    (bind scr t (lambda (win e)
-                  (with-accessors ((event event-key)) e
+    (bind scr t (lambda (win event)
+                  (with-accessors ((key event-key)
+                                   (code event-code)) event
                     (clear win)
                     (add win "Press C-q to exit." :y 0 :x 0)
                     (move win 2 0)
-                    (cond ((characterp event)
-                           (let ((key-decoded  (key-to-string  event))
-                                 (char-decoded (char-to-string event)))
-                             (format win "event ~a key decoded ~a char decoded ~a" event key-decoded char-decoded)))
-                          ((function-key-p (key-name-to-code event event))
-                           (let ((key-decoded  (key-to-string (key-name-to-code event)))
-                                 ;; decoding a char when taking a function key returns no useful result
-                                 (char-decoded (char-to-string (key-name-to-code event))))
-                             (move win 2 0)
-                             (format win "event ~a key decoded ~a char decoded ~a" event key-decoded char-decoded)))
-                          ((numberp event)
-                           (format win "Unknown keycode ~a" event))
-                          (t (format win "Unknown event ~A" event)))
+                    (typecase key
+                      (character
+                       (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
+                       (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
+                       (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string key))
+                       (let ((str (function-key-definition code)))
+                         (format win "key-definition (ncurses:keybound)~19@S code from definition: ~A~&" str (function-key-code str))))
+
+                      ;; function-key-p is a boolean flag returned by get-event/get-wide-event
+                      ;; it can be used to distinguish whether an event is a single character code
+                      ;; or a code representing a function key sequence.
+                      (keyword
+                       (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
+                       (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
+                       ;; decoding a char of a function key returns no useful result
+                       (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string code))
+                       (let ((str (function-key-definition code)))
+                         (format win "key-definition (ncurses:keybound)~19@S code: ~A~&" str (function-key-code str))))
+
+                      ;; if a code is returned as the event key, that means that a function key has been defined,
+                      ;; but the code has not been assigned a keyword name in croatoan (use add-function-key).
+                      ;; The underlying ncurses/terminfo name can be accessed through key-to-string (or ncurses:keyname).
+                      (number
+                       (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
+                       (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
+                       ;; decoding a char of a function key returns no useful result
+                       (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string key))
+                       (let ((str (function-key-definition code)))
+                         (format win "key-definition (ncurses:keybound)~19@S code: ~A~&" str (function-key-code str))))
+
+                      (t
+                       (format win "Unknown event key type ~A ~A" key code)))
                     (refresh win))))
     (clear scr)
     (add scr "Press C-q to exit." :y 0 :x 0)

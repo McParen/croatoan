@@ -4,15 +4,18 @@
 ;; define a keycode
 ;; http://invisible-island.net/ncurses/man/define_key.3x.html
 
-(defun define-function-key (key-name char-list &key (key-code nil))
+(defun define-function-key (key-name definition &key (key-code nil))
   "Add or replace a new function key defined by the given character sequence.
 
 key-name is the symbol used to represent the key (e.g. :f1).
 
-char-list is the raw sequence of characters returned by the terminal
-to identify an event (key pressed, mouse event, etc.).
+The definition of the function key can be passed as a list of
+characters or as a string.
 
-If key-code is an integer a new mapping (name . code) is added
+The definition is the raw (escape) sequence of characters returned by
+the terminal to identify an event (key pressed, mouse event, etc.).
+
+If key-code is an integer, a new mapping (name . code) is added
 to the database overwriting any already existing mapping which
 contains either key-name or key-code.
 
@@ -20,10 +23,12 @@ If key-code is nil (default) the mapping is added with an unique,
 unused, generated keycode."
   (assert (or (null key-code)
               (integerp key-code)))
-  (let ((control-string (coerce char-list 'string))
+  (let ((control-string (typecase definition
+                          (string definition)
+                          (list (coerce definition 'string))))
         (code (if key-code
                   ;; if code is given and name exists
-                  ;;   use the new code insteaad of the existing code
+                  ;;   use the new code instead of the existing code
                   ;; if code is given and name does not exist
                   ;;   use the new name and the new code
                   key-code
@@ -43,3 +48,22 @@ unused, generated keycode."
     (add-function-key key-name code)
     ;; add control sequence and code to the underlying ncurses database.
     (ncurses:define-key control-string code)))
+
+(defun function-key-code (definition)
+  "Take a key definition sequence, return the keycode if the key is defined.
+
+The definition can be passed as string or as a list of characters."
+  (let ((retval (ncurses:key-defined (typecase definition
+                                       (string definition)
+                                       (list (coerce definition 'string))))))
+    (cond ((= retval 0) nil)
+          ((= retval -1) nil)
+          (t retval))))
+
+(defun function-key-definition (code)
+  "Take a function key code, return its definition as a string."
+  (let* ((ptr (cffi:foreign-funcall "keybound" :int code :int 0 :pointer))
+         (str (cffi:foreign-string-to-lisp ptr)))
+    ;; keybound returns a C string which must be freed.
+    (cffi:foreign-free ptr)
+    str))

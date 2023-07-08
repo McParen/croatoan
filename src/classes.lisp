@@ -42,7 +42,7 @@ component +--> widget ---+--> window  +--> screen
     :initarg       :key
     :initform      nil
     :reader        event-key
-    :type          (or null keyword character)
+    :type          (or null integer keyword character)
     :documentation "Character or keyword representing a function key, terminal :resize or mouse event.")
 
    (code
