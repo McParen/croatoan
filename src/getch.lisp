@@ -23,325 +23,181 @@ The window from which the char is read is automatically refreshed."
 (defun key-supported-p (key-char)
   (ncurses:has-key key-char))
 
-;;; NOTES
-
-;; All those return a simple C char (or int), not a rendered chtype (unsigned long int).
-;; you can use code-char to convert this simple char/int to a lisp char.
-;; but you cannot use this to convert a chtype to a lisp char.
-
-;;; TODOs
-
-;; [ ] Escape sequences. They are neither function keys nor chars.
-
-
-
-;; keys above the first 0-255 chars. cannot fit in a char variable any more.
-;; http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/keys.html
 (defparameter *key-alist*
+  '((:key-code-yes              . 256)
+    ;; returned from wide get functions when a function key is returned (but only when keypad is enabled).
+    ;; when they return a normal wide char wchar_t, they return OK.
 
-  ;; TODO 200318 do not use literal lists if they are modified later.
-  '((:code_yes  . 256)
-    (:min       . 257)
-    (:break     . 257)
-    (:down      . 258)
-    (:up        . 259)
-    (:left      . 260)
-    (:right     . 261)
-    (:home      . 262) ; Pos1
-    (:backspace . 263)
-    (:f0        . 264)
-
-    (:f1        . 265)
-    (:f2        . 266)
-    (:f3        . 267)
-    (:f4        . 268)
-    (:f5        . 269)
-    (:f6        . 270)
-    (:f7        . 271)
-    (:f8        . 272)
-    (:f9        . 273)
-    (:f10       . 274)
-    (:f11       . 275)
-    (:f12       . 276)
-    (:f13       . 277)
-    (:f14       . 278)
-    (:f15       . 279)
-    (:f16       . 280)
-    (:f17       . 281)
-    (:f18       . 282)
-    (:f19       . 283)
-    (:f20       . 284)
-    (:f21       . 285)
-    (:f22       . 286)
-    (:f23       . 287)
-    (:f24       . 288)
-    (:f25       . 289)
-    (:f26       . 290)
-    (:f27       . 291)
-    (:f28       . 292)
-    (:f29       . 293)
-    (:f30       . 294)
-    (:f31       . 295)
-    (:f32       . 296)
-    (:f33       . 297)
-    (:f34       . 298)
-    (:f35       . 299)
-    (:f36       . 300)
-    (:f37       . 301)
-    (:f38       . 302)
-    (:f39       . 303)
-    (:f40       . 304)
-    (:f41       . 305)
-    (:f42       . 306)
-    (:f43       . 307)
-    (:f44       . 308)
-    (:f45       . 309)
-    (:f46       . 310)
-    (:f47       . 311)
-    (:f48       . 312)
-    (:f49       . 313)
-    (:f50       . 314)
-    (:f51       . 315)
-    (:f52       . 316)
-    (:f53       . 317)
-    (:f54       . 318)
-    (:f55       . 319)
-    (:f56       . 320)
-    (:f57       . 321)
-    (:f58       . 322)
-    (:f59       . 323)
-    (:f60       . 324)
-    (:f61       . 325)
-    (:f62       . 326)
-    (:f63       . 327)
-
-    (:dl        . 328)
-    (:il        . 329)
-    (:dc        . 330)
-    (:ic        . 331)
-    (:eic       . 332)
-    (:clear     . 333)
-    (:eos       . 334)
-    (:eol       . 335)
-    (:sf        . 336) ; :shift-down
-    (:sr        . 337) ; :shift-up
-    (:npage     . 338)
-    (:ppage     . 339)
-    (:stab      . 340)
-    (:ctab      . 341)
-    (:catab     . 342)
-    (:enter     . 343)
-    (:sreset    . 344)
-    (:reset     . 345)
-    (:print     . 346)
-    (:ll        . 347)
-    (:a1        . 348)
-    (:a3        . 349)
-    (:b2        . 350)
-    (:c1        . 351)
-    (:c3        . 352)
-    (:btab      . 353) ; Shift + TAB = #\LATIN_SMALL_LETTER_S_WITH_CARON = sch
-    (:beg       . 354)
-    (:cancel    . 355)
-    (:close     . 356)
-    (:command   . 357)
-    (:copy      . 358)
-    (:create    . 359)
-    (:end       . 360) ; Ende
-    (:exit      . 361)
-    (:find      . 362)
-    (:help      . 363)
-    (:mark      . 364)
-    (:message   . 365)
-    (:move      . 366)
-    (:next      . 367)
-    (:open      . 368)
-    (:options   . 369)
-    (:previous  . 370)
-    (:redo      . 371)
-    (:reference . 372)
-    (:refresh   . 373)
-    (:replace   . 374)
-    (:restart   . 375)
-    (:resume    . 376)
-    (:save      . 377)
-    (:sbeg      . 378)
-    (:scancel   . 379)
-    (:scommand  . 380)
-    (:scopy     . 381)
-    (:screate   . 382)
-    (:sdc       . 383)
-    (:sdl       . 384)
-    (:select    . 385)
-    (:send      . 386) ; Shift-End
-    (:seol      . 387)
-    (:sexit     . 388)
-    (:sfind     . 389)
-    (:shelp     . 390)
-    (:shome     . 391) ; Shift-Home, Shift-Pos1
-    (:sic       . 392)
-    (:sleft     . 393)
-    (:smessage  . 394)
-    (:smove     . 395)
-    (:snext     . 396)
-    (:soptions  . 397)
-    (:sprevious . 398)
-    (:sprint    . 399)
-    (:sredo     . 400)
-    (:sreplace  . 401)
-    (:sright    . 402)
-    (:srsume    . 403)
-    (:ssave     . 404)
-    (:ssuspend  . 405)
-    (:sundo     . 406)
-    (:suspend   . 407)
-    (:undo      . 408)
-    (:mouse     . 409)
-    (:resize    . 410)
-    (:event     . 411)
-    (:max       . 511))) ; alt-delete
+    ;; (:key-min       . 257) ; minimum key value
+    (:key-break                 . 257)
+    (:key-arrow-down            . 258) ; DOWN      kd
+    (:key-arrow-up              . 259) ; UP        ku
+    (:key-arrow-left            . 260) ; LEFT      kl
+    (:key-arrow-right           . 261) ; RIGHT     kr
+    (:key-home                  . 262) ; HOME      kh
+    (:key-backspace             . 263) ; BACKSPACE kb
+    (:key-f0                    . 264)
+    (:key-f1                    . 265)
+    (:key-f2                    . 266)
+    (:key-f3                    . 267)
+    (:key-f4                    . 268)
+    (:key-f5                    . 269)
+    (:key-f6                    . 270)
+    (:key-f7                    . 271)
+    (:key-f8                    . 272)
+    (:key-f9                    . 273)
+    (:key-f10                   . 274)
+    (:key-f11                   . 275)
+    (:key-f12                   . 276)
+    (:key-f13                   . 277)
+    (:key-f14                   . 278)
+    (:key-f15                   . 279)
+    (:key-f16                   . 280)
+    (:key-f17                   . 281)
+    (:key-f18                   . 282)
+    (:key-f19                   . 283)
+    (:key-f20                   . 284)
+    (:key-f21                   . 285)
+    (:key-f22                   . 286)
+    (:key-f23                   . 287)
+    (:key-f24                   . 288)
+    (:key-f25                   . 289)
+    (:key-f26                   . 290)
+    (:key-f27                   . 291)
+    (:key-f28                   . 292)
+    (:key-f29                   . 293)
+    (:key-f30                   . 294)
+    (:key-f31                   . 295)
+    (:key-f32                   . 296)
+    (:key-f33                   . 297)
+    (:key-f34                   . 298)
+    (:key-f35                   . 299)
+    (:key-f36                   . 300)
+    (:key-f37                   . 301)
+    (:key-f38                   . 302)
+    (:key-f39                   . 303)
+    (:key-f40                   . 304)
+    (:key-f41                   . 305)
+    (:key-f42                   . 306)
+    (:key-f43                   . 307)
+    (:key-f44                   . 308)
+    (:key-f45                   . 309)
+    (:key-f46                   . 310)
+    (:key-f47                   . 311)
+    (:key-f48                   . 312)
+    (:key-f49                   . 313)
+    (:key-f50                   . 314)
+    (:key-f51                   . 315)
+    (:key-f52                   . 316)
+    (:key-f53                   . 317)
+    (:key-f54                   . 318)
+    (:key-f55                   . 319)
+    (:key-f56                   . 320)
+    (:key-f57                   . 321)
+    (:key-f58                   . 322)
+    (:key-f59                   . 323)
+    (:key-f60                   . 324)
+    (:key-f61                   . 325)
+    (:key-f62                   . 326)
+    (:key-f63                   . 327)
+    (:key-delete-line           . 328) ; DL
+    (:key-insert-line           . 329) ; IL
+    (:key-delete-char           . 330) ; DC
+    (:key-insert-char           . 331) ; IC
+    (:key-exit-insert-char      . 332) ; EIC
+    (:key-clear-screen          . 333) ; CLEAR
+    (:key-clear-end-of-screen   . 334) ; EOS
+    (:key-clear-end-of-line     . 335) ; EOL
+    (:key-scroll-forward        . 336) ; SF, :shift-down
+    (:key-scroll-reverse        . 337) ; SR, :shift-up
+    (:key-next-page             . 338) ; NPAGE
+    (:key-previous-page         . 339) ; PPAGE
+    (:key-set-tab               . 340) ; STAB
+    (:key-clear-tab             . 341) ; CTAB
+    (:key-clear-all-tabs        . 342) ; CATAB
+    (:key-enter                 . 343) ; ENTER, send, @8
+    (:key-soft-reset            . 344) ; SRESET
+    (:key-reset                 . 345) ; RESET
+    (:key-print                 . 346) ; PRINT, copy
+    (:key-home-down             . 347) ; LL, bottom, termcap kH
+    (:key-keypad-upper-left     . 348) ; A1
+    (:key-keypad-upper-right    . 349) ; A3
+    (:key-keypad-center         . 350) ; B2
+    (:key-keypad-lower-left     . 351) ; C1
+    (:key-keypad-lower-right    . 352) ; C3
 
 #|
 
-    ;; The following codes are not part of ncurses because they are not portable, i.e. they do not
-    ;; exist on all terminals.
-    ;; These are tested on xterm / gnome-terminal
+3x3 keypad layout:
 
-    ;; TODO 200105: add these keys only if we are on xterm/gnome-terminal
-
-    ;; moloch
-    ;; xterm
-
-    (:alt-delete          . 517)
-    (:shift-alt-delete    . 518)
-    (:ctrl-delete         . 519)
-    (:shift-ctrl-delete   . 520)
-    ;;(:shift-ctrl-alt-delete . xxx) ^[[3;8~
-
-    (:alt-end             . 528)
-    (:shift-alt-end       . 529)
-    (:ctrl-end            . 530)
-    (:shift-ctrl-end      . 531)
-    (:ctrl-alt-end        . 532)
-    ;;(:shift-ctrl-alt-end . xxx) ^[[1;8F
-
-    (:alt-home            . 533)
-    (:shift-alt-home      . 534)
-    (:ctrl-home           . 535)
-    (:shift-ctrl-home     . 536)
-    (:ctrl-alt-home       . 537)
-    ;;(:shift-ctrl-alt-home . xxx) ^[[1;8H
-
-    (:alt-insert          . 538)
-;;    ;; :shift-insert = middle mouse button paste, probably 513, hijacked by xterm.
-    (:ctrl-insert         . 540)
-    (:ctrl-alt-insert     . 542)
-
-    (:alt-npage           . 548)
-    (:ctrl-npage          . 550)
-    (:ctrl-alt-ppage      . 552)
-
-    (:alt-ppage           . 553)
-    (:ctrl-ppage          . 555)
-    (:ctrl-alt-ppage      . 557)
-
-    ;; :shift-up = :sr = 337
-    (:alt-up              . 564)
-    (:shift-alt-up        . 565)
-    (:ctrl-up             . 566)
-    (:shift-ctrl-up       . 567)
-    ;; (:shift-alt-ctrl-up . xxx)
-
-;;    ;; :shift-down = :sf = 336
-    (:alt-down            . 523)
-    (:shift-alt-down      . 524)
-    (:ctrl-down           . 525)
-    (:shift-ctrl-down     . 526)
-;;    ;; (:shift-alt-ctrl-down . xxx) ;; hijacked by the ubuntu unity wm.
-
-    (:alt-left            . 543)
-    (:shift-alt-left      . 544)
-    (:ctrl-left           . 545)
-    (:shift-ctrl-left     . 546)
-
-    (:alt-right           . 558)
-    (:shift-alt-right     . 559)
-    (:ctrl-right          . 560)
-    (:shift-ctrl-right    . 561)
+  A1  |  UP  |  A3
+------+------+-------
+ LEFT |  B2  | RIGHT
+------+------+-------
+  C1  | DOWN |  C3
 
 |#
 
-
-
-#|
-    ;;; paren
-
-    ;; xterm
-
-;;    ;; :shift-delete = :sdc
-;;    (:shift-alt-delete   . 512)
-;;    (:ctrl-delete        . 513) ; Ctrl-Delete
-;;    (:shift-ctrl-delete  . 514) ; Shift-Control-Delete
-;;
-;;    ;; :shift-down = :sf = 336
-;;    (:alt-down           . 517)
-;;    (:shift-alt-down     . 518)
-;;    (:ctrl-down          . 519)
-;;    (:shift-ctrl-down    . 520)
-;;    ;; (:shift-alt-ctrl-down . xxx) ;; hijacked by the ubuntu unity wm.
-;;
-;;    (:alt-end            . 522)
-;;    (:shift-alt-end      . 523)
-;;    (:ctrl-end           . 524)
-;;    (:shift-ctrl-end     . 525)
-;;    (:ctrl-alt-end       . 526)
-;;    ;; :shift-ctrl-alt-end . xxx
-;;
-;;    (:alt-home           . 527)
-;;    (:shift-alt-home     . 528)
-;;    (:ctrl-home          . 529)
-;;    (:shift-ctrl-home    . 530)
-;;    (:ctrl-alt-home      . 531)
-;;
-;;    (:alt-insert         . 532) ; Alt-Insert
-;;    ;; :shift-insert = middle mouse button paste, probably 513, hijacked by xterm.
-;;    (:ctrl-insert        . 534) ; Ctrl-Insert
-;;    (:ctrl-alt-insert    . 536) ; Ctrl-Alt-Insert
-;;
-;;    ;; Shift-Ctrl-Alt-Insert = ^[ [ 3 ; 8 ~
-;;
-;;    (:alt-left           . 537)
-;;    (:shift-alt-right    . 538)
-;;    (:ctrl-left          . 539)
-;;    (:shift-ctrl-left    . 540)
-;;
-;;    ;; npage
-;;    ;; :shift-npage
-;;    (:alt-npage          . 542)
-;;    (:ctrl-npage         . 544)
-;;    (:ctrl-alt-npage     . 546)
-;;
-;;    ;; :ppage
-;;    ;; :shift-ppage activates an xterm ppage function
-;;    (:alt-ppage          . 547)
-;;    (:ctrl-ppage         . 549)
-;;    (:ctrl-alt-ppage     . 551)
-;;
-;;    (:alt-right          . 552)
-;;    (:shift-alt-right    . 553)
-;;    (:ctrl-right         . 554)
-;;    (:shift-ctrl-left    . 555)
-;;
-;;    ;; :shift-up = :sr = 337
-;;    (:alt-up             . 558)
-;;    (:shift-alt-up       . 559)
-;;    (:ctrl-up            . 560)
-;;    (:shift-ctrl-up      . 561)
-    ;; (:shift-alt-ctrl-up . xxx)
-
-
-|#
-
+    (:key-back-tab                . 353) ; BTAB, Shift + TAB = #\LATIN_SMALL_LETTER_S_WITH_CARON = sch
+    (:key-beginning               . 354) ; BEG
+    (:key-cancel                  . 355) ; CANCEL    @2
+    (:key-close                   . 356) ; CLOSE     @3
+    (:key-command                 . 357) ; COMMAND   @4
+    (:key-copy                    . 358) ; COPY      @5
+    (:key-create                  . 359) ; CREATE    @6
+    (:key-end                     . 360) ; Ende      @7
+    (:key-exit                    . 361) ; EXIT      @9
+    (:key-find                    . 362) ; FIND      @0
+    (:key-help                    . 363) ; HELP      %1
+    (:key-mark                    . 364) ; MARK      %2
+    (:key-message                 . 365) ; MESSAGE   %3
+    (:key-move                    . 366) ; MOVE      %4
+    (:key-next                    . 367) ; NEXT      %5
+    (:key-open                    . 368) ; OPEN      %6
+    (:key-options                 . 369) ; OPTIONS   %7
+    (:key-previous                . 370) ; PREVIOUS  %8
+    (:key-redo                    . 371) ; REDO      %0
+    (:key-reference               . 372) ; REFERENCE &1
+    (:key-refresh                 . 373) ; REFRESH   &2
+    (:key-replace                 . 374) ; REPLACE   &3
+    (:key-restart                 . 375) ; RESTART   &4
+    (:key-resume                  . 376) ; RESUME    &5
+    (:key-save                    . 377) ; SAVE      &6
+    (:key-shift-begin             . 378) ; SBEG      &9
+    (:key-shift-cancel            . 379) ; SCANCEL   &0
+    (:key-shift-command           . 380) ; SCOMMAND  *1
+    (:key-shift-copy              . 381) ; SCOPY     *2
+    (:key-shift-create            . 382) ; SCREATE   *3
+    (:key-shift-delete-char       . 383) ; SDC       *4
+    (:key-shift-delete-line       . 384) ; SDL       *5
+    (:key-select                  . 385) ; SELECT    *6
+    (:key-shift-end               . 386) ; SEND      *7
+    (:key-shift-clear-end-of-line . 387) ; SEOL      *8
+    (:key-shift-exit              . 388) ; SEXIT     *9
+    (:key-shift-find              . 389) ; SFIND     *0
+    (:key-shift-help              . 390) ; SHELP     #1
+    (:key-shift-home              . 391) ; SHOME     #2
+    (:key-shift-insert-char       . 392) ; SIC       #3
+    (:key-shift-left              . 393) ; SLEFT     #4
+    (:key-shift-message           . 394) ; SMESSAGE  %a
+    (:key-shift-move              . 395) ; SMOVE     %b
+    (:key-shift-next              . 396) ; SNEXT     %c
+    (:key-shift-options           . 397) ; SOPTIONS  %d
+    (:key-shift-previous          . 398) ; SPREVIOUS %e
+    (:key-shift-print             . 399) ; SPRINT    %f
+    (:key-shift-redo              . 400) ; SREDO     %g
+    (:key-shift-replace           . 401) ; SREPLACE  %h
+    (:key-shift-right             . 402) ; SRIGHT    %i
+    (:key-shift-resume            . 403) ; SRSUME    %j
+    (:key-shift-save              . 404) ; SSAVE     !1
+    (:key-shift-suspend           . 405) ; SSUSPEND  !2
+    (:key-shift-undo              . 406) ; SUNDO     !3
+    (:key-suspend                 . 407) ; SUSPEND   &7
+    (:key-undo                    . 408) ; UNDO      &8
+    (:mouse                       . 409) ; MOUSE     Km
+    (:resize                      . 410) ; RESIZE
+    (:key-event                   . 411) ; only available if ncurses is built with --enable-wgetch-events
+    (:key-max                     . 511))) ; maximum key value
 
 (defmacro access-alist (key find-fn test-fn get-value-fn default)
   "Helper macro for 'key-name-to-code' and 'key-code-to-name'."
@@ -480,109 +336,6 @@ The following chars can be returned:
        (princ ch window)))))
 
 #|
-    ;; I dont want them defined as octal literals.
-  '((:code_yes  . #o400)
-    (:min       . #o401)
-
-    (:break     . #o401)
-    (:down      . #o402)
-    (:up        . #o403)
-    (:left      . #o404)
-    (:right     . #o405)
-    (:home      . #o406)
-    (:backspace . #o407)
-    (:f0        . #o410)
-
-    ;; how to handle this???
-    ;; F(n)        (KEY_F0+(n))    /* Value of function key n */
-    ;; (loop for i from 1 to 63 do (format t "(:f~A . ~A)~%" i (+ F0 i)))
-
-    (:dl        . #o510)
-    (:il        . #o511)
-    (:dc        . #o512)
-    (:ic        . #o513)
-    (:eic       . #o514)
-    (:clear     . #o515)
-    (:eos       . #o516)
-    (:eol       . #o517)
-    (:sf        . #o520)
-    (:sr        . #o521)
-    (:npage     . #o522)
-    (:ppage     . #o523)
-    (:stab      . #o524)
-    (:ctab      . #o525)
-    (:catab     . #o526)
-    (:enter     . #o527)
-    (:sreset    . #o530)
-    (:reset     . #o531)
-    (:print     . #o532)
-    (:ll        . #o533)
-    (:a1        . #o534)
-    (:a3        . #o535)
-    (:b2        . #o536)
-    (:c1        . #o537)
-    (:c3        . #o540)
-    (:btab      . #o541)
-    (:beg       . #o542)
-    (:cancel    . #o543)
-    (:close     . #o544)
-    (:command   . #o545)
-    (:copy      . #o546)
-    (:create    . #o547)
-    (:end       . #o550)
-    (:exit      . #o551)
-    (:find      . #o552)
-    (:help      . #o553)
-    (:mark      . #o554)
-    (:message   . #o555)
-    (:move      . #o556)
-    (:next      . #o557)
-    (:open      . #o560)
-    (:options   . #o561)
-    (:previous  . #o562)
-    (:redo      . #o563)
-    (:reference . #o564)
-    (:refresh   . #o565)
-    (:replace   . #o566)
-    (:restart   . #o567)
-    (:resume    . #o570)
-    (:save      . #o571)
-    (:sbeg      . #o572)
-    (:scancel   . #o573)
-    (:scommand  . #o574)
-    (:scopy     . #o575)
-    (:screate   . #o576)
-    (:sdc       . #o577)
-    (:sdl       . #o600)
-    (:select    . #o601)
-    (:send      . #o602)
-    (:seol      . #o603)
-    (:sexit     . #o604)
-    (:sfind     . #o605)
-    (:shelp     . #o606)
-    (:shome     . #o607)
-    (:sic       . #o610)
-    (:sleft     . #o611)
-    (:smessage  . #o612)
-    (:smove     . #o613)
-    (:snext     . #o614)
-    (:soptions  . #o615)
-    (:sprevious . #o616)
-    (:sprint    . #o617)
-    (:sredo     . #o620)
-    (:sreplace  . #o621)
-    (:sright    . #o622)
-    (:srsume    . #o623)
-    (:ssave     . #o624)
-    (:ssuspend  . #o625)
-    (:sundo     . #o626)
-    (:suspend   . #o627)
-    (:undo      . #o630)
-    (:mouse     . #o631)
-    (:resize    . #o632)
-    (:event     . #o633)
-
-    (:max       . #o777)))
 
 #define KEY_CODE_YES    0400            /* A wchar_t contains a key code */
 #define KEY_MIN         0401            /* Minimum curses key */

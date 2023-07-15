@@ -349,17 +349,17 @@ Currently only graphic characters and newline are supported."
   (draw area))
 
 (define-keymap textarea-map
-  (:left 'move-previous-char)
-  (:right 'move-next-char)
-  (:ic  (lambda (area)
-          (toggle-insert-mode area)))
+  (:key-arrow-left  'move-previous-char)
+  (:key-arrow-right 'move-next-char)
+  (:key-insert-char  (lambda (area)
+                       (toggle-insert-mode area)))
 
   ;; C-r = reset = DC2 = #\dc2
   ;; clear and reset the textarea
   (#\dc2 'reset)
 
-  (:backspace 'delete-previous-char)
-  (:dc 'delete-next-char)
+  (:key-backspace   'delete-previous-char)
+  (:key-delete-char 'delete-next-char)
 
   (#\soh 'accept) ; C-a
   (#\can 'cancel) ; C-x

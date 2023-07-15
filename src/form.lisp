@@ -508,7 +508,7 @@ Bind this to an event or element to exit the event loop of a form."
   ;; C-r = reset = DC2 = #\dc2
   ;; reset editable elements of the form (fields, checkboxes)
   (#\dc2 'reset)
-  (:btab 'select-previous-element)
+  (:key-back-tab 'select-previous-element)
   (#\tab 'select-next-element))
 
 (defun call-button-function (button event)

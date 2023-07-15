@@ -135,10 +135,10 @@
                 (let ((event (event-key (get-event scr))))
                   (if event
                       (case event
-                        (:up (rotate-piece))
-                        (:down (drop-piece))
-                        (:right (move-piece #c(1 0)))
-                        (:left (move-piece #c(-1 0)))
+                        (:key-arrow-up (rotate-piece))
+                        (:key-arrow-down (drop-piece))
+                        (:key-arrow-right (move-piece #c(1 0)))
+                        (:key-arrow-left (move-piece #c(-1 0)))
                         (#\q (return)))
                       (progn
                         (move-piece #c(0 -1))

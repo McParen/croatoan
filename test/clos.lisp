@@ -16,10 +16,10 @@
             (if event
                 ;; when the event is different from nil
                 (case event
-                  (:up    (setf dir #c( 0  1)))
-                  (:down  (setf dir #c( 0 -1)))
-                  (:right (setf dir #c( 1  0)))
-                  (:left  (setf dir #c(-1  0)))
+                  (:key-arrow-up    (setf dir #c( 0  1)))
+                  (:key-arrow-down  (setf dir #c( 0 -1)))
+                  (:key-arrow-right (setf dir #c( 1  0)))
+                  (:key-arrow-left  (setf dir #c(-1  0)))
                   (#\q    (return)))
                 ;; when event is nil because of input-blocking nil
                 (progn
@@ -47,7 +47,7 @@
         (event-case (scr event)
           (#\q
            (return-from event-case))
-          ((:right :left :up :down)
+          ((:key-arrow-right :key-arrow-left :key-arrow-up :key-arrow-down)
            (setq dir (get-direction (event-key event))))
           ((nil)
            (sleep 0.05)
@@ -73,7 +73,7 @@
                (declare (ignore win))
                (setq dir (get-direction (event-key event)))))
         (bind scr #\q 'exit-event-loop)
-        (bind scr '(:right :left :up :down) #'set-dir)
+        (bind scr '(:key-arrow-right :key-arrow-left :key-arrow-up :key-arrow-down) #'set-dir)
         (bind scr nil (lambda ()
                         ;; snake moves = erase last body pair by overwriting it with space
                         (add scr #\space :position tail)
@@ -430,7 +430,7 @@
           (bgcolor scr) :red)
     (move scr 3 3 :relative t)
     (add-string scr "Call me maybe!")
-    (add-string scr "Welcome to tijuana" :position '(3 12))
+    (add-string scr "Welcome to tijuana" :position '(4 12))
     (refresh scr)
     (get-char scr)
 
@@ -1143,7 +1143,6 @@ Test whether a window (stream) was closed."
            (setf (background scr) (make-instance 'complex-char :color-pair '(:black :white)))
            (refresh scr)
            (get-char scr))
-
       (close scr))))
 
 ;; the same as t09, but we can now raise the overlapping windows by hitting 1, 2 or 3.
@@ -1357,12 +1356,12 @@ returned byte by byte as with get-char."
                          (format scr "%nonl newline translation disabled: RET => CR~%")))
                 ;; DEL, ^?, delete char 127
                 (#\rubout (format scr "rubout char ^?~%"))
-                ;; BS, \b, ^H, code 8, not the same as the :backspace key
+                ;; BS, \b, ^H, code 8, not the same as :key-backspace
                 (#\backspace (format scr "backspace char ^H~%"))
 
                 ;; function keys, the same as #\rubout, but different code.
-                ;; ncurses bug: :backspace is returned for windows, #\rubout for stdscr.
-                (:backspace (format scr "backspace key <--~%"))
+                ;; ncurses bug: :key-backspace is returned for windows, #\rubout for stdscr.
+                (:key-backspace (format scr "backspace key <--~%"))
                 ;; printable chars (graphic and control chars)
                 (otherwise
                  (add-string scr (format nil "~A ~S~%" event event))
@@ -1438,6 +1437,7 @@ returned byte by byte as with get-char."
 
     ;; gnome-terminal, linux console
     (define-function-key :alt-1 (list #\esc #\1))
+    (define-function-key :alt-2 (format nil "~C~C" #\esc #\2))  ; pass the definition as a string.
     (define-function-key :alt-n (list #\esc #\n))
 
     ;; xterm
@@ -1479,7 +1479,8 @@ returned byte by byte as with get-char."
     (define-function-key :shift-ctrl-alt-delete (list #\esc #\[ #\3 #\; #\8 #\~))
 
     (bind scr #\q 'exit-event-loop)
-    (bind scr t (lambda (w e) (format w "Event: ~A ~A~%" (event-key e) (event-code e))))
+    (bind scr t (lambda (w e)
+                  (format w "Event: ~A ~A~%" (event-key e) (event-code e))))
     (run-event-loop scr)))
 
 (defun t11 ()
@@ -1510,8 +1511,8 @@ returned byte by byte as with get-char."
     (refresh scr)
     (event-case (scr event)
       (#\q (return-from event-case))
-      (:up (scroll scr 1) (refresh scr))
-      (:down (scroll scr -1) (refresh scr)))))
+      (:key-arrow-up (scroll scr 1) (refresh scr))
+      (:key-arrow-down (scroll scr -1) (refresh scr)))))
 
 (defun t11b ()
   "Demonstrate the manual use of the scroll function for a window."
@@ -1523,8 +1524,8 @@ returned byte by byte as with get-char."
       (refresh win)
       (event-case (win event)
         (#\q (return-from event-case))
-        (:up (scroll win 1) (refresh win))
-        (:down (scroll win -1) (refresh win))))))
+        (:key-arrow-up (scroll win 1) (refresh win))
+        (:key-arrow-down (scroll win -1) (refresh win))))))
 
 ;; Display available ACS (alternative character set) pseudo-graphical characters.
 (defun t12 ()
@@ -1847,12 +1848,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
        (let ((event (event-key (get-event scr))))
          (if event
              (case event
-               (:resize (move scr 1 0)
-                        (format scr "~A Y lines x ~A X columns." (height scr) (width scr))
-                        ;; the environment variables also get updated on a resize event.
-                        (format scr "~%~A Y lines x ~A X cols." ncurses:LINES ncurses:COLS)
-                        (refresh scr))
-               (#\q (return)))
+               (:key-resize
+                (move scr 1 0)
+                (format scr "~A Y lines x ~A X columns." (height scr) (width scr))
+                ;; the environment variables also get updated on a resize event.
+                (format scr "~%~A Y lines x ~A X cols." ncurses:LINES ncurses:COLS)
+                (refresh scr))
+               (#\q
+                (return)))
              (progn
                (sleep 0.1)))))))
 
@@ -1869,7 +1872,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (let ((event (event-key (get-event scr))))
            (if event
                (case event
-                 (:resize
+                 (:key-resize
                   ;; if the screen is resized, relocate the window to the new center.
                   (move-window win (round (/ (height scr) 2)) (round (/ (width scr) 2)))
                   ;; better differentiation of types with methods.
@@ -1901,7 +1904,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (let ((event (event-key (get-event scr))))
            (if event
                (case event
-                 (:resize
+                 (:key-resize
                   ;; resize the window on every terminal resize.
                   (resize win (- (height scr) 4) (- (width scr) 6))
                   (clear win)
@@ -1983,10 +1986,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
       (event-case (win event)
-        (:left
+        (:key-arrow-left
          (when (> (cadr (cursor-position win)) 0)
            (move win 0 -1 :relative t)))
-        (:right
+        (:key-arrow-right
          (when (< (cadr (cursor-position win)) n)
            (move win 0 1 :relative t)))
         (#\newline ; RET key, C-j, C-m
@@ -2000,16 +2003,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (setf n 0)
              (clear win) ; empty the input line after evaluation.
              (refresh wout)))
-        (:dc ; DEL key
+        (:key-delete-char ; DEL key
          (when (> n (cadr (cursor-position win)))
            (decf n)
            (delete-char win)))
-        (:ic ; INS / Einfg key
+        (:key-insert-char ; INS / Einfg key
          (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
          (setf (insert-mode-p win) (not (insert-mode-p win)))
          (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
          (refresh wout))
-        (:backspace ; BS key
+        (:key-backspace ; BS key
          (when (> (cadr (cursor-position win)) 0)
            (decf n)
            (move win 0 -1 :relative t)
@@ -2046,10 +2049,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
             (inptr 0))  ; position of the next character in the buffer
         (event-case (win event)
           (#\q (return-from event-case))
-          (:left
+          (:key-arrow-left
            (when (> inptr 0) (decf inptr))
            (move win 0 inptr))
-          (:right
+          (:key-arrow-right
            (when (< inptr (length inbuf)) (incf inptr))
            (move win 0 inptr))
           (#\newline
@@ -2059,14 +2062,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (clear win)
              (move win 0 inptr)
              (refresh win)))
-          (:dc
+          (:key-delete-char
            (when (> (length inbuf) inptr)
              (setf inbuf (remove-nth (- (length inbuf) (1+ inptr)) inbuf))
              (clear win)
              (add-string win (coerce (reverse inbuf) 'string))
              (move win 0 inptr)
              (refresh win)))
-          (:backspace
+          (:key-backspace
            (when (> inptr 0)
              (decf inptr)
              (setf inbuf (remove-nth (- (length inbuf) 1 inptr) inbuf))
@@ -2074,7 +2077,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (add-string win (coerce (reverse inbuf) 'string))
              (move win 0 inptr)
              (refresh win)))
-          (:ic
+          (:key-insert-char
            (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
            (setf (insert-mode-p win) (not (insert-mode-p win)))
            (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
@@ -2269,8 +2272,8 @@ it will be more efficient to use a character array, a string."
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2 button3) :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
-      (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
-      (bind (find-keymap 'field-map) :f3 'de.anvi.croatoan::debug-print-field-buffer)
+      (bind form :key-f4 'de.anvi.croatoan::debug-print-field-buffer)
+      (bind (find-keymap 'field-map) :key-f3 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda ()
@@ -2339,7 +2342,7 @@ it will be more efficient to use a character array, a string."
                                 :style sf1 :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
-      (bind form :f4 'crt::debug-print-field-buffer)
+      (bind form :key-f4 'crt::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda (b e)
@@ -3038,8 +3041,8 @@ friend. It is my life. I must master it as I must master my life.")
              (i 0)) ; current choice
         (draw-menu scr choices i)
         (event-case (scr event)
-          (:up (setf i (mod (1- i) n)) (draw-menu scr choices i))
-          (:down (setf i (mod (1+ i) n)) (draw-menu scr choices i))
+          (:key-arrow-up (setf i (mod (1- i) n)) (draw-menu scr choices i))
+          (:key-arrow-down (setf i (mod (1+ i) n)) (draw-menu scr choices i))
           (#\newline (return-from event-case (nth i choices)))
           (#\q (return-from event-case)))))))
 
@@ -3058,7 +3061,7 @@ friend. It is my life. I must master it as I must master my life.")
         (move scr 0 0) (format scr "User, do you want?") (refresh scr)
         (draw-menu scr choices i)
         (event-case (scr event)
-          ((:up :down :left :right #\tab) (setf i (mod (1+ i) n)) (draw-menu scr choices i))
+          ((:key-arrow-up :key-arrow-down :key-arrow-left :key-arrow-right #\tab) (setf i (mod (1+ i) n)) (draw-menu scr choices i))
           (#\newline (return-from event-case (cdr (nth i choices)))))))))
 
 (defun t19b ()
@@ -3625,7 +3628,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
          (format scr "~A" i))
     (refresh scr)
     (event-case (scr event)
-      ((:up :down) (move-direction scr (event-key event)) (refresh scr))
+      ((:key-arrow-up :key-arrow-down) (move-direction scr (event-key event)) (refresh scr))
       (#\d (delete-line scr) (refresh scr))
       (#\i (insert-line scr) (refresh scr))
       (#\q (return-from event-case)))
@@ -3665,13 +3668,13 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
         (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
 
         (event-case (scr event)
-          (:up    (decf pad-min-y) (decf screen-min-y) (decf screen-max-y) (touch scr) (refresh scr)
+          (:key-arrow-up    (decf pad-min-y) (decf screen-min-y) (decf screen-max-y) (touch scr) (refresh scr)
                   (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-          (:down  (incf pad-min-y) (incf screen-min-y) (incf screen-max-y) (touch scr) (refresh scr)
+          (:key-arrow-down  (incf pad-min-y) (incf screen-min-y) (incf screen-max-y) (touch scr) (refresh scr)
                   (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-          (:left  (decf pad-min-x) (decf screen-min-x) (decf screen-max-x) (touch scr) (refresh scr)
+          (:key-arrow-left  (decf pad-min-x) (decf screen-min-x) (decf screen-max-x) (touch scr) (refresh scr)
                   (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-          (:right (incf pad-min-x) (incf screen-min-x) (incf screen-max-x) (touch scr) (refresh scr)
+          (:key-arrow-right (incf pad-min-x) (incf screen-min-x) (incf screen-max-x) (touch scr) (refresh scr)
                   (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
           (#\q   (return-from event-case))
           (otherwise nil)))
@@ -3935,10 +3938,10 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       ;; Move the cursor which is the end of the line.
       (event-case (scr event)
         (#\q (return-from event-case))
-        (:up     (decf y2))
-        (:down   (incf y2))
-        (:left   (decf x2))
-        (:right  (incf x2))))))
+        (:key-arrow-up     (decf y2))
+        (:key-arrow-down   (incf y2))
+        (:key-arrow-left   (decf x2))
+        (:key-arrow-right  (incf x2))))))
 
 (defun t30 ()
   "Test color pair completion for style parameters."
@@ -4458,7 +4461,7 @@ When a new window is added or removed, all windows are rebalanced."
             (event-case (win event)
               (#\n (when n (select-next-item wins) (mark-current-win)))
               (#\p (when n (select-previous-item wins) (mark-current-win)))
-              (:resize
+              (:key-resize
                ;; in case of a terminal resize, the window and layout geometries have to be recalculated
                (calculate-layout wins)
                (mapc #'refresh (leaves wins)))

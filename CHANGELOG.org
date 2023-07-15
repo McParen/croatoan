@@ -2,6 +2,19 @@
 
 ** Notable changes since v0.1
 
+*** Rename function key names to be more readable (230715)
+
+Instead of using the short, cryptic names like =:ic= (ncurses
+=KEY_IC=) rename the function keys to be more readable, like
+=:key-insert-char=, similar to how they are named in the Ada bindings.
+
+This means that the often used event names like :left, :right, etc,
+will have to be renamed to the more verbose (but more explicit)
+:key-arrow-left, :key-arrow-right, etc.
+
+Refactor all the positions in the code and examples using the short
+names.
+
 *** Add wrappers function-key-code and function-key-definition (230708)
 
 Add wrappers =function-key-code= (=ncurses:key-defined=) and

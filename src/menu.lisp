@@ -883,26 +883,26 @@ Return the value from select."
 ;; all of these take two arguments: menu event
 ;; there is no :default action, all other events are ignored for menus.
 (define-keymap menu-map
-  (:up    'move-up)
-  (:down  'move-down)
-  (:left  'move-left)
-  (:right 'move-right))
+  (:key-arrow-up    'move-up)
+  (:key-arrow-down  'move-down)
+  (:key-arrow-left  'move-left)
+  (:key-arrow-right 'move-right))
 
 (define-keymap checklist-map
   (#\x    'toggle-item-checkbox)
-  (:up    'move-up)
-  (:down  'move-down)
-  (:left  'move-left)
-  (:right 'move-right))
+  (:key-arrow-up    'move-up)
+  (:key-arrow-down  'move-down)
+  (:key-arrow-left  'move-left)
+  (:key-arrow-right 'move-right))
 
 (define-keymap menu-window-map
   ;; q doesnt return a value, just nil, i.e. in the case of a checklist, an empty list.
   (#\q    'exit-menu-event-loop)
   (#\x    'toggle-item-checkbox)
-  (:up    'move-up)
-  (:down  'move-down)
-  (:left  'move-left)
-  (:right 'move-right)
+  (:key-arrow-up    'move-up)
+  (:key-arrow-down  'move-down)
+  (:key-arrow-left  'move-left)
+  (:key-arrow-right 'move-right)
   ;; return the selected item or all checked items, then exit the menu like q.
   (#\newline 'accept-selection))
 

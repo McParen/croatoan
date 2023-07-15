@@ -1,6 +1,5 @@
 (in-package :de.anvi.croatoan)
 
-;; TODO 200317 make move a method, so we can use it for fields and textboxes
 (defun move (window y x &key relative)
   "Move cursor to the position given by row y and column x.
 
@@ -32,16 +31,33 @@ different position."
         (setf pos '(0 0)))))
 
 (defun get-direction (direction-name)
-  "Take a keyword name of a direction, return a direction given as a two-element list."
+  "Take a keyword name of a direction, return a direction given as a two-element list.
+
+The two-element list is given as (y x), where y is the vertical
+direction up (-1) or down (+1) and x is the horizontal direction
+left (-1) or right (+1).
+
+Calculated that way, we have 8 possible directions:
+
+-1,-1    -1,0    -1,1
+ 0,-1             0,1
+ 1,-1     1,0     1,1
+
+The direction is a 2D increment (dy dx) that can be added to a
+position (y x) to get a new position (y+dy x+dx)."
   (case direction-name
-    (:up-left    '(-1 -1))
-    (:up         '(-1  0))
-    (:up-right   '(-1  1))
-    (:left       '( 0 -1))
-    (:right      '( 0  1))
-    (:down-left  '( 1 -1))
-    (:down       '( 1  0))
-    (:down-right '( 1  1))))
+    (:up-left         '(-1 -1))
+    (:up              '(-1  0))
+    (:key-arrow-up    '(-1  0)) ; = up
+    (:up-right        '(-1  1))
+    (:left            '( 0 -1))
+    (:key-arrow-left  '( 0 -1)) ; = left
+    (:right           '( 0  1))
+    (:key-arrow-right '( 0  1)) ; = right
+    (:down-left       '( 1 -1))
+    (:down            '( 1  0))
+    (:key-arrow-down  '( 1  0)) ; = down
+    (:down-right      '( 1  1))))
 
 (defun move-direction (window direction &optional (n 1))
   "Move cursor in the given direction by n cells."

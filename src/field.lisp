@@ -352,10 +352,10 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
   ;; reset the field
   (#\dc2 'reset)
 
-  (:left 'move-previous-char)
-  (:right 'move-next-char)
-  (:backspace 'delete-previous-char)
-  (:dc 'delete-next-char)
-  (:ic  (lambda (field)
-          (toggle-insert-mode field)))
+  (:key-arrow-left  'move-previous-char)
+  (:key-arrow-right 'move-next-char)
+  (:key-backspace   'delete-previous-char)
+  (:key-delete-char 'delete-next-char)
+  (:key-insert-char (lambda (field)
+                      (toggle-insert-mode field)))
   (t 'field-add-char))
