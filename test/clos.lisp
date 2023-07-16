@@ -1848,7 +1848,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
        (let ((event (event-key (get-event scr))))
          (if event
              (case event
-               (:key-resize
+               (:resize
                 (move scr 1 0)
                 (format scr "~A Y lines x ~A X columns." (height scr) (width scr))
                 ;; the environment variables also get updated on a resize event.
@@ -1872,7 +1872,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (let ((event (event-key (get-event scr))))
            (if event
                (case event
-                 (:key-resize
+                 (:resize
                   ;; if the screen is resized, relocate the window to the new center.
                   (move-window win (round (/ (height scr) 2)) (round (/ (width scr) 2)))
                   ;; better differentiation of types with methods.
@@ -1904,7 +1904,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
          (let ((event (event-key (get-event scr))))
            (if event
                (case event
-                 (:key-resize
+                 (:resize
                   ;; resize the window on every terminal resize.
                   (resize win (- (height scr) 4) (- (width scr) 6))
                   (clear win)
@@ -3331,6 +3331,36 @@ friend. It is my life. I must master it as I must master my life.")
         (#\q (return-from event-case)))
       (close menu))))
 
+(defun t19d2 ()
+  "Display a borderless table with as many rows/cols as fit on the screen, handle terminal resize."
+  (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
+    (let* ((h-count (floor (/ (height scr) 2))) ; height =  1 cell + 1 row line
+           (w-count (floor (/ (width scr) 11))) ; width  = 10 cell + 1 column line
+           (items (loop for i below (* 4 h-count w-count) collect (format nil "Item ~A" i)))
+           (menu (make-instance 'menu
+                                :items items
+                                :grid-dimensions (list (* 2 h-count) (* 2 w-count))
+                                :enable-scrolling t
+                                :region-dimensions (list h-count w-count)
+                                :cyclic nil
+                                :max-item-length 10
+                                :table t
+                                :keymap 'menu-window-map
+                                :style '(:border (:fgcolor :yellow)
+                                         :foreground (:fgcolor :red)
+                                         :selected-foreground (:fgcolor :black :bgcolor :red))
+                                :window scr)))
+      (refresh scr)
+      ;; resize the visible region when the terminal is resized.
+      (bind (find-keymap 'menu-window-map) :resize (lambda (obj)
+                                                     (clear obj)
+                                                     (with-slots ((r region-rows)
+                                                                  (c region-columns)) obj
+                                                       (setf r (floor (/ (height scr) 2))
+                                                             c (floor (/ (width scr) 11))))
+                                                     (draw obj)))
+      (select menu))))
+
 (defun t19e ()
   "A one-line menu without a title and border resembling a menu bar."
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
@@ -4461,7 +4491,7 @@ When a new window is added or removed, all windows are rebalanced."
             (event-case (win event)
               (#\n (when n (select-next-item wins) (mark-current-win)))
               (#\p (when n (select-previous-item wins) (mark-current-win)))
-              (:key-resize
+              (:resize
                ;; in case of a terminal resize, the window and layout geometries have to be recalculated
                (calculate-layout wins)
                (mapc #'refresh (leaves wins)))
