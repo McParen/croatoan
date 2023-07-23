@@ -254,13 +254,17 @@ content position = widget position + border + padding"
 
 (defmethod format-title ((item menu-item) &optional (beg "") (end ""))
   "If neither the title nor the name are provided, print the object as a default title."
-  (with-accessors ((title title) (name name)) item
+  (with-accessors ((title title)
+                   (name name)) item
     (let ((str (cond ((and title
                            (stringp title))
                       title)
                      ((and name
                            (symbolp name))
                       (symbol-name name))
+                     ((and (null name)
+                           (null title))
+                      "")
                      (t
                       (prin1-to-string item)))))
       (concatenate 'string beg str end))))

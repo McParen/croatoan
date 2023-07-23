@@ -2,6 +2,17 @@
 
 ** Notable changes since v0.1
 
+*** Allow menus to contain nil items (230723)
+
+Allow menus to contain nil items.
+
+Allow menu items to be shorter than the underlying grid size. Until
+now, it was necessary (impractical) to match the grid height x width
+to the length of the items list.
+
+Add helper functions move-left-possible-p, etc., that test whether
+the new grid position would outside of the items list.
+
 *** Rename function key names to be more readable (230715)
 
 Instead of using the short, cryptic names like =:ic= (ncurses

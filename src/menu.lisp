@@ -154,30 +154,33 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                  pr item-padding)))))
 
     ;; Convert strings and symbols to item objects
-    (setf children (mapcar (lambda (item)
-                          (if (typep item 'menu-item)
-                              ;; if an item object is given, just return it
-                              item
-                              ;; if we have strings, symbols or menus, convert them to menu-items
-                              (make-instance 'menu-item
-                                             :name (typecase item
-                                                     (string nil)
-                                                     (number nil)
-                                                     (symbol item)
-                                                     (menu (name item)))
-                                             :title (typecase item
-                                                      (string item)
-                                                      (symbol (symbol-name item))
-                                                      (number (princ-to-string item))
-                                                      ;; if there is a title string, take it,
-                                                      ;; otherwise use the menu name as the item title
-                                                      (menu (if (and (title item)
-                                                                     (stringp (title item)))
-                                                                (title item)
-                                                                (symbol-name (name item)))))
-                                             :value item)))
-                        ;; apply the function to the init arg passed to make-instance.
-                        children))
+    (setf children
+          (mapcar (lambda (item)
+                    (if (typep item 'menu-item)
+                        ;; if an item object is given, just return it
+                        item
+                        ;; if we have strings, symbols or menus, convert them to menu-items
+                        (make-instance 'menu-item
+                                       :name (typecase item
+                                               (null nil)
+                                               (string nil)
+                                               (number nil)
+                                               (symbol item)
+                                               (menu (name item)))
+                                       :title (typecase item
+                                                (null nil)
+                                                (string item)
+                                                (symbol (symbol-name item))
+                                                (number (princ-to-string item))
+                                                ;; if there is a title string, take it,
+                                                ;; otherwise use the menu name as the item title
+                                                (menu (if (and (title item)
+                                                               (stringp (title item)))
+                                                          (title item)
+                                                          (symbol-name (name item)))))
+                                       :value item)))
+                  ;; apply the function to the init arg passed to make-instance.
+                  children))
 
     ;; if the layout wasnt passed as an argument, initialize it as a single one-column menu.
     (unless grid-rows
@@ -556,7 +559,8 @@ At the third position, display the item given by item-number."
               (make-string item-padding-left :initial-element #\space)
               ;; two types of menus: :selection or :checklist
               ;; show the checkbox before the item in checklists
-              (if (eq type :checklist)
+              (if (and item
+                       (eq type :checklist))
                   (if (checkedp item) "[X] " "[ ] ")
                   "")
 
@@ -572,10 +576,13 @@ At the third position, display the item given by item-number."
               ;; the width of the item title, given by the set column width
               width
               ;; then add the item title
-              (let* ((title (format-title item)))
-                (if (> (length title) width)
-                    (text-ellipsize title width :truncate-string ellipsis)
-                    title))
+              (if item
+                  (let* ((title (format-title item)))
+                    (if (> (length title) width)
+                        (text-ellipsize title width :truncate-string ellipsis)
+                        title))
+                  ;; if item is nil, just display an empty string.
+                  "")
 
               ;; if the mark is a list like ("> " "< ") draw the second mark
               ;; after the menu item.
@@ -857,28 +864,97 @@ Return the value from select."
     (setf y (car (rmi2sub (list m n) i))
           x (cadr (rmi2sub (list m n) i)))))
 
+
+(defun move-left-possible-p (obj)
+  "Return t if a move to the left in the collection/grid is possible.
+
+It is is possible when we are not already in the first grid column and
+when the new position is within collection size (row major order)."
+  (with-slots (cyclicp
+               (m grid-rows)
+               (n grid-columns)
+               (i grid-row)
+               (j grid-column)) obj
+    (let ((new-j (if (> j 0)
+                     (1- j)
+                     (if cyclicp
+                         (mod (1- j) n)
+                         nil))))
+      (and new-j
+           (<= (sub2rmi (list m n) (list i new-j))
+               (1- (length (items obj))))))))
+
+(defun move-right-possible-p (obj)
+  (with-slots (cyclicp
+               (m grid-rows)
+               (n grid-columns)
+               (i grid-row)
+               (j grid-column)) obj
+    (let ((new-j (if (< j (1- n))
+                     (1+ j)
+                     (if cyclicp
+                         (mod (1+ j) n)
+                         nil))))
+      (and new-j
+           (<= (sub2rmi (list m n) (list i new-j))
+               (1- (length (items obj))))))))
+
+(defun move-up-possible-p (obj)
+  (with-slots (cyclicp
+               (m grid-rows)
+               (n grid-columns)
+               (i grid-row)
+               (j grid-column)) obj
+    (let ((new-i (if (> i 0)
+                     (1- i)
+                     (if cyclicp
+                         (mod (1- i) m)
+                         nil))))
+      (and new-i
+           (<= (sub2rmi (list m n) (list new-i j))
+               (1- (length (items obj))))))))
+
+(defun move-down-possible-p (obj)
+  (with-slots (cyclicp
+               (m grid-rows)
+               (n grid-columns)
+               (i grid-row)
+               (j grid-column)) obj
+    (let ((new-i (if (< i (1- m))
+                     (1+ i)
+                     (if cyclicp
+                         (mod (1+ i) m)
+                         nil))))
+    (and new-i
+         (<= (sub2rmi (list m n) (list new-i j))
+             (1- (length (items obj))))))))
+
 (defmethod move-left ((obj menu))
-  ;; update the grid
-  (call-next-method obj)
-  ;; sync the 1D collection and the 2D grid
-  (sync-collection-grid obj)
-  ;; redraw the menu
-  (draw obj))
+  (when (move-left-possible-p obj)
+    ;; update the grid
+    (call-next-method obj)
+    ;; sync the 1D collection and the 2D grid
+    (sync-collection-grid obj)
+    ;; redraw the menu
+    (draw obj)))
 
 (defmethod move-right ((obj menu))
-  (call-next-method obj)
-  (sync-collection-grid obj)
-  (draw obj))
+  (when (move-right-possible-p obj)
+    (call-next-method obj)
+    (sync-collection-grid obj)
+    (draw obj)))
 
 (defmethod move-up ((obj menu))
-  (call-next-method obj)
-  (sync-collection-grid obj)
-  (draw obj))
+  (when (move-up-possible-p obj)
+    (call-next-method obj)
+    (sync-collection-grid obj)
+    (draw obj)))
 
 (defmethod move-down ((obj menu))
-  (call-next-method obj)
-  (sync-collection-grid obj)
-  (draw obj))
+  (when (move-down-possible-p obj)
+    (call-next-method obj)
+    (sync-collection-grid obj)
+    (draw obj)))
 
 ;; all of these take two arguments: menu event
 ;; there is no :default action, all other events are ignored for menus.

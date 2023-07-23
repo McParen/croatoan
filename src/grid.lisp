@@ -87,13 +87,9 @@
 (defmethod move-left ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
-               (m grid-rows)
                (n grid-columns)
-               (i grid-row)
                (j grid-column)
-               (m0 region-start-row)
                (n0 region-start-column)
-               (m1 region-rows)
                (n1 region-columns)) grid
     (if scrolling-enabled-p
         (if cyclicp
@@ -118,13 +114,9 @@
 (defmethod move-right ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
-               (m grid-rows)
                (n grid-columns)
-               (i grid-row)
                (j grid-column)
-               (m0 region-start-row)
                (n0 region-start-column)
-               (m1 region-rows)
                (n1 region-columns)) grid
     (if scrolling-enabled-p
         (if cyclicp
@@ -149,14 +141,10 @@
 (defmethod move-up ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
-               (n grid-columns)
                (m grid-rows)
                (i grid-row)
-               (j grid-column)
                (m0 region-start-row)
-               (n0 region-start-column)
-               (m1 region-rows)
-               (n1 region-columns)) grid
+               (m1 region-rows)) grid
     (if scrolling-enabled-p
         (if cyclicp
             ;; first scroll to the end of the grid, then cycle
@@ -180,14 +168,10 @@
 (defmethod move-down ((grid grid))
   (with-slots (scrolling-enabled-p
                cyclicp
-               (n grid-columns)
                (m grid-rows)
                (i grid-row)
-               (j grid-column)
                (m0 region-start-row)
-               (n0 region-start-column)
-               (m1 region-rows)
-               (n1 region-columns)) grid
+               (m1 region-rows)) grid
     (if scrolling-enabled-p
         (if cyclicp
             ;; first scroll to the end of the grid, then cycle
