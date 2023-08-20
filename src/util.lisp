@@ -188,3 +188,20 @@ If the string contains a non-printable character, return nil."
   (let ((code (char-code char)))
     (or (<= 0 code 31)
         (<= 127 code 159))))
+
+(defun pair-plist (keys values &optional plist)
+  "Return a plist constructed out of separate keys and values lists.
+
+This is supposed to work like cl:pairlis but returning a plist instead
+of an alist.
+
+If an initial plist is provided, the new key-value pairs are prepended
+to it.
+
+Example 1: (pair-plist '(a b c) '(1 2 3)) => (a 1 b 2 c 3)
+
+Example 2: (pair-plist '(a b) '(1 2) '(x 3 y 4)) => (A 1 B 2 X 3 Y 4)"
+  (let ((new-plist (mapcan #'list keys values)))
+    (if plist
+        (nconc new-plist plist)
+        new-plist)))

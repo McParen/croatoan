@@ -1,6 +1,12 @@
 * ChangeLog
 
 ** Notable changes since v0.1
+*** Add utility function pair-plist (230820)
+
+pair-plist works like cl:pairlis, but returns a plist instead of an
+alist, for example: (pair-plist '(a b c) '(1 2 3)) => (a 1 b 2 c 3)
+
+Export tree function add-child.
 
 *** Allow menus to contain nil items (230723)
 

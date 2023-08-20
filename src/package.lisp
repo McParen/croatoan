@@ -66,6 +66,7 @@
    node
    parent
    children
+   add-child
 
    collection
    select-previous-item
@@ -421,6 +422,7 @@
    char-width
    string-width
    control-char-p
+   pair-plist
 
    ;; variables / curses global variables
 
