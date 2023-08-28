@@ -420,6 +420,7 @@
    ;; slk / curses soft label routines
    slk-init
    slk-set
+   slk-wset
    slk-refresh
    slk-noutrefresh
    slk-label
@@ -434,6 +435,7 @@
    slk-attr-set
    slk-attr
    slk-color
+   extended-slk-color
 
    ;; termattrs / environment query routines
    baudrate

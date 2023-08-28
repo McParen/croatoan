@@ -4497,3 +4497,98 @@ When a new window is added or removed, all windows are rebalanced."
                (mapc #'refresh (leaves wins)))
               (#\q (return-from event-case))))
           (mapc #'close leaves))))))
+
+(defun t44 ()
+  "Initialize, set and display 12 soft labels for function keys."
+  ;; The initialization of soft labels has to be done explicitely before the initialization of the screen.
+  ;; Alternatively, the initarg :enable-soft-labels for screens can be used.
+  (slk:initialize :mode-4-4-4)
+  (let ((scr (make-instance 'screen :input-echoing nil :cursor-visible t :input-blocking t)))
+    (unwind-protect
+         (progn
+           (setf (slk:label 1) "test")
+           (setf (slk:label 5) "best")
+           (setf (slk:label 12) "zest")
+           (slk:refresh)
+           (format scr "~A ~A ~A" (slk:label 1) (slk:label 5) (slk:label 12))
+           (wait-for-event scr))
+      (close scr))))
+
+(defun t44a ()
+  "Initialize 12 soft labels through the screen initarg :enable-soft-labels."
+  (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t :enable-soft-labels t)
+    ;; set the titles for each label (1-12), optionally change the alignment.
+    (setf (slk:label 1) "test")
+    (setf (slk:label 5 :right) "best")
+    (setf (slk:label 12) "zest")
+    ;; the labels have to be refreshed independently of the rest of the screen
+    (slk:refresh)
+    ;; return the labels for each function key number.
+    (format scr "~A ~A ~A" (slk:label 1) (slk:label 5) (slk:label 12))
+    (refresh scr)
+    (wait-for-event scr)))
+
+(defun t44b ()
+  (with-screen (scr :input-echoing nil :cursor-visible t :input-blocking t :enable-soft-labels t)
+    ;; set the titles for each label (1-12), optionally change the alignment (default :left).
+    (setf (slk:label 1) "test")
+    (setf (slk:label 5 :right) "best")
+    (setf (slk:label 12) "zest")
+
+    ;; the labels have to be refreshed independently of the rest of the screen
+    (slk:mark-for-refresh)
+
+    ;; return the labels for each function key number.
+    (format scr "~A ~A ~A~&" (slk:label 1) (slk:label 5) (slk:label 12))
+    (mark-for-refresh scr)
+
+    ;; refresh the screen and the soft labels in one step.
+    (refresh-marked)
+    (wait-for-event scr)
+
+    (slk:clear)
+    (format scr "labels have been cleared~&")
+    (wait-for-event scr)
+
+    (slk:restore)
+    (format scr "labels have been restored~&")
+    (wait-for-event scr)
+
+    ;; display active soft label attributes (should only be :reverse)
+    (format scr "attributes: ~A~&" (slk:attributes))
+
+    ;; uses slk-attron and slk-attroff
+    (setf (slk:attributes) (list :bold))
+
+    ;; we have to touch all labels so they are all updated on the next refresh
+    ;; otherwise only those will be refreshed, which have their titles changed.
+    (slk:touch)
+    (slk:refresh)
+    (wait-for-event scr)
+
+    ;; uses slk-attr-set, but a color argument has to be given
+    (slk:set-attributes (list :underline) (list :yellow :red))
+    (format scr "attributes: ~A~&" (slk:attributes))
+
+    (slk:touch)
+    (slk:refresh)
+    (wait-for-event scr)
+
+    (setf (slk:label 2 :center) "foo")
+    (setf (slk:label 3 :right) "bar")
+
+    (format scr "colors: ~A~&" (slk:color-pair))
+    (setf (slk:color-pair) (list :red :yellow))
+    (format scr "colors: ~A~&" (slk:color-pair))
+
+    ;; add a wide char label
+    (let ((txt (coerce (mapcar #'code-char '(1085 1072 1091 1082 1080)) 'string)))
+    ;;(let ((txt (coerce (mapcar #'code-char '(104 101 108 108 111)) 'string)))
+      (setf (slk:label 1) txt))
+
+    ;; display the label title that has been passed with wide chars
+    (format scr "wide label: ~A~&" (slk:label 1))
+
+    (slk:touch)
+    (slk:refresh)
+    (wait-for-event scr)))

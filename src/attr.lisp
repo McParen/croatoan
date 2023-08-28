@@ -321,8 +321,8 @@ from the given point without moving the cursor position."
                       (cffi:null-pointer)))
 
 (defparameter *bitmask-alist*
-  ;; the first four are not attributes, but bitmasks used to extract parts of the chtype.
-  '((:normal     . #x00000000)
+  ;; the first four are not attributes, but bitmasks used to extract parts of the chtype or attr_t.
+  '((:normal     . #x00000000) ; normal can be used as an attrbibute, it then turns off all other attributes.
     (:attributes . #xffffff00)
     (:chartext   . #x000000ff)
     (:color      . #x0000ff00)

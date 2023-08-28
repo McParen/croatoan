@@ -59,6 +59,7 @@
    (:file "move")
    (:file "refresh")
    (:file "scroll")
+   (:file "slk")              ; soft function-key labels
    (:file "touch")
    (:file "util")             ; miscellaneous utils
    (:file "wresize")

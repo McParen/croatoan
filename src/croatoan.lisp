@@ -11,6 +11,7 @@
                                (frame-rate nil)
                                (input-echoing t)
                                (enable-function-keys t)
+                               (enable-soft-labels nil)
                                (enable-scrolling nil)
                                (insert-mode nil)
                                (enable-colors t)
@@ -42,6 +43,7 @@ library. Do not run more than one screen at the same time."
                                       :frame-rate ,frame-rate
                                       :input-echoing ,input-echoing
                                       :enable-function-keys ,enable-function-keys
+                                      :enable-soft-labels ,enable-soft-labels
                                       :enable-scrolling ,enable-scrolling
                                       :insert-mode ,insert-mode
                                       :enable-colors ,enable-colors
@@ -185,6 +187,7 @@ Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
                ;; when event is a control char in caret notation, i.e. "^A"
                (setf bindings (acons (string-to-char event) handler bindings))
                (setf bindings (acons event handler bindings))))
+          ;; instead of a single event, we bind a handler to a list of events.
           ((listp event)
            (dolist (e event)
              (if (stringp e)

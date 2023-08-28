@@ -222,6 +222,12 @@
    change-attributes
    add-attributes
    remove-attributes
+   get-bitmask
+   chtype2attrs
+   attrs2chtype
+   pair-to-number
+   complete-default-pair
+   chtype2colors
 
    ;; beep / curses bell and screen flash routines
    alert
@@ -401,8 +407,6 @@
    circle
    draw-line
 
-   ;; slk / curses soft label routines
-
    ;; termattrs / environment query routines
 
    ;; touch / curses refresh control routines
@@ -450,6 +454,26 @@
    flatten-items
    border-width
    selectedp))
+
+(defpackage #:de.anvi.croatoan.soft-labels
+  (:documentation "Soft labels for the function keys F1-F12 in the bottom screen line.")
+  (:use #:common-lisp)
+  (:nicknames #:soft-labels #:slk)
+  (:export
+
+   ;; slk / curses soft label routines
+   initialize
+   label
+   refresh
+   mark-for-refresh
+   touch
+   clear
+   restore
+   attributes
+   add-attributes
+   remove-attributes
+   set-attributes
+   color-pair))
 
 (defpackage #:de.anvi.croatoan.dialog
   (:documentation "Dialog windows allow simple user input.")

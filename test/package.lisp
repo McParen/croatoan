@@ -17,6 +17,8 @@
    #:nctest10
    ;; Use wresize to resize a window.
    #:nctest11
+   #:nctest12
+   #:nctest13
 
    ;; unicode.lisp
    #:ut01
@@ -160,6 +162,9 @@
    #:t42b
    #:t43
    #:t43a
+   #:t44
+   #:t44a
+   #:t44b
 
    ;; clos.lisp
    #:snake

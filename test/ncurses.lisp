@@ -158,7 +158,7 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (addstr (format nil "~A~%" "no background "))
     (wgetch scr)
 
-    (wbkgd scr (char-code #\-))
+    (wbkgdset scr (char-code #\-))
     (addstr (format nil "~A~%" "background minus "))
     (wgetch scr)
 
@@ -407,3 +407,15 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
     (refresh)
     (getch)
     (endwin)))
+
+;; 230822
+(defun nctest13 ()
+  "Test of soft-label key functions (SLK)."
+  (slk-init 3)
+  (initscr)
+  (cbreak)
+  (loop for i from 1 to 8 do
+    (slk-set i (format nil "t~A" i) 0))
+  (slk-refresh)
+  (getch)
+  (endwin))

@@ -476,6 +476,22 @@ primary - most specific first (call-next-method)
      It can be either #\linefeed (LF ^J \n) on Linux, carriage #\return on MacOS, CRLF \r\n on Windows.
      Setting newline translation to nil is necessary to be able to detect the #\return key.")
 
+   (soft-labels-enabled-p
+    :initarg       :enable-soft-labels
+    :initform      nil
+    :type          boolean
+    :documentation
+    "Use the bottom line of the terminal to display short descriptions
+    of the function keys F1-F12.
+
+    The default label layout is 4-4-4, which means 12 labels of 5 characters,
+    4 on the left, 4 in the center, 4 on the right.")
+
+   (soft-labels-layout
+    :initarg      :soft-labels-layout
+    :initform     :mode-4-4-4
+    :type         keyword)
+
    (closed-p
     :type          boolean
     :documentation "Check whether the screen has been closed, without a subsequent call to refresh to reactivate it."))
@@ -484,13 +500,18 @@ primary - most specific first (call-next-method)
 
 (defmethod initialize-instance :after ((scr screen) &key color-pair)
   (with-slots (winptr colors-enabled-p use-terminal-colors-p cursor-visible-p input-echoing-p
-                      function-keys-enabled-p newline-translation-enabled-p fgcolor bgcolor
-                      scrolling-enabled-p background input-buffering-p process-control-chars-p) scr
+               function-keys-enabled-p newline-translation-enabled-p fgcolor bgcolor
+               scrolling-enabled-p background input-buffering-p process-control-chars-p
+               soft-labels-enabled-p soft-labels-layout) scr
     ;; just for screen window types.
     (when (eq (type-of scr) 'screen)
       ;; pass the environment locale to the ncurses C library
       ;; has to be done explicitely since sbcl 2.0.3.
       (ncurses:setlocale ncurses:+LC-ALL+ "")
+
+      (when soft-labels-enabled-p
+        (slk:initialize soft-labels-layout))
+
       (setf winptr (ncurses:initscr))
       (when colors-enabled-p
         (if (ncurses:has-colors)
@@ -1936,9 +1957,9 @@ It is enabled by default."))
                 bgcolor nil)))))
 
 (defmethod (setf color-pair) (color-pair (win window))
-  ;; calls the default method
+  ;; calls the default method to set the slots.
   (call-next-method)
-  ;; after the slots are set, pass the new pair to ncurses
+  ;; after the slots are set, pass the new pair to ncurses (see attr.lisp)
   (set-color-pair (slot-value win 'winptr) (color-pair win)))
 
 (defmethod fgcolor ((win window))

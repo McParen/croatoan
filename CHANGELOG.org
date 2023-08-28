@@ -1,6 +1,16 @@
 * ChangeLog
 
 ** Notable changes since v0.1
+*** Add support for soft function-key labels (230828)
+
+Add separate package de.anvi.croatoan.soft-labels or slk.
+
+Add screen initargs :enable-soft-labels and :soft-labels-layout.
+
+Not covered (yet) ncurses function: extended-slk-color.
+
+Add ncurses example nctest13, crt examples t44/a/b.
+
 *** Add utility function pair-plist (230820)
 
 pair-plist works like cl:pairlis, but returns a plist instead of an
