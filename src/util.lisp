@@ -108,10 +108,13 @@ This ncurses function has the same purpose as cl:clear-input."
   "Join a list of strings into a string of lines separated by newline."
   (join-strings list #\newline))
 
-(defun wrap-string (string width)
+(defun wrap-string (string width &optional (split-length 20))
   "Insert newlines in the string so that no single line exceeds the width.
 
-All pre-existing newlines and multiple spaces are removed."
+All pre-existing newlines and multiple spaces are removed.
+
+Long words (by default >20 chars) are split instead of being wrapped.
+This avoids large gaps when long urls are wrapped, for example."
   (let* ((pos 0) ; next char position in the current line
          (str (substitute #\space #\newline string)) ; remove existing newlines from the string
          (words (split-string str))) ; split the string into words, ignore multiple spaces
@@ -135,6 +138,13 @@ All pre-existing newlines and multiple spaces are removed."
                       (princ (subseq word 0 pos2))
                       (newline)
                       ;; then print the rest starting from pos2
+                      (prinw (subseq word pos2))))
+                   ;; split words longer than 20 chars (for example long urls)
+                   ((and (not (zerop pos)) (> len split-length) (> (+ pos len) width))
+                    (if (= width pos) (newline) (space))
+                    (let ((pos2 (- width pos)))
+                      (princ (subseq word 0 pos2))
+                      (newline)
                       (prinw (subseq word pos2))))
                    ;; fitting word at pos=0
                    ((and (zerop pos) (< len width))

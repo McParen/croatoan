@@ -1,6 +1,11 @@
 * ChangeLog
 
 ** Notable changes since v0.1
+*** Modify utility wrap-string to split long words (230909)
+
+Long words (by default >20 chars) are split instead of being wrapped.
+This avoids large gaps when long urls are wrapped.
+
 *** Add support for soft function-key labels (230828)
 
 Add separate package de.anvi.croatoan.soft-labels or slk.
