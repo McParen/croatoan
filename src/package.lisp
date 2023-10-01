@@ -64,6 +64,7 @@
    ref2d
 
    node
+   find-node
    parent
    children
    add-child
@@ -180,6 +181,9 @@
    move-end-of-line
    move-previous-char
    move-next-char
+   delete-previous-char
+   delete-next-char
+   field-add-char
 
    ;; queue
    submit

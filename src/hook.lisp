@@ -12,7 +12,9 @@ The functions are called to perform side effects, their return
 values are discarded."
   (with-slots (hooks) object
     (if (assoc hook hooks)
+        ;; if we already have a hook, append the function
         (push function (cdr (last (assoc hook hooks))))
+        ;; if there is no such hook, add it to the alist
         (push (list hook function) hooks))))
 
 (defun run-hook (object hook)
@@ -26,6 +28,6 @@ and run-event-loop.
 after-event-hook: run after a non-nil event is handled by event-case
 and run-event-loop."
   (with-slots (hooks) object
-    (when (assoc hook hooks)
+    (when (and hooks (assoc hook hooks))
       (dolist (fn (cdr (assoc hook hooks)))
         (funcall fn object)))))

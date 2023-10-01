@@ -1,6 +1,11 @@
 * ChangeLog
 
 ** Notable changes since v0.1
+*** Miscellaneous small additions and fixes (231001)
+
+Export symbols =find-node=, =field-add-char=, =delete-previous-char=,
+=delete-next-char=.
+
 *** Modify utility wrap-string to split long words (230909)
 
 Long words (by default >20 chars) are split instead of being wrapped.

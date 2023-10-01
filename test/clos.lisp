@@ -4465,7 +4465,9 @@ When a new window is added or removed, all windows are rebalanced."
         (mapc #'close (leaves wins))))))
 
 (defun t43a ()
-  "A layout is a collection, press p or n to select the previous or next current window."
+  "A layout is a collection, press p or n to select the previous or next current window.
+
+Recalculate the window geometries after a terminal resize."
   (with-screen (scr :input-blocking t :input-echoing nil :enable-colors t :cursor-visible nil)
     (let ((wins (make-instance 'column-layout :parent scr :children
                                (list (list 'window :name :title :height 1)
@@ -4489,7 +4491,7 @@ When a new window is added or removed, all windows are rebalanced."
           (mark-current-win)
           (let ((win (find :input (leaves wins) :key #'name)))
             (event-case (win event)
-              (#\n (when n (select-next-item wins) (mark-current-win)))
+              (#\n (when n (select-next-item wins)     (mark-current-win)))
               (#\p (when n (select-previous-item wins) (mark-current-win)))
               (:resize
                ;; in case of a terminal resize, the window and layout geometries have to be recalculated

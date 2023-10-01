@@ -37,7 +37,7 @@ If n is given, insert n chars."
   "Insert char or string into window before the char currently under the cursor.
 
 Currently supported text objects are characters (simple and complex),
-characters given by integer codes or keywords, and strings 
+characters given by integer codes or keywords, and strings
 (simple and complex).
 
 If the position coordinates y (row) and x (column) are given, move the
@@ -52,5 +52,5 @@ If n is given for a string, add at most n chars from the string."
               ((or string complex-string)
                #'insert-string)
               ((or integer keyword character complex-char)
-               #'insert-wide-char))))   
+               #'insert-wide-char))))
      (apply fn window object keys)))

@@ -147,7 +147,7 @@ This avoids large gaps when long urls are wrapped, for example."
                       (newline)
                       (prinw (subseq word pos2))))
                    ;; fitting word at pos=0
-                   ((and (zerop pos) (< len width))
+                   ((and (zerop pos) (<= len width))
                     (princ word)
                     (incf pos len))
                    ;; fitting word at pos>0

@@ -1268,10 +1268,11 @@ This does not change the current item number."
       (setf current-item-number (position-if #'activep children))
       ;; mark the current element selected so it can be highlighted
       (setf (slot-value (current-item form) 'selectedp) t)
+      ;; in case the children have been given directly and not through a layout
       ;; set the parent form slot of the children
-      ;; we have to do this again, in case the children have been given in a list instead of a layout
-      (dolist (element children)
-        (setf (slot-value element 'parent) form)))))
+      (unless layout
+        (dolist (element children)
+          (setf (slot-value element 'parent) form))))))
 
 (defun add-child (parent child)
   "Append an element to parent's children list."
@@ -1281,16 +1282,21 @@ This does not change the current item number."
 (defun find-node (name1 tree)
   "Return the first node that matches the name."
   (labels ((dfs (name node)
-             ;; check node
-             (when (and node ;; ignore the nil nodes
+             ;; check if we found the node by name (ignore nil nodes)
+             (when (and node
                         (eq name (name node)))
                (return-from find-node node))
-             ;; check node's children
-             (dolist (ch (children node))
-               (when (and ch ;; children can contain nil, but we ignore those
-                          ;; only nodes have children
-                          (typep ch 'node))
-                 (dfs name ch)))))
+             ;; if a node contains children
+             (when (children node)
+               (dolist (ch (children node))
+                 ;; check node's children (ignore nil nodes)
+                 (when ch
+                   (if (typep ch 'node)
+                       ;; only nodes have children
+                       (dfs name ch)
+                       ;; check if we found a child leaf by name
+                       (when (eq name (name ch))
+                         (return-from find-node ch))))))))
     (dfs name1 tree)))
 
 (defmethod elements ((obj form))

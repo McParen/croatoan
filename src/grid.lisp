@@ -324,10 +324,10 @@
   "Recursively set the position (y x) of each of the layout's children."
   (with-slots ((m grid-rows) (n grid-columns) (y position-y) (x position-x)
                (rg grid-row-gap) (cg grid-column-gap) children) layout
-    (let* ((widths (column-widths children (list m n)))
-           (heights (row-heights children (list m n)))
-           (xs (cumsum-predecessors widths))
-           (ys (cumsum-predecessors heights)))
+    (let* ((ws (column-widths children (list m n)))
+           (hs (row-heights children (list m n)))
+           (xs (cumsum-predecessors ws))
+           (ys (cumsum-predecessors hs)))
       (dotimes (el (length children))
         ;; layouts can contain nil, so check for a nil element
         (when (nth el children)
@@ -402,15 +402,25 @@ then (0 2 6 9) is a list of x positions of each column."
         collect (reduce #'+ (subseq nums 0 i))))
 
 (defun collect-width-hints (nodes)
-  "Take a list of plists or objects, return a list of their widths.
+  "Take a list of plists or objects, return a list of their initial widths.
 
-If the width is nil for a node, it will be calculated by split-size."
+The initial widths can be given directly in the initial plist.
+Is is then passed as an initial-dimension-hint to the later object.
+
+The list of initial width hints is used by split-size in calculate-layout
+to calculate the widths which are still nil.
+
+The call to initialize-leaves makes objects from the plists.
+
+The initial-dimension-hint is then used by subsequent calls to calculate
+layout to recalculate all widths."
   (loop for i in nodes collect
     (if (listp i)
         (getf (cdr i) :width)
         (slot-value i 'initial-dimension-hint))))
 
 (defun collect-height-hints (nodes)
+  "Take a list of plists or objects, return a list of their initial heights."
   (loop for i in nodes collect
     (if (listp i)
         (getf (cdr i) :height)
@@ -420,6 +430,17 @@ If the width is nil for a node, it will be calculated by split-size."
   (:documentation "Recursively calculate the missing geometry parameters for the node's children."))
 
 (defmethod calculate-layout ((node row-layout))
+  "Recursively calculate the geometries of layout's children.
+
+If initial widths are not given, evenly split the remaining parent width.
+
+This routine can be used to calculate a layout of windows on a screen and
+recalculate their geometries for example after a terminal resize.
+
+After the initial calculation, initialize-leaves has to be called in order
+to initialize the window objects (and call the underlying ncurses functions).
+
+See examples t43, t43a."
   (let* ((y (if (position-y node) (position-y node) (position-y (parent node))))
          (x (if (position-x node) (position-x node) (position-x (parent node))))
          ;; we cant use the h/w accessors because they try to calc the h/w of the layout
@@ -433,10 +454,11 @@ If the width is nil for a node, it will be calculated by split-size."
          (hs (make-list n :initial-element h))
          (ys (make-list n :initial-element y))
          (xs (mapcar (lambda (i) (+ i x)) (cumsum-predecessors ws))))
+    ;; before the objects are initialized,
+    ;; if there is a width and no hint, save the width as the initial hint
+    ;; the width and the hint in the plist are then passed to the object
     (dotimes (i n)
       (when (listp (nth i children))
-        ;; if there is a width and no hint, save the width as the initial hint
-        ;; the width and the hint in the plist are then passed to the object
         (when (and (getf (cdr (nth i (children node))) :width)
                    (null (getf (cdr (nth i (children node))) :initial-dimension-hint)))
           (setf (getf (cdr (nth i (children node))) :initial-dimension-hint)
@@ -452,8 +474,9 @@ If the width is nil for a node, it will be calculated by split-size."
                                           (nth i xs)
                                           (nth i hs)
                                           (nth i ws))))
+          ;; if the child is an already initialized object (window or layout)
           (progn
-            ;; set the new geometry to the current node
+            ;; set the new geometry to the current child node
             (setf (geometry (nth i children))
                   (list (nth i ys)
                         (nth i xs)
