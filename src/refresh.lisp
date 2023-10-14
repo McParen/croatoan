@@ -1,12 +1,5 @@
 (in-package :de.anvi.croatoan)
 
-(defgeneric refresh (obj &rest args)
-  (:documentation
-   "Redisplay the object after changes have been made to it.
-
-Copy the object to the virtual screen, then updates the visible
-physical screen by the contents of the virtual screen."))
-
 (defmethod refresh ((win window) &rest args)
   "Redisplay the window after changes have been made to it.
 
@@ -56,6 +49,8 @@ visible physical screen.
 
 After all windows are marked, call refresh-marked to display all
 marked refreshes.
+
+refresh = mark + refresh-marked
 
 The goal of this batch refresh is improved efficiency and preventing
 flicker that might occur if several refreshes are called in sequence."))

@@ -74,20 +74,6 @@
 (defmethod (setf value) (new-value (field field))
   (setf (slot-value field 'buffer) (reverse (coerce new-value 'list))))
 
-
-(defun remove-nth (n list)
-  "Remove element at nth place from the list, decreasing the length of the list.
-
-Example: (remove-nth 3 '(a b c d e)) => (A B C E)"
-  (declare
-    (type (integer 0) n)
-    (type list list))
-  (assert (>= n 0))
-  (assert (> (length list) n))
-  (if (or (zerop n) (null list))
-    (cdr list)
-    (cons (car list) (remove-nth (1- n) (cdr list)))))
-
 (defun insert-nth (n element list)
   "Insert element into list at nth place, increasing the length of the list.
 

@@ -977,6 +977,23 @@ elements. It is only accounted for during calculate-position of layout.")
       (unless (plusp bl) (setf bl 1))
       (unless (plusp br) (setf br 1)))))
 
+(defgeneric visible-width (element)
+  (:documentation "visible width = content width + padding"))
+
+(defgeneric visible-height (element)
+  (:documentation "visible height = content height + padding"))
+
+(defgeneric external-width (element)
+  (:documentation "external-width = content width + padding + border-width"))
+
+(defgeneric external-height (element)
+  (:documentation "external-height = content height + padding + border-width"))
+
+(defgeneric draw (object)
+  (:documentation "Draw objects (form, field, menu) to their associated window."))
+
+(defgeneric clear (object &key))
+
 (defclass button (element)
   ((callback
     :initarg       :callback
@@ -1173,7 +1190,14 @@ Run the selection-callback, if it is set."
         (1- (length items))))))
 
 (defun remove-nth (n list)
-  "Remove the nth element from the list."
+  "Remove element at nth place from the list, decreasing the length of the list.
+
+Example: (remove-nth 3 '(a b c d e)) => (A B C E)"
+  (declare
+    (type (integer 0) n)
+    (type list list))
+  (assert (>= n 0))
+  (assert (> (length list) n))
   (cond ((null list)
          nil)
         ((zerop n)

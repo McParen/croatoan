@@ -66,6 +66,13 @@ Valid movement directions are :up :down :top and :bottom."
   "Return t if there are no items on the stack, nil otherwise."
   (null (items stack)))
 
+(defgeneric refresh (obj &rest args)
+  (:documentation
+   "Redisplay the object after changes have been made to it.
+
+Copy the object to the virtual screen, then updates the visible
+physical screen by the contents of the virtual screen."))
+
 (defmethod refresh ((stack stack) &rest args)
   "Touch and refresh visible windows in the window stack.
 

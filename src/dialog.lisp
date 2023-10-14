@@ -14,7 +14,7 @@
    "Dialog is the base class for different spacialized dialog windows."))
 
 ;; called after the primary methods of all dialogs
-(defmethod initialize-instance :after ((obj dialog) &key center message buttons wrap-message)
+(defmethod initialize-instance :after ((obj dialog) &key center)
   (with-slots (winptr height width (y position-y) (x position-x) window layout sub-window current-item-number borderp border-width) obj
     ;; form window settings, called for all derived dialog types
 
@@ -77,7 +77,7 @@ use it as the title."
                          elements
                          (list (make-instance 'row-layout :children (mapcar #'make-dialog-button buttons))))))
 
-(defmethod initialize-instance ((obj msgbox) &rest initargs &key center message buttons wrap-message)
+(defmethod initialize-instance ((obj msgbox) &rest initargs &key message buttons wrap-message)
   (apply #'shared-initialize obj t initargs)
   (with-slots (width layout) obj
     (unless width (setf width (round (* ncurses:COLS 2/3))))
@@ -85,7 +85,7 @@ use it as the title."
 
 (defclass menubox (dialog) ())
 
-(defmethod initialize-instance ((obj menubox) &rest initargs &key center message buttons wrap-message choices)
+(defmethod initialize-instance ((obj menubox) &rest initargs &key message buttons wrap-message choices)
   (apply #'shared-initialize obj t initargs)
   (with-slots (width layout) obj
     (unless width (setf width (round (* ncurses:COLS 2/3))))
@@ -103,7 +103,7 @@ use it as the title."
 
 (defclass checklist (dialog) ())
 
-(defmethod initialize-instance ((obj checklist) &rest initargs &key center message buttons wrap-message choices)
+(defmethod initialize-instance ((obj checklist) &rest initargs &key message buttons wrap-message choices)
   (apply #'shared-initialize obj t initargs)
   (with-slots (width layout) obj
     (unless width (setf width (round (* ncurses:COLS 2/3))))
@@ -125,7 +125,7 @@ use it as the title."
   (:documentation
    "An input box provides one or more input fields and buttons to accept or cancel the input."))
 
-(defmethod initialize-instance ((obj inputbox) &rest initargs &key center message buttons wrap-message fields)
+(defmethod initialize-instance ((obj inputbox) &rest initargs &key message buttons wrap-message fields)
   (apply #'shared-initialize obj t initargs)
   (with-slots (width layout) obj
     (unless width (setf width (round (* ncurses:COLS 2/3))))

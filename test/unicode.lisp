@@ -14,7 +14,7 @@
   (mvaddstr 6 8 "Без муки нет науки - no pain, no gain")
   (mvaddstr 8 10 "指鹿為馬 - point deer, make horse")
   (mvaddstr 10 12 "μολὼν λαβέ / ΜΟΛΩΝ ΛΑΒΕ - come and get it")
-  
+
   (refresh)
   (getch)
   (endwin))
@@ -156,7 +156,7 @@ Also see t02b."
 
       ;; adding a single cchar_t
       (wadd-wch scr ptr)
-      
+
       (wrefresh scr)
       (wgetch scr)
       (endwin))))

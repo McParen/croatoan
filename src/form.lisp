@@ -70,9 +70,6 @@ Place the cursor between the brackets [_] of the current item."
   "Move the cursor to the correct position in current element of the form."
   (update-cursor-position (current-item form)))
 
-(defgeneric draw (object)
-  (:documentation "Draw objects (form, field, menu) to their associated window."))
-
 (defmethod clear ((obj element) &key)
   "Clear the element by overwriting the underlying window with the background char.
 
@@ -142,9 +139,6 @@ content position = widget position + border + padding"
            (list (+ y pt)
                  (+ x pl))))))
 
-(defgeneric visible-width (element))
-(defgeneric visible-height (element))
-
 (defmethod visible-width ((element element))
   "visible width = content width + padding"
   (with-accessors ((w width) (pl padding-left) (pr padding-right)) element
@@ -152,7 +146,7 @@ content position = widget position + border + padding"
        pl pr)))
 
 (defmethod visible-height ((element element))
-  "visible width = content width + padding"
+  "visible height = content height + padding"
   (with-accessors ((h height) (pt padding-top) (pb padding-bottom)) element
     (+ h
        pt pb)))
@@ -160,9 +154,6 @@ content position = widget position + border + padding"
 (defun visible-dimensions (element)
   (list (visible-height element)
         (visible-width element)))
-
-(defgeneric external-width (element))
-(defgeneric external-height (element))
 
 ;; use this in grid/colomn-widths instead of width
 (defmethod external-width ((obj element))
@@ -174,7 +165,7 @@ content position = widget position + border + padding"
        (if borderp (+ bl br) 0))))
 
 (defmethod external-height ((obj element))
-  "external-width = content width + padding + border-width"
+  "external-height = content height + padding + border-width"
   (with-accessors ((h height) (pt padding-top) (pb padding-bottom)
                    (borderp borderp) (bt border-width-top) (bb border-width-bottom)) obj
     (+ h

@@ -1,6 +1,12 @@
 * ChangeLog
 
-** Notable changes since v0.1
+** v0.2 (231014)
+
+This version provides the second tagged development release.
+
+Notable changes since v0.1 (230513), which corresponds to Quicklisp release 230619:
+
+*** Increment version to v0.2, fix several style warnings (231014)
 *** Miscellaneous small additions and fixes (231001)
 
 Export symbols =find-node=, =field-add-char=, =delete-previous-char=,
@@ -104,7 +110,6 @@ This version provides the first tagged development release.
 Notable changes since Quicklisp release 230214:
 
 *** Increment croatoan version to v0.1, add ChangeLog (230513)
-
 *** Add a way to align left/right and ellipsize menu item titles (230506)
 
 All the initarg :align, so that items can be aligned if they are

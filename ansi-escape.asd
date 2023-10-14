@@ -6,7 +6,7 @@
   :depends-on (#+sbcl :sb-posix)
   :pathname "ansi/"
   :components
-  
+
   ((:file "package")
    (:file "ansi")
    (:file "common")

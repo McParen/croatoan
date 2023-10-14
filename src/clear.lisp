@@ -6,8 +6,6 @@
 ;; (clear scr :target :end-of-line)
 ;; (clear scr :target :bottom)
 
-(defgeneric clear (object &key))
-
 (defmethod clear ((window window) &key redraw (target :window))
   "Clear the window by overwriting it with blanks.
 

@@ -213,15 +213,15 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                  (m1 region-rows)
                  (n1 region-columns)) obj
       ;; r0, c0 region start; r1, c1 region rows, cols
-      (destructuring-bind (r0 c0 r1 c1)
-          (if scrolling-enabled-p (list m0 n0 m1 n1) (list 0 0 m n))
+      (destructuring-bind (c0 c1)
+          (if scrolling-enabled-p (list n0 n1) (list 0 n))
         (if variable-column-width-p
             ;; variable column width
             (let ((widths (mapcar (lambda (i)
                                     ;; if i > len, truncate (done in format-menu-item)
                                     (+ (if (<= i len) i len)
                                        ipl ipr
-                                       (typecase cmark
+                                       (etypecase cmark
                                          (string (length cmark))
                                          (list (+ (length (car cmark))
                                                   (length (cadr cmark)))))
@@ -233,7 +233,7 @@ Item types can be strings, symbols, numbers, other menus or callback functions."
                  (loop for i in widths sum i)))
             ;; fixed column width
             (let ((widths (* c1 (+ len ipl ipr
-                                   (typecase cmark
+                                   (etypecase cmark
                                      (string (length cmark))
                                      (list (+ (length (car cmark))
                                               (length (cadr cmark)))))
@@ -645,7 +645,7 @@ At the third position, display the item given by item-number."
                                  ;; if i > len, truncate (done in format-menu-item)
                                  (+ (if (<= i len) i len)
                                     ipl ipr
-                                    (typecase cmark
+                                    (etypecase cmark
                                       (string (length cmark))
                                       (list (+ (length (car cmark))
                                                (length (cadr cmark)))))
@@ -863,7 +863,6 @@ Return the value from select."
                (x grid-column)) obj
     (setf y (car (rmi2sub (list m n) i))
           x (cadr (rmi2sub (list m n) i)))))
-
 
 (defun move-left-possible-p (obj)
   "Return t if a move to the left in the collection/grid is possible.
