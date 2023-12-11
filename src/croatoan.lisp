@@ -213,13 +213,28 @@ If event is a list of events, remove each event separately from the alist."
 
 (defparameter *keymaps* nil "An alist of available keymaps.")
 
-(defmacro define-keymap (name &body body)
+;;(define-keymap t28b-map (parent-map)
+;;  (#\q  'exit-event-loop)
+;;  (#\a  't28-hello)
+;;  ("^D" 't28-clear))
+(defmacro define-keymap (name (&rest parent) &body body)
   "Register a keymap given its name and (key function) pairs.
 
-As with bind, the keys can be characters, two-char strings in caret notation for
-control chars and keywords for function keys."
+As a second argument, optionally a parent keymap can be given.
+
+As with bind, the keys can be characters, two-char strings in caret
+notation for control chars and keywords for function keys.
+
+If a keymap with the same name already exists, it will be deleted
+before the new one is added."
   `(progn
-     (setf *keymaps* (acons ',name (make-instance 'keymap) *keymaps*))
+     (setf *keymaps* (acons ',name
+                            ,(if parent
+                                 `(make-instance 'keymap :parent (find-keymap ',(car parent)))
+                                 '(make-instance 'keymap))
+                            (if (assoc ',name *keymaps*)
+                                (delete ',name *keymaps* :key #'car)
+                                *keymaps*)))
      (%defcdr (bindings (cdr (assoc ',name *keymaps*))) ,@body)))
 
 ;; CL-USER> (%defcdr a (:a 'cdr) (:b #'car) (:c (lambda () 1)))
@@ -238,6 +253,8 @@ control chars and keywords for function keys."
 ;; CL-USER> (defparameter a ())
 ;; CL-USER> (%defcar a (:a 'car))
 ;; ((:A . #<FUNCTION CAR>))
+;; CL-USER> (%defcar a (:a (lambda () 1)))
+;; ((:A . #<FUNCTION (LAMBDA ()) {5369211B}>) (:A . #<FUNCTION CAR>))
 (defmacro %defcar (alist (k v))
   "Push a single key-value list to the alist.
 
@@ -259,6 +276,7 @@ the corresponding control char."
           (if (stringp ,k)
               (push (cons (string-to-char ,k) ,v) ,alist)
               (push (cons ,k ,v) ,alist)))
+         ;; if instead of a handler function, we have a keymap.
          ((typep ,v 'keymap)
           (if (stringp ,k)
               (push (cons (string-to-char ,k) ,v) ,alist)
@@ -288,24 +306,34 @@ the corresponding control char."
   "Loop over a bindings plist, convert strings to characters."
   (mapcar #'check-string-char bindings-plist))
 
+;; CL-USER> (assoc-unique '((a . 1) (b. 2) (a . 3)))
+;; ((A . 1) (B. 2))
 (defun assoc-unique (alist)
-  "Return a copy of alist with duplicate entries removed."
+  "Return a copy of alist with duplicate entries (keys) removed.
+
+Only the first (newest) unique key is kept, others are discarded."
   (let ((result nil)
         (rest alist))
     (loop while rest do
       (let* ((pair (car rest))
              (key (car pair)))
+        ;; keep the key only if it is not already present.
+        ;; this means only the first unique key is kept.
         (unless (assoc key result)
           (push pair result)))
       (setq rest (cdr rest)))
     (nreverse result)))
 
+;; https://github.com/troyp/asoc.el/blob/master/asoc.el
+;; https://stackoverflow.com/questions/36497825/i-want-to-merge-and-sort-two-sorted-lists-with-common-lisp
+;; CL-USER> (assoc-merge '((a . 1) (b . 2)) '((a . 3) (b . 4) (c . 5)))
+;; ((A . 1) (B . 2) (C . 5))
 (defun assoc-merge (&rest alists)
   "Merge alists then return an alist with duplicate entries removed."
   (assoc-unique (apply #'append alists)))
 
 (defun get-event-handler (object event)
-  "Take an object and an event, return the object's handler for that event.
+  "Take an object and an event key, return the object's handler for that event.
 
 The key bindings alist is stored in the bindings slot of the object.
 
@@ -324,31 +352,59 @@ In that case, the handler for the nil event is returned, if defined.
 The event pairs are added by the bind function as conses: (event . #'handler).
 
 An event should be bound to the pre-defined function exit-event-loop."
-  (flet ((ev (event)
-           "Take an event, return the cons (event . handler)."
-           (let* ((keymap (typecase object
-                            (keymap object)
-                            (t (typecase (keymap object)
-                                 ;; the keymap can be a keymap object
-                                 (keymap (keymap object))
-                                 ;; or a symbol as the name of the keymap
-                                 (symbol (find-keymap (keymap object)))))))
-                  ;; object-local bindings override the external keymap
-                  ;; an event is checked in the bindings first, then in the external keymap.
-                  (bindings (assoc-merge (bindings object)
-                                         (when (and keymap (bindings keymap)) (bindings keymap)))))
-             (assoc event bindings))))
+  (labels ((get-handler-from-keymap (event keymap)
+             ;; return a binding pair from a keymap, if it exists.
+             ;; if it doesnt exist, and the keymap has a parent,
+             ;; recursively check the parent.
+             (let ((pair (assoc event (bindings keymap))))
+               (if pair
+                   pair
+                   (if (parent keymap)
+                       (get-handler-from-keymap event (parent keymap))
+                       nil))))
+           (ev (event)
+             "Take an event, return the cons (event . handler)."
+             ;; take an event key, return a binding pair, if it exists.
+             ;; the bindings are checked in the following order:
+             ;; - local bindings of the object are checked first
+             ;; - if a binding is not found, the associated keymap is checked.
+             ;; - if a binding there is not found, the parent of the keymap is checked.
+             (let* ((keymap (typecase object
+                              ;; if object is a keymap
+                              (keymap object)
+                              ;; if object has a keymap slot
+                              (t (when (keymap object)
+                                   (typecase (keymap object)
+                                     ;; the keymap can be a keymap object
+                                     (keymap (keymap object))
+                                     ;; or a symbol as the name of the keymap
+                                     (symbol (find-keymap (keymap object)))))))))
+               ;; object-local bindings override the external keymap
+               ;; an event is checked in the bindings first, then in the external keymap.
+               (let ((pair (assoc event (bindings object))))
+                 (if pair
+                     pair
+                     (if keymap
+                         (get-handler-from-keymap event keymap)
+                         nil))))))
     (cond
       ;; Event occured and event handler is defined.
-      ((and event (ev event)) (cdr (ev event)))
+      ((and event
+            (ev event))
+       (cdr (ev event)))
       ;; Event occured and a default event handler is defined.
       ;; If not even the default handler is defined, the event is ignored.
-      ((and event (ev t)) (cdr (ev t)))
+      ((and event
+            (ev t))
+       (cdr (ev t)))
       ;; If no event occured and the idle handler is defined.
       ;; The event is only nil when input input-blocking is nil.
-      ((and (null event) (ev nil)) (cdr (ev nil)))
+      ((and (null event)
+            (ev nil))
+       (cdr (ev nil)))
       ;; If no event occured and the idle handler is not defined.
-      (t nil))))
+      (t
+       nil))))
 
 (defun run-event-loop (object &rest args)
   "Read events from the object, then call predefined event handler functions on the events.
@@ -437,6 +493,7 @@ events to be chained together."))
       (when handler
         (cond ((typep handler 'keymap)
                ;; when the handler is another keymap, lookup the next event from that keymap.
+               ;; For example: "C-x 3", ^X first returns a keymap, then we lookup 3 from that keymap
                (setf map handler))
               ((or (functionp handler) (symbolp handler))
                ;; when the handler is a function, lookup the next event from the object's bindings/keymap.

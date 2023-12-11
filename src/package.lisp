@@ -169,6 +169,9 @@
    field-map
    form-map
    button-map
+   textarea-map
+   checkbox-map
+   checklist-map
    accept
    cancel
    return-element-value

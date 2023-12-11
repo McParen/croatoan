@@ -1,5 +1,31 @@
 * ChangeLog
 
+** Notable changes since v0.2
+
+Notable changes since v0.2 (231014), which corresponds to Quicklisp release 231021:
+
+*** Add support for inheritance of keymap bindings (231211)
+
+- Add a parent property to keymaps, currently only single inheritance.
+  This allows several child maps to inherit the same set from a parent.
+- Modify the define-kemap macro to accept a parent keymap as an argument.
+- Remove the keymap initarg :bindings-plist.
+  Use the slot initarg :bindings, which accepts both alists and plists.
+- Modify get-event-handler to check parent keymaps, if available.
+
+- Rename several function keys to be more intuitive and consistent:
+  :key-scroll-forward -> :key-shift-arrow-down
+  :key-scroll-reverse -> :key-shift-arrow-up
+  :key-shift-left     -> :key-shift-arrow-left
+  :key-shift-right    -> :key-shift-arrow-right
+  :key-shift-previous -> :key-shift-previous-page
+  :key-shift-next     -> :key-shift-next-page
+
+- If an unknown key code is returned by get-event, do not print it,
+  return a proper event with the code as the event key instead.
+- Export textarea-map, checkbox-map, checklist-map.
+- Refactor the keymap examples t28, t28a, t28b to test the changes.
+
 ** v0.2 (231014)
 
 This version provides the second tagged development release.

@@ -82,17 +82,29 @@ component +--> widget ---+--> window  +--> screen
     :initform      nil
     :type          (or null cons)
     :accessor      bindings
-    :documentation "Alist of events and handler functions."))
+    :documentation "Alist of events and handler functions.
+
+When the bindings are provided not as an alist, but as an plist for convenience, convert the plist to an alist.
+
+The plist is easier to provide when there is a large number of bindings.")
+
+   (parent
+    :initarg       :parent
+    :initform      nil
+    :type          (or null keymap)
+    :accessor      parent
+    :documentation "Parent keymaps given as a symbol name or keymap object."))
 
   (:documentation  "A keymap contains an alist of events as keys and event handlers or chained keymaps as values."))
 
 ;; initialize instance takes a plist initarg and converts it to an alist.
-(defmethod initialize-instance :after ((keymap keymap) &key bindings-plist)
+(defmethod initialize-instance :after ((keymap keymap) &key)
   (with-slots (bindings) keymap
-    ;; when the alist is not provided, but the plist, convert the plist to an alist
-    ;; the plist is easier to provide when there is a large number of bindings.
-    (when (and (null bindings) bindings-plist)
-      (setf bindings (plist2alist (convert-strings bindings-plist))))))
+    ;; when the bindings are provided not as an alist, but the plist, convert the plist to an alist
+    ;; a plist is easier to provide by the user when there is a large number of bindings.
+    (unless (or (null bindings)
+                (every #'consp bindings))
+      (setf bindings (plist2alist (convert-strings bindings))))))
 
 (defclass component ()
   ((name

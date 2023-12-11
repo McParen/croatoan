@@ -108,8 +108,8 @@ The window from which the char is read is automatically refreshed."
     (:key-clear-screen          . 333) ; CLEAR
     (:key-clear-end-of-screen   . 334) ; EOS
     (:key-clear-end-of-line     . 335) ; EOL
-    (:key-scroll-forward        . 336) ; SF, :shift-down
-    (:key-scroll-reverse        . 337) ; SR, :shift-up
+    (:key-shift-arrow-down      . 336) ; SF, :key-scroll-forward
+    (:key-shift-arrow-up        . 337) ; SR, :key-scroll-reverse
     (:key-next-page             . 338) ; NPAGE
     (:key-previous-page         . 339) ; PPAGE
     (:key-set-tab               . 340) ; STAB
@@ -127,6 +127,8 @@ The window from which the char is read is automatically refreshed."
     (:key-keypad-lower-right    . 352) ; C3
 
 #|
+
+https://pubs.opengroup.org/onlinepubs/7908799/xcurses/curses.h.html
 
 3x3 keypad layout:
 
@@ -178,16 +180,16 @@ The window from which the char is read is automatically refreshed."
     (:key-shift-help              . 390) ; SHELP     #1
     (:key-shift-home              . 391) ; SHOME     #2
     (:key-shift-insert-char       . 392) ; SIC       #3
-    (:key-shift-left              . 393) ; SLEFT     #4
+    (:key-shift-arrow-left        . 393) ; SLEFT     #4
     (:key-shift-message           . 394) ; SMESSAGE  %a
     (:key-shift-move              . 395) ; SMOVE     %b
-    (:key-shift-next              . 396) ; SNEXT     %c
+    (:key-shift-next-page         . 396) ; SNEXT     %c
     (:key-shift-options           . 397) ; SOPTIONS  %d
-    (:key-shift-previous          . 398) ; SPREVIOUS %e
+    (:key-shift-previous-page     . 398) ; SPREVIOUS %e
     (:key-shift-print             . 399) ; SPRINT    %f
     (:key-shift-redo              . 400) ; SREDO     %g
     (:key-shift-replace           . 401) ; SREPLACE  %h
-    (:key-shift-right             . 402) ; SRIGHT    %i
+    (:key-shift-arrow-right       . 402) ; SRIGHT    %i
     (:key-shift-resume            . 403) ; SRSUME    %j
     (:key-shift-save              . 404) ; SSAVE     !1
     (:key-shift-suspend           . 405) ; SSUSPEND  !2
@@ -332,8 +334,8 @@ The following chars can be returned:
              (make-instance 'event :key ev :code ch))))
       ;; todo: unknown codes, like mouse, resize and unknown function keys.
       (t
-       ;;(error "invalid value of char received from ncurses.")
-       (princ ch window)))))
+       ;; if we have a code without a corresponding key, return the code as key
+       (make-instance 'event :key ch :code ch)))))
 
 #|
 

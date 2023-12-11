@@ -3819,22 +3819,37 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
   (declare (ignore event))
   (clear win))
 
-(defparameter *t28-map*
-  (make-instance 'keymap :bindings-plist
+;; The bindings in the parent map are inherited by the child map.
+;; This allows several child maps to inherit the same binding from a parent map.
+(defparameter *t28-parent-map*
+  (make-instance 'keymap :bindings
     (list
-     #\q  'exit-event-loop
-     #\a  #'t28-hello
-     #\d  't28-clear))
-  "Define a keymap separately and then set it as a window's event handler before running the event loop.")
+     #\b (lambda (w e)
+           (format w "Binding inherited from parent map: ~A~%" (event-key e))))))
 
+;; Define a keymap object separately and then set it as a window's keymap property before running the event loop.
+(defparameter *t28-map*
+  (make-instance 'keymap
+                 :parent *t28-parent-map*
+                 ;; the bindings can be passed as an alist which is currently used internally
+                 :bindings (list
+                            (cons #\q 'exit-event-loop)
+                            (cons #\a  #'t28-hello)
+                            (cons #\d  't28-clear))))
+
+;; A separately defined keymap bound to the prefix key ^X.
 (defparameter *t28-ctrl-x-map*
-  (make-instance 'keymap :bindings-plist
+  (make-instance 'keymap :bindings
     (list
      t    (lambda (win event) (format win "^X map: Default C-x map event handler ~A~%" (event-key event)))
      #\k  (lambda (win event) (format win "^X map: ~A~%" (event-key event)))
-     ;; ^T is another prefix key, so the keys in that map can be reached via "^X ^T".
-     "^T" *t28-map*))
-  "A separately defined keymap bound to the prefix key ^X.")
+     ;; ^T is bound to a sub-keymap, so it is another prefix key. The keys in that map can be reached via "^X ^T".
+     "^T" (make-instance 'keymap
+                         :parent *t28-parent-map*
+                         ;; the bindings can also be passed as a more convenient plist
+                         :bindings (list
+                                    #\a  (lambda (w e) (format w "^X^T map: ~A~%" (event-key e)))
+                                    #\d  't28-clear)))))
 
 (defun t28 ()
   "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
@@ -3845,17 +3860,17 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     ;; add another event handler to the window instead of the external keymap
     ;; Object-local bindings override the external keymap. The local bindings
     ;; are checked first for a handler, then the external keymap.
-    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" (event-key event))))
+    (bind scr #\s (lambda (win event) (format win "Object-local binding: ~A~%" (event-key event))))
 
     ;; t is the default handler for all events without defined handlers.
     ;; The default event handler should not be used to handle the nil event when input-blocking is nil
-    (bind *t28-map* t (lambda (win event) (format win "Default map event handler ~A~%" (event-key event))))
+    (bind *t28-map* t (lambda (win event) (format win "Default map event handler: ~A~%" (event-key event))))
 
     ;; Defining a keymap as a handler for ^X makes it the prefix key for that keymap.
     (bind scr "^X" *t28-ctrl-x-map*)
 
     (clear scr)
-    (format scr "Type a, s or d. Type ^X k. Type q to quit.~%")
+    (format scr "Type a, s, b or d. Type ^X k, ^X ^T a. Type q to quit.~%")
     (refresh scr)
 
     ;; see waiting (input-blocking t) vs polling (input-blocking nil)
@@ -3868,16 +3883,17 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     (setf (keymap scr) *t28-map*)
 
-    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" (event-key event))))
+    (bind scr #\s (lambda (win event) (format win "Object-local binding: ~A~%" (event-key event))))
 
     ;; The handler function for the nil event will be called between keyboard events.
+    ;; The frequency is given by the frame-rate property or the input-blocking delay.
     (bind scr nil (lambda (win) (format win ".")))
 
     ;; Defining a keymap as a hander for ^X makes it the prefix key for that keymap.
     (bind scr "^X" *t28-ctrl-x-map*)
 
     (clear scr)
-    (format scr "Type a, s or d. Type ^X k. Type q to quit.~%")
+    (format scr "Type a, b, s or d. Type ^X k, ^X ^T a. Type q to quit.~%")
     (refresh scr)
 
     ;; When input-blocking is nil, set the rate at which the nil event will be handled in fps (frames per second).
@@ -3889,21 +3905,31 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 (defun t28b-show-bindings (win)
   (format win "~S" (bindings (find-keymap (keymap win)))))
 
-;; defines and centrally registers a keymap
-(define-keymap t28b-map
+(define-keymap t28b-parent-map ()
   (#\q 'exit-event-loop)
   (#\a 't28-hello)
-  (#\d 't28-clear)
-  ("^X" *t28-ctrl-x-map*)
-  ("^B" 't28b-show-bindings))
+  (#\d 't28-clear))
+
+(define-keymap t28b-ctrl-y-map ()
+  (t   (lambda (win event) (format win "^Y map: Default ^Y map event handler ~A~%" (event-key event))))
+  (#\k (lambda (win event) (format win "^Y map: ~A~%" (event-key event))))
+  (#\b 't28-hello)
+  (#\c 't28-clear))
+
+;; defines and centrally registers a keymap
+(define-keymap t28b-map (t28b-parent-map)
+  ("^X" *t28-ctrl-x-map*)               ; ^X = #\can
+  ("^Y" (find-keymap 't28b-ctrl-y-map)) ; ^Y = #\em
+  ("^B" 't28b-show-bindings))           ; ^B = #\stx
 
 (defun t28b ()
   "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
   (with-screen (scr :input-echoing nil :input-blocking t)
-    ;; add the separately defined keymap to the window object.
+    ;; Add the separately defined keymap to the window object.
+    ;; The keymap can be a keymap object or a symbol name defined by define-keymap.
     (setf (keymap scr) 't28b-map)
 
-    ;; add another event handler to the window not to the external keymap
+    ;; Add another event handler to the window not to the external keymap
     ;; Object-local bindings override the external keymap. The local bindings
     ;; are checked first for a handler, then the external keymap.
     (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" (event-key event))))
