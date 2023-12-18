@@ -73,15 +73,20 @@
                (declare (ignore win))
                (setq dir (get-direction (event-key event)))))
         (bind scr #\q 'exit-event-loop)
-        (bind scr '(:key-arrow-right :key-arrow-left :key-arrow-up :key-arrow-down) #'set-dir)
-        (bind scr nil (lambda ()
-                        ;; snake moves = erase last body pair by overwriting it with space
-                        (add scr #\space :position tail)
-                        (setq body (cons (mapcar #'+ head dir) (butlast body)))
-                        (setq head (car body))
-                        (setq tail (car (last body)))
-                        (draw-snake scr body)
-                        (refresh scr)))
+
+        (mapc (lambda (event)
+                (bind scr event #'set-dir))
+              '(:key-arrow-right :key-arrow-left :key-arrow-up :key-arrow-down))
+
+        (bind scr nil
+              (lambda ()
+                ;; snake moves = erase last body pair by overwriting it with space
+                (add scr #\space :position tail)
+                (setq body (cons (mapcar #'+ head dir) (butlast body)))
+                (setq head (car body))
+                (setq tail (car (last body)))
+                (draw-snake scr body)
+                (refresh scr)))
         (clear scr)
         (setf (frame-rate scr) 20)
         (run-event-loop scr)))))
@@ -166,25 +171,25 @@
         ;; hit the q key to exit the main loop.
         (bind scr #\q 'exit-event-loop)
         (bind scr nil
-          (lambda (win)
-            ;; generate a random ascii char
-            (loop for column from 0 to (1- width) do
-                 (loop repeat (nth column speeds) do
-                      ;; position of the first point in the current column
-                      (let ((pos (nth column positions)))
-                        (setf (attributes win) '(:bold))
-                        (setf (color-pair win) '(:white :black))
-                        (add win (randch) :y (mod pos height) :x column)
-                        (setf (color-pair win) '(:green :black))
-                        (add win (randch) :y (mod (- pos 1) height) :x column)
-                        (add win (randch) :y (mod (- pos 2) height) :x column)
-                        (setf (attributes win) '())
-                        (add win (randch) :y (mod (- pos 3) height) :x column)
-                        ;; overwrite the last char with a space
-                        (add win #\space  :y (mod (- pos (floor height 3)) height) :x column)
-                        (refresh win)
-                        ;; increment the column positions
-                        (setf (nth column positions) (mod (1+ pos) height)))))))))
+              (lambda (win)
+                ;; generate a random ascii char
+                (loop for column from 0 to (1- width) do
+                  (loop repeat (nth column speeds) do
+                    ;; position of the first point in the current column
+                    (let ((pos (nth column positions)))
+                      (setf (attributes win) '(:bold))
+                      (setf (color-pair win) '(:white :black))
+                      (add win (randch) :y (mod pos height) :x column)
+                      (setf (color-pair win) '(:green :black))
+                      (add win (randch) :y (mod (- pos 1) height) :x column)
+                      (add win (randch) :y (mod (- pos 2) height) :x column)
+                      (setf (attributes win) '())
+                      (add win (randch) :y (mod (- pos 3) height) :x column)
+                      ;; overwrite the last char with a space
+                      (add win #\space  :y (mod (- pos (floor height 3)) height) :x column)
+                      (refresh win)
+                      ;; increment the column positions
+                      (setf (nth column positions) (mod (1+ pos) height)))))))))
     ;; after the handlers have been defined, run the main event loop at 20 fps.
     (setf (frame-rate scr) 20)
     (run-event-loop scr)))
@@ -202,21 +207,21 @@
       (flet ((randch () (+ 64 (random 58))))
         (bind scr #\q 'exit-event-loop)
         (bind scr #\r
-          (lambda ()
-            (setf (getf s2 :fgcolor) :red
-                  (getf s3 :fgcolor) :red)))
+              (lambda ()
+                (setf (getf s2 :fgcolor) :red
+                      (getf s3 :fgcolor) :red)))
         (bind scr nil
-          (lambda (win)
-            (loop for column from 0 to (1- width) do
-                 (loop repeat (nth column speeds) do
-                      (let ((pos (nth column positions)))
-                        (add win (randch) :y (mod pos height) :x column :style s1)
-                        (add win (randch) :y (mod (- pos 1) height) :x column :style s2)
-                        (add win (randch) :y (mod (- pos 2) height) :x column :style s2)
-                        (add win (randch) :y (mod (- pos 3) height) :x column :style s3)
-                        (add win #\space  :y (mod (- pos (floor height 3)) height) :x column :style s3)
-                        (refresh win)
-                        (setf (nth column positions) (mod (1+ pos) height)))))))))
+              (lambda (win)
+                (loop for column from 0 to (1- width) do
+                  (loop repeat (nth column speeds) do
+                    (let ((pos (nth column positions)))
+                      (add win (randch) :y (mod pos height) :x column :style s1)
+                      (add win (randch) :y (mod (- pos 1) height) :x column :style s2)
+                      (add win (randch) :y (mod (- pos 2) height) :x column :style s2)
+                      (add win (randch) :y (mod (- pos 3) height) :x column :style s3)
+                      (add win #\space  :y (mod (- pos (floor height 3)) height) :x column :style s3)
+                      (refresh win)
+                      (setf (nth column positions) (mod (1+ pos) height)))))))))
     (setf (frame-rate scr) 20)
     (run-event-loop scr)))
 
@@ -230,20 +235,20 @@
       (flet ((randch () (+ 64 (random 58))))
         (bind scr #\q 'exit-event-loop)
         (bind scr nil
-          (lambda (win)
-            (loop for column from 0 to (1- width) do
-                 (loop repeat (nth column speeds) do
-                      (let ((pos (nth column positions)))
-                        (setf (attributes win) '(:bold))
-                        (setf (fgcolor win) :green)
-                        (add win (randch) :y (mod pos height) :fgcolor :white :x column)
-                        (add win (randch) :y (mod (- pos 1) height) :x column)
-                        (add win (randch) :y (mod (- pos 2) height) :x column)
-                        (setf (attributes win) '())
-                        (add win (randch) :y (mod (- pos 3) height) :x column)
-                        (add win #\space  :y (mod (- pos (floor height 3)) height) :x column)
-                        (refresh win)
-                        (setf (nth column positions) (mod (1+ pos) height)))))))))
+              (lambda (win)
+                (loop for column from 0 to (1- width) do
+                  (loop repeat (nth column speeds) do
+                    (let ((pos (nth column positions)))
+                      (setf (attributes win) '(:bold))
+                      (setf (fgcolor win) :green)
+                      (add win (randch) :y (mod pos height) :fgcolor :white :x column)
+                      (add win (randch) :y (mod (- pos 1) height) :x column)
+                      (add win (randch) :y (mod (- pos 2) height) :x column)
+                      (setf (attributes win) '())
+                      (add win (randch) :y (mod (- pos 3) height) :x column)
+                      (add win #\space  :y (mod (- pos (floor height 3)) height) :x column)
+                      (refresh win)
+                      (setf (nth column positions) (mod (1+ pos) height)))))))))
     (setf (frame-rate scr) 20)
     (run-event-loop scr)))
 
@@ -284,9 +289,17 @@
                  (add w #\@ :position pos)
                  (refresh w)))
         (bind scr #\l 'exit-event-loop)
-        (bind scr '(#\q #\w #\e #\a #\d #\y #\x #\c)
-              (lambda (w e) (move-pos (event-key e)) (update-robots) (draw-board w)))
-        (bind scr #\t (lambda (w) (setq pos (random-position scr)) (draw-board w)))
+
+        (mapc (lambda (event)
+                (bind scr event (lambda (w e)
+                                  (move-pos (event-key e))
+                                  (update-robots)
+                                  (draw-board w))))
+              '(#\q #\w #\e #\a #\d #\y #\x #\c))
+
+        (bind scr #\t (lambda (w)
+                        (setq pos (random-position scr))
+                        (draw-board w)))
         (draw-board scr)
         (run-event-loop scr)))))
 
@@ -317,18 +330,23 @@
                  (draw-game win)))
         (bind scr #\q 'exit-event-loop)
         (bind scr #\space (lambda () (setq runp t)))
-        (bind scr '(#\w #\p #\s #\l) #'move-paddle)
-        (bind scr nil (lambda (win)
-                        (when runp
-                          (setq y (+ y dy) x (+ x dx))
-                          (draw-game win)
-                          (when (or (= y 0) (= y (1- h)))
-                            (setq dy (- dy)))
-                          (when (or (and (= x x1) (<= y1 y (+ y1 n)))
-                                    (and (= x x2) (<= y2 y (+ y2 n))))
-                            (setq dx (- dx)))
-                          (when (or (= x 0) (= x (1- w)))
-                            (reset-game win)))))
+
+        (mapc (lambda (e)
+                (bind scr e #'move-paddle))
+              '(#\w #\p #\s #\l))
+
+        (bind scr nil
+              (lambda (win)
+                (when runp
+                  (setq y (+ y dy) x (+ x dx))
+                  (draw-game win)
+                  (when (or (= y 0) (= y (1- h)))
+                    (setq dy (- dy)))
+                  (when (or (and (= x x1) (<= y1 y (+ y1 n)))
+                            (and (= x x2) (<= y2 y (+ y2 n))))
+                    (setq dx (- dx)))
+                  (when (or (= x 0) (= x (1- w)))
+                    (reset-game win)))))
         (reset-game scr)
         (setf (frame-rate scr) 30)
         (run-event-loop scr)))))
@@ -2131,9 +2149,10 @@ Adding hex values requires 256color support in the terminal."
           (field (make-instance 'field :position (list 3 20) :width 10 :window scr)))
       (setf (style field) (list :foreground s1 :background s2))
       ;; read a color (keyword or hex) from the field then set the background
-      (bind field #\newline (lambda ()
-                              (setf (background scr) (make-instance 'complex-char :simple-char #\space :bgcolor (read-from-string (value field))))
-                              (refresh scr)))
+      (bind field #\newline
+            (lambda ()
+              (setf (background scr) (make-instance 'complex-char :simple-char #\space :bgcolor (read-from-string (value field))))
+              (refresh scr)))
       (edit field))))
 
 (defun t16e2 ()
@@ -2536,15 +2555,17 @@ it will be more efficient to use a character array, a string."
             (value field2) "there")
 
       ;; how to set a timer that polls the queue also when blocking is t? (tkinter has the after function)
-      (bind form nil (lambda ()
-                       ;; pop an item off the queue and set it as the result of the worker thread calculation to field3.
-                       ;; we do not need the loop here since we only have one item in the queue,
-                       ;; but in general the polling of a longer queue should be done by a loop.
-                       (loop
-                          for i = (dequeue queue)
-                          while i do
-                            (setf (value field3) i)
-                            (draw form))))
+      (bind form nil
+            (lambda ()
+              ;; pop an item off the queue and set it as the result of the worker thread calculation to field3.
+              ;; we do not need the loop here since we only have one item in the queue,
+              ;; but in general the polling of a longer queue should be done by a loop.
+              (loop
+                for i = (dequeue queue)
+                while i do
+                  (setf (value field3) i)
+                  (draw form))))
+
       (if (edit form)
           ;; edit returned t, which means the user accepted the form
           (progn
@@ -3352,13 +3373,14 @@ friend. It is my life. I must master it as I must master my life.")
                                 :window scr)))
       (refresh scr)
       ;; resize the visible region when the terminal is resized.
-      (bind (find-keymap 'menu-window-map) :resize (lambda (obj)
-                                                     (clear obj)
-                                                     (with-slots ((r region-rows)
-                                                                  (c region-columns)) obj
-                                                       (setf r (floor (/ (height scr) 2))
-                                                             c (floor (/ (width scr) 11))))
-                                                     (draw obj)))
+      (bind (find-keymap 'menu-window-map) :resize
+            (lambda (obj)
+              (clear obj)
+              (with-slots ((r region-rows)
+                           (c region-columns)) obj
+                (setf r (floor (/ (height scr) 2))
+                      c (floor (/ (width scr) 11))))
+              (draw obj)))
       (select menu))))
 
 (defun t19e ()
@@ -3797,7 +3819,11 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (bind scr #\a (lambda (win) (format win "Hello there.~%")))
     (bind scr #\b (lambda (win) (format win "Dear John.~%")))
 
-    (bind scr '("^a" "^b" "^d") (lambda (w e) (format w "Control char: ~A~%" (event-key e))))
+    (mapc (lambda (event)
+            (bind scr event
+                  (lambda (w e)
+                    (format w "Control char: ~A~%" (event-key e)))))
+          '("^a" "^b" "^d"))
 
     ;; d clears the window.
     (bind scr #\d #'clear)
@@ -3880,7 +3906,6 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 (defun t28a ()
   "Test the use of the run-event-loop with non-blocking events."
   (with-screen (scr :input-echoing nil :input-blocking nil)
-
     (setf (keymap scr) *t28-map*)
 
     (bind scr #\s (lambda (win event) (format win "Object-local binding: ~A~%" (event-key event))))
@@ -3910,16 +3935,18 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
   (#\a 't28-hello)
   (#\d 't28-clear))
 
-(define-keymap t28b-ctrl-y-map ()
-  (t   (lambda (win event) (format win "^Y map: Default ^Y map event handler ~A~%" (event-key event))))
-  (#\k (lambda (win event) (format win "^Y map: ~A~%" (event-key event))))
+(define-keymap t28b-esc-map ()
+  (t   (lambda (win event) (format win "ESC map: Default ESC map event handler ~A~%" (event-key event))))
+  (#\k (lambda (win event) (format win "ESC map: ~A~%" (event-key event))))  ; M-k
+  (#\K (lambda (win event) (format win "ESC map: ~A~%" (event-key event))))  ; M-S-k or M-K
+  ("^K" (lambda (win event) (format win "ESC map: ~A~%" (event-key event)))) ; C-M-k or C-M-K
   (#\b 't28-hello)
   (#\c 't28-clear))
 
 ;; defines and centrally registers a keymap
 (define-keymap t28b-map (t28b-parent-map)
   ("^X" *t28-ctrl-x-map*)               ; ^X = #\can
-  ("^Y" (find-keymap 't28b-ctrl-y-map)) ; ^Y = #\em
+  (#\esc (find-keymap 't28b-esc-map))   ; #\esc = M-
   ("^B" 't28b-show-bindings))           ; ^B = #\stx
 
 (defun t28b ()
@@ -3936,7 +3963,8 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     ;; t is the default handler for all events without defined handlers.
     ;; The default event handler should not be used to handle the nil event when input-blocking is nil
-    (bind (find-keymap 't28b-map) t (lambda (win event) (format win "Default event handler ~A~%" (event-key event))))
+    (bind (find-keymap 't28b-map) t
+          (lambda (win event) (format win "Default event handler ~A~%" (event-key event))))
 
     (clear scr)
     (add-string scr "Type a, s or d. Type q to quit.")
@@ -3944,6 +3972,29 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
     ;; see waiting (input-blocking t) vs polling (input-blocking nil)
     ;; http://www.meandmark.com/sdlopenglpart6.html
+    (run-event-loop scr)))
+
+(defun t28c ()
+  (with-screen (scr :input-echoing nil :input-blocking t)
+    ;; To bind several bindings in one form, map bind over
+    ;; a plist of events and handlers.
+    (mapc-plist (lambda (e h) (bind scr e h))
+       #\q   'exit-event-loop
+       "^B"  (lambda () (format scr "~S~&" (bindings scr)))) ; #\stx = ^B
+
+    ;; Instead of binding a handler to a single event,
+    ;; it can be bound to a sequence of events (key chain).
+    (bind scr (list #\can #\1)
+          (lambda (win event)
+            (format win "C-x 1: last event ~A~&" (event-key event))))
+
+    ;; Binding the Alt (or Meta) modifier to a character event
+    ;; is equivalent to providing the escape character as the prefix key.
+    (bind scr (list #\esc #\x)
+          (lambda () (format scr "M-x = ESC x~&")))
+
+    (clear scr)
+    (refresh scr)
     (run-event-loop scr)))
 
 (defun draw-t29-shapes (window shapes &optional squarify)
@@ -4161,45 +4212,46 @@ Press C-j, C-m, C-i, C-h to see the difference."
                     :use-terminal-colors   t)
     (setf *print-right-margin* (width scr))
     (bind scr "^Q" 'exit-event-loop)
-    (bind scr t (lambda (win event)
-                  (with-accessors ((key event-key)
-                                   (code event-code)) event
-                    (clear win)
-                    (add win "Press C-q to exit." :y 0 :x 0)
-                    (move win 2 0)
-                    (typecase key
-                      (character
-                       (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
-                       (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
-                       (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string key))
-                       (let ((str (function-key-definition code)))
-                         (format win "key-definition (ncurses:keybound)~19@S code from definition: ~A~&" str (function-key-code str))))
+    (bind scr t
+          (lambda (win event)
+            (with-accessors ((key event-key)
+                             (code event-code)) event
+              (clear win)
+              (add win "Press C-q to exit." :y 0 :x 0)
+              (move win 2 0)
+              (typecase key
+                (character
+                 (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
+                 (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
+                 (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string key))
+                 (let ((str (function-key-definition code)))
+                   (format win "key-definition (ncurses:keybound)~19@S code from definition: ~A~&" str (function-key-code str))))
 
-                      ;; function-key-p is a boolean flag returned by get-event/get-wide-event
-                      ;; it can be used to distinguish whether an event is a single character code
-                      ;; or a code representing a function key sequence.
-                      (keyword
-                       (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
-                       (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
-                       ;; decoding a char of a function key returns no useful result
-                       (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string code))
-                       (let ((str (function-key-definition code)))
-                         (format win "key-definition (ncurses:keybound)~19@S code: ~A~&" str (function-key-code str))))
+                ;; function-key-p is a boolean flag returned by get-event/get-wide-event
+                ;; it can be used to distinguish whether an event is a single character code
+                ;; or a code representing a function key sequence.
+                (keyword
+                 (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
+                 (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
+                 ;; decoding a char of a function key returns no useful result
+                 (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string code))
+                 (let ((str (function-key-definition code)))
+                   (format win "key-definition (ncurses:keybound)~19@S code: ~A~&" str (function-key-code str))))
 
-                      ;; if a code is returned as the event key, that means that a function key has been defined,
-                      ;; but the code has not been assigned a keyword name in croatoan (use add-function-key).
-                      ;; The underlying ncurses/terminfo name can be accessed through key-to-string (or ncurses:keyname).
-                      (number
-                       (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
-                       (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
-                       ;; decoding a char of a function key returns no useful result
-                       (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string key))
-                       (let ((str (function-key-definition code)))
-                         (format win "key-definition (ncurses:keybound)~19@S code: ~A~&" str (function-key-code str))))
+                ;; if a code is returned as the event key, that means that a function key has been defined,
+                ;; but the code has not been assigned a keyword name in croatoan (use add-function-key).
+                ;; The underlying ncurses/terminfo name can be accessed through key-to-string (or ncurses:keyname).
+                (number
+                 (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
+                 (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
+                 ;; decoding a char of a function key returns no useful result
+                 (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string key))
+                 (let ((str (function-key-definition code)))
+                   (format win "key-definition (ncurses:keybound)~19@S code: ~A~&" str (function-key-code str))))
 
-                      (t
-                       (format win "Unknown event key type ~A ~A" key code)))
-                    (refresh win))))
+                (t
+                 (format win "Unknown event key type ~A ~A" key code)))
+              (refresh win))))
     (clear scr)
     (add scr "Press C-q to exit." :y 0 :x 0)
     (refresh scr)

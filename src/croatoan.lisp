@@ -153,7 +153,8 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
 
 The object can be a croatoan object (like window or form) or a keymap.
 
-If event is a list of events, bind the handler to each event separately.
+If event argument is a list, bind the handler to the whole sequence
+of events (key chain).
 
 The handler can be a function object, a fbound symbol or a keymap.
 
@@ -187,6 +188,36 @@ Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
                ;; when event is a control char in caret notation, i.e. "^A"
                (setf bindings (acons (string-to-char event) handler bindings))
                (setf bindings (acons event handler bindings))))
+          ;; instead of a single event, bind a chain of events.
+          ;; the first event is a prefix key and is bound to a sub-keymap instead of a handler.
+          ;; the first event that is bound to a handler completes the chain.
+          ((listp event)
+           (labels ((bind-keys (key value node)
+                      (let ((ch (elt key 0)))
+                        (if (> (length key) 1)
+                            (let ((map (if (and (assoc ch (bindings node))
+                                                (typep (cdr (assoc ch (bindings node))) 'keymap))
+                                           (cdr (assoc ch (bindings node)))
+                                           (when value
+                                             (make-instance 'keymap)))))
+                              (when map
+                                (bind-keys (subseq key 1) value map)
+                                (if (and (assoc ch (bindings node))
+                                         (typep (cdr (assoc ch (bindings node))) 'keymap))
+                                    (unless (bindings (cdr (assoc ch (bindings node))))
+                                      (setf (bindings node) (delete ch (bindings node) :key #'car)))
+                                    (progn
+                                      (when (and (assoc ch (bindings node))
+                                                 (not (typep (cdr (assoc ch (bindings node))) 'keymap)))
+                                        (setf (bindings node) (delete ch (bindings node) :key #'car)))
+                                      (push (cons ch map) (bindings node))))))
+                            (progn
+                              (when (assoc ch (bindings node))
+                                (setf (bindings node) (delete ch (bindings node) :key #'car)))
+                              (when value
+                                (push (cons ch value) (bindings node))))))))
+             (bind-keys event handler object))))))
+
           ;; instead of a single event, we bind a handler to a list of events.
           ((listp event)
            (dolist (e event)

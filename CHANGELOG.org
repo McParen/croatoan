@@ -4,6 +4,17 @@
 
 Notable changes since v0.2 (231014), which corresponds to Quicklisp release 231021:
 
+*** Allow bind to accept event sequences (231218)
+
+- Remove the current behavior which binds a list of events to 
+  the same handler. Simply using mapc with bind is more idiomatic.
+- Remove that behavior from several examples.
+- When a list of events is now passed to bind, the handler is bound
+  to the whole event sequence (key chain).
+  For example, M-x style bindings are equal to (#\esc #\x).
+- Add example t28c to test and show the usage of key chain events.
+- Add utility functions unpair-plist, mapc-plist.
+
 *** Add support for inheritance of keymap bindings (231211)
 
 - Add a parent property to keymaps, currently only single inheritance.

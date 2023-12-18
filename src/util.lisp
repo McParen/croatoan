@@ -210,8 +210,37 @@ to it.
 
 Example 1: (pair-plist '(a b c) '(1 2 3)) => (a 1 b 2 c 3)
 
-Example 2: (pair-plist '(a b) '(1 2) '(x 3 y 4)) => (A 1 B 2 X 3 Y 4)"
+Example 2: (pair-plist '(a b) '(1 2) '(x 3 y 4)) => (A 1 B 2 X 3 Y 4)
+
+The resulting plist can be again taken apart into keys and values by
+the reverse function `unpair-plist'."
   (let ((new-plist (mapcan #'list keys values)))
     (if plist
         (nconc new-plist plist)
         new-plist)))
+
+#|
+CL-USER> (multiple-value-bind (k v) (unpair-plist '(a 1 b 2 c 3))
+           (pair-plist k v))
+(A 1 B 2 C 3)
+|#
+(defun unpair-plist (plist)
+  "Separate a plist into two lists, returned as separate values.
+
+The first list contains the keys and the second the values.
+
+Example: (unpair-plist '(a 1 b 2 c 3)) => (a b c), (1 2 3)
+
+The resulting keys and values can be combined back into the initial
+plist by the function `pair-plist'."
+  (loop for (k v) on plist by #'cddr
+        collect k into keys
+        collect v into vals
+        finally (return (values keys vals))))
+
+(defun mapc-plist (fn &rest plist)
+  "Mapc function of two args (k v) to successive keys and values in plist.
+
+The function is applied for its side effects, the results are not accumulated."
+  (multiple-value-bind (keys values) (unpair-plist plist)
+    (mapc fn keys values)))

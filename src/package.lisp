@@ -434,6 +434,8 @@
    string-width
    control-char-p
    pair-plist
+   unpair-plist
+   mapc-plist
 
    ;; variables / curses global variables
 
