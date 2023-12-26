@@ -448,6 +448,21 @@
    termattrs
    termname
 
+   ;; terminfo / curses interfaces to terminfo database
+   setupterm
+   restartterm
+   set-curterm
+   del-curterm
+   putp
+   vidattr
+   vid-attr
+   mvcur
+   tigetflag
+   tigetnum
+   tigetstr
+   tiscan-s
+   setterm
+
    ;; touch / curses refresh control routines
    touchwin
    touchline

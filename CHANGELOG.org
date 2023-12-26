@@ -4,6 +4,13 @@
 
 Notable changes since v0.2 (231014), which corresponds to Quicklisp release 231021:
 
+*** Add CFFI bindings to terminfo functions (231226)
+
+- Add most of the bindings for low-level terminfo functions.
+  Functions requiring function pointer arguments are yet to be done.
+- Add low-level examples nctest14 and nctest15 to test querying 
+  terminal capabilities.
+
 *** Allow bind to accept event sequences (231218)
 
 - Remove the current behavior which binds a list of events to 

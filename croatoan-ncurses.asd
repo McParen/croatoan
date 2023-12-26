@@ -58,6 +58,7 @@
    (:file "scroll")           ; scroll a curses window
    (:file "slk")              ; curses soft label routines
    (:file "termattrs")        ; environment query routines
+   (:file "terminfo")         ; curses interfaces to terminfo database
    (:file "touch")            ; curses refresh control routines
    (:file "util")             ; miscellaneous curses utility routines
    (:file "variables")        ; curses global variables

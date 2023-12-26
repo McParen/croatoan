@@ -1,4 +1,3 @@
-
 (in-package :de.anvi.ncurses.test)
 
 ;; here the ncurses primitive bindings should be tested.
@@ -419,3 +418,58 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
   (slk-refresh)
   (getch)
   (endwin))
+
+(defun nctest14 ()
+  "Query the terminfo database for function key capabilities."
+  (let ((scr (initscr)))
+    (keypad scr t)
+    (use-extended-names t)
+    (let* ((arr (cffi:foreign-symbol-pointer "strnames")))
+      (loop for i from 0
+            for cap = (cffi:mem-aref arr :string i)
+            do (if cap
+                   ;; only return capabilities starting with k (function keys)
+                   (when (char= (char cap 0) #\k)
+                     (format t "~A " cap))
+                   ;; mem-aref returns nil for a null-terminated array.
+                   (loop-finish))))
+    (endwin)))
+
+(defun make-invalid-pointer (size)
+  "Take a pointer size 64 bit or 32 bit, return invalid #XFFF.. pointer.
+
+The use of this pointer is to match the error response of some functions,
+for example tigetstr, which return the error code (char *) -1, which is
+an invalid pointer pointing to a negative address or to the largest
+possible address (void *) -1 == (size_t) -1."
+  ;; 64 bit, default
+  ;; #.(SB-SYS:INT-SAP #XFFFFFFFFFFFFFFFF)
+  ;; 32 bit
+  ;; #.(SB-SYS:INT-SAP #XFFFFFFFF)
+  (cffi:make-pointer (ldb (byte size 0) -1)))
+
+(defun nctest15 ()
+  "Get and print the key code of a non-standard terminal capability."
+  (let ((scr (initscr)))
+    ;; make ncurses recognize function keys
+    (keypad scr t)
+
+    (let* ((seq (tigetstr "kEND3")))
+      (cond
+        ;; invalid negative pointer
+        ((or (cffi:pointer-eq seq (make-invalid-pointer 64))
+             (cffi:pointer-eq seq (make-invalid-pointer 32)))
+         (endwin)
+         (print "Capability is not string-valued."))
+
+        ;; null pointer
+        ((cffi:pointer-eq seq (cffi:null-pointer))
+         (endwin)
+         (print "Capability absent from terminal description."))
+
+        ;; all other (valid) string pointers
+        (t
+         (let ((code (key-defined seq)))
+           (print (coerce (cffi:foreign-string-to-lisp seq) 'list))
+           (endwin)
+           (print code)))))))

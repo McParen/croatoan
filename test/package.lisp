@@ -19,6 +19,9 @@
    #:nctest11
    #:nctest12
    #:nctest13
+   ;; Query terminfo capabilities
+   #:nctest14
+   #:nctest15
 
    ;; unicode.lisp
    #:ut01

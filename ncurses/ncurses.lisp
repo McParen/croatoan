@@ -148,6 +148,9 @@ typedef uint32_t mmask_t;
 (cffi:defctype attr_t :uint32
   "The 32 bit integral type attr_t holds an OR-ed set of attributes.")
 
+;; terminal = *TERMINAL, pointer to a terminal C struct
+(cffi:defctype terminal :pointer)
+
 ;; winptr = *WINDOW
 ;; TODO: define window struct
 ;; (defctype ptr-window (:pointer (:struct window)))
