@@ -218,13 +218,6 @@ Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
                                 (push (cons ch value) (bindings node))))))))
              (bind-keys event handler object))))))
 
-          ;; instead of a single event, we bind a handler to a list of events.
-          ((listp event)
-           (dolist (e event)
-             (if (stringp e)
-                 (setf bindings (acons (string-to-char e) handler bindings))
-                 (setf bindings (acons e handler bindings))))))))
-
 (defun unbind (object event)
   "Remove the event and the handler function from object's bindings alist.
 
