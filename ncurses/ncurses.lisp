@@ -257,3 +257,23 @@ cchar_t;
 ;;(defconstant FALSE 0)
 ;;(defconstant ERROR -1)
 ;;(defconstant OK 0)
+
+(defun make-invalid-pointer (size)
+  "Take a pointer size 64 bit or 32 bit, return invalid #XFFF.. pointer.
+
+The use of this pointer is to match the error response of some functions,
+for example tigetstr, which return the error code (char *) -1, which is
+an invalid pointer pointing to a negative address or to the largest
+possible address (void *) -1 == (size_t) -1."
+  ;; 64 bit, default
+  ;; #.(SB-SYS:INT-SAP #XFFFFFFFFFFFFFFFF)
+  ;; 32 bit
+  ;; #.(SB-SYS:INT-SAP #XFFFFFFFF)
+  (cffi:make-pointer (ldb (byte size 0) -1)))
+
+(defun invalid-pointer-p (ptr)
+  "Return t if ptr is a pointer of type (void *) -1 or (char *) -1.
+
+The function checks both 64-bit and 32-bit CFFI pointers."
+  (or (cffi:pointer-eq ptr (make-invalid-pointer 64))
+      (cffi:pointer-eq ptr (make-invalid-pointer 32))))

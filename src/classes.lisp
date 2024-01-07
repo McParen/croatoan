@@ -50,7 +50,7 @@ component +--> widget ---+--> window  +--> screen
     :initform      nil
     :reader        event-code
     :type          (or null integer)
-    :documentation "Integer code representing the character or function key as returned by ncurses."))
+    :documentation "Integer code representing the character or function key as returned by ncurses:getch or get_wch."))
 
   (:documentation  ""))
 
@@ -82,7 +82,7 @@ component +--> widget ---+--> window  +--> screen
     :initform      nil
     :type          (or null cons)
     :accessor      bindings
-    :documentation "Alist of events and handler functions.
+    :documentation "Alist of events and handler functions (or sub-keymaps).
 
 When the bindings are provided not as an alist, but as an plist for convenience, convert the plist to an alist.
 

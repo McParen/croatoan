@@ -362,6 +362,8 @@
    mevent
    ERROR
    OK
+   make-invalid-pointer
+   invalid-pointer-p
 
    ;; opaque / curses window properties
    is-cleared

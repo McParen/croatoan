@@ -435,41 +435,67 @@ The goal is obviously to make the cchar_t usable under both ABI5 and ABI6."
                    (loop-finish))))
     (endwin)))
 
-(defun make-invalid-pointer (size)
-  "Take a pointer size 64 bit or 32 bit, return invalid #XFFF.. pointer.
-
-The use of this pointer is to match the error response of some functions,
-for example tigetstr, which return the error code (char *) -1, which is
-an invalid pointer pointing to a negative address or to the largest
-possible address (void *) -1 == (size_t) -1."
-  ;; 64 bit, default
-  ;; #.(SB-SYS:INT-SAP #XFFFFFFFFFFFFFFFF)
-  ;; 32 bit
-  ;; #.(SB-SYS:INT-SAP #XFFFFFFFF)
-  (cffi:make-pointer (ldb (byte size 0) -1)))
-
 (defun nctest15 ()
-  "Get and print the key code of a non-standard terminal capability."
+  "Get and print the description and code of a non-standard terminal capability."
   (let ((scr (initscr)))
-    ;; make ncurses recognize function keys
+    ;; make ncurses recognize function keys as events and return their key codes
     (keypad scr t)
-
-    (let* ((seq (tigetstr "kEND3")))
+    (endwin)
+    ;; return the escape sequence associated with terminal capability kEND3
+    ;; return a pointer to char (but not necessarily a valid string)
+    (let* ((ptr (tigetstr "kf0")))
       (cond
         ;; invalid negative pointer
-        ((or (cffi:pointer-eq seq (make-invalid-pointer 64))
-             (cffi:pointer-eq seq (make-invalid-pointer 32)))
-         (endwin)
+        ((invalid-pointer-p ptr)
          (print "Capability is not string-valued."))
 
-        ;; null pointer
-        ((cffi:pointer-eq seq (cffi:null-pointer))
-         (endwin)
-         (print "Capability absent from terminal description."))
+        ((cffi:null-pointer-p ptr)
+         (print "Capability canceled or absent from terminal description."))
+
+        ;; null char (=empty string)
+        ((= (cffi:mem-aref ptr :char 0) 0)
+         (print "Capability canceled or absent from terminal description."))
 
         ;; all other (valid) string pointers
-        (t
-         (let ((code (key-defined seq)))
-           (print (coerce (cffi:foreign-string-to-lisp seq) 'list))
-           (endwin)
-           (print code)))))))
+        (t (let ((code (key-defined ptr)))
+             (print (coerce (cffi:foreign-string-to-lisp ptr) 'list))
+             (print code)))))))
+
+;; https://openbook.rheinwerk-verlag.de/linux_unix_programmierung/Kap13-001.htm
+(defun nctest16 ()
+  "Test terminfo functions tigetflag, tigetnum, tigetstr."
+  (let* ((scr (initscr))
+         (*print-right-margin* COLS))
+    (keypad scr t)
+    (endwin)
+    ;; bolean caps
+    (dolist (i (list "am" "bm" "bce" "km"))
+      (let* ((val (tigetflag i)))
+        (case val
+          (-1 (format t "~10A is not a boolean capability~&" i))
+          (0  (format t "~10A is absent from terminal description~&" i))
+          (t  (format t "~10A ~A~&" i val)))))
+    (terpri)
+    ;; numeric caps
+    (dolist (i (list "cols" "lines" "colors" "pairs" "test"))
+      (let* ((val (tigetnum i)))
+        (case val
+          (-2 (format t "~10A is not a numeric capability~&" i))
+          (-1 (format t "~10A is absent from terminal description~&" i))
+          (t  (format t "~10A ~A~&" i val)))))
+    (terpri)
+    ;; string caps
+    (dolist (i (list "cup" "kf0" "kFT" "kEND4" "flash" "hpa"))
+      (let* ((ptr (tigetstr i)))
+        (cond
+          ;; pointer to xFFFFFFFFF
+          ((invalid-pointer-p ptr)
+           (format t "~10A is not a string capability~&" i))
+          ;; null pointer
+          ((cffi:null-pointer-p ptr)
+           (format t "~10A is canceled or absent from terminal description~&" i))
+          ;; pointer to chars = strings
+          (t
+           (format t "~10A ~A~&" i
+                   (substitute "\\E" #\esc
+                               (coerce (cffi:foreign-string-to-lisp ptr) 'list)))))))))

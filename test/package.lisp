@@ -22,6 +22,7 @@
    ;; Query terminfo capabilities
    #:nctest14
    #:nctest15
+   #:nctest16
 
    ;; unicode.lisp
    #:ut01
@@ -155,6 +156,8 @@
    #:t31b
    #:t31c
    #:t32
+   #:t32a
+   #:t32b
    #:t33
    #:t34
    #:t35

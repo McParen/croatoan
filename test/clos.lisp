@@ -3829,7 +3829,11 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (bind scr #\d #'clear)
 
     ;; u unbinds all keys other than q
-    (bind scr #\u (lambda () (unbind scr '(#\a #\b #\d "^a" "^b" "^d"))))
+    (bind scr #\u
+          (lambda ()
+            (mapc (lambda (e)
+                    (unbind scr e))
+                  '(#\a #\b #\d "^a" "^b" "^d"))))
 
     (clear scr)
     (add-string scr "Type a, b or d with or without Ctrl. Type q to quit.")
@@ -3987,6 +3991,16 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     (bind scr (list #\can #\1)
           (lambda (win event)
             (format win "C-x 1: last event ~A~&" (event-key event))))
+
+    ;; ^X ^Y 2
+    (bind scr (list #\can "^Y" #\2)
+          (lambda (win event)
+            (format win "C-x C-y 2: last event ~A~&" (event-key event))))
+
+    ;; Type u to unbind the above binding (equivalent to binding to nil)
+    (bind scr #\u
+          (lambda ()
+            (unbind scr (list #\can "^Y" #\2))))
 
     ;; Binding the Alt (or Meta) modifier to a character event
     ;; is equivalent to providing the escape character as the prefix key.
@@ -4256,6 +4270,62 @@ Press C-j, C-m, C-i, C-h to see the difference."
     (add scr "Press C-q to exit." :y 0 :x 0)
     (refresh scr)
     (run-event-loop scr)))
+
+(defun t32a ()
+  "Display non-standard keycodes > 512."
+  (with-screen (scr :input-echoing         nil
+                    :process-control-chars nil
+                    :input-blocking        t
+                    :enable-function-keys  t
+                    :cursor-visible        nil
+                    :use-terminal-colors   t)
+    (setf *print-right-margin* (width scr))
+
+    (bind scr #\q 'exit-event-loop)
+    (clear scr)
+
+    (loop for i from 517 to 537 do
+      (format scr "~A -- " i)
+      (format scr "~20@A -- " (key-code-to-name i))
+      (format scr "key-to-string  (ncurses:keyname) ~12@A " (key-to-string i))
+      (format scr "char-to-string (ncurses:unctrl)  ~12@A " (char-to-string i))
+      (let ((str (function-key-definition i)))
+        (format scr "key-definition (ncurses:keybound)~12@S code: ~A~&" str (function-key-code str))))
+
+    (refresh scr)
+    (run-event-loop scr)))
+
+;; https://www.invisible-island.net/xterm/xterm-function-keys.html
+;; https://gist.github.com/ketsuban/651e24c2d59506922d928c65c163d79c
+(defun t32b ()
+  "Print the name, sequence and code of standard and non-standard function keys."
+  (with-screen (scr :enable-function-keys t :cursor-visible nil)
+    (dolist (cap (list "kcub1"
+                       "kcud1"
+                       "kcuf1"
+                       "kcuu1"
+                       "kf0"
+                       "kf1"
+                       "kf12"
+                       "kf13"
+                       "kf60"
+                       "kf63"
+                       "ka1"
+                       "kb2"
+                       "kRT"
+                       "kHOM6"
+                       "kUP7"
+                       "kc2"))
+      (let ((seq (tigetstr cap)))
+        (case seq
+          (-1 (format scr "~8A not a string cap~&" cap))
+          (0  (format scr "~8A canceled or absent~&" cap))
+          ;; If tigetstr returns a sequence, return the corresponding code.
+          (t  (let ((code (function-key-code seq))
+                    (seq2 (substitute "\\E" #\esc (coerce seq 'list))))
+                (format scr "~8A ~5A ~{~A~}~&" cap code seq2))))))
+    (refresh scr)
+    (wait-for-event scr)))
 
 (defun t33 ()
   "Showing the complex-string utility functions"

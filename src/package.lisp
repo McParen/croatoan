@@ -416,6 +416,9 @@
 
    ;; termattrs / environment query routines
 
+   ;; terminfo / curses interfaces to terminfo database
+   tigetstr
+
    ;; touch / curses refresh control routines
    touch
 

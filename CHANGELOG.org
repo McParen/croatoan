@@ -4,6 +4,16 @@
 
 Notable changes since v0.2 (231014), which corresponds to Quicklisp release 231021:
 
+*** Add wrapper and tests for terminfo function tigetstr (240107)
+
+- Add C helper functions make-invalid-pointer, invalid-pointer-p
+- Add wrapper tigetstr to avoid dealing with C pointers
+- Add nctest16, t32a, t32b to test non-standard function keys
+- Allow bind to accept control chars in caret notation (^X)
+- Allow unbind to accept key chains
+- Update bind/unbind examples
+- Update copyrigt year to 2024
+
 *** Add CFFI bindings to terminfo functions (231226)
 
 - Add most of the bindings for low-level terminfo functions.

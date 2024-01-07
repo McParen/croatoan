@@ -1,6 +1,6 @@
 (in-package :de.anvi.ncurses)
 
-;;; addstr 
+;;; addstr
 ;;; add a string of characters to a curses window and advance cursor
 ;;; http://invisible-island.net/ncurses/man/curs_addstr.3x.html
 ;;; http://www.manpagez.com/man/3/curs_addstr/

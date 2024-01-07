@@ -5,8 +5,8 @@
 (defun alive-neighbors-count (world y x)
   "Take the coordinates of one cell, return a number of its alive neighbors."
   (destructuring-bind (rows cols) (array-dimensions world)
-    (loop for i from (max (1- y) 0) to (min (1+ y) (1- rows)) sum 
-         (loop for j from (max (1- x) 0) to (min (1+ x) (1- cols)) 
+    (loop for i from (max (1- y) 0) to (min (1+ y) (1- rows)) sum
+         (loop for j from (max (1- x) 0) to (min (1+ x) (1- cols))
             when (and (not (and (= i y) (= j x)))
                       (aref world i j))
             count i))))
@@ -59,7 +59,7 @@
       (bind scr #\g (lambda (w e)
                       (declare (ignore w e))
                       (loop for pos in init do (setf (apply #'aref world pos) t))))
-      
+
       ;; add an acorn
       (bind scr #\f
             (lambda (w e)
@@ -68,7 +68,7 @@
                      (acorn (mapcar (lambda (pos) (mapcar #'+ pos offset))
                                    '((0 1) (1 3) (2 0) (2 1) (2 4) (2 5) (2 6)))))
                 (loop for pos in acorn do (setf (apply #'aref world pos) t)))))
-      
+
       ;; accelerate
       (bind scr #\a (lambda (w e)
                       (declare (ignore w e))

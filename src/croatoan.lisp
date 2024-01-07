@@ -184,7 +184,9 @@ Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
   (with-accessors ((bindings bindings)) object
     (cond ((or (null event)
                (atom event))
-           (if (stringp event)
+           (if (and (stringp event)
+                    (= (length event) 2)
+                    (char= (char event 0) #\^))
                ;; when event is a control char in caret notation, i.e. "^A"
                (setf bindings (acons (string-to-char event) handler bindings))
                (setf bindings (acons event handler bindings))))
@@ -193,27 +195,46 @@ Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
           ;; the first event that is bound to a handler completes the chain.
           ((listp event)
            (labels ((bind-keys (key value node)
-                      (let ((ch (elt key 0)))
+                      (let ((ch (if (and (stringp (elt key 0))
+                                         (= (length (elt key 0)) 2)
+                                         (char= (char (elt key 0) 0) #\^))
+                                    (string-to-char (elt key 0))
+                                    (elt key 0))))
                         (if (> (length key) 1)
+                            ;; recursively bind prefix keys to sub-keymaps
+                            ;; first: get an existing keymap or make a new one
                             (let ((map (if (and (assoc ch (bindings node))
                                                 (typep (cdr (assoc ch (bindings node))) 'keymap))
+                                           ;; if a keymap already exists.
                                            (cdr (assoc ch (bindings node)))
+                                           ;; make a new keymap only if value is non-nil.
                                            (when value
                                              (make-instance 'keymap)))))
+                              ;; then proceed with the recursion but only if a map is available
                               (when map
+                                ;; first bind the sub-keys to the map
                                 (bind-keys (subseq key 1) value map)
+                                ;; if there already is an existing binding and the value is a keymap
                                 (if (and (assoc ch (bindings node))
                                          (typep (cdr (assoc ch (bindings node))) 'keymap))
+                                    ;; delete the binding (and thus the keymap) if the keymap is empty.
+                                    ;; this ensures that the keymaps are deleted when their last binding is deleted.
                                     (unless (bindings (cdr (assoc ch (bindings node))))
                                       (setf (bindings node) (delete ch (bindings node) :key #'car)))
                                     (progn
+                                      ;; if there already is a binding, and it is not a keymap
+                                      ;; overwrite it with the new keymap binding.
                                       (when (and (assoc ch (bindings node))
                                                  (not (typep (cdr (assoc ch (bindings node))) 'keymap)))
                                         (setf (bindings node) (delete ch (bindings node) :key #'car)))
                                       (push (cons ch map) (bindings node))))))
+                            ;; if length = 1 we're at the last event which is bound to the actual value
                             (progn
+                              ;; again, delete the old binding before pushing a new one
                               (when (assoc ch (bindings node))
                                 (setf (bindings node) (delete ch (bindings node) :key #'car)))
+                              ;; but push the new one only if value is non-nil,
+                              ;; which means value nil deletes the binding.
                               (when value
                                 (push (cons ch value) (bindings node))))))))
              (bind-keys event handler object))))))
@@ -221,19 +242,19 @@ Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
 (defun unbind (object event)
   "Remove the event and the handler function from object's bindings alist.
 
-If event is a list of events, remove each event separately from the alist."
+If event argument is a list, remove the whole sequence of events (key chain)."
   (with-accessors ((bindings bindings)) object
     (cond ((or (null event)
                (atom event))
-           (if (stringp event)
+           (if (and (stringp event)
+                    (= (length event) 2)
+                    (char= (char event 0) #\^))
                ;; when event is a control char in caret notation, i.e. "^A"
                (setf bindings (remove (string-to-char event) bindings :key #'car))
                (setf bindings (remove event bindings :key #'car))))
+          ;; to unbind a key chain, bind it to nil
           ((listp event)
-           (dolist (e event)
-             (if (stringp e)
-                 (setf bindings (remove (string-to-char e) bindings :key #'car))
-                 (setf bindings (remove e bindings :key #'car))))))))
+           (bind object event nil)))))
 
 (defparameter *keymaps* nil "An alist of available keymaps.")
 

@@ -60,6 +60,7 @@
    (:file "refresh")
    (:file "scroll")
    (:file "slk")              ; soft function-key labels
+   (:file "terminfo")         ; curses interfaces to terminfo database
    (:file "touch")
    (:file "util")             ; miscellaneous utils
    (:file "wresize")
