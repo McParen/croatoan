@@ -4,6 +4,15 @@
 
 Notable changes since v0.2 (231014), which corresponds to Quicklisp release 231021:
 
+*** Add extended function keys to the list of recognized events (240127)
+
+- After initializing the screen, check whether common extended
+  function keys given by their xterm name are supported by the terminal.
+- In most cases these extended keys are existing function keys with
+  additional modifiers, like kRIT8 = Shift-Ctrl-Alt-Right
+- Add the supported keys to the key alist, so they can be returned as
+  valid events by get-event (getch).
+
 *** Add wrapper and tests for terminfo function tigetstr (240107)
 
 - Add C helper functions make-invalid-pointer, invalid-pointer-p

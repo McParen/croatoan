@@ -421,7 +421,14 @@ primary - most specific first (call-next-method)
       ;; we dont need to scroll the window AND the menu at the same time.
       (unless (typep win 'menu)
         (ncurses:scrollok winptr scrolling-enabled-p))
+
       (ncurses:keypad winptr function-keys-enabled-p)
+      ;; If the window is a screen, check whether some common extended xterm-style function keys
+      ;; are supported by the current terminal and add them to key-alist.
+      (when (and (eq (type-of win) 'screen)
+                 function-keys-enabled-p)
+        (add-extended-function-keys))
+
       (when stackedp (stack-push win *main-stack*))
       ;; if there is a style parameter, it overrides any other arg (fgcolor, bgcolor, background, attributes)
       (when style

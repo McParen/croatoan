@@ -24,6 +24,7 @@ The window from which the char is read is automatically refreshed."
   (ncurses:has-key key-char))
 
 (defparameter *key-alist*
+  ;; keys above the first 0-255 chars cannot fit in a char variable any more.
   '((:key-code-yes              . 256)
     ;; returned from wide get functions when a function key is returned (but only when keypad is enabled).
     ;; when they return a normal wide char wchar_t, they return OK.
@@ -201,6 +202,163 @@ https://pubs.opengroup.org/onlinepubs/7908799/xcurses/curses.h.html
     (:key-event                   . 411) ; only available if ncurses is built with --enable-wgetch-events
     (:key-max                     . 511))) ; maximum key value
 
+#|
+
+Extended function keys (function keys with modifiers):
+
+- Function key modifiers are encoded in the capability name.
+
+- The first character, k, shows that the capability is a function key.
+
+- The code for shift, 1, is omitted, because shifted keys are already
+  encoded by upcased characters.
+
+- The modifier code, when decreased by 1, contains a bitmask for the
+  three supported modifiers Shift, Alt and Control and the combinations.
+
+--
+
+Modifier encoding:
+
+code    dec     bin     mods
+----------------------------------------------
+1       0       000
+2       1       001     S       Shift
+3       2       010     A             Alt
+4       3       011     AS      Shift Alt
+5       4       100     C                 Ctrl
+6       5       101     SC      Shift     Ctrl
+7       6       110     AC            Alt Ctrl
+8       7       111     SAC     Shift Alt Ctrl
+
+--
+
+Terminfo capability table:
+
+key     nomod   S       A       SA      C       SC      AC      SAC
+---------------------------------------------------------------------
+up      kcuu1   kUP     kUP3    kUP4    kUP5    kUP6    kUP7    kUP8
+down    kcud1   kDN     kDN3    kDN4    kDN5    kDN6    kDN7    kDN8
+left    kcuf1   kLFT    kLFT3   kLFT4   kLFT5   kLFT6   kLFT7   kLFT8
+right   kcub1   kRIT    kRIT3   kRIT4   kRIT5   kRIT6   kRIT7   kRIT8
+end     kend    kEND    kEND3   kEND4   kEND5   kEND6   kEND7   kEND8
+home    khome   kHOM    kHOM3   kHOM4   kHOM5   kHOM6   kHOM7   kHOM8
+insert  kich1   kIC     kIC3    kIC4    kIC5    kIC6    kIC7    kIC8
+delete  kdch1   kDC     kDC3    kDC4    kDC5    kDC6    kDC7    kDC8
+ppage   kpp     kPRV    kPRV3   kPRV4   kPRV5   kPRV6   kPRV7   kPRV8
+npage   knp     kNXT    kNXT3   kNXT4   kNXT5   kNXT6   kNXT7   kNXT8
+f1      kf1     kf13    kf49    kf61    kf25    kf37
+f2      kf2     kf14    kf50    kf62    kf26    kf38
+f3      kf3     kf15    kf51    kf63    kf27    kf39
+f4      kf4     kf16    kf52            kf28    kf40
+f5      kf5     kf17    kf53            kf29    kf41
+f6      kf6     kf18    kf54            kf30    kf42
+f7      kf7     kf19    kf55            kf31    kf43
+f8      kf8     kf20    kf56            kf32    kf44
+f9      kf9     kf21    kf57            kf33    kf45
+f10     kf10    kf22    kf58            kf34    kf46
+f11     kf11    kf23    kf59            kf35    kf47
+f12     kf12    kf24    kf60            kf36    kf48
+
+|#
+
+;; Modifiers are given in the order they occur in the bitmask: shift-alt-ctrl.
+(defparameter *extended-key-caps*
+  '(;; up
+    ("kUP3" . :key-alt-arrow-up)
+    ("kUP4" . :key-shift-alt-arrow-up)
+    ("kUP5" . :key-ctrl-arrow-up)
+    ("kUP6" . :key-shift-ctrl-arrow-up)
+    ("kUP7" . :key-alt-ctrl-arrow-up)
+    ("kUP8" . :key-shift-alt-ctrl-arrow-up)
+    ;; down
+    ("kDN3" . :key-alt-arrow-down)
+    ("kDN4" . :key-shift-alt-arrow-down)
+    ("kDN5" . :key-ctrl-arrow-down)
+    ("kDN6" . :key-shift-ctrl-arrow-down)
+    ("kDN7" . :key-alt-ctrl-arrow-down)
+    ("kDN8" . :key-shift-alt-ctrl-arrow-down)
+    ;; left
+    ("kLFT3" . :key-alt-arrow-left)
+    ("kLFT4" . :key-shift-alt-arrow-left)
+    ("kLFT5" . :key-ctrl-arrow-left)
+    ("kLFT6" . :key-shift-ctrl-arrow-left)
+    ("kLFT7" . :key-alt-ctrl-arrow-left)
+    ("kLFT8" . :key-shift-alt-ctrl-arrow-left)
+    ;; right
+    ("kRIT3" . :key-alt-arrow-right)
+    ("kRIT4" . :key-shift-alt-arrow-right)
+    ("kRIT5" . :key-ctrl-arrow-right)
+    ("kRIT6" . :key-shift-ctrl-arrow-right)
+    ("kRIT7" . :key-alt-ctrl-arrow-right)
+    ("kRIT8" . :key-shift-alt-ctrl-arrow-right)
+    ;; end
+    ("kEND3" . :key-alt-end)
+    ("kEND4" . :key-shift-alt-end)
+    ("kEND5" . :key-ctrl-end)
+    ("kEND6" . :key-shift-ctrl-end)
+    ("kEND7" . :key-alt-ctrl-end)
+    ("kEND8" . :key-shift-alt-ctrl-end)
+    ;; home
+    ("kHOM3" . :key-alt-home)
+    ("kHOM4" . :key-shift-alt-home)
+    ("kHOM5" . :key-ctrl-home)
+    ("kHOM6" . :key-shift-ctrl-home)
+    ("kHOM7" . :key-alt-ctrl-home)
+    ("kHOM8" . :key-shift-alt-ctrl-home)
+    ;; ins
+    ("kIC3" . :key-alt-insert-char)
+    ("kIC4" . :key-shift-alt-insert-char)
+    ("kIC5" . :key-ctrl-insert-char)
+    ("kIC6" . :key-shift-ctrl-insert-char)
+    ("kIC7" . :key-alt-ctrl-isnert-char)
+    ("kIC8" . :key-shift-alt-ctrl-insert-char)
+    ;; del
+    ("kDC3" . :key-alt-delete-char)
+    ("kDC4" . :key-shift-alt-delete-char)
+    ("kDC5" . :key-ctrl-delete-char)
+    ("kDC6" . :key-shift-ctrl-delete-char)
+    ("kDC7" . :key-alt-ctrl-delete-char)
+    ("kDC8" . :key-shift-alt-ctrl-delete-char)
+    ;; ppage, pgup
+    ("kPRV3" . :key-alt-previous-page)
+    ("kPRV4" . :key-shift-alt-previous-page)
+    ("kPRV5" . :key-ctrl-previous-page)
+    ("kPRV6" . :key-shift-ctrl-previous-page)
+    ("kPRV7" . :key-alt-ctrl-previous-page)
+    ("kPRV8" . :key-shift-alt-ctrl-previous-page)
+    ;; npage, pgdn
+    ("kNXT3" . :key-alt-next-page)
+    ("kNXT4" . :key-shift-alt-next-page)
+    ("kNXT5" . :key-ctrl-next-page)
+    ("kNXT6" . :key-shift-ctrl-next-page)
+    ("kNXT7" . :key-alt-ctrl-next-page)
+    ("kNXT8" . :key-shift-alt-ctrl-next-page)))
+
+;; called from :around window after enabling function keys.
+(defun add-extended-function-keys ()
+  "Check if common extended function keys are supported by the terminal.
+
+In most cases these extended keys are existing function keys with
+additional modifiers.
+
+If the keys are supported, add them to the key alist, so they can be
+returned as valid events."
+  (let (new-keys)
+    (mapc (lambda (x)
+            (destructuring-bind (cap . name) x
+              (let ((seq (tigetstr cap)))
+                ;; if a key is supported by the terminal, tigetstr will
+                ;; return its definition, i.e. the escape sequence.
+                (when (and (stringp seq)
+                           (function-key-code seq))
+                  ;; once we have the escape sequence, we can retrieve
+                  ;; the key code which will be returned by getch.
+                  (push (cons name (function-key-code seq)) new-keys)))))
+          *extended-key-caps*)
+    (when new-keys
+      (setf *key-alist* (append *key-alist* (nreverse new-keys))))))
+
 (defmacro access-alist (key find-fn test-fn get-value-fn default)
   "Helper macro for 'key-name-to-code' and 'key-code-to-name'."
   (let ((pair (gensym)))
@@ -296,7 +454,10 @@ get-wide-char/event has a different way to check for function keys."
 ;; todo: mouse, resizekey
 
 (defun get-event (window)
-  "Read a single-byte char from window, return it and its integer code as a second value.
+  "Read a single-byte char from window, return an event object.
+
+The object contains the event key (a simple character or a keyword for
+function keys) and the integer key code.
 
 The following chars can be returned:
 
