@@ -26,6 +26,16 @@
    save-excursion
    dogrid
 
+   ;; struct key
+   key
+   key-p
+   key-name
+   key-ctrl
+   key-alt
+   key-shift
+   copy-key
+   make-key
+
    ;; classes
    complex-char
    complex-string
@@ -286,6 +296,8 @@
    key-supported-p
    key-name-to-code
    key-code-to-name
+   code-key
+   key-code
    delete-function-key
    add-function-key
    function-key-p

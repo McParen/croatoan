@@ -2,21 +2,21 @@
 
 ;; unused
 (defparameter *mouse-button-event-bitmask-alist*
-  '((:released       . #o01) ; 00001
-    (:pressed        . #o02) ; 00010
-    (:clicked        . #o04) ; 00100
-    (:double-clicked . #o10) ; 01000
-    (:triple-clicked . #o20) ; 10000
+  '((:release        . #o01) ; 00001
+    (:press          . #o02) ; 00010
+    (:click          . #o04) ; 00100
+    (:double-click   . #o10) ; 01000
+    (:triple-click   . #o20) ; 10000
     (:reserved-event . #o40))) ; unused in NCURSES_MOUSE_VERSION 2
 
 ;; events for buttons 1-5
 (defmacro mouse-bitmask (button event)
   (let ((event-bitmasks
-         '((:released       . #o01)
-           (:pressed        . #o02)
-           (:clicked        . #o04)
-           (:double-clicked . #o10)
-           (:triple-clicked . #o20)
+         '((:release        . #o01)
+           (:press          . #o02)
+           (:click          . #o04)
+           (:double-click   . #o10)
+           (:triple-click   . #o20)
            (:reserved-event . #o40)))
         ;; NCURSES_MOUSE_VERSION 1 => 6
         ;; NCURSES_MOUSE_VERSION 2 => 5 (currently used) for ncurses 6.3, 5-button mice and mouse wheels
@@ -36,31 +36,31 @@
 ;; position     29
 ;; unused    30-32 bit
 (defparameter *mouse-event-bitmask-alist*
-  `((:button-1-released       . ,(mouse-bitmask 1 :released))
-    (:button-1-pressed        . ,(mouse-bitmask 1 :pressed))
-    (:button-1-clicked        . ,(mouse-bitmask 1 :clicked))
-    (:button-1-double-clicked . ,(mouse-bitmask 1 :double-clicked))
-    (:button-1-triple-clicked . ,(mouse-bitmask 1 :triple-clicked))
-    (:button-2-released       . ,(mouse-bitmask 2 :released))
-    (:button-2-pressed        . ,(mouse-bitmask 2 :pressed))
-    (:button-2-clicked        . ,(mouse-bitmask 2 :clicked))
-    (:button-2-double-clicked . ,(mouse-bitmask 2 :double-clicked))
-    (:button-2-triple-clicked . ,(mouse-bitmask 2 :triple-clicked))
-    (:button-3-released       . ,(mouse-bitmask 3 :released))
-    (:button-3-pressed        . ,(mouse-bitmask 3 :pressed))
-    (:button-3-clicked        . ,(mouse-bitmask 3 :clicked))
-    (:button-3-double-clicked . ,(mouse-bitmask 3 :double-clicked))
-    (:button-3-triple-clicked . ,(mouse-bitmask 3 :triple-clicked))
-    (:button-4-released       . ,(mouse-bitmask 4 :released))
-    (:button-4-pressed        . ,(mouse-bitmask 4 :pressed))
-    (:button-4-clicked        . ,(mouse-bitmask 4 :clicked))
-    (:button-4-double-clicked . ,(mouse-bitmask 4 :double-clicked))
-    (:button-4-triple-clicked . ,(mouse-bitmask 4 :triple-clicked))
-    (:button-5-released       . ,(mouse-bitmask 5 :released))
-    (:button-5-pressed        . ,(mouse-bitmask 5 :pressed))
-    (:button-5-clicked        . ,(mouse-bitmask 5 :clicked))
-    (:button-5-double-clicked . ,(mouse-bitmask 5 :double-clicked))
-    (:button-5-triple-clicked . ,(mouse-bitmask 5 :triple-clicked))
+  `((:button-1-release      . ,(mouse-bitmask 1 :release))
+    (:button-1-press        . ,(mouse-bitmask 1 :press))
+    (:button-1-click        . ,(mouse-bitmask 1 :click))
+    (:button-1-double-click . ,(mouse-bitmask 1 :double-click))
+    (:button-1-triple-click . ,(mouse-bitmask 1 :triple-click))
+    (:button-2-release      . ,(mouse-bitmask 2 :release))
+    (:button-2-press        . ,(mouse-bitmask 2 :press))
+    (:button-2-click        . ,(mouse-bitmask 2 :click))
+    (:button-2-double-click . ,(mouse-bitmask 2 :double-click))
+    (:button-2-triple-click . ,(mouse-bitmask 2 :triple-click))
+    (:button-3-release      . ,(mouse-bitmask 3 :release))
+    (:button-3-press        . ,(mouse-bitmask 3 :press))
+    (:button-3-click        . ,(mouse-bitmask 3 :click))
+    (:button-3-double-click . ,(mouse-bitmask 3 :double-click))
+    (:button-3-triple-click . ,(mouse-bitmask 3 :triple-click))
+    (:button-4-release      . ,(mouse-bitmask 4 :release))
+    (:button-4-press        . ,(mouse-bitmask 4 :press))
+    (:button-4-click        . ,(mouse-bitmask 4 :click))
+    (:button-4-double-click . ,(mouse-bitmask 4 :double-click))
+    (:button-4-triple-click . ,(mouse-bitmask 4 :triple-click))
+    (:button-5-release      . ,(mouse-bitmask 5 :release))
+    (:button-5-press        . ,(mouse-bitmask 5 :press))
+    (:button-5-click        . ,(mouse-bitmask 5 :click))
+    (:button-5-double-click . ,(mouse-bitmask 5 :double-click))
+    (:button-5-triple-click . ,(mouse-bitmask 5 :triple-click))
 
     ;; Unused in NCURSES_MOUSE_VERSION 2
     ;;(:button-1-reserved-event . ,(mouse-bitmask 1 :reserved-event))
@@ -108,7 +108,7 @@ The values in alist should be 32bit integers with only one single bit switched o
 
 (format t "~32,'0b" bitmask)
 
-(let ((keys '(:BUTTON-1-CLICKED :BUTTON-4-PRESSED))
+(let ((keys '(:BUTTON-1-CLICK :BUTTON-4-PRESS))
                (alist *mouse-event-bitmask-alist*))
            (equalp keys (bitmask-to-keyword (keyword-to-bitmask keys alist)
                                             (butlast alist))))

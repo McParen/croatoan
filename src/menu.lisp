@@ -957,27 +957,27 @@ when the new position is within collection size (row major order)."
 
 ;; all of these take two arguments: menu event
 ;; there is no :default action, all other events are ignored for menus.
-(define-keymap menu-map
-  (:key-arrow-up    'move-up)
-  (:key-arrow-down  'move-down)
-  (:key-arrow-left  'move-left)
-  (:key-arrow-right 'move-right))
+(define-keymap menu-map ()
+  (:up    'move-up)
+  (:down  'move-down)
+  (:left  'move-left)
+  (:right 'move-right))
 
-(define-keymap checklist-map
+(define-keymap checklist-map ()
   (#\x    'toggle-item-checkbox)
-  (:key-arrow-up    'move-up)
-  (:key-arrow-down  'move-down)
-  (:key-arrow-left  'move-left)
-  (:key-arrow-right 'move-right))
+  (:up    'move-up)
+  (:down  'move-down)
+  (:left  'move-left)
+  (:right 'move-right))
 
-(define-keymap menu-window-map
+(define-keymap menu-window-map ()
   ;; q doesnt return a value, just nil, i.e. in the case of a checklist, an empty list.
   (#\q    'exit-menu-event-loop)
   (#\x    'toggle-item-checkbox)
-  (:key-arrow-up    'move-up)
-  (:key-arrow-down  'move-down)
-  (:key-arrow-left  'move-left)
-  (:key-arrow-right 'move-right)
+  (:up    'move-up)
+  (:down  'move-down)
+  (:left  'move-left)
+  (:right 'move-right)
   ;; return the selected item or all checked items, then exit the menu like q.
   (#\newline 'accept-selection))
 

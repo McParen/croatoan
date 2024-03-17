@@ -13,9 +13,10 @@ The window from which the char is read is automatically refreshed."
           (t
            (ncurses:wgetch winptr)))))
 
-;; takes a simple C chtype and puts it back into the read buffer.
-;; it will be read with the next get-char.
 (defun unget-char (chtype)
+  "Take a simple C chtype and put it back into the read buffer.
+
+It will be read with the next call to get-char."
   (ncurses:ungetch chtype))
 
 ;; takes an C int denoting a key. returns t or nil.
@@ -23,184 +24,216 @@ The window from which the char is read is automatically refreshed."
 (defun key-supported-p (key-char)
   (ncurses:has-key key-char))
 
+;; keys above the first 0-255 chars cannot fit in a char variable to be returned by getch.
+;; keys with codes 0400 (256) to 0777 (511) are hard-coded (Solaris).
+;; 0400 is returned from get_wch when a function key is returned (but only when keypad is enabled).
+;; when they return a normal wide char wchar_t, they return OK. (see get_wch.lisp/get-wide-char).
 (defparameter *key-alist*
-  ;; keys above the first 0-255 chars cannot fit in a char variable any more.
-  '((:key-code-yes              . 256)
-    ;; returned from wide get functions when a function key is returned (but only when keypad is enabled).
-    ;; when they return a normal wide char wchar_t, they return OK.
+                                       ; #define       oct   dec  cap  curses.h comment
+  '((#o400 . :key-code-yes)            ; KEY_CODE_YES  0400  256       /* A wchar_t contains a key code */
+    (#o401 . #s(key :name :break))     ; KEY_BREAK     0401  257       /* Break key (unreliable) */
+                                       ; KEY_MIN       0401  257       /* Minimum curses key */
+    (#o402 . #s(key :name :down))      ; KEY_DOWN      0402  258  kd   /* down-arrow key */
+    (#o403 . #s(key :name :up))        ; KEY_UP        0403  259  ku   /* up-arrow key */
+    (#o404 . #s(key :name :left))      ; KEY_LEFT      0404  260  kl   /* left-arrow key */
+    (#o405 . #s(key :name :right))     ; KEY_RIGHT     0405  261  kr   /* right-arrow key */
+    (#o406 . #s(key :name :home))      ; KEY_HOME      0406  262  kh   /* home key */
+    (#o407 . #s(key :name :backspace)) ; KEY_BACKSPACE 0407  263  kb   /* backspace key */
+    (#o410 . #s(key :name :f0))        ; KEY_F0        0410  264       /* Function keys. Space for 64 keys. */
+                                       ; KEY_F(n)      (KEY_F0+(n))    /* Value of function key n */
+    ;; F1 to F12
+    (#o411 . #s(key :name :f1))
+    (#o412 . #s(key :name :f2))
+    (#o413 . #s(key :name :f3))
+    (#o414 . #s(key :name :f4))
+    (#o415 . #s(key :name :f5))
+    (#o416 . #s(key :name :f6))
+    (#o417 . #s(key :name :f7))
+    (#o420 . #s(key :name :f8))
+    (#o421 . #s(key :name :f9))
+    (#o422 . #s(key :name :f10))
+    (#o423 . #s(key :name :f11))
+    (#o424 . #s(key :name :f12))
 
-    ;; (:key-min       . 257) ; minimum key value
-    (:key-break                 . 257)
-    (:key-arrow-down            . 258) ; DOWN      kd
-    (:key-arrow-up              . 259) ; UP        ku
-    (:key-arrow-left            . 260) ; LEFT      kl
-    (:key-arrow-right           . 261) ; RIGHT     kr
-    (:key-home                  . 262) ; HOME      kh
-    (:key-backspace             . 263) ; BACKSPACE kb
-    (:key-f0                    . 264)
-    (:key-f1                    . 265)
-    (:key-f2                    . 266)
-    (:key-f3                    . 267)
-    (:key-f4                    . 268)
-    (:key-f5                    . 269)
-    (:key-f6                    . 270)
-    (:key-f7                    . 271)
-    (:key-f8                    . 272)
-    (:key-f9                    . 273)
-    (:key-f10                   . 274)
-    (:key-f11                   . 275)
-    (:key-f12                   . 276)
-    (:key-f13                   . 277)
-    (:key-f14                   . 278)
-    (:key-f15                   . 279)
-    (:key-f16                   . 280)
-    (:key-f17                   . 281)
-    (:key-f18                   . 282)
-    (:key-f19                   . 283)
-    (:key-f20                   . 284)
-    (:key-f21                   . 285)
-    (:key-f22                   . 286)
-    (:key-f23                   . 287)
-    (:key-f24                   . 288)
-    (:key-f25                   . 289)
-    (:key-f26                   . 290)
-    (:key-f27                   . 291)
-    (:key-f28                   . 292)
-    (:key-f29                   . 293)
-    (:key-f30                   . 294)
-    (:key-f31                   . 295)
-    (:key-f32                   . 296)
-    (:key-f33                   . 297)
-    (:key-f34                   . 298)
-    (:key-f35                   . 299)
-    (:key-f36                   . 300)
-    (:key-f37                   . 301)
-    (:key-f38                   . 302)
-    (:key-f39                   . 303)
-    (:key-f40                   . 304)
-    (:key-f41                   . 305)
-    (:key-f42                   . 306)
-    (:key-f43                   . 307)
-    (:key-f44                   . 308)
-    (:key-f45                   . 309)
-    (:key-f46                   . 310)
-    (:key-f47                   . 311)
-    (:key-f48                   . 312)
-    (:key-f49                   . 313)
-    (:key-f50                   . 314)
-    (:key-f51                   . 315)
-    (:key-f52                   . 316)
-    (:key-f53                   . 317)
-    (:key-f54                   . 318)
-    (:key-f55                   . 319)
-    (:key-f56                   . 320)
-    (:key-f57                   . 321)
-    (:key-f58                   . 322)
-    (:key-f59                   . 323)
-    (:key-f60                   . 324)
-    (:key-f61                   . 325)
-    (:key-f62                   . 326)
-    (:key-f63                   . 327)
-    (:key-delete-line           . 328) ; DL
-    (:key-insert-line           . 329) ; IL
-    (:key-delete-char           . 330) ; DC
-    (:key-insert-char           . 331) ; IC
-    (:key-exit-insert-char      . 332) ; EIC
-    (:key-clear-screen          . 333) ; CLEAR
-    (:key-clear-end-of-screen   . 334) ; EOS
-    (:key-clear-end-of-line     . 335) ; EOL
-    (:key-shift-arrow-down      . 336) ; SF, :key-scroll-forward
-    (:key-shift-arrow-up        . 337) ; SR, :key-scroll-reverse
-    (:key-next-page             . 338) ; NPAGE
-    (:key-previous-page         . 339) ; PPAGE
-    (:key-set-tab               . 340) ; STAB
-    (:key-clear-tab             . 341) ; CTAB
-    (:key-clear-all-tabs        . 342) ; CATAB
-    (:key-enter                 . 343) ; ENTER, send, @8
-    (:key-soft-reset            . 344) ; SRESET
-    (:key-reset                 . 345) ; RESET
-    (:key-print                 . 346) ; PRINT, copy
-    (:key-home-down             . 347) ; LL, bottom, termcap kH
-    (:key-keypad-upper-left     . 348) ; A1
-    (:key-keypad-upper-right    . 349) ; A3
-    (:key-keypad-center         . 350) ; B2
-    (:key-keypad-lower-left     . 351) ; C1
-    (:key-keypad-lower-right    . 352) ; C3
+    ;; Shift+F1 (F13) to Shift+F12 (F24)
+    (#o425 . #s(key :name :f1 :shift t))
+    (#o426 . #s(key :name :f2 :shift t))
+    (#o427 . #s(key :name :f3 :shift t))
+    (#o430 . #s(key :name :f4 :shift t))
+    (#o431 . #s(key :name :f5 :shift t))
+    (#o432 . #s(key :name :f6 :shift t))
+    (#o433 . #s(key :name :f7 :shift t))
+    (#o434 . #s(key :name :f8 :shift t))
+    (#o435 . #s(key :name :f9 :shift t))
+    (#o436 . #s(key :name :f10 :shift t))
+    (#o437 . #s(key :name :f11 :shift t))
+    (#o440 . #s(key :name :f12 :shift t))
 
-#|
+    ;; Ctrl+F1 (F25) to Ctrl+F12 (F36)
+    (#o441 . #s(key :name :f1 :ctrl t))
+    (#o442 . #s(key :name :f2 :ctrl t))
+    (#o443 . #s(key :name :f3 :ctrl t))
+    (#o444 . #s(key :name :f4 :ctrl t))
+    (#o445 . #s(key :name :f5 :ctrl t))
+    (#o446 . #s(key :name :f6 :ctrl t))
+    (#o447 . #s(key :name :f7 :ctrl t))
+    (#o450 . #s(key :name :f8 :ctrl t))
+    (#o451 . #s(key :name :f9 :ctrl t))
+    (#o452 . #s(key :name :f10 :ctrl t))
+    (#o453 . #s(key :name :f11 :ctrl t))
+    (#o454 . #s(key :name :f12 :ctrl t))
 
-https://pubs.opengroup.org/onlinepubs/7908799/xcurses/curses.h.html
+    ;; Shift+Ctrl-F1 (F37) to Shift+Ctrl+F12 (F48)
+    (#o455 . #s(key :name :f1 :shift t :ctrl t))
+    (#o456 . #s(key :name :f2 :shift t :ctrl t))
+    (#o457 . #s(key :name :f3 :shift t :ctrl t))
+    (#o460 . #s(key :name :f4 :shift t :ctrl t))
+    (#o461 . #s(key :name :f5 :shift t :ctrl t))
+    (#o462 . #s(key :name :f6 :shift t :ctrl t))
+    (#o463 . #s(key :name :f7 :shift t :ctrl t))
+    (#o464 . #s(key :name :f8 :shift t :ctrl t))
+    (#o465 . #s(key :name :f9 :shift t :ctrl t))
+    (#o466 . #s(key :name :f10 :shift t :ctrl t))
+    (#o467 . #s(key :name :f11 :shift t :ctrl t))
+    (#o470 . #s(key :name :f12 :shift t :ctrl t))
 
-3x3 keypad layout:
+    ;; Alt+F1 (F49) to Alt+F12 (F60)
+    (#o471 . #s(key :name :f1 :alt t))
+    (#o472 . #s(key :name :f2 :alt t))
+    (#o473 . #s(key :name :f3 :alt t))
+    (#o474 . #s(key :name :f4 :alt t))
+    (#o475 . #s(key :name :f5 :alt t))
+    (#o476 . #s(key :name :f6 :alt t))
+    (#o477 . #s(key :name :f7 :alt t))
+    (#o500 . #s(key :name :f8 :alt t))
+    (#o501 . #s(key :name :f9 :alt t))
+    (#o502 . #s(key :name :f10 :alt t))
+    (#o503 . #s(key :name :f11 :alt t))
+    (#o504 . #s(key :name :f12 :alt t))
 
-  A1  |  UP  |  A3
-------+------+-------
- LEFT |  B2  | RIGHT
-------+------+-------
-  C1  | DOWN |  C3
+    ;; Shift+Alt+F1 (F61) to Shift+Alt+F3 (F63)
+    (#o505 . #s(key :name :f1 :shift t :alt t))
+    (#o506 . #s(key :name :f2 :shift t :alt t))
+    (#o507 . #s(key :name :f3 :shift t :alt t))
+                                                           ; #define       oct   dec  cap  curses.h comment
+    (#o510 . #s(key :name :delete-line))                   ; KEY_DL        0510  328       /* delete-line key */
+    (#o511 . #s(key :name :insert-line))                   ; KEY_IL        0511  329       /* insert-line key */
+    (#o512 . #s(key :name :delete))                        ; KEY_DC        0512  330       /* delete-character key */
+    (#o513 . #s(key :name :insert))                        ; KEY_IC        0513  331       /* insert-character key */
+    (#o514 . #s(key :name :exit-insert-char))              ; KEY_EIC       0514  332       /* sent by rmir or smir in insert mode */
+    (#o515 . #s(key :name :clear-screen))                  ; KEY_CLEAR     0515  333       /* clear-screen or erase key */
+    (#o516 . #s(key :name :clear-to-end-of-screen))        ; KEY_EOS       0516  334       /* clear-to-end-of-screen key */
+    (#o517 . #s(key :name :clear-to-end-of-line))          ; KEY_EOL       0517  335       /* clear-to-end-of-line key */
+    (#o520 . #s(key :name :down :shift t))                 ; KEY_SF        0520  336       /* scroll-forward, shift-arrow-down key */
+    (#o521 . #s(key :name :up :shift t))                   ; KEY_SR        0521  337       /* scroll-backward, scroll-reverse, shift-arrow-up key */
+    (#o522 . #s(key :name :page-down))                     ; KEY_NPAGE     0522  338       /* next-page, page-down key */
+    (#o523 . #s(key :name :page-up))                       ; KEY_PPAGE     0523  339       /* previous-page, page-up key */
+    (#o524 . #s(key :name :set-tab))                       ; KEY_STAB      0524  340       /* set-tab key */
+    (#o525 . #s(key :name :clear-tab))                     ; KEY_CTAB      0525  341       /* clear-tab key */
+    (#o526 . #s(key :name :clear-all-tabs))                ; KEY_CATAB     0526  342       /* clear-all-tabs key */
+    (#o527 . #s(key :name :enter))                         ; KEY_ENTER     0527  343  @8   /* enter/send key */
+    (#o530 . #s(key :name :soft-reset))                    ; KEY_SRESET    0530  344       /* Soft (partial) reset (unreliable) */
+    (#o531 . #s(key :name :reset))                         ; KEY_RESET     0531  345       /* Reset or hard reset (unreliable) */
+    (#o532 . #s(key :name :print))                         ; KEY_PRINT     0532  346       /* print key */
+    (#o533 . #s(key :name :home-down))                     ; KEY_LL        0533  347  kH   /* lower-left key (home down) */
 
-|#
+    ;; 3x3 keypad layout:
+    ;;
+    ;;   A1  |  UP  |  A3
+    ;; ------+------+-------
+    ;;  LEFT |  B2  | RIGHT
+    ;; ------+------+-------
+    ;;   C1  | DOWN |  C3
+    ;;
+    ;; https://pubs.opengroup.org/onlinepubs/7908799/xcurses/curses.h.html
+    ;;
+    (#o534 . #s(key :name :keypad-upper-left))             ; KEY_A1        0534  348       /* upper left of keypad */
+    (#o535 . #s(key :name :keypad-upper-right))            ; KEY_A3        0535  349       /* upper right of keypad */
+    (#o536 . #s(key :name :keypad-center))                 ; KEY_B2        0536  350       /* center of keypad */
+    (#o537 . #s(key :name :keypad-lower-left))             ; KEY_C1        0537  351       /* lower left of keypad */
+    (#o540 . #s(key :name :keypad-lower-right))            ; KEY_C3        0540  352       /* lower right of keypad */
 
-    (:key-back-tab                . 353) ; BTAB, Shift + TAB = #\LATIN_SMALL_LETTER_S_WITH_CARON = sch
-    (:key-beginning               . 354) ; BEG
-    (:key-cancel                  . 355) ; CANCEL    @2
-    (:key-close                   . 356) ; CLOSE     @3
-    (:key-command                 . 357) ; COMMAND   @4
-    (:key-copy                    . 358) ; COPY      @5
-    (:key-create                  . 359) ; CREATE    @6
-    (:key-end                     . 360) ; Ende      @7
-    (:key-exit                    . 361) ; EXIT      @9
-    (:key-find                    . 362) ; FIND      @0
-    (:key-help                    . 363) ; HELP      %1
-    (:key-mark                    . 364) ; MARK      %2
-    (:key-message                 . 365) ; MESSAGE   %3
-    (:key-move                    . 366) ; MOVE      %4
-    (:key-next                    . 367) ; NEXT      %5
-    (:key-open                    . 368) ; OPEN      %6
-    (:key-options                 . 369) ; OPTIONS   %7
-    (:key-previous                . 370) ; PREVIOUS  %8
-    (:key-redo                    . 371) ; REDO      %0
-    (:key-reference               . 372) ; REFERENCE &1
-    (:key-refresh                 . 373) ; REFRESH   &2
-    (:key-replace                 . 374) ; REPLACE   &3
-    (:key-restart                 . 375) ; RESTART   &4
-    (:key-resume                  . 376) ; RESUME    &5
-    (:key-save                    . 377) ; SAVE      &6
-    (:key-shift-begin             . 378) ; SBEG      &9
-    (:key-shift-cancel            . 379) ; SCANCEL   &0
-    (:key-shift-command           . 380) ; SCOMMAND  *1
-    (:key-shift-copy              . 381) ; SCOPY     *2
-    (:key-shift-create            . 382) ; SCREATE   *3
-    (:key-shift-delete-char       . 383) ; SDC       *4
-    (:key-shift-delete-line       . 384) ; SDL       *5
-    (:key-select                  . 385) ; SELECT    *6
-    (:key-shift-end               . 386) ; SEND      *7
-    (:key-shift-clear-end-of-line . 387) ; SEOL      *8
-    (:key-shift-exit              . 388) ; SEXIT     *9
-    (:key-shift-find              . 389) ; SFIND     *0
-    (:key-shift-help              . 390) ; SHELP     #1
-    (:key-shift-home              . 391) ; SHOME     #2
-    (:key-shift-insert-char       . 392) ; SIC       #3
-    (:key-shift-arrow-left        . 393) ; SLEFT     #4
-    (:key-shift-message           . 394) ; SMESSAGE  %a
-    (:key-shift-move              . 395) ; SMOVE     %b
-    (:key-shift-next-page         . 396) ; SNEXT     %c
-    (:key-shift-options           . 397) ; SOPTIONS  %d
-    (:key-shift-previous-page     . 398) ; SPREVIOUS %e
-    (:key-shift-print             . 399) ; SPRINT    %f
-    (:key-shift-redo              . 400) ; SREDO     %g
-    (:key-shift-replace           . 401) ; SREPLACE  %h
-    (:key-shift-arrow-right       . 402) ; SRIGHT    %i
-    (:key-shift-resume            . 403) ; SRSUME    %j
-    (:key-shift-save              . 404) ; SSAVE     !1
-    (:key-shift-suspend           . 405) ; SSUSPEND  !2
-    (:key-shift-undo              . 406) ; SUNDO     !3
-    (:key-suspend                 . 407) ; SUSPEND   &7
-    (:key-undo                    . 408) ; UNDO      &8
-    (:mouse                       . 409) ; MOUSE     Km
-    (:resize                      . 410) ; RESIZE
-    (:key-event                   . 411) ; only available if ncurses is built with --enable-wgetch-events
-    (:key-max                     . 511))) ; maximum key value
+                                                           ; #define       oct   dec  cap  curses.h comment
+    (#o541 . #s(key :name :back-tab))                      ; KEY_BTAB      0541  353       /* back-tab key = Shift+Tab */
+    (#o542 . #s(key :name :begin))                         ; KEY_BEG       0542  354       /* begin key */
+    (#o543 . #s(key :name :cancel))                        ; KEY_CANCEL    0543  355  @2   /* cancel key */
+    (#o544 . #s(key :name :close))                         ; KEY_CLOSE     0544  356  @3   /* close key */
+    (#o545 . #s(key :name :command))                       ; KEY_COMMAND   0545  357  @4   /* command key */
+    (#o546 . #s(key :name :copy))                          ; KEY_COPY      0546  358  @5   /* copy key */
+    (#o547 . #s(key :name :create))                        ; KEY_CREATE    0547  359  @6   /* create key */
+    (#o550 . #s(key :name :end))                           ; KEY_END       0550  360  @7   /* end key */
+    (#o551 . #s(key :name :exit))                          ; KEY_EXIT      0551  361  @9   /* exit key */
+    (#o552 . #s(key :name :find))                          ; KEY_FIND      0552  362  @0   /* find key */
+    (#o553 . #s(key :name :help))                          ; KEY_HELP      0553  363  %1   /* help key */
+    (#o554 . #s(key :name :mark))                          ; KEY_MARK      0554  364  %2   /* mark key */
+    (#o555 . #s(key :name :message))                       ; KEY_MESSAGE   0555  365  %3   /* message key */
+    (#o556 . #s(key :name :move))                          ; KEY_MOVE      0556  366  %4   /* move key */
+    (#o557 . #s(key :name :next))                          ; KEY_NEXT      0557  367  %5   /* next key */
+    (#o560 . #s(key :name :open))                          ; KEY_OPEN      0560  368  %6   /* open key */
+    (#o561 . #s(key :name :options))                       ; KEY_OPTIONS   0561  369  %7   /* options key */
+    (#o562 . #s(key :name :previous))                      ; KEY_PREVIOUS  0562  370  %8   /* previous key */
+    (#o563 . #s(key :name :redo))                          ; KEY_REDO      0563  371  %0   /* redo key */
+    (#o564 . #s(key :name :reference))                     ; KEY_REFERENCE 0564  372  &1   /* reference key */
+    (#o565 . #s(key :name :refresh))                       ; KEY_REFRESH   0565  373  &2   /* refresh key */
+    (#o566 . #s(key :name :replace))                       ; KEY_REPLACE   0566  374  &3   /* replace key */
+    (#o567 . #s(key :name :restart))                       ; KEY_RESTART   0567  375  &4   /* restart key */
+    (#o570 . #s(key :name :resume))                        ; KEY_RESUME    0570  376  &5   /* resume key */
+    (#o571 . #s(key :name :save))                          ; KEY_SAVE      0571  377  &6   /* save key */
+    (#o572 . #s(key :name :begin :shift t))                ; KEY_SBEG      0572  378  &9   /* shifted begin key */
+    (#o573 . #s(key :name :cancel :shift t))               ; KEY_SCANCEL   0573  379  &0   /* shifted cancel key */
+    (#o574 . #s(key :name :command :shift t))              ; KEY_SCOMMAND  0574  380  *1   /* shifted command key */
+    (#o575 . #s(key :name :copy :shift t))                 ; KEY_SCOPY     0575  381  *2   /* shifted copy key */
+    (#o576 . #s(key :name :create :shift t))               ; KEY_SCREATE   0576  382  *3   /* shifted create key */
+    (#o577 . #s(key :name :delete :shift t))               ; KEY_SDC       0577  383  *4   /* shifted delete-character key */
+    (#o600 . #s(key :name :delete-line :shift t))          ; KEY_SDL       0600  384  *5   /* shifted delete-line key */
+    (#o601 . #s(key :name :select))                        ; KEY_SELECT    0601  385  *6   /* select key */
+    (#o602 . #s(key :name :end :shift t))                  ; KEY_SEND      0602  386  *7   /* shifted end key */
+    (#o603 . #s(key :name :clear-to-end-of-line :shift t)) ; KEY_SEOL      0603  387  *8   /* shifted clear-to-end-of-line key */
+    (#o604 . #s(key :name :exit :shift t))                 ; KEY_SEXIT     0604  388  *9   /* shifted exit key */
+    (#o605 . #s(key :name :find :shift t))                 ; KEY_SFIND     0605  389  *0   /* shifted find key */
+    (#o606 . #s(key :name :help :shift t))                 ; KEY_SHELP     0606  390  #1   /* shifted help key */
+    (#o607 . #s(key :name :home :shift t))                 ; KEY_SHOME     0607  391  #2   /* shifted home key */
+    (#o610 . #s(key :name :insert :shift t))               ; KEY_SIC       0610  392  #3   /* shifted insert-character key */
+    (#o611 . #s(key :name :left :shift t))                 ; KEY_SLEFT     0611  393  #4   /* shifted left-arrow key */
+    (#o612 . #s(key :name :message :shift t))              ; KEY_SMESSAGE  0612  394  %a   /* shifted message key */
+    (#o613 . #s(key :name :move :shift t))                 ; KEY_SMOVE     0613  395  %b   /* shifted move key */
+    (#o614 . #s(key :name :next :shift t))                 ; KEY_SNEXT     0614  396  %c   /* shifted next key */
+    (#o615 . #s(key :name :options :shift t))              ; KEY_SOPTIONS  0615  397  %d   /* shifted options key */
+    (#o616 . #s(key :name :previous :shift t))             ; KEY_SPREVIOUS 0616  398  %e   /* shifted previous key */
+    (#o617 . #s(key :name :print :shift t))                ; KEY_SPRINT    0617  399  %f   /* shifted print key */
+    (#o620 . #s(key :name :redo :shift t))                 ; KEY_SREDO     0620  400  %g   /* shifted redo key */
+    (#o621 . #s(key :name :replace :shift t))              ; KEY_SREPLACE  0621  401  %h   /* shifted replace key */
+    (#o622 . #s(key :name :right :shift t))                ; KEY_SRIGHT    0622  402  %i   /* shifted right-arrow key */
+    (#o623 . #s(key :name :resume :shift t))               ; KEY_SRSUME    0623  403  %j   /* shifted resume key */
+    (#o624 . #s(key :name :save :shift t))                 ; KEY_SSAVE     0624  404  !1   /* shifted save key */
+    (#o625 . #s(key :name :suspend :shift t))              ; KEY_SSUSPEND  0625  405  !2   /* shifted suspend key */
+    (#o626 . #s(key :name :undo :shift t))                 ; KEY_SUNDO     0626  406  !3   /* shifted undo key */
+    (#o627 . #s(key :name :suspend))                       ; KEY_SUSPEND   0627  407  &7   /* suspend key */
+    (#o630 . #s(key :name :undo))                          ; KEY_UNDO      0630  408  &8   /* undo key */
+    (#o631 . :mouse)                                       ; KEY_MOUSE     0631  409  Km   /* Mouse event has occurred */
+    (#o632 . #s(key :name :resize))                        ; KEY_RESIZE    0632  410       /* Terminal resize event */
+    (#o633 . :event)                                       ; KEY_EVENT     0633  411       /* We were interrupted by an event, only available if ncurses is built with --enable-wgetch-events */
+    (#o777 . :key-max)))                                   ; KEY_MAX       0777  511       /* Maximum key value is 0633 = 511 */
+
+(defun code-key (code)
+  "Return a key struct representing the key code returned by ncurses:getch.
+
+Return nil if the code is unknown.
+
+An existing but unknown code can be added with add-function-key.
+
+A new escape sequence and a new code can be added with define-function-key.
+
+This function is analogous to cl:code-char but for function key structs."
+  (let ((pair (assoc code *key-alist*)))
+    (when pair
+      (cdr pair))))
+
+(defun key-code (key)
+  "Return the code associated with a function key struct."
+  (let ((pair (rassoc key *key-alist* :test #'equalp)))
+    (when pair
+      (car pair))))
 
 #|
 
@@ -262,80 +295,79 @@ f12     kf12    kf24    kf60            kf36    kf48
 
 |#
 
-;; Modifiers are given in the order they occur in the bitmask: shift-alt-ctrl.
 (defparameter *extended-key-caps*
   '(;; up
-    ("kUP3" . :key-alt-arrow-up)
-    ("kUP4" . :key-shift-alt-arrow-up)
-    ("kUP5" . :key-ctrl-arrow-up)
-    ("kUP6" . :key-shift-ctrl-arrow-up)
-    ("kUP7" . :key-alt-ctrl-arrow-up)
-    ("kUP8" . :key-shift-alt-ctrl-arrow-up)
+    ("kUP3" . #s(key :name :up          :alt t))
+    ("kUP4" . #s(key :name :up :shift t :alt t))
+    ("kUP5" . #s(key :name :up                 :ctrl t))
+    ("kUP6" . #s(key :name :up :shift t        :ctrl t))
+    ("kUP7" . #s(key :name :up          :alt t :ctrl t))
+    ("kUP8" . #s(key :name :up :shift t :alt t :ctrl t))
     ;; down
-    ("kDN3" . :key-alt-arrow-down)
-    ("kDN4" . :key-shift-alt-arrow-down)
-    ("kDN5" . :key-ctrl-arrow-down)
-    ("kDN6" . :key-shift-ctrl-arrow-down)
-    ("kDN7" . :key-alt-ctrl-arrow-down)
-    ("kDN8" . :key-shift-alt-ctrl-arrow-down)
+    ("kDN3" . #s(key :name :down          :alt t))
+    ("kDN4" . #s(key :name :down :shift t :alt t))
+    ("kDN5" . #s(key :name :down                 :ctrl t))
+    ("kDN6" . #s(key :name :down :shift t        :ctrl t))
+    ("kDN7" . #s(key :name :down          :alt t :ctrl t))
+    ("kDN8" . #s(key :name :down :shift t :alt t :ctrl t))
     ;; left
-    ("kLFT3" . :key-alt-arrow-left)
-    ("kLFT4" . :key-shift-alt-arrow-left)
-    ("kLFT5" . :key-ctrl-arrow-left)
-    ("kLFT6" . :key-shift-ctrl-arrow-left)
-    ("kLFT7" . :key-alt-ctrl-arrow-left)
-    ("kLFT8" . :key-shift-alt-ctrl-arrow-left)
+    ("kLFT3" . #s(key :name :left          :alt t))
+    ("kLFT4" . #s(key :name :left :shift t :alt t))
+    ("kLFT5" . #s(key :name :left                 :ctrl t))
+    ("kLFT6" . #s(key :name :left :shift t        :ctrl t))
+    ("kLFT7" . #s(key :name :left          :alt t :ctrl t))
+    ("kLFT8" . #s(key :name :left :shift t :alt t :ctrl t))
     ;; right
-    ("kRIT3" . :key-alt-arrow-right)
-    ("kRIT4" . :key-shift-alt-arrow-right)
-    ("kRIT5" . :key-ctrl-arrow-right)
-    ("kRIT6" . :key-shift-ctrl-arrow-right)
-    ("kRIT7" . :key-alt-ctrl-arrow-right)
-    ("kRIT8" . :key-shift-alt-ctrl-arrow-right)
+    ("kRIT3" . #s(key :name :right          :alt t))
+    ("kRIT4" . #s(key :name :right :shift t :alt t))
+    ("kRIT5" . #s(key :name :right                 :ctrl t))
+    ("kRIT6" . #s(key :name :right :shift t        :ctrl t))
+    ("kRIT7" . #s(key :name :right          :alt t :ctrl t))
+    ("kRIT8" . #s(key :name :right :shift t :alt t :ctrl t))
     ;; end
-    ("kEND3" . :key-alt-end)
-    ("kEND4" . :key-shift-alt-end)
-    ("kEND5" . :key-ctrl-end)
-    ("kEND6" . :key-shift-ctrl-end)
-    ("kEND7" . :key-alt-ctrl-end)
-    ("kEND8" . :key-shift-alt-ctrl-end)
+    ("kEND3" . #s(key :name :end          :alt t))
+    ("kEND4" . #s(key :name :end :shift t :alt t))
+    ("kEND5" . #s(key :name :end                 :ctrl t))
+    ("kEND6" . #s(key :name :end :shift t        :ctrl t))
+    ("kEND7" . #s(key :name :end          :alt t :ctrl t))
+    ("kEND8" . #s(key :name :end :shift t :alt t :ctrl t))
     ;; home
-    ("kHOM3" . :key-alt-home)
-    ("kHOM4" . :key-shift-alt-home)
-    ("kHOM5" . :key-ctrl-home)
-    ("kHOM6" . :key-shift-ctrl-home)
-    ("kHOM7" . :key-alt-ctrl-home)
-    ("kHOM8" . :key-shift-alt-ctrl-home)
+    ("kHOM3" . #s(key :name :home          :alt t))
+    ("kHOM4" . #s(key :name :home :shift t :alt t))
+    ("kHOM5" . #s(key :name :home                 :ctrl t))
+    ("kHOM6" . #s(key :name :home :shift t        :ctrl t))
+    ("kHOM7" . #s(key :name :home          :alt t :ctrl t))
+    ("kHOM8" . #s(key :name :home :shift t :alt t :ctrl t))
     ;; ins
-    ("kIC3" . :key-alt-insert-char)
-    ("kIC4" . :key-shift-alt-insert-char)
-    ("kIC5" . :key-ctrl-insert-char)
-    ("kIC6" . :key-shift-ctrl-insert-char)
-    ("kIC7" . :key-alt-ctrl-isnert-char)
-    ("kIC8" . :key-shift-alt-ctrl-insert-char)
+    ("kIC3" . #s(key :name :insert          :alt t))
+    ("kIC4" . #s(key :name :insert :shift t :alt t))
+    ("kIC5" . #s(key :name :insert                 :ctrl t))
+    ("kIC6" . #s(key :name :insert :shift t        :ctrl t))
+    ("kIC7" . #s(key :name :insert          :alt t :ctrl t))
+    ("kIC8" . #s(key :name :insert :shift t :alt t :ctrl t))
     ;; del
-    ("kDC3" . :key-alt-delete-char)
-    ("kDC4" . :key-shift-alt-delete-char)
-    ("kDC5" . :key-ctrl-delete-char)
-    ("kDC6" . :key-shift-ctrl-delete-char)
-    ("kDC7" . :key-alt-ctrl-delete-char)
-    ("kDC8" . :key-shift-alt-ctrl-delete-char)
+    ("kDC3" . #s(key :name :delete          :alt t))
+    ("kDC4" . #s(key :name :delete :shift t :alt t))
+    ("kDC5" . #s(key :name :delete                 :ctrl t))
+    ("kDC6" . #s(key :name :delete :shift t        :ctrl t))
+    ("kDC7" . #s(key :name :delete          :alt t :ctrl t))
+    ("kDC8" . #s(key :name :delete :shift t :alt t :ctrl t))
     ;; ppage, pgup
-    ("kPRV3" . :key-alt-previous-page)
-    ("kPRV4" . :key-shift-alt-previous-page)
-    ("kPRV5" . :key-ctrl-previous-page)
-    ("kPRV6" . :key-shift-ctrl-previous-page)
-    ("kPRV7" . :key-alt-ctrl-previous-page)
-    ("kPRV8" . :key-shift-alt-ctrl-previous-page)
+    ("kPRV3" . #s(key :name :page-up          :alt t))
+    ("kPRV4" . #s(key :name :page-up :shift t :alt t))
+    ("kPRV5" . #s(key :name :page-up                 :ctrl t))
+    ("kPRV6" . #s(key :name :page-up :shift t        :ctrl t))
+    ("kPRV7" . #s(key :name :page-up          :alt t :ctrl t))
+    ("kPRV8" . #s(key :name :page-up :shift t :alt t :ctrl t))
     ;; npage, pgdn
-    ("kNXT3" . :key-alt-next-page)
-    ("kNXT4" . :key-shift-alt-next-page)
-    ("kNXT5" . :key-ctrl-next-page)
-    ("kNXT6" . :key-shift-ctrl-next-page)
-    ("kNXT7" . :key-alt-ctrl-next-page)
-    ("kNXT8" . :key-shift-alt-ctrl-next-page)))
+    ("kNXT3" . #s(key :name :page-down          :alt t))
+    ("kNXT4" . #s(key :name :page-down :shift t :alt t))
+    ("kNXT5" . #s(key :name :page-down                 :ctrl t))
+    ("kNXT6" . #s(key :name :page-down :shift t        :ctrl t))
+    ("kNXT7" . #s(key :name :page-down          :alt t :ctrl t))
+    ("kNXT8" . #s(key :name :page-down :shift t :alt t :ctrl t))))
 
-;; called from :around window after enabling function keys.
+;; called from :around window when :enable-function-keys is t
 (defun add-extended-function-keys ()
   "Check if common extended function keys are supported by the terminal.
 
@@ -346,7 +378,7 @@ If the keys are supported, add them to the key alist, so they can be
 returned as valid events."
   (let (new-keys)
     (mapc (lambda (x)
-            (destructuring-bind (cap . name) x
+            (destructuring-bind (cap . key) x
               (let ((seq (tigetstr cap)))
                 ;; if a key is supported by the terminal, tigetstr will
                 ;; return its definition, i.e. the escape sequence.
@@ -354,7 +386,7 @@ returned as valid events."
                            (function-key-code seq))
                   ;; once we have the escape sequence, we can retrieve
                   ;; the key code which will be returned by getch.
-                  (push (cons name (function-key-code seq)) new-keys)))))
+                  (push (cons (function-key-code seq) key) new-keys)))))
           *extended-key-caps*)
     (when new-keys
       (setf *key-alist* (append *key-alist* (nreverse new-keys))))))
@@ -367,11 +399,17 @@ returned as valid events."
            (,get-value-fn ,pair)
            ,default))))
 
-(defun key-name-to-code (key-name &optional (default nil))
-  "Return the code (an integer) from the given keyname (a keyword).
+(defun key-name-to-code (name &optional (default nil))
+  "Return the first code (an integer) from the given keyname (a keyword).
+
+Since we can have more than one key struct with the same name, we can here
+only return the first code, which would be the key without modifiers.
 
 If the code does not exist, return the value of the optional parameter: 'default'."
-  (access-alist key-name assoc eq cdr default))
+  (let ((pair (rassoc name *key-alist* :key #'key-name)))
+    (if pair
+        (car pair)
+        default)))
 
 (defun key-code-to-name (code &optional (default nil))
   "Take an integer representing the function key code, return a
@@ -379,38 +417,60 @@ keyword representing the function key name.
 
 If a name to the given code is not in the key list, return the value
 of the optional parameter: 'default'."
-  (access-alist code rassoc = car default))
+  (let ((pair (assoc code *key-alist*)))
+    (if pair
+        (if (keywordp (cdr pair))
+            (cdr pair)
+            (key-name (cdr pair)))
+        default)))
 
 (defgeneric delete-function-key (object)
-  (:documentation "Delete a mapping croatoan keycode <-> curses integer, if exists"))
+  (:documentation
+   "Delete one or more mappings key <-> ncurses code from *key-alist*."))
 
 (defmethod delete-function-key ((key-name symbol))
-  "Take a key name, delete the mapping key name (keyword) <-> key code (integer), if it exists.
+  "Delete all keys with the given keyword name from *key-alist*.
 
-This operation modifies *key-alist*."
-  (setf *key-alist* (remove-if (lambda (a) (eq (car a) key-name))
+Since more than one key can have the same name, becuse key structs can
+have different modifier slots, all the keys with the given name are deleted."
+  (setf *key-alist* (remove-if (lambda (a)
+                                 (if (keywordp (cdr a))
+                                     (eq key-name (cdr a))
+                                     (eq key-name (key-name (cdr a)))))
                                *key-alist*)))
 
 (defmethod delete-function-key ((key-code integer))
-  "Take a key code, delete the mapping key name (keyword) <-> key code (number), if it exists.
-
-This operation modifies *key-alist*."
-  (setf *key-alist* (remove-if (lambda (a) (= (cdr a) key-code))
+  "Delete the key with the given unique code from *key-alist*."
+  (setf *key-alist* (remove-if (lambda (a)
+                                 (= key-code (car a)))
                                *key-alist*)))
 
-(defun add-function-key (key-name key-code)
-  "Add a new function key given by the mapping of key name (keyword) <->  key code (integer).
+(defmethod delete-function-key ((key key))
+  "Take a key struct, delete the mapping key <-> code from *key-alist*."
+  (setf *key-alist* (remove-if (lambda (a)
+                                 (equalp key (cdr a)))
+                               *key-alist*)))
 
-If the alist already contains key-name or key-code this mapping will
-be overwritten by the new values.
+(defun add-function-key (key code)
+  "Add a new mapping (key . code) to *key-alist*.
 
-This operation modifies *key-alist*."
-  ;; if either key name or code already exist, remove them from the alist first.
+If the alist already contains the key or the code, the existing
+mapping will be overwritten by the new values."
+  ;; if either key struct or code already exist, remove them from the alist first.
   (let ((alist (remove-if (lambda (a)
-                            (or (eq (car a) key-name)
-                                (=  (cdr a) key-code)))
+                            (or (equalp (cdr a) key)
+                                (=      (car a) code)))
                           *key-alist*)))
-    (setf *key-alist* (acons key-name key-code alist))))
+    ;; then add a new mapping
+    (setf *key-alist* (acons code key alist))))
+
+;; this has to run after initscr, because only then the keys are read from terminfo
+(defun add-function-key-cap (cap key)
+  "Check if a terminal supports an extended function key capability and add it to key-alist."
+  (let ((seq (tigetstr cap)))
+    (when (stringp seq)
+      (add-function-key key
+                        (function-key-code seq)))))
 
 ;; TODO 200319 we cant add new code numbers if these numbers are already taken by ncurses
 ;; whats the highest number pre-registered by ncurses?
@@ -420,7 +480,7 @@ This operation modifies *key-alist*."
 Used by define-function-key when a new escape sequence is added.
 
 To avoid conflicts with existing ncurses code numbers, new numbers start at 1024."
-  (let ((new-code (1+ (reduce #'max *key-alist* :key #'cdr))))
+  (let ((new-code (1+ (reduce #'max *key-alist* :key #'car))))
     (if (> new-code 1023)
         new-code
         1024)))
@@ -443,10 +503,31 @@ get-wide-char/event has a different way to check for function keys."
   (let ((ch (get-char window)))
     ;; ncurses get-char returns -1 when no key was pressed.
     (unless (= ch -1)
-      ;; if a key was pressed, put it back into the input buffer so it can be rad by the next call to get-char.
+      ;; if a key was pressed, put it back into the input buffer
+      ;; so it can be rad by the next call to get-char.
       (unget-char ch)
       ;; Return t.
       t)))
+
+(defun get-key-event (ch)
+  "If the event is mouse, return a mouse event, otherwise a normal event."
+  (let ((ev (code-key ch)))
+    ;; we have to return mouse as a keyword, because we have to get the struct
+    ;; in a second step from get-mouse-event.
+    (if (eq ev :mouse)
+        ;; a mouse event returns 3 values, see mouse.lisp
+        (multiple-value-bind (mev y x mods) (get-mouse-event)
+          (make-instance 'mouse-event
+                         ;; we only can make the mouse struct here
+                         :key (make-key :name mev
+                                        :ctrl  (if (member :ctrl  mods) t nil)
+                                        :alt   (if (member :alt   mods) t nil)
+                                        :shift (if (member :shift mods) t nil))
+                         :code ch
+                         :y y
+                         :x x))
+        ;; for normal function keys, return a struct and the code.
+        (make-instance 'event :key ev :code ch))))
 
 ;; works only when input-blocking is set to nil. enable-fkeys should also be t.
 ;; events can be handled with case.
@@ -480,123 +561,12 @@ The following chars can be returned:
       ;; -1 means no key has been pressed.
       ((= ch -1)
        (make-instance 'event :key nil :code ch))
-      ;; 0-255 are regular chars, whch can be converted to lisp chars with code-char.
+      ;; 0-255 are regular chars, which can be converted to lisp chars with code-char.
       ((and (>= ch 0) (<= ch 255))
        (make-instance 'event :key (code-char ch) :code ch))
-      ;; if the code belongs to a registered function key, return a keyword symbol.
+      ;; if the code belongs to a registered function key, return a key struct.
       ((function-key-p ch)
-       (let ((ev (key-code-to-name ch ch)))
-         (if (eq ev :mouse)
-             ;; a mouse event returns 3 values, see mouse.lisp
-             (multiple-value-bind (mev y x mods) (get-mouse-event)
-               (make-instance 'mouse-event :key mev :code ch :y y :x x
-                                           :modifiers mods))
-             ;; for normal function keys, return a keyword and the code.
-             (make-instance 'event :key ev :code ch))))
-      ;; todo: unknown codes, like mouse, resize and unknown function keys.
+       (get-key-event ch))
       (t
        ;; if we have a code without a corresponding key, return the code as key
        (make-instance 'event :key ch :code ch)))))
-
-#|
-
-#define KEY_CODE_YES    0400            /* A wchar_t contains a key code */
-#define KEY_MIN         0401            /* Minimum curses key */
-
-#define KEY_BREAK       0401            /* Break key (unreliable) */
-#define KEY_DOWN        0402            /* down-arrow key */
-#define KEY_UP          0403            /* up-arrow key */
-#define KEY_LEFT        0404            /* left-arrow key */
-#define KEY_RIGHT       0405            /* right-arrow key */
-#define KEY_HOME        0406            /* home key */
-#define KEY_BACKSPACE   0407            /* backspace key */
-#define KEY_F0          0410            /* Function keys.  Space for 64 */
-#define KEY_F(n)        (KEY_F0+(n))    /* Value of function key n */
-#define KEY_DL          0510            /* delete-line key */
-#define KEY_IL          0511            /* insert-line key */
-#define KEY_DC          0512            /* delete-character key */
-#define KEY_IC          0513            /* insert-character key */
-#define KEY_EIC         0514            /* sent by rmir or smir in insert mode */
-#define KEY_CLEAR       0515            /* clear-screen or erase key */
-#define KEY_EOS         0516            /* clear-to-end-of-screen key */
-#define KEY_EOL         0517            /* clear-to-end-of-line key */
-#define KEY_SF          0520            /* scroll-forward key */
-#define KEY_SR          0521            /* scroll-backward key */
-#define KEY_NPAGE       0522            /* next-page key */
-#define KEY_PPAGE       0523            /* previous-page key */
-#define KEY_STAB        0524            /* set-tab key */
-#define KEY_CTAB        0525            /* clear-tab key */
-#define KEY_CATAB       0526            /* clear-all-tabs key */
-#define KEY_ENTER       0527            /* enter/send key */
-#define KEY_SRESET      0530            /* Soft (partial) reset (unreliable) */
-#define KEY_RESET       0531            /* Reset or hard reset (unreliable) */
-#define KEY_PRINT       0532            /* print key */
-#define KEY_LL          0533            /* lower-left key (home down) */
-#define KEY_A1          0534            /* upper left of keypad */
-#define KEY_A3          0535            /* upper right of keypad */
-#define KEY_B2          0536            /* center of keypad */
-#define KEY_C1          0537            /* lower left of keypad */
-#define KEY_C3          0540            /* lower right of keypad */
-#define KEY_BTAB        0541            /* back-tab key */
-#define KEY_BEG         0542            /* begin key */
-#define KEY_CANCEL      0543            /* cancel key */
-#define KEY_CLOSE       0544            /* close key */
-#define KEY_COMMAND     0545            /* command key */
-#define KEY_COPY        0546            /* copy key */
-#define KEY_CREATE      0547            /* create key */
-#define KEY_END         0550            /* end key */
-#define KEY_EXIT        0551            /* exit key */
-#define KEY_FIND        0552            /* find key */
-#define KEY_HELP        0553            /* help key */
-#define KEY_MARK        0554            /* mark key */
-#define KEY_MESSAGE     0555            /* message key */
-#define KEY_MOVE        0556            /* move key */
-#define KEY_NEXT        0557            /* next key */
-#define KEY_OPEN        0560            /* open key */
-#define KEY_OPTIONS     0561            /* options key */
-#define KEY_PREVIOUS    0562            /* previous key */
-#define KEY_REDO        0563            /* redo key */
-#define KEY_REFERENCE   0564            /* reference key */
-#define KEY_REFRESH     0565            /* refresh key */
-#define KEY_REPLACE     0566            /* replace key */
-#define KEY_RESTART     0567            /* restart key */
-#define KEY_RESUME      0570            /* resume key */
-#define KEY_SAVE        0571            /* save key */
-#define KEY_SBEG        0572            /* shifted begin key */
-#define KEY_SCANCEL     0573            /* shifted cancel key */
-#define KEY_SCOMMAND    0574            /* shifted command key */
-#define KEY_SCOPY       0575            /* shifted copy key */
-#define KEY_SCREATE     0576            /* shifted create key */
-#define KEY_SDC         0577            /* shifted delete-character key */
-#define KEY_SDL         0600            /* shifted delete-line key */
-#define KEY_SELECT      0601            /* select key */
-#define KEY_SEND        0602            /* shifted end key */
-#define KEY_SEOL        0603            /* shifted clear-to-end-of-line key */
-#define KEY_SEXIT       0604            /* shifted exit key */
-#define KEY_SFIND       0605            /* shifted find key */
-#define KEY_SHELP       0606            /* shifted help key */
-#define KEY_SHOME       0607            /* shifted home key */
-#define KEY_SIC         0610            /* shifted insert-character key */
-#define KEY_SLEFT       0611            /* shifted left-arrow key */
-#define KEY_SMESSAGE    0612            /* shifted message key */
-#define KEY_SMOVE       0613            /* shifted move key */
-#define KEY_SNEXT       0614            /* shifted next key */
-#define KEY_SOPTIONS    0615            /* shifted options key */
-#define KEY_SPREVIOUS   0616            /* shifted previous key */
-#define KEY_SPRINT      0617            /* shifted print key */
-#define KEY_SREDO       0620            /* shifted redo key */
-#define KEY_SREPLACE    0621            /* shifted replace key */
-#define KEY_SRIGHT      0622            /* shifted right-arrow key */
-#define KEY_SRSUME      0623            /* shifted resume key */
-#define KEY_SSAVE       0624            /* shifted save key */
-#define KEY_SSUSPEND    0625            /* shifted suspend key */
-#define KEY_SUNDO       0626            /* shifted undo key */
-#define KEY_SUSPEND     0627            /* suspend key */
-#define KEY_UNDO        0630            /* undo key */
-#define KEY_MOUSE       0631            /* Mouse event has occurred */
-#define KEY_RESIZE      0632            /* Terminal resize event */
-#define KEY_EVENT       0633            /* We were interrupted by an event */
-
-#define KEY_MAX         0777            /* Maximum key value is 0633 */
-
-|#

@@ -12,16 +12,21 @@
         (display-snake scr body)
         (refresh scr)
         (loop
-          (let ((event (event-key (get-event scr))))
-            (if event
+          (let ((ev (event-key (get-event scr))))
+            (if ev
                 ;; when the event is different from nil
-                (case event
-                  (:key-arrow-up    (setf dir #c( 0  1)))
-                  (:key-arrow-down  (setf dir #c( 0 -1)))
-                  (:key-arrow-right (setf dir #c( 1  0)))
-                  (:key-arrow-left  (setf dir #c(-1  0)))
+                (case (if (typep ev 'key)
+                          ;; if event is a function key struct, use its name
+                          ;; this is done automatically by the event-case macro.
+                          (key-name ev)
+                          ;; other event types can be chars, ints and (only internally) keywords.
+                          ev)
+                  (:up    (setf dir #c( 0  1)))
+                  (:down  (setf dir #c( 0 -1)))
+                  (:right (setf dir #c( 1  0)))
+                  (:left  (setf dir #c(-1  0)))
                   (#\q    (return)))
-                ;; when event is nil because of input-blocking nil
+                ;; when event is nil (idle event) because of input-blocking nil
                 (progn
                   (sleep 0.1)
                   (add-char scr (char-code #\space) :y (caar (last body)) :x (cadar (last body)))
@@ -44,11 +49,12 @@
         (clear scr)
         (draw-snake scr body)
         (refresh scr)
+        ;; event case switches on chars, the idle event (nil) or function key names
         (event-case (scr event)
           (#\q
            (return-from event-case))
-          ((:key-arrow-right :key-arrow-left :key-arrow-up :key-arrow-down)
-           (setq dir (get-direction (event-key event))))
+          ((:right :left :up :down)
+           (setq dir (get-direction (key-name (event-key event)))))
           ((nil)
            (sleep 0.05)
            ;; snake moves = erase last body pair by overwriting it with space
@@ -71,12 +77,17 @@
                (mapc (lambda (pos) (add win #\* :position pos)) body))
              (set-dir (win event)
                (declare (ignore win))
-               (setq dir (get-direction (event-key event)))))
+               (setq dir (get-direction (key-name (event-key event))))))
         (bind scr #\q 'exit-event-loop)
 
-        (mapc (lambda (event)
-                (bind scr event #'set-dir))
-              '(:key-arrow-right :key-arrow-left :key-arrow-up :key-arrow-down))
+        ;; function keys can be passed to bind as key structs, key names (keywords, which implies no modifiers)
+        ;; or emacs-style strings, which are then parsed to key structs.
+        (mapc (lambda (key)
+                (bind scr key #'set-dir))
+              '(:right
+                #s(key :name :left :alt t)
+                "C-<up>"
+                "<down>"))
 
         (bind scr nil
               (lambda ()
@@ -206,7 +217,7 @@
            (s3 (list :attributes nil      :fgcolor :green :bgcolor :black)))
       (flet ((randch () (+ 64 (random 58))))
         (bind scr #\q 'exit-event-loop)
-        (bind scr #\r
+        (bind scr "C-M-r"
               (lambda ()
                 (setf (getf s2 :fgcolor) :red
                       (getf s3 :fgcolor) :red)))
@@ -290,6 +301,10 @@
                  (refresh w)))
         (bind scr #\l 'exit-event-loop)
 
+        ;; use the following keys to move the player:
+        ;;  q w e
+        ;;  a s d
+        ;;  y x c
         (mapc (lambda (event)
                 (bind scr event (lambda (w e)
                                   (move-pos (event-key e))
@@ -652,7 +667,10 @@ get-char returns -1, get-wide-char returns 0."
             (case key
               (#\q (return))
               (otherwise
-               (format scr "~A ~A ~A~%" key code (type-of key))))))))
+               (format scr "~A ~A ~A~%" key code (type-of key))
+               ;; if a function key, print its defintion (escape sequence)
+               (when (> code 255)
+                 (format scr "~A~%" (function-key-definition code)))))))))
     (clear scr)
     (format scr "get-wide-event:~%")
     (refresh scr)
@@ -692,7 +710,7 @@ get-char returns -1, get-wide-char returns 0."
     (event-case (scr event)
       (#\q (return-from event-case))
       (otherwise
-       (princ (event-key event) scr)
+       (print (event-key event) scr)
        (refresh scr)))))
 
 (defun t03g ()
@@ -1273,8 +1291,8 @@ Test whether a window (stream) was closed."
     ;; return nil explicitely, so it doesnt return the window list.
     nil))
 
-;; enable-function-keys t: fkeys have codes 255+
-;; enable-function-keys nil: fkeys are multi-char escape codes.
+;; enable-function-keys t:   fkeys have codes 255+ when returned by get-char
+;; enable-function-keys nil: fkeys are read as escape sequences
 (defun t10 ()
   "Print the screen size. Print the char and code of every narrow char pressed.
 
@@ -1324,12 +1342,13 @@ newlines any more and the screen doesnt scroll."
             (sleep 0.15))))))
 
 (defun t10a3 ()
+  "Show the basic use case for the nil event when input-blocking is nil."
   (with-screen (scr :input-echoing nil :input-blocking nil :input-buffering nil :enable-function-keys t)
-    ;; If no key has been pressed, the main loop produces a single tick.
+    ;; If no key has been pressed, we receive the nil event and the main loop produces a single tick.
     (bind scr nil (lambda (win)
                     (princ #\. win)
                     (refresh scr)))
-    ;; If a key was pressed, it is processed immediately.
+    ;; If any other key was pressed, it is processed immediately.
     (bind scr t (lambda (win event)
                   (princ (event-key event) win)
                   (refresh win)))
@@ -1353,7 +1372,9 @@ returned byte by byte as with get-char."
     ;; get-event explicitely gets single-byte events, not wide events.
     (loop (let ((event (event-key (get-event scr))))
             (when event
-              (case event
+              (case (typecase event
+                      (key (key-name event))
+                      (t event))
                 (#\q (return))
                 ;; non-printable ascii chars. (#\space and #\newline are standard, all others non-standard)
                 (#\escape (format scr "escape char ESC ^[ \e~%"))
@@ -1379,122 +1400,28 @@ returned byte by byte as with get-char."
 
                 ;; function keys, the same as #\rubout, but different code.
                 ;; ncurses bug: :key-backspace is returned for windows, #\rubout for stdscr.
-                (:key-backspace (format scr "backspace key <--~%"))
+                (:backspace (format scr "backspace key <--~%"))
                 ;; printable chars (graphic and control chars)
                 (otherwise
                  (add-string scr (format nil "~A ~S~%" event event))
                  (format scr "Event: ~A ~S ~A~%" event event (type-of event)))))))))
 
+;; cleaner key printing, prints key names instead of numeric char codes.
 (defun t10b ()
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :enable-scrolling t
                     :input-buffering nil :process-control-chars nil :enable-newline-translation t)
-    ;; add existing, but unportable keys to the key alist. (here: xterm 322 on ncurses 6.2)
-    (mapc
-     (lambda (a)
-       (add-function-key (car a) (cdr a)))
-
-     '((:alt-delete          . 517)
-       (:shift-alt-delete    . 518)
-       (:ctrl-delete         . 519)
-       (:shift-ctrl-delete   . 520)
-       ;;(:shift-ctrl-alt-delete . xxx) ^[[3;8~
-
-       (:alt-end             . 528)
-       (:shift-alt-end       . 529)
-       (:ctrl-end            . 530)
-       (:shift-ctrl-end      . 531)
-       (:ctrl-alt-end        . 532)
-       ;;(:shift-ctrl-alt-end . xxx) ^[[1;8F
-
-       (:alt-home            . 533)
-       (:shift-alt-home      . 534)
-       (:ctrl-home           . 535)
-       (:shift-ctrl-home     . 536)
-       (:ctrl-alt-home       . 537)
-       ;;(:shift-ctrl-alt-home . xxx) ^[[1;8H
-
-       (:alt-insert          . 538)
-       ;; :shift-insert = middle mouse button paste, probably 513, hijacked by xterm.
-       (:ctrl-insert         . 540)
-       (:ctrl-alt-insert     . 542)
-
-       (:alt-npage           . 548)
-       (:ctrl-npage          . 550)
-       (:ctrl-alt-npage      . 552)
-
-       (:alt-ppage           . 553)
-       (:ctrl-ppage          . 555)
-       (:ctrl-alt-ppage      . 557)
-
-       ;; :shift-up = :sr = 337
-       (:alt-up              . 564)
-       (:shift-alt-up        . 565)
-       (:ctrl-up             . 566)
-       (:shift-ctrl-up       . 567)
-       ;; (:shift-alt-ctrl-up . xxx)
-
-       ;; :shift-down = :sf = 336
-       (:alt-down            . 523)
-       (:shift-alt-down      . 524)
-       (:ctrl-down           . 525)
-       (:shift-ctrl-down     . 526)
-       ;; (:shift-alt-ctrl-down . xxx) ;; hijacked by the ubuntu unity wm.
-
-       (:alt-left            . 543)
-       (:shift-alt-left      . 544)
-       (:ctrl-left           . 545)
-       (:shift-ctrl-left     . 546)
-
-       (:alt-right           . 558)
-       (:shift-alt-right     . 559)
-       (:ctrl-right          . 560)
-       (:shift-ctrl-right    . 561)))
 
     ;; define new keys by their escape control sequences
     ;; the automatically generated new codes start at 1024 to avoid conflicts with codes generated by ncurses.
+    (define-function-key #s(key :name :alt-1) (list #\esc #\1))
+    (define-function-key #s(key :name :alt-n) (list #\esc #\n))
 
-    ;; gnome-terminal, linux console
-    (define-function-key :alt-1 (list #\esc #\1))
-    (define-function-key :alt-2 (format nil "~C~C" #\esc #\2))  ; pass the definition as a string.
-    (define-function-key :alt-n (list #\esc #\n))
-
-    ;; xterm
-    ;;                      f1  - f12
-    ;; shift-f1           = f13 - f24
-    ;; ctrl-f1            = f25 - f36
-    ;; shift-ctrl-f1      = f37 - f48
-    ;; alt-f1             = f49 - f60 some hijacked by ubuntu unity
-    ;; shift-alt-f1       = f61 - f63 bindings f4-f12 not defined
-    ;; ctrl-alt-f1        = linux virtual terminals
-    ;; shift-ctrl-alt-f1  = not defined
-
-    ;; xterm
-    (define-function-key :shift-alt-f4 (list #\esc #\[ #\1 #\; #\4 #\S))
-    (define-function-key :shift-alt-f5 (list #\esc #\[ #\1 #\5 #\; #\4 #\~))
-    (define-function-key :shift-alt-f6 (list #\esc #\[ #\1 #\7 #\; #\4 #\~))
-    (define-function-key :shift-alt-f7 (list #\esc #\[ #\1 #\8 #\; #\4 #\~))
-    (define-function-key :shift-alt-f8 (list #\esc #\[ #\1 #\9 #\; #\4 #\~))
-    (define-function-key :shift-alt-f9 (list #\esc #\[ #\2 #\0 #\; #\4 #\~))
-    (define-function-key :shift-alt-f10 (list #\esc #\[ #\2 #\1 #\; #\4 #\~))
-    (define-function-key :shift-alt-f11 (list #\esc #\[ #\2 #\3 #\; #\4 #\~))
-    (define-function-key :shift-alt-f12 (list #\esc #\[ #\2 #\4 #\; #\4 #\~))
-
-    (define-function-key :shift-ctrl-alt-f1 (list #\esc #\[ #\1 #\; #\8 #\P))
-    (define-function-key :shift-ctrl-alt-f2 (list #\esc #\[ #\1 #\; #\8 #\Q))
-    (define-function-key :shift-ctrl-alt-f3 (list #\esc #\[ #\1 #\; #\8 #\R))
-    (define-function-key :shift-ctrl-alt-f4 (list #\esc #\[ #\1 #\; #\8 #\S))
-    (define-function-key :shift-ctrl-alt-f5 (list #\esc #\[ #\1 #\5 #\; #\8 #\~))
-    (define-function-key :shift-ctrl-alt-f6 (list #\esc #\[ #\1 #\7 #\; #\8 #\~))
-    (define-function-key :shift-ctrl-alt-f7 (list #\esc #\[ #\1 #\8 #\; #\8 #\~))
-    (define-function-key :shift-ctrl-alt-f8 (list #\esc #\[ #\1 #\9 #\; #\8 #\~))
-    (define-function-key :shift-ctrl-alt-f9 (list #\esc #\[ #\2 #\0 #\; #\8 #\~))
-    (define-function-key :shift-ctrl-alt-f10 (list #\esc #\[ #\2 #\1 #\; #\8 #\~))
-    (define-function-key :shift-ctrl-alt-f11 (list #\esc #\[ #\2 #\3 #\; #\8 #\~))
-    (define-function-key :shift-ctrl-alt-f12 (list #\esc #\[ #\2 #\4 #\; #\8 #\~))
-
-    (define-function-key :shift-ctrl-alt-home (list #\esc #\[ #\1 #\; #\8 #\H))
-    (define-function-key :shift-ctrl-alt-end (list #\esc #\[ #\1 #\; #\8 #\F))
-    (define-function-key :shift-ctrl-alt-delete (list #\esc #\[ #\3 #\; #\8 #\~))
+    ;; even though non-standard function keys with modifiers are added on startup,
+    ;; depending on terminfo they are sometimes not recognized
+    ;; here those sequences can be added manually.
+    (define-function-key #s(key :name :left   :ctrl t :alt t :shift t) (list #\esc #\[ #\1 #\; #\8 #\D))
+    (define-function-key #s(key :name :right  :ctrl t :alt t :shift t) (list #\esc #\[ #\1 #\; #\8 #\C))
+    (define-function-key #s(key :name :delete :ctrl t :alt t :shift t) (list #\esc #\[ #\3 #\; #\8 #\~))
 
     (bind scr #\q 'exit-event-loop)
     (bind scr t (lambda (w e)
@@ -1529,8 +1456,8 @@ returned byte by byte as with get-char."
     (refresh scr)
     (event-case (scr event)
       (#\q (return-from event-case))
-      (:key-arrow-up (scroll scr 1) (refresh scr))
-      (:key-arrow-down (scroll scr -1) (refresh scr)))))
+      (:up (scroll scr 1) (refresh scr))
+      (:down (scroll scr -1) (refresh scr)))))
 
 (defun t11b ()
   "Demonstrate the manual use of the scroll function for a window."
@@ -1542,8 +1469,8 @@ returned byte by byte as with get-char."
       (refresh win)
       (event-case (win event)
         (#\q (return-from event-case))
-        (:key-arrow-up (scroll win 1) (refresh win))
-        (:key-arrow-down (scroll win -1) (refresh win))))))
+        (:up (scroll win 1) (refresh win))
+        (:down (scroll win -1) (refresh win))))))
 
 ;; Display available ACS (alternative character set) pseudo-graphical characters.
 (defun t12 ()
@@ -1797,21 +1724,21 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
   "Mouse events are now detected in the event loop, print the y x coordinates and the event."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
     ;; Set the events to be reported.
-    (set-mouse-event '(:button-1-clicked :button-2-clicked :button-3-clicked))
+    (set-mouse-event '(:button-1-click :button-2-click :button-3-click))
     (event-case (scr event)
-      ((:button-1-clicked :button-2-clicked :button-3-clicked)
-       (format scr "~3A ~3A ~A ~A~%" (position-y event) (position-x event) (event-key event) (event-modifiers event)))
+      ((:button-1-click :button-2-click :button-3-click)
+       (format scr "~3A ~3A ~A~%" (position-y event) (position-x event) (event-key event)))
       (#\q
        (return-from event-case)))))
 
 (defun t14b ()
   "A left click prints a 1, right click prints a 3, use event-case to handle mouse events."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
-    (set-mouse-event '(:button-1-clicked :button-3-clicked))
+    (set-mouse-event '(:button-1-click :button-3-click))
     (event-case (scr event)
-      (:button-1-clicked
+      (:button-1-click
        (move scr (position-y event) (position-x event)) (princ "1" scr))
-      (:button-3-clicked
+      (:button-3-click
        (move scr (position-y event) (position-x event)) (princ "3" scr))
       (#\q
        (return-from event-case)))))
@@ -1819,11 +1746,11 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
 (defun t14b1 ()
   "A left click prints a 1, right click prints a 3, use bind/run-event-loop to handle mouse events."
   (with-screen (scr :input-echoing nil :input-blocking t :enable-function-keys t :cursor-visible nil)
-    (set-mouse-event '(:button-1-clicked :button-3-clicked))
-    (bind scr :button-1-clicked
+    (set-mouse-event '(:button-1-click :button-3-click))
+    (bind scr :button-1-click
           (lambda (w e)
             (goto w (event-position e)) (princ "1" w)))
-    (bind scr :button-3-clicked
+    (bind scr :button-3-click
           (lambda (w e)
             (move w (position-y e) (position-x e)) (princ "3" w)))
     (bind scr #\q 'exit-event-loop)
@@ -1854,7 +1781,8 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
             (when (= (cursor-position-y w) (1- (height w)))
               (clear w))
             (if (typep e 'mouse-event)
-                (format w "~3A ~3A ~A ~A~%" (position-y e) (position-x e) (event-key e) (event-modifiers e))
+                (progn
+                  (format w "~3A ~3A ~A~&" (position-y e) (position-x e) (event-key e)))
                 (format w "~A ~A ~A~%" e (event-key e) (event-code e)))))
     (run-event-loop scr)))
 
@@ -1865,7 +1793,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
     (loop
        (let ((event (event-key (get-event scr))))
          (if event
-             (case event
+             (case (typecase event
+                     (key (key-name event))
+                     (t event))
                (:resize
                 (move scr 1 0)
                 (format scr "~A Y lines x ~A X columns." (height scr) (width scr))
@@ -1889,7 +1819,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (loop
          (let ((event (event-key (get-event scr))))
            (if event
-               (case event
+               (case (if (typep event 'key)
+                         (key-name event)
+                         event)
                  (:resize
                   ;; if the screen is resized, relocate the window to the new center.
                   (move-window win (round (/ (height scr) 2)) (round (/ (width scr) 2)))
@@ -1921,7 +1853,9 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
       (loop
          (let ((event (event-key (get-event scr))))
            (if event
-               (case event
+               (case (if (typep event 'key)
+                         (key-name event)
+                         event)
                  (:resize
                   ;; resize the window on every terminal resize.
                   (resize win (- (height scr) 4) (- (width scr) 6))
@@ -2004,10 +1938,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
            (*standard-output* wout)
            (n 0)) ; no of chars in the input line.
       (event-case (win event)
-        (:key-arrow-left
+        (:left
          (when (> (cadr (cursor-position win)) 0)
            (move win 0 -1 :relative t)))
-        (:key-arrow-right
+        (:right
          (when (< (cadr (cursor-position win)) n)
            (move win 0 1 :relative t)))
         (#\newline ; RET key, C-j, C-m
@@ -2021,16 +1955,16 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (setf n 0)
              (clear win) ; empty the input line after evaluation.
              (refresh wout)))
-        (:key-delete-char ; DEL key
+        (:delete ; DEL key
          (when (> n (cadr (cursor-position win)))
            (decf n)
            (delete-char win)))
-        (:key-insert-char ; INS / Einfg key
+        (:insert ; INS / Einfg key
          (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
          (setf (insert-mode-p win) (not (insert-mode-p win)))
          (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
          (refresh wout))
-        (:key-backspace ; BS key
+        (:backspace ; BS key
          (when (> (cadr (cursor-position win)) 0)
            (decf n)
            (move win 0 -1 :relative t)
@@ -2067,10 +2001,10 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
             (inptr 0))  ; position of the next character in the buffer
         (event-case (win event)
           (#\q (return-from event-case))
-          (:key-arrow-left
+          (:left
            (when (> inptr 0) (decf inptr))
            (move win 0 inptr))
-          (:key-arrow-right
+          (:right
            (when (< inptr (length inbuf)) (incf inptr))
            (move win 0 inptr))
           (#\newline
@@ -2080,14 +2014,14 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (clear win)
              (move win 0 inptr)
              (refresh win)))
-          (:key-delete-char
+          (:delete
            (when (> (length inbuf) inptr)
              (setf inbuf (remove-nth (- (length inbuf) (1+ inptr)) inbuf))
              (clear win)
              (add-string win (coerce (reverse inbuf) 'string))
              (move win 0 inptr)
              (refresh win)))
-          (:key-backspace
+          (:backspace
            (when (> inptr 0)
              (decf inptr)
              (setf inbuf (remove-nth (- (length inbuf) 1 inptr) inbuf))
@@ -2095,7 +2029,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
              (add-string win (coerce (reverse inbuf) 'string))
              (move win 0 inptr)
              (refresh win)))
-          (:key-insert-char
+          (:insert
            (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
            (setf (insert-mode-p win) (not (insert-mode-p win)))
            (format t "(insert-mode-p win) => ~A~%" (insert-mode-p win))
@@ -2131,7 +2065,7 @@ keywords provided by ncurses, and the supported chars are terminal dependent."
             ;; display the contents of the input buffer of the field
             (format t "buffer: ~A~%" (buffer field))
             (format t "string: ~A" (value field)))
-          ;; when cancel returns nil
+          ;; when C-x = cancel returns nil
           (progn
             (clear scr)
             (format t "field edit canceled.")))
@@ -2291,8 +2225,8 @@ it will be more efficient to use a character array, a string."
            (form (make-instance 'form :elements (list field1 field2 field3 button1 button2 button3) :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
-      (bind form :key-f4 'de.anvi.croatoan::debug-print-field-buffer)
-      (bind (find-keymap 'field-map) :key-f3 'de.anvi.croatoan::debug-print-field-buffer)
+      (bind form :f4 'de.anvi.croatoan::debug-print-field-buffer)
+      (bind (find-keymap 'field-map) :f3 'de.anvi.croatoan::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda ()
@@ -2361,7 +2295,7 @@ it will be more efficient to use a character array, a string."
                                 :style sf1 :window scr)))
 
       ;; for debugging, return prints the content of the buffer and then deletes the buffer
-      (bind form :key-f4 'crt::debug-print-field-buffer)
+      (bind form :f4 'crt::debug-print-field-buffer)
 
       ;; Functions to be called when the button is activated by #\newline or #\space.
       (setf (callback button1) (lambda (b e)
@@ -2536,6 +2470,7 @@ it will be more efficient to use a character array, a string."
       ;; poll the queue within the nil event and handle the result returned by the worker.
       (setf (callback b2) (lambda ()
                             (setf (value field3) "Calculating...")
+                            ;; force the redraw of the form, otherwise we wont see that the field has a new value.
                             (draw form)
                             (let ((v1 (value field1))
                                   (v2 (value field2)))
@@ -3062,8 +2997,8 @@ friend. It is my life. I must master it as I must master my life.")
              (i 0)) ; current choice
         (draw-menu scr choices i)
         (event-case (scr event)
-          (:key-arrow-up (setf i (mod (1- i) n)) (draw-menu scr choices i))
-          (:key-arrow-down (setf i (mod (1+ i) n)) (draw-menu scr choices i))
+          (:up (setf i (mod (1- i) n)) (draw-menu scr choices i))
+          (:down (setf i (mod (1+ i) n)) (draw-menu scr choices i))
           (#\newline (return-from event-case (nth i choices)))
           (#\q (return-from event-case)))))))
 
@@ -3082,7 +3017,7 @@ friend. It is my life. I must master it as I must master my life.")
         (move scr 0 0) (format scr "User, do you want?") (refresh scr)
         (draw-menu scr choices i)
         (event-case (scr event)
-          ((:key-arrow-up :key-arrow-down :key-arrow-left :key-arrow-right #\tab) (setf i (mod (1+ i) n)) (draw-menu scr choices i))
+          ((:up :down :left :right #\tab) (setf i (mod (1+ i) n)) (draw-menu scr choices i))
           (#\newline (return-from event-case (cdr (nth i choices)))))))))
 
 (defun t19b ()
@@ -3357,7 +3292,8 @@ friend. It is my life. I must master it as I must master my life.")
   (with-screen (scr :input-echoing nil :input-blocking t :cursor-visible nil :enable-colors t)
     (let* ((h-count (floor (/ (height scr) 2))) ; height =  1 cell + 1 row line
            (w-count (floor (/ (width scr) 11))) ; width  = 10 cell + 1 column line
-           (items (loop for i below (* 4 h-count w-count) collect (format nil "Item ~A" i)))
+           (items (loop for i below (* 4 h-count w-count)
+                        collect (format nil "Item ~A" i)))
            (menu (make-instance 'menu
                                 :items items
                                 :grid-dimensions (list (* 2 h-count) (* 2 w-count))
@@ -3680,7 +3616,7 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
          (format scr "~A" i))
     (refresh scr)
     (event-case (scr event)
-      ((:key-arrow-up :key-arrow-down) (move-direction scr (event-key event)) (refresh scr))
+      ((:up :down) (move-direction scr (event-key event)) (refresh scr))
       (#\d (delete-line scr) (refresh scr))
       (#\i (insert-line scr) (refresh scr))
       (#\q (return-from event-case)))
@@ -3720,13 +3656,13 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
         (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x)
 
         (event-case (scr event)
-          (:key-arrow-up    (decf pad-min-y) (decf screen-min-y) (decf screen-max-y) (touch scr) (refresh scr)
+          (:up    (decf pad-min-y) (decf screen-min-y) (decf screen-max-y) (touch scr) (refresh scr)
                   (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-          (:key-arrow-down  (incf pad-min-y) (incf screen-min-y) (incf screen-max-y) (touch scr) (refresh scr)
+          (:down  (incf pad-min-y) (incf screen-min-y) (incf screen-max-y) (touch scr) (refresh scr)
                   (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-          (:key-arrow-left  (decf pad-min-x) (decf screen-min-x) (decf screen-max-x) (touch scr) (refresh scr)
+          (:left  (decf pad-min-x) (decf screen-min-x) (decf screen-max-x) (touch scr) (refresh scr)
                   (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
-          (:key-arrow-right (incf pad-min-x) (incf screen-min-x) (incf screen-max-x) (touch scr) (refresh scr)
+          (:right (incf pad-min-x) (incf screen-min-x) (incf screen-max-x) (touch scr) (refresh scr)
                   (refresh p pad-min-y pad-min-x screen-min-y screen-min-x screen-max-y screen-max-x))
           (#\q   (return-from event-case))
           (otherwise nil)))
@@ -3950,6 +3886,10 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 ;; defines and centrally registers a keymap
 (define-keymap t28b-map (t28b-parent-map)
   ("^X" *t28-ctrl-x-map*)               ; ^X = #\can
+  (#s(key :name :right :shift t)
+   (lambda (w e) (format w "Function key with modifiers, given as a struct:~&  ~A~&" (event-key e))))
+  (:right
+   (lambda (w e) (format w "Function key given by its name only, without modifiers:~&  ~A~&" (event-key e))))
   (#\esc (find-keymap 't28b-esc-map))   ; #\esc = M-
   ("^B" 't28b-show-bindings))           ; ^B = #\stx
 
@@ -3992,15 +3932,26 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
           (lambda (win event)
             (format win "C-x 1: last event ~A~&" (event-key event))))
 
-    ;; ^X ^Y 2
-    (bind scr (list #\can "^Y" #\2)
+    ;; ^X ^Y <home>
+    ;; function keys can be passed as key structs #s(key :name :home) which allows to
+    ;; include modifiers, or just as :home which then implies no modifiers
+    (bind scr (list #\can "^Y" :home)
           (lambda (win event)
-            (format win "C-x C-y 2: last event ~A~&" (event-key event))))
+            (format win "C-x C-y <home>: last event ~A~&" (event-key event))))
+
+    ;; Instead of passing single characters or a list of characters
+    ;; they can be passed in an emacs-style string which is then parsed to
+    ;; a list of characters or function keys
+    (bind scr "C-M-v"
+          (lambda (w) (format w "C-M-v = ESC ^V~&")))
+
+    ;; One or more keys or function keys can be passed in one string.
+    (bind scr "C-<left> M-S-<right>"
+          (lambda (w) (format w "C-<left> M-S-<right>~&")))
 
     ;; Type u to unbind the above binding (equivalent to binding to nil)
     (bind scr #\u
-          (lambda ()
-            (unbind scr (list #\can "^Y" #\2))))
+          (lambda () (unbind scr (list #\can "^Y" #\2))))
 
     ;; Binding the Alt (or Meta) modifier to a character event
     ;; is equivalent to providing the escape character as the prefix key.
@@ -4059,10 +4010,10 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
       ;; Move the cursor which is the end of the line.
       (event-case (scr event)
         (#\q (return-from event-case))
-        (:key-arrow-up     (decf y2))
-        (:key-arrow-down   (incf y2))
-        (:key-arrow-left   (decf x2))
-        (:key-arrow-right  (incf x2))))))
+        (:up     (decf y2))
+        (:down   (incf y2))
+        (:left   (decf x2))
+        (:right  (incf x2))))))
 
 (defun t30 ()
   "Test color pair completion for style parameters."
@@ -4225,6 +4176,10 @@ Press C-j, C-m, C-i, C-h to see the difference."
                     :cursor-visible        nil
                     :use-terminal-colors   t)
     (setf *print-right-margin* (width scr))
+
+    ;; this sequence is only a valid key (or event) after it has been added first.
+    (define-function-key #s(key :name :alt-1) (list #\esc #\1))
+
     (bind scr "^Q" 'exit-event-loop)
     (bind scr t
           (lambda (win event)
@@ -4315,6 +4270,7 @@ Press C-j, C-m, C-i, C-h to see the difference."
                        "kRT"
                        "kHOM6"
                        "kUP7"
+                       "kDC8" ; TODO: for some reason, xterm tinfo doesnt have this??
                        "kc2"))
       (let ((seq (tigetstr cap)))
         (case seq

@@ -12,7 +12,7 @@ If the second returned value is t, the char is a function key, nil otherwise."
   (when (and y x) (move window y x))
   (when position (apply #'move window position))
   (cffi:with-foreign-object (ptr 'ncurses:wint_t)
-    ;; #define KEY_CODE_YES    0400            /* A wchar_t contains a key code */
+    ;; #define KEY_CODE_YES    0400 (= 256) /* A wchar_t contains a key code */
     ;; if the char is a function key, return t as a second value, otherwise nil.
     (if (= 256 (ncurses:wget-wch (winptr window) ptr))
         (values (cffi:mem-ref ptr 'ncurses:wint_t) t)
@@ -43,15 +43,9 @@ If input-blocking is nil for the window, return nil if no key was typed."
       ;; for normal chars, ERR=-1.
       ((= ch 0)
        (make-instance 'event :key nil :code ch))
+      ;; if the code belongs to a registered function key, return a key struct.
       (function-key-p
-       (let ((ev (key-code-to-name ch ch)))
-         (if (eq ev :mouse)
-             ;; return the mouse key and the position
-             (multiple-value-bind (mev y x mods) (get-mouse-event)
-               (make-instance 'mouse-event :key mev :code ch :y y :x x
-                                           :modifiers mods))
-             ;; return a keyword representing the key name.
-             (make-instance 'event :key ev :code ch))))
+       (get-key-event ch))
       ;; if the event is not a function key, it is a character.
       ;; return the lisp character and its corresponding code.
       (t

@@ -37,13 +37,39 @@ component +--> widget ---+--> window  +--> screen
           +--> form --------> form-window
 |#
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defstruct key
+    "Stuct representing a function key or a mouse button with modifier keys.
+
+A key struct is associated with an escape sequence which is parsed by ncurses
+and returned from getch or get_wch as an integer code.
+
+Every combination of a key name and the modifiers is represented by a separate
+code.
+
+Supported modifiers are ctrl (C), alt (M) and shift (S).
+
+In bindings, emacs notation is used to specify the keys which are then parsed
+to structs, for example C-S-M-<left>, C-<button-1-click>.
+
+Also see: `bind'."
+    (name  nil :type keyword)
+    (ctrl  nil :type boolean)
+    (alt   nil :type boolean)
+    (shift nil :type boolean))
+
+  ;; load this during compile time so we can read structs.
+  (defmethod make-load-form ((key key) &optional env)
+    (declare (ignore env))
+    (make-load-form-saving-slots key)))
+
 (defclass event ()
   ((key
     :initarg       :key
     :initform      nil
     :reader        event-key
-    :type          (or null integer keyword character)
-    :documentation "Character or keyword representing a function key, terminal :resize or mouse event.")
+    :type          (or null integer keyword character key)
+    :documentation "Lisp character representing a character key or key struct representing a function key or mouse button.")
 
    (code
     :initarg       :code
@@ -52,7 +78,7 @@ component +--> widget ---+--> window  +--> screen
     :type          (or null integer)
     :documentation "Integer code representing the character or function key as returned by ncurses:getch or get_wch."))
 
-  (:documentation  ""))
+  (:documentation  "And event represents characters, function keys, mouse buttons and terminal resize events."))
 
 (defclass mouse-event (event)
   ((position-y
@@ -65,14 +91,7 @@ component +--> widget ---+--> window  +--> screen
     :initarg       :x
     :initform      nil
     :type          (or null integer)
-    :documentation "The x coordinate (column) of the mouse event.")
-
-   (modifiers
-    :initarg       :modifiers
-    :initform      nil
-    :reader        event-modifiers
-    :type          (or null cons)
-    :documentation "A list containing any combination of :ctrl, :shift and :alt"))
+    :documentation "The x coordinate (column) of the mouse event."))
 
   (:documentation  "The class represents the ncurses MEVENT struct as returned by getmouse."))
 

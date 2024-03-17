@@ -114,12 +114,18 @@ Example:
 (defmacro event-case ((window event) &body body)
   "Window event loop, events are handled by an implicit case form.
 
-For now, it is limited to events generated in a single window. So events
-from multiple windows have to be handled separately.
+For now, it is limited to events generated in a single window.
+So events from multiple windows have to be handled separately.
 
 In order for event handling to work, input-buffering has to be nil.
 Several control character events can only be handled when
 process-control-chars is also nil.
+
+Allowed values for keys are lisp characters, function key names as
+keywords, t for all events or (nil) for the idle event.
+
+Key structs or emacs-style key specs are not supported, because the
+underlying lisp eql can not test for structs and strings.
 
 If input-blocking is nil, we can handle the (nil) event, i.e. what
 happens between key presses.
@@ -143,10 +149,164 @@ Instead of ((nil) nil), which eats 100% CPU, use input-blocking t."
          (when (event-key ,event)
            (run-hook ,window 'before-event-hook))
          ;; handle the actual events.
-         (case (event-key ,event)
+         ;; event-key can be lisp characters, integers or key structs.
+         ;; if the key is a struct, pass the key-name (lisp keyword) to case.
+         (case (if (typep (event-key ,event) 'key)
+                   (key-name (event-key ,event))
+                   (event-key ,event))
            ,@body)
          (when (event-key ,event)
            (run-hook ,window 'after-event-hook))))))
+
+(defun tokenize-key-spec (str)
+  "Take a single key spec, return a list with key and modifiers.
+
+Character keys are returned as lisp characters, function keys are
+returned as keywords.
+
+The modifiers ctrl, alt (meta) and shift, are returned as single
+character strings, C, M and S.
+
+Examples:
+
+C-M-S-return => (#\Return S M C)
+
+C-<backspace> => (:BACKSPACE C)
+
+The list is then further handled by parse-key-spec, which returns
+a list of chars and assembled key structs."
+  (flet ((function-key-p (str)
+           ;; Return t if spec represents a function key.
+           ;; It is a function key if the char is enclosed in <>.
+           (let ((beg (position #\< str))
+                 (end (position #\> str)))
+             ;; is > the last char, do we have < before that
+             (if (and end
+                      (= end (1- (length str)))
+                      beg)
+                 ;; if a function key, return its position,
+                 ;; so we can easily extract the value
+                 beg
+                 nil)))
+         ;; check if the char is a minus/hyphen char
+         (char-hyphen-p (str)
+           ;; if len=1, check if the last char of str is -.
+           ;; if len>1, check if both last chars are --
+           (cond ((= (length str) 0)
+                  nil)
+                 ((= (length str) 1)
+                  (char= #\- (char str (1- (length str)))))
+                 ((> (length str) 1)
+                  (and (char= #\- (char str (- (length str) 1)))
+                       (char= #\- (char str (- (length str) 2))))))))
+    ;; check if spec is an empty string
+    (unless (= (length str) 0)
+      ;; check if spec is a <function-key> or a character
+      (let ((fkeyp (function-key-p str)))
+        (if fkeyp
+            ;; function key
+            (let (mods)
+              (if (= fkeyp 0) ; pos 0 means there are no mods.
+                  (setq mods nil)
+                  ;; if there are mods, split them on -
+                  (setq mods (split-string (subseq str 0 fkeyp) #\-)))
+              ;; return (:key-name "C" "M" "S")
+              (cons (intern (string-upcase (subseq str (1+ fkeyp) (1- (length str))))
+                            "KEYWORD")
+                    mods))
+            ;; character
+            ;;  check if the (last) char is a hyphen -
+            (if (char-hyphen-p str)
+                ;; char is a hyphen -
+                (let ((mods (reverse (split-string str #\-)))) ; after split we only have mods left
+                  (cons #\- mods))
+                ;; char is not a hyphen -
+                ;;  check if there is a char at all, or we only have mods.
+                (if (char= #\- (char str (- (length str) 1)))
+                    ;; we only have mods "C-M-", a char is not given, return nil as an error
+                    nil
+                    ;; a char is given and it is not -, so we can safely split the spec on -
+                    (let* ((lst (reverse (split-string str #\-)))  ; move char to car, mods to cdr
+                           (char (car lst))
+                           (mods (cdr lst)))
+                      (cond ((= 1 (length char))
+                             ;; coerce "a" t0 #\a
+                             (cons (coerce char 'character) mods))
+                            (t
+                             ;; convert "return" to #\Return
+                             (cons (name-char char) mods)))))))))))
+
+(defun parse-key-spec (spec)
+  (let* ((tokens (tokenize-key-spec spec))
+         (event (car tokens))
+         (mods (when (cdr tokens)
+                 (mapcar (lambda (i)
+                           (char-upcase (coerce i 'character)))
+                         (cdr tokens))))
+         (ctrl (if (member #\C mods) t nil))
+         (alt (if (member #\M mods) t nil))
+         (shift (if (member #\S mods) t nil)))
+    (typecase event
+      (null event)
+      (character
+       ;; the first 32 chars are control chars, so ignore ctrl and shift
+       (when (and (>= (char-code event) 0)
+                  (<= (char-code event) 31))
+         (setq ctrl nil
+               shift nil))
+       ;; if an alphabetic char is already upcased, ignore shift
+       (when (and (alpha-char-p event)
+                  (char= event (char-upcase event))
+                  shift)
+         (setq shift nil))
+       ;; if an alphabetic char is downcase, upcase it and delete shift
+       (when (and (alpha-char-p event)
+                  (char= event (char-downcase event))
+                  shift)
+         (setq shift nil
+               event (char-upcase event)))
+       ;; if ctrl is t, convert chars 64-95 to their corresponding control chars
+       (when (and (>= (char-code event) 64)
+                  (<= (char-code event) 95)
+                  ctrl)
+         (setq ctrl nil
+               event (code-char (- (char-code event) 64))))
+       ;; do the same for the lower-case chars 97-122
+       (when (and (>= (char-code event) 97)
+                  (<= (char-code event) 122)
+                  ctrl)
+         (setq ctrl nil
+               event (code-char (- (char-code event) 96))))
+       ;; edge case:
+       ;; Return ^? or C-? as <backspace> key or #\rubout char
+       ;; but only if Alt is not pressed at the same time.
+       ;; on my keyboard,  <-- sends ^? 127 <backspace>
+       ;;                C-<-- sends ^H   8 #\backspace
+       (if (and ctrl
+                (not alt)
+                (char= #\? event))
+           (list (make-key :name :backspace))
+
+           ;; all other return values:
+           ;; if alt is t, return a list of #\esc and the event char.
+           (if alt
+               (list #\esc
+                     event)
+               (list event))))
+      (keyword
+       (list (make-key :name event
+                       :ctrl ctrl
+                       :alt  alt
+                       :shift shift))))))
+
+(defun parse-key (spec)
+  "Take a string with zero or more key specs, return a list of events."
+  (if (position #\space spec)
+      ;; If the spec contains spaces, it contains more than one key
+      (let ((spec (split-string spec)))
+        ;; nconc the keys to one big list
+        (mapcan #'parse-key-spec spec))
+      (parse-key-spec spec)))
 
 (defun bind (object event handler)
   "Bind the handler to the event in the bindings alist of the object.
@@ -180,27 +340,44 @@ between keypresses. Here the main application state can be updated.
 Alternatively, to achieve the same effect, input-blocking can be set
 to a specific delay in miliseconds.
 
-Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
+Example use: (bind scr #\q (lambda (win event) (throw scr :quit)))"
+  ;; use slot instead of accessor
   (with-accessors ((bindings bindings)) object
     (cond ((or (null event)
                (atom event))
-           (if (and (stringp event)
-                    (= (length event) 2)
-                    (char= (char event 0) #\^))
-               ;; when event is a control char in caret notation, i.e. "^A"
-               (setf bindings (acons (string-to-char event) handler bindings))
-               (setf bindings (acons event handler bindings))))
+
+           (typecase event
+             (string
+              ;; if event is a string, treat it as a key spec.
+              (let ((res (parse-key event)))
+                ;; "" = nil, but we wont use empty strings for nil events.
+                (when res
+                  (if (= 1 (length res))
+                      ;; if we only have one single key in the parsed list
+                      (setf bindings (acons (car res) handler bindings))
+                      ;; if the string contains more than one key, pass the parsed list to bind again.
+                      (bind object res handler)))))
+             ;; if event is a keyword, treat it as a key name without modifiers.
+             (keyword
+              (setf bindings (acons (make-key :name event) handler bindings)))
+             ;; nil, character, integer
+             (t
+              (setf bindings (acons event handler bindings)))))
           ;; instead of a single event, bind a chain of events.
           ;; the first event is a prefix key and is bound to a sub-keymap instead of a handler.
           ;; the first event that is bound to a handler completes the chain.
           ((listp event)
-           (labels ((bind-keys (key value node)
-                      (let ((ch (if (and (stringp (elt key 0))
-                                         (= (length (elt key 0)) 2)
-                                         (char= (char (elt key 0) 0) #\^))
-                                    (string-to-char (elt key 0))
-                                    (elt key 0))))
-                        (if (> (length key) 1)
+           (labels ((bind-keys (keys value node)
+                      ;; if any of the list elements is still "^X" in caret notation, parse it to a char.
+                      (let ((ch (if (and (stringp (elt keys 0))
+                                         (= (length (elt keys 0)) 2)
+                                         (char= (char (elt keys 0) 0) #\^))
+                                    (string-to-char (elt keys 0))
+                                    ;; if a list element is a keyword, treat it as key name without modifiers.
+                                    (if (keywordp (elt keys 0))
+                                        (make-key :name (elt keys 0))
+                                        (elt keys 0)))))
+                        (if (> (length keys) 1)
                             ;; recursively bind prefix keys to sub-keymaps
                             ;; first: get an existing keymap or make a new one
                             (let ((map (if (and (assoc ch (bindings node))
@@ -213,7 +390,7 @@ Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
                               ;; then proceed with the recursion but only if a map is available
                               (when map
                                 ;; first bind the sub-keys to the map
-                                (bind-keys (subseq key 1) value map)
+                                (bind-keys (cdr keys) value map)
                                 ;; if there already is an existing binding and the value is a keymap
                                 (if (and (assoc ch (bindings node))
                                          (typep (cdr (assoc ch (bindings node))) 'keymap))
@@ -226,7 +403,9 @@ Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
                                       ;; overwrite it with the new keymap binding.
                                       (when (and (assoc ch (bindings node))
                                                  (not (typep (cdr (assoc ch (bindings node))) 'keymap)))
+                                        ;; delete the old binding before pushing a new one
                                         (setf (bindings node) (delete ch (bindings node) :key #'car)))
+                                      ;; then push a subkeymap
                                       (push (cons ch map) (bindings node))))))
                             ;; if length = 1 we're at the last event which is bound to the actual value
                             (progn
@@ -243,6 +422,7 @@ Example use: (bind scr #\q  (lambda (win event) (throw scr :quit)))"
   "Remove the event and the handler function from object's bindings alist.
 
 If event argument is a list, remove the whole sequence of events (key chain)."
+  ;; use slot instead of accessor
   (with-accessors ((bindings bindings)) object
     (cond ((or (null event)
                (atom event))
@@ -267,8 +447,15 @@ If event argument is a list, remove the whole sequence of events (key chain)."
 
 As a second argument, optionally a parent keymap can be given.
 
-As with bind, the keys can be characters, two-char strings in caret
-notation for control chars and keywords for function keys.
+Keys can be characters, two-char strings in caret notation for control
+chars, key structs for function keys with modifiers or a keyword
+for a function key without modifiers, which will implicitely converted
+to a struct.
+
+While bind can support emacs-style key specs like C-M-S-<home> and
+key chains, define-keymap can not yet, so function keys have to be
+given as structs and key chains have to be constructed manually,
+by passing a sub-keymap as a handler of a prefix key.
 
 If a keymap with the same name already exists, it will be deleted
 before the new one is added."
@@ -306,26 +493,36 @@ before the new one is added."
 If value v is a symbol, first convert it to a function object.
 
 The key can be a lisp character, a two-char string in caret notation for
-control chars and a keyword for function keys.
+control chars, a key struct for function keys with modifiers, or a keyword
+which will be implicitely converted to a struct without modifiers.
 
 If the key is given as a caret notation string, first convert it to
 the corresponding control char."
-  `(cond ((and (symbolp ,v) (fboundp ,v))
+  `(cond ((and (symbolp ,v)
+               (fboundp ,v))
           ;; if the function is given as a symbol and is fbound
           (if (stringp ,k)
               ;; when the event is given as a 2-char string: "^A"
               (push (cons (string-to-char ,k) (fdefinition ,v)) ,alist)
-              (push (cons ,k (fdefinition ,v)) ,alist)))
-         ((functionp ,v)
-          ;; if the function is given as a function object
-          (if (stringp ,k)
-              (push (cons (string-to-char ,k) ,v) ,alist)
-              (push (cons ,k ,v) ,alist)))
+              ;; when the event is a keyword, treat it as a key name
+              (if (keywordp ,k)
+                  (push (cons (make-key :name ,k) (fdefinition ,v)) ,alist)
+                  ;; chars, t and nil
+                  (push (cons ,k (fdefinition ,v)) ,alist))))
+
+         ;; if the function is given as a function object
          ;; if instead of a handler function, we have a keymap.
-         ((typep ,v 'keymap)
+         ((or (functionp ,v)
+              (typep ,v 'keymap))
+          ;; if the function is given as a symbol and is fbound
           (if (stringp ,k)
+              ;; when the event is given as a 2-char string: "^A"
               (push (cons (string-to-char ,k) ,v) ,alist)
-              (push (cons ,k ,v) ,alist)))
+              ;; when the event is a keyword, treat it as a key name
+              (if (keywordp ,k)
+                  (push (cons (make-key :name ,k) ,v) ,alist)
+                  ;; chars, t, nil, key structs
+                  (push (cons ,k ,v) ,alist))))
          (t
           (error "DEFINE-KEYMAP: Invalid binding type. Supported types: symbol, function, keymap."))))
 
@@ -401,7 +598,7 @@ An event should be bound to the pre-defined function exit-event-loop."
              ;; return a binding pair from a keymap, if it exists.
              ;; if it doesnt exist, and the keymap has a parent,
              ;; recursively check the parent.
-             (let ((pair (assoc event (bindings keymap))))
+             (let ((pair (assoc event (bindings keymap) :test #'equalp)))
                (if pair
                    pair
                    (if (parent keymap)
@@ -426,7 +623,7 @@ An event should be bound to the pre-defined function exit-event-loop."
                                      (symbol (find-keymap (keymap object)))))))))
                ;; object-local bindings override the external keymap
                ;; an event is checked in the bindings first, then in the external keymap.
-               (let ((pair (assoc event (bindings object))))
+               (let ((pair (assoc event (bindings object) :test #'equalp)))
                  (if pair
                      pair
                      (if keymap

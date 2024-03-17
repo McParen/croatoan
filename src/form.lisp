@@ -493,7 +493,7 @@ Bind this to an event or element to exit the event loop of a form."
   "Reset a parent form from an element callback, for example a button."
   (reset (parent object)))
 
-(define-keymap form-map
+(define-keymap form-map ()
   ;; C-a = ^A = #\soh = 1 = start of heading
   ;; exit the edit loop, return t
   (#\soh 'accept)
@@ -503,7 +503,7 @@ Bind this to an event or element to exit the event loop of a form."
   ;; C-r = reset = DC2 = #\dc2
   ;; reset editable elements of the form (fields, checkboxes)
   (#\dc2 'reset)
-  (:key-back-tab 'select-previous-element)
+  (:back-tab 'select-previous-element)
   (#\tab 'select-next-element))
 
 (defun call-button-function (button event)
@@ -521,11 +521,11 @@ Bind this to an event or element to exit the event loop of a form."
 ;; TODO: how to make :left and :right jump to the next element without binding those keys in the form keymap?
 ;; how are we going to use :up and :down bound t the form when we later have a multiline-field?
 
-(define-keymap button-map
+(define-keymap button-map ()
   (#\space 'call-button-function)
   (#\newline 'call-button-function))
 
-(define-keymap checkbox-map
+(define-keymap checkbox-map ()
   (#\space 'toggle-checkbox)
   (#\x 'toggle-checkbox))
 

@@ -321,7 +321,7 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
      (debug-print-field-buffer (current-item object))))
   (draw object))
 
-(define-keymap field-map
+(define-keymap field-map ()
   ;; C-a = ^A = #\soh = 1 = start of heading
   ;; exit the edit loop, return t
   ;; we need this in the field keymap in case a field is used alone outside of a form.
@@ -338,10 +338,10 @@ The buffer can be longer than the displayed field width, horizontal scrolling is
   ;; reset the field
   (#\dc2 'reset)
 
-  (:key-arrow-left  'move-previous-char)
-  (:key-arrow-right 'move-next-char)
-  (:key-backspace   'delete-previous-char)
-  (:key-delete-char 'delete-next-char)
-  (:key-insert-char (lambda (field)
-                      (toggle-insert-mode field)))
+  (:left      'move-previous-char)
+  (:right     'move-next-char)
+  (:backspace 'delete-previous-char)
+  (:delete    'delete-next-char)
+  (:insert    (lambda (field)
+                (toggle-insert-mode field)))
   (t 'field-add-char))

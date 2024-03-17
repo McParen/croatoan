@@ -48,15 +48,11 @@ position (y x) to get a new position (y+dy x+dx)."
   (case direction-name
     (:up-left         '(-1 -1))
     (:up              '(-1  0))
-    (:key-arrow-up    '(-1  0)) ; = up
     (:up-right        '(-1  1))
     (:left            '( 0 -1))
-    (:key-arrow-left  '( 0 -1)) ; = left
     (:right           '( 0  1))
-    (:key-arrow-right '( 0  1)) ; = right
     (:down-left       '( 1 -1))
     (:down            '( 1  0))
-    (:key-arrow-down  '( 1  0)) ; = down
     (:down-right      '( 1  1))))
 
 (defun move-direction (window direction &optional (n 1))

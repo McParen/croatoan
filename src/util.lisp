@@ -53,6 +53,10 @@ In particular:
 
 See: https://en.wikipedia.org/wiki/Control_character#How_control_characters_map_to_keyboards"))
 
+(defmethod key-to-string ((key key))
+  "Take a key struct, return the ncurses/terminfo name as a string."
+  (key-to-string (key-code key)))
+
 (defmethod key-to-string ((key-name symbol))
   "Take a keyword representing a croatoan function key name, return the corresponding ncurses/terminfo name as a string."
   (key-to-string (key-name-to-code key-name)))
@@ -140,12 +144,19 @@ This avoids large gaps when long urls are wrapped, for example."
                       ;; then print the rest starting from pos2
                       (prinw (subseq word pos2))))
                    ;; split words longer than 20 chars (for example long urls)
-                   ((and (not (zerop pos)) (> len split-length) (> (+ pos len) width))
-                    (if (= width pos) (newline) (space))
-                    (let ((pos2 (- width pos)))
-                      (princ (subseq word 0 pos2))
-                      (newline)
-                      (prinw (subseq word pos2))))
+                   ((and (not (zerop pos))
+                         (> len split-length)
+                         (> (+ pos len) width))
+                    (if (= width pos)
+                        ;; if we have a long word at the end of the line,
+                        ;; jump to the next line, then try again.
+                        (progn (newline)
+                               (prinw word))
+                        (progn (space)
+                               (let ((pos2 (- width pos)))
+                                 (princ (subseq word 0 pos2))
+                                 (newline)
+                                 (prinw (subseq word pos2))))))
                    ;; fitting word at pos=0
                    ((and (zerop pos) (<= len width))
                     (princ word)

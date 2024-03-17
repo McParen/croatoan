@@ -4,6 +4,44 @@
 
 Notable changes since v0.2 (231014), which corresponds to Quicklisp release 231021:
 
+*** Use structs for fkeys, allow short emacs-style key specs (240317)
+
+- Instead of verbose keyword names like =:key-ctrl-alt-arrow-left=,
+  store function keys as structs where modifiers crtl, alt and shift
+  are slots.
+- Some keys like :key-arrow-left can thus be renamed back to their
+  previous short names like :left.
+- Add functions to parse emacs-style key specs and key chains to
+  characters and key structs:
+
+#+BEGIN_EXAMPLE
+CL-USER> (parse-key "C-x M-c C-M-S-<home>")
+(#\Can #\Esc #\c #S(KEY :NAME :HOME :CTRL T :ALT T :SHIFT T))
+#+END_EXAMPLE
+
+- This allows emacs-style, compact key descriptions like
+  =C-M-S-<left>=, that now can be used with bind for key bindings.
+- =define-keymap= can also use structs for modified function keys
+  but cant yet bind key chains.
+- Adapt event-case to switch on key-name in case of key events.
+- Add equalp as the test function to all assoc calls where key
+  structs are used.
+- Adapt functions that assumed that function keys are keywords to
+  assume they are structs.
+- Rename all mouse events from past for to infinitive, e.g. from
+  =:button-1-clicked= to =:button-1-click.=
+- Remove the modifiers flot from mouse-event because modifiers
+  are now encoded in the event-key struct.
+- Add method =key-to-string= for key structs.
+- Add =code-key= and =key-code=, equivalent of cl:char-code and
+  cl:code-char, to translate between key structs and ncurses codes.
+- Add internal function =get-key-event= to check if the event is
+  :mouse and to make the event object accordingly, which is then 
+  used for both get-event and get-wide-event.
+- Fix wrap to handle long words at the end of a line.
+- Fix element keymap definitions. An empty list for missing parent
+  keymaps has to be explicitely given, like in defclass.
+
 *** Add extended function keys to the list of recognized events (240127)
 
 - After initializing the screen, check whether common extended

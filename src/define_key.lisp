@@ -4,10 +4,13 @@
 ;; define a keycode
 ;; http://invisible-island.net/ncurses/man/define_key.3x.html
 
-(defun define-function-key (key-name definition &key (key-code nil))
+(defun define-function-key (key definition &key (key-code nil))
   "Add or replace a new function key defined by the given character sequence.
 
-key-name is the symbol used to represent the key (e.g. :f1).
+The key can be given by a key struct, which at least has to contain
+the key-name slot.
+
+The key name is a keyword symbol used to represent the key (e.g. :f1).
 
 The definition of the function key can be passed as a list of
 characters or as a string.
@@ -15,9 +18,9 @@ characters or as a string.
 The definition is the raw (escape) sequence of characters returned by
 the terminal to identify an event (key pressed, mouse event, etc.).
 
-If key-code is an integer, a new mapping (name . code) is added
-to the database overwriting any already existing mapping which
-contains either key-name or key-code.
+If key-code is an integer, a new mapping (code . key) is added to the
+*key-alist* database overwriting any already existing mapping which
+contains either key or code.
 
 If key-code is nil (default) the mapping is added with an unique,
 unused, generated keycode."
@@ -34,20 +37,24 @@ unused, generated keycode."
                   key-code
 
                   ;; if the new code is NOT given ...
-                  (if (assoc key-name *key-alist*)
-                      ;; ... and name exists
+                  ;; ... and the key exists
+                  (if (rassoc key *key-alist* :test #'equalp)
                       ;; add the new sequence to the code already associated
-                      ;; with the name instead of adding a new code
-                      ;; we do not want one name associated with more than one code
-                      (cdr (assoc key-name *key-alist*))
+                      ;; with the key instead of adding a new code
+                      ;; we do not want one key associated with more than one code
+                      (car (rassoc key *key-alist* :test #'equalp))
                       ;; if code is not given and name doesnt exist
                       ;; add the new name and generate a new code
                       (gen-unused-key-code)))))
 
-    ;; add name and code to the croatoan database
-    (add-function-key key-name code)
+    ;; add name and code to *key-alist*
+    (add-function-key key code)
     ;; add control sequence and code to the underlying ncurses database.
     (ncurses:define-key control-string code)))
+
+;; key_defined
+;; check if a keycode is defined
+;; http://invisible-island.net/ncurses/man/key_defined.3x.html
 
 (defun function-key-code (definition)
   "Take a function key capability name or definition, return the ncurses code.
