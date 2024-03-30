@@ -3873,6 +3873,8 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 (define-keymap t28b-parent-map ()
   (#\q 'exit-event-loop)
   (#\a 't28-hello)
+  ("C-k m" (lambda (w e) (princ "t28b-parent-map: C-k m" w) (terpri w)))
+  ("<left> <left>" (lambda (w e) (princ "t28b-parent-map: <left> <left>" w) (terpri w)))
   (#\d 't28-clear))
 
 (define-keymap t28b-esc-map ()
@@ -3885,13 +3887,21 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
 
 ;; defines and centrally registers a keymap
 (define-keymap t28b-map (t28b-parent-map)
-  ("^X" *t28-ctrl-x-map*)               ; ^X = #\can
+  ;; ^X = #\can
+  ("^X" *t28-ctrl-x-map*)
+  ;; S-<right>
   (#s(key :name :right :shift t)
-   (lambda (w e) (format w "Function key with modifiers, given as a struct:~&  ~A~&" (event-key e))))
+   (lambda (w e) (format w "t28b-map: Function key with modifiers, given as a struct:~&  ~A~&" (event-key e))))
+  ;; <right>
   (:right
-   (lambda (w e) (format w "Function key given by its name only, without modifiers:~&  ~A~&" (event-key e))))
-  (#\esc (find-keymap 't28b-esc-map))   ; #\esc = M-
-  ("^B" 't28b-show-bindings))           ; ^B = #\stx
+   (lambda (w e) (format w "t28b-map: Function key given by its name only, without modifiers:~&  ~A~&" (event-key e))))
+  ;; #\esc = M-
+  (#\esc (find-keymap 't28b-esc-map))
+  ;; #\esc #\v
+  ("M-v"
+   (lambda (win event) (format win "t28b-map: M-v not added through ESC map but still part of the ESC map.~%")))
+  ;; ^B = #\stx
+  ("^B" 't28b-show-bindings))
 
 (defun t28b ()
   "Use run-event-loop and a pre-defined event handler alist. Use a default handler."
@@ -3903,15 +3913,16 @@ This only works with TERM=xterm-256color in xterm and gnome-terminal."
     ;; Add another event handler to the window not to the external keymap
     ;; Object-local bindings override the external keymap. The local bindings
     ;; are checked first for a handler, then the external keymap.
-    (bind scr #\s (lambda (win event) (format win "Dear John ~A~%" (event-key event))))
+    (bind scr #\s (lambda (win event) (format win "bind: Dear John ~A~%" (event-key event))))
 
     ;; t is the default handler for all events without defined handlers.
     ;; The default event handler should not be used to handle the nil event when input-blocking is nil
     (bind (find-keymap 't28b-map) t
-          (lambda (win event) (format win "Default event handler ~A~%" (event-key event))))
+          (lambda (win event) (format win "bind: Default event handler ~A~%" (event-key event))))
 
     (clear scr)
     (add-string scr "Type a, s or d. Type q to quit.")
+    (terpri scr)
     (refresh scr)
 
     ;; see waiting (input-blocking t) vs polling (input-blocking nil)

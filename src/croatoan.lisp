@@ -326,6 +326,10 @@ If a keymap is bound to a key, this allows keys to be defined as
 prefix keys, so event sequences like '^X a' can be chained together
 and handled like a single event.
 
+Bind implicitely adds t as the default handler to all automatically
+created sub-keymaps, which cancels the input sequence of a key chain
+in case an unknown key is typed.
+
 For every event-loop, at least an event to exit the event loop should
 be assigned, by associating it with the predefined function
 exit-event-loop.
@@ -382,11 +386,17 @@ Example use: (bind scr #\q (lambda (win event) (throw scr :quit)))"
                             ;; first: get an existing keymap or make a new one
                             (let ((map (if (and (assoc ch (bindings node))
                                                 (typep (cdr (assoc ch (bindings node))) 'keymap))
-                                           ;; if a keymap already exists.
+                                           ;; if a keymap already exists, take it.
                                            (cdr (assoc ch (bindings node)))
-                                           ;; make a new keymap only if value is non-nil.
+                                           ;; if it doesnt exist, make a new one only if value is non-nil.
+                                           ;; if value is nil, map will be nil, and no new sub-binding will be made.
                                            (when value
-                                             (make-instance 'keymap)))))
+                                             (make-instance 'keymap
+                                                            ;; for sub-maps, the default handler is t, which means
+                                                            ;; the reading of a key sequence will be aborted if an
+                                                            ;; unknown key is hit, and will not block waiting for
+                                                            ;; a known binding.
+                                                            :bindings (list t t))))))
                               ;; then proceed with the recursion but only if a map is available
                               (when map
                                 ;; first bind the sub-keys to the map
@@ -447,84 +457,42 @@ If event argument is a list, remove the whole sequence of events (key chain)."
 
 As a second argument, optionally a parent keymap can be given.
 
-Keys can be characters, two-char strings in caret notation for control
-chars, key structs for function keys with modifiers or a keyword
-for a function key without modifiers, which will implicitely converted
-to a struct.
+Keys can be characters, key structs for function keys with modifiers
+or a keyword for a function key without modifiers, which will
+implicitely converted to a struct.
 
-While bind can support emacs-style key specs like C-M-S-<home> and
-key chains, define-keymap can not yet, so function keys have to be
-given as structs and key chains have to be constructed manually,
-by passing a sub-keymap as a handler of a prefix key.
+In addition to single chars or keys, emacs-style specs like 'C-x 2'
+or 'C-M-S-<home>' can be given as strings, which will be parsed to
+char and key lists and then bound to the given event.
 
 If a keymap with the same name already exists, it will be deleted
 before the new one is added."
   `(progn
-     (setf *keymaps* (acons ',name
-                            ,(if parent
-                                 `(make-instance 'keymap :parent (find-keymap ',(car parent)))
-                                 '(make-instance 'keymap))
-                            (if (assoc ',name *keymaps*)
-                                (delete ',name *keymaps* :key #'car)
-                                *keymaps*)))
-     (%defcdr (bindings (cdr (assoc ',name *keymaps*))) ,@body)))
+     (setf *keymaps*
+           (acons ',name
+                  ,(if parent
+                       `(make-instance 'keymap :parent (find-keymap ',(car parent)))
+                       '(make-instance 'keymap))
+                  ;; before adding a new keymap, delete the previous with
+                  ;; the same name a new definition replaces the previous
+                  (if (assoc ',name *keymaps*)
+                      (delete ',name *keymaps* :key #'car)
+                      *keymaps*)))
+     (%defcdr (cdr (assoc ',name *keymaps*))
+       ,@body)))
 
 ;; CL-USER> (%defcdr a (:a 'cdr) (:b #'car) (:c (lambda () 1)))
 ;; ((:C . #<FUNCTION (LAMBDA ()) {52C8868B}>)
 ;;  (:B . #<FUNCTION CAR>)
 ;;  (:A . #<FUNCTION CDR>))
-(defmacro %defcdr (alist &body body)
-  "Take an alist and populate it with key-value pairs given in the body."
+(defmacro %defcdr (keymap &body body)
+  "Take a keymap and populate it with key-value pairs given in the body."
   (when (car body)
     `(progn
        ;; add the first key-value pair to the alist
-       (%defcar ,alist ,(car body))
+       (bind ,keymap ,@(car body))
        ;; recursively add the rest of the body
-       (%defcdr ,alist ,@(cdr body)))))
-
-;; CL-USER> (defparameter a ())
-;; CL-USER> (%defcar a (:a 'car))
-;; ((:A . #<FUNCTION CAR>))
-;; CL-USER> (%defcar a (:a (lambda () 1)))
-;; ((:A . #<FUNCTION (LAMBDA ()) {5369211B}>) (:A . #<FUNCTION CAR>))
-(defmacro %defcar (alist (k v))
-  "Push a single key-value list to the alist.
-
-If value v is a symbol, first convert it to a function object.
-
-The key can be a lisp character, a two-char string in caret notation for
-control chars, a key struct for function keys with modifiers, or a keyword
-which will be implicitely converted to a struct without modifiers.
-
-If the key is given as a caret notation string, first convert it to
-the corresponding control char."
-  `(cond ((and (symbolp ,v)
-               (fboundp ,v))
-          ;; if the function is given as a symbol and is fbound
-          (if (stringp ,k)
-              ;; when the event is given as a 2-char string: "^A"
-              (push (cons (string-to-char ,k) (fdefinition ,v)) ,alist)
-              ;; when the event is a keyword, treat it as a key name
-              (if (keywordp ,k)
-                  (push (cons (make-key :name ,k) (fdefinition ,v)) ,alist)
-                  ;; chars, t and nil
-                  (push (cons ,k (fdefinition ,v)) ,alist))))
-
-         ;; if the function is given as a function object
-         ;; if instead of a handler function, we have a keymap.
-         ((or (functionp ,v)
-              (typep ,v 'keymap))
-          ;; if the function is given as a symbol and is fbound
-          (if (stringp ,k)
-              ;; when the event is given as a 2-char string: "^A"
-              (push (cons (string-to-char ,k) ,v) ,alist)
-              ;; when the event is a keyword, treat it as a key name
-              (if (keywordp ,k)
-                  (push (cons (make-key :name ,k) ,v) ,alist)
-                  ;; chars, t, nil, key structs
-                  (push (cons ,k ,v) ,alist))))
-         (t
-          (error "DEFINE-KEYMAP: Invalid binding type. Supported types: symbol, function, keymap."))))
+       (%defcdr ,keymap ,@(cdr body)))))
 
 (defun find-keymap (keymap-name)
   "Return a keymap given by its name from the global keymap alist."
@@ -733,33 +701,42 @@ events to be chained together."))
   (with-slots ((map current-keymap)) object
     (let ((handler (get-event-handler (if map map object) (event-key event))))
       (when handler
-        (cond ((typep handler 'keymap)
-               ;; when the handler is another keymap, lookup the next event from that keymap.
-               ;; For example: "C-x 3", ^X first returns a keymap, then we lookup 3 from that keymap
-               (setf map handler))
-              ((or (functionp handler) (symbolp handler))
-               ;; when the handler is a function, lookup the next event from the object's bindings/keymap.
-               (setf map nil)
-               ;; if args is nil, apply will call the handler with just object and event
-               ;; this means that if we dont need args, we can define most handlers as two-argument functions.
-               (apply-handler handler object event args)))))))
+        (cond
+          ((eq handler t)
+           ;; when the handler is just the boolean t, set the current keymap back to nil and ignore the event.
+           ;; setting the default handler to t allows to exit a sub-keymap when a non-existing key is hit,
+           ;; insted of blocking the event loop and waiting for an existing key to be hit.
+           (setf map nil))
+          ((typep handler 'keymap)
+           ;; when the handler is another keymap, lookup the next event from that keymap.
+           ;; For example: "C-x 3", ^X first returns a keymap, then we lookup 3 from that keymap
+           (setf map handler))
+          ((or (functionp handler) (symbolp handler))
+           ;; when the handler is a function, lookup the next event from the object's bindings/keymap.
+           (setf map nil)
+           ;; if args is nil, apply will call the handler with just object and event
+           ;; this means that if we dont need args, we can define most handlers as two-argument functions.
+           (apply-handler handler object event args)))))))
 
 (defmethod handle-event ((object form) event args)
   "If a form can't handle an event, let the current element try to handle it."
   (with-slots ((map current-keymap)) object
     (let ((handler (get-event-handler (if map map object) (event-key event))))
       (if handler
-        (cond ((typep handler 'keymap)
-               ;; when the handler is another keymap, lookup the next event from that keymap.
-               (setf map handler))
-              ((or (functionp handler) (symbolp handler))
-               ;; when the handler is a function, lookup the next event from the object's bindings/keymap.
-               (setf map nil)
-               ;; if args is nil, apply will call the handler with just object and event
-               ;; this means that if we dont need args, we can define most handlers as two-argument functions.
-               (apply-handler handler object event args)))
-        ;; if there is no handler in the form keymap, pass the event to the current element.
-        (handle-event (current-item object) event args)))))
+          (cond
+            ((eq handler t)
+             (setf map nil))
+            ((typep handler 'keymap)
+             ;; when the handler is another keymap, lookup the next event from that keymap.
+             (setf map handler))
+            ((or (functionp handler) (symbolp handler))
+             ;; when the handler is a function, lookup the next event from the object's bindings/keymap.
+             (setf map nil)
+             ;; if args is nil, apply will call the handler with just object and event
+             ;; this means that if we dont need args, we can define most handlers as two-argument functions.
+             (apply-handler handler object event args)))
+          ;; if there is no handler in the form keymap, pass the event to the current element.
+          (handle-event (current-item object) event args)))))
 
 (defun exit-event-loop (object &optional args)
   "Associate this function with an event to exit the event loop."

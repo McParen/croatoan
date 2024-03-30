@@ -4,6 +4,18 @@
 
 Notable changes since v0.2 (231014), which corresponds to Quicklisp release 231021:
 
+*** Allow define-keymap to use emacs-style key specs (240330)
+
+- Base define-keymap on bind, so emacs-style specs can be given.
+
+- Add a default event handler t to sub-keymaps created by bind.
+  That aborts the input of a key sequence when an unknown key is
+  hit instead of blocking and waiting for a defined key.
+  The default handler is checked in handle-event and sets the
+  keymap pointer back to nil, i.e. the start of the sequence.
+
+- Test changes in examples t28 a-c. 
+
 *** Use structs for fkeys, allow short emacs-style key specs (240317)
 
 - Instead of verbose keyword names like =:key-ctrl-alt-arrow-left=,
