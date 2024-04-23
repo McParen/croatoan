@@ -55,6 +55,9 @@
    (:file "insstr")
    (:file "instr")
    (:file "kernel")
+   (:file "keybound")         ; return definition of keycode
+   (:file "key_defined")      ; check if a keycode is defined
+   (:file "keyok")            ; enable or disable a keycode
    (:file "mouse")
    (:file "move")
    (:file "refresh")

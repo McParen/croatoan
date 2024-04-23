@@ -4,6 +4,28 @@
 
 Notable changes since v0.2 (231014), which corresponds to Quicklisp release 231021:
 
+*** Add escape sequences for function keys with all three modifiers (240423)
+
+- Since xterm and xterm-based terminals do not include terminfo
+  capabilities for function keys with all three modifiers active 
+  (like kRIT8), add them with add-extended-function-keys during
+  initialization of a screen.
+
+- Add CFFI wrappers for ncurses functions keyok, is-cbreak, is-echo,
+  is-nl, is-raw.
+
+- Move function-key-code (key_defined) and function-key-definition
+  (keybound) to their own files.
+
+- If a function key has a code in ncurses but is not added to the
+  key-alist, make get-event return an :unknown key struct.
+
+- Add enable-function-key as a wrapper for ncurses:keyok.
+
+- Update and refactor key handling examples t32 and t32a.
+
+- Add utility function alist2plist.
+
 *** Allow define-keymap to use emacs-style key specs (240330)
 
 - Base define-keymap on bind, so emacs-style specs can be given.

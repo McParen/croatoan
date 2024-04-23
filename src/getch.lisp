@@ -19,10 +19,9 @@ The window from which the char is read is automatically refreshed."
 It will be read with the next call to get-char."
   (ncurses:ungetch chtype))
 
-;; takes an C int denoting a key. returns t or nil.
-;; checks whether a function key is supported by the current terminal.
-(defun key-supported-p (key-char)
-  (ncurses:has-key key-char))
+(defun key-supported-p (code)
+  "Returns t if the code is recognized by the current terminal as a key."
+  (ncurses:has-key code))
 
 ;; keys above the first 0-255 chars cannot fit in a char variable to be returned by getch.
 ;; keys with codes 0400 (256) to 0777 (511) are hard-coded (Solaris).
@@ -367,6 +366,21 @@ f12     kf12    kf24    kf60            kf36    kf48
     ("kNXT7" . #s(key :name :page-down          :alt t :ctrl t))
     ("kNXT8" . #s(key :name :page-down :shift t :alt t :ctrl t))))
 
+;; Function keys with all three active modifiers (C,M,S) that for some
+;; reason are missing in the xterm terminfo.
+(defparameter *extended-key-xterm-sequences*
+  (list
+   (cons "kUP8"  (list #\esc #\[ #\1 #\; #\8 #\A))
+   (cons "kDN8"  (list #\esc #\[ #\1 #\; #\8 #\B))
+   (cons "kRIT8" (list #\esc #\[ #\1 #\; #\8 #\C))
+   (cons "kLFT8" (list #\esc #\[ #\1 #\; #\8 #\D))
+   (cons "kEND8" (list #\esc #\[ #\1 #\; #\8 #\F))
+   (cons "kHOM8" (list #\esc #\[ #\1 #\; #\8 #\H))
+   (cons "kIC8"  (list #\esc #\[ #\2 #\; #\8 #\~))
+   (cons "kDC8"  (list #\esc #\[ #\3 #\; #\8 #\~))
+   (cons "kPRV8" (list #\esc #\[ #\5 #\; #\8 #\~))
+   (cons "kNXT8" (list #\esc #\[ #\6 #\; #\8 #\~))))
+
 ;; called from :around window when :enable-function-keys is t
 (defun add-extended-function-keys ()
   "Check if common extended function keys are supported by the terminal.
@@ -389,7 +403,15 @@ returned as valid events."
                   (push (cons (function-key-code seq) key) new-keys)))))
           *extended-key-caps*)
     (when new-keys
-      (setf *key-alist* (append *key-alist* (nreverse new-keys))))))
+      (setf *key-alist* (append *key-alist* (nreverse new-keys)))))
+  ;; if an 8-cap (key with 3 active modifiers) has not been added,
+  ;; pass the xterm seq to define-function-key.
+  (mapc (lambda (x)
+          (destructuring-bind (cap . seq) x
+            (unless (or (stringp (tigetstr cap))
+                        (function-key-code seq))
+              (define-function-key (cdr (assoc cap *extended-key-caps* :test #'equalp)) seq))))
+        *extended-key-xterm-sequences*))
 
 (defmacro access-alist (key find-fn test-fn get-value-fn default)
   "Helper macro for 'key-name-to-code' and 'key-code-to-name'."
@@ -426,7 +448,7 @@ of the optional parameter: 'default'."
 
 (defgeneric delete-function-key (object)
   (:documentation
-   "Delete one or more mappings key <-> ncurses code from *key-alist*."))
+   "Delete one or more (code . key) mappings from *key-alist*."))
 
 (defmethod delete-function-key ((key-name symbol))
   "Delete all keys with the given keyword name from *key-alist*.
@@ -446,16 +468,17 @@ have different modifier slots, all the keys with the given name are deleted."
                                *key-alist*)))
 
 (defmethod delete-function-key ((key key))
-  "Take a key struct, delete the mapping key <-> code from *key-alist*."
+  "Take a key struct, delete the mapping (code . key) from *key-alist*."
   (setf *key-alist* (remove-if (lambda (a)
                                  (equalp key (cdr a)))
                                *key-alist*)))
 
 (defun add-function-key (key code)
-  "Add a new mapping (key . code) to *key-alist*.
+  "Add a new mapping (code . key) to *key-alist*.
 
-If the alist already contains the key or the code, the existing
-mapping will be overwritten by the new values."
+The codes and keys have to be unique, so if the alist already contains
+either the key or the code, any existing mapping will be replaced by
+the new one."
   ;; if either key struct or code already exist, remove them from the alist first.
   (let ((alist (remove-if (lambda (a)
                             (or (equalp (cdr a) key)
@@ -485,7 +508,7 @@ To avoid conflicts with existing ncurses code numbers, new numbers start at 1024
         new-code
         1024)))
 
-(defun function-key-p (number)
+(defun function-key-p (code)
   "Take a single-byte key code returned by get-char, return t if the
 number is a known function key, or nil if it is either a char or an
 unknown key.
@@ -493,8 +516,8 @@ unknown key.
 Used in get-event to check the return value of get-char.
 
 get-wide-char/event has a different way to check for function keys."
-  (and (> number 255)
-       (key-code-to-name number nil)))
+  (and (> code 255)
+       (key-code-to-name code nil)))
 
 ;; http://rosettacode.org/wiki/Keyboard_input/Keypress_check
 ;; Returns t if a key has been pressed and a char can be read by get-char.
@@ -512,22 +535,27 @@ get-wide-char/event has a different way to check for function keys."
 (defun get-key-event (ch)
   "If the event is mouse, return a mouse event, otherwise a normal event."
   (let ((ev (code-key ch)))
-    ;; we have to return mouse as a keyword, because we have to get the struct
-    ;; in a second step from get-mouse-event.
-    (if (eq ev :mouse)
-        ;; a mouse event returns 3 values, see mouse.lisp
-        (multiple-value-bind (mev y x mods) (get-mouse-event)
-          (make-instance 'mouse-event
-                         ;; we only can make the mouse struct here
-                         :key (make-key :name mev
-                                        :ctrl  (if (member :ctrl  mods) t nil)
-                                        :alt   (if (member :alt   mods) t nil)
-                                        :shift (if (member :shift mods) t nil))
-                         :code ch
-                         :y y
-                         :x x))
-        ;; for normal function keys, return a struct and the code.
-        (make-instance 'event :key ev :code ch))))
+    (if ev
+        ;; we have to return mouse as a keyword, because we have to get the struct
+        ;; in a second step from get-mouse-event.
+        (if (eq ev :mouse)
+            ;; a mouse event returns 3 values, see mouse.lisp
+            (multiple-value-bind (mev y x mods) (get-mouse-event)
+              (make-instance 'mouse-event
+                             ;; we only can make the mouse struct here
+                             :key (make-key :name mev
+                                            :ctrl  (if (member :ctrl  mods) t nil)
+                                            :alt   (if (member :alt   mods) t nil)
+                                            :shift (if (member :shift mods) t nil))
+                             :code ch
+                             :y y
+                             :x x))
+            ;; for normal function keys, return a struct and the code.
+            ;; if the key is unknown, ev is nil, but the code is returned.
+            (make-instance 'event :key ev :code ch))
+        ;; if we have a function key defined in ncurses, but not in the key-alist,
+        ;; the event is returned with :unknown as key.
+        (make-instance 'event :key (make-key :name :unknown) :code ch))))
 
 ;; works only when input-blocking is set to nil. enable-fkeys should also be t.
 ;; events can be handled with case.
@@ -568,5 +596,5 @@ The following chars can be returned:
       ((function-key-p ch)
        (get-key-event ch))
       (t
-       ;; if we have a code without a corresponding key, return the code as key
-       (make-instance 'event :key ch :code ch)))))
+       ;; if we have a code without a corresponding key, return :unknown as key.
+       (make-instance 'event :key :unknown :code ch)))))

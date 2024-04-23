@@ -7,8 +7,10 @@
 (defgeneric char-to-string (char)
   (:documentation
    "Return a string representing the char.
-   Control characters are displayed using the ^X notation.
-   Function keys are not represented by this routine. Use key-to-string instead."))
+
+Control characters are displayed using the ^X notation.
+
+Function keys are not represented by this routine. Use key-to-string instead."))
 
 (defmethod char-to-string ((char character))
   (char-to-string (char-code char)))
@@ -55,7 +57,8 @@ See: https://en.wikipedia.org/wiki/Control_character#How_control_characters_map_
 
 (defmethod key-to-string ((key key))
   "Take a key struct, return the ncurses/terminfo name as a string."
-  (key-to-string (key-code key)))
+  (when (key-code key)
+    (key-to-string (key-code key))))
 
 (defmethod key-to-string ((key-name symbol))
   "Take a keyword representing a croatoan function key name, return the corresponding ncurses/terminfo name as a string."

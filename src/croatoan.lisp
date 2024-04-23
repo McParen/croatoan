@@ -326,16 +326,21 @@ If a keymap is bound to a key, this allows keys to be defined as
 prefix keys, so event sequences like '^X a' can be chained together
 and handled like a single event.
 
-Bind implicitely adds t as the default handler to all automatically
-created sub-keymaps, which cancels the input sequence of a key chain
-in case an unknown key is typed.
-
 For every event-loop, at least an event to exit the event loop should
 be assigned, by associating it with the predefined function
 exit-event-loop.
 
-If a handler for the default event t is defined, it will handle all
-events for which no specific event handler has been defined.
+If a default event handler (for the event t) is defined, it will
+handle all events for which no specific event handler has been
+defined.
+
+If the handler for an event is the symbol t, the event is ignored.
+If the event was part of an event sequence, the handler t cancels the
+input sequence.
+
+Bind adds t as the default handler to all implicitly created
+sub-keymaps, which cancels the input sequence of a key chain in case
+an unknown key is typed.
 
 If input-blocking of the window is set to nil, a handler for the nil
 event can be defined, which will be called at a specified frame-rate
@@ -349,10 +354,9 @@ Example use: (bind scr #\q (lambda (win event) (throw scr :quit)))"
   (with-accessors ((bindings bindings)) object
     (cond ((or (null event)
                (atom event))
-
            (typecase event
+             ;; if event is a string, treat it as a key spec.
              (string
-              ;; if event is a string, treat it as a key spec.
               (let ((res (parse-key event)))
                 ;; "" = nil, but we wont use empty strings for nil events.
                 (when res
@@ -364,7 +368,10 @@ Example use: (bind scr #\q (lambda (win event) (throw scr :quit)))"
              ;; if event is a keyword, treat it as a key name without modifiers.
              (keyword
               (setf bindings (acons (make-key :name event) handler bindings)))
-             ;; nil, character, integer
+             ;; other event types:
+             ;; t      default event handler for all undefined events.
+             ;; nil    idle handler for input-blocking nil.
+             ;; character events, function key structs, integer key codes.
              (t
               (setf bindings (acons event handler bindings)))))
           ;; instead of a single event, bind a chain of events.
@@ -500,11 +507,21 @@ before the new one is added."
 
 ;; source: alexandria
 (defun plist2alist (plist)
-  "Take a plist in the form (k1 v1 k2 v2 ...), return an alist ((k1 . v1) (k2 . v2) ...)"
+  "Take a plist in the form (k1 v1 k2 v2), return an alist ((k1 . v1) (k2 . v2))"
   (let (alist)
     (do ((lst plist (cddr lst)))
         ((endp lst) (nreverse alist))
       (push (cons (car lst) (cadr lst)) alist))))
+
+;; (loop for (k . v) in alist nconcing (list k v))
+(defun alist2plist (alist)
+  "Take an alist ((k1 . v1) (k2 . v2)), return a plist (k1 v1 kv v2)."
+  (let (plist)
+    (do ((lst alist (cdr lst)))
+        ((null lst))
+      (push (caar lst) plist)
+      (push (cdar lst) plist))
+    (nreverse plist)))
 
 (defun check-string-char (char)
   "If char is a string convert it to a character."
@@ -601,6 +618,7 @@ An event should be bound to the pre-defined function exit-event-loop."
       ;; Event occured and event handler is defined.
       ((and event
             (ev event))
+       ;; return the handler
        (cdr (ev event)))
       ;; Event occured and a default event handler is defined.
       ;; If not even the default handler is defined, the event is ignored.
@@ -711,8 +729,10 @@ events to be chained together."))
            ;; when the handler is another keymap, lookup the next event from that keymap.
            ;; For example: "C-x 3", ^X first returns a keymap, then we lookup 3 from that keymap
            (setf map handler))
-          ((or (functionp handler) (symbolp handler))
-           ;; when the handler is a function, lookup the next event from the object's bindings/keymap.
+          ((or (functionp handler)
+               (symbolp handler))
+           ;; when the handler is a function, the lookup has been successful,
+           ;; set the map back to nil, to lookup the next event from the object's bindings or keymap.
            (setf map nil)
            ;; if args is nil, apply will call the handler with just object and event
            ;; this means that if we dont need args, we can define most handlers as two-argument functions.
@@ -729,13 +749,14 @@ events to be chained together."))
             ((typep handler 'keymap)
              ;; when the handler is another keymap, lookup the next event from that keymap.
              (setf map handler))
-            ((or (functionp handler) (symbolp handler))
+            ((or (functionp handler)
+                 (symbolp handler))
              ;; when the handler is a function, lookup the next event from the object's bindings/keymap.
              (setf map nil)
              ;; if args is nil, apply will call the handler with just object and event
              ;; this means that if we dont need args, we can define most handlers as two-argument functions.
              (apply-handler handler object event args)))
-          ;; if there is no handler in the form keymap, pass the event to the current element.
+          ;; if there is no handler in the form keymap, pass the event to the current form element.
           (handle-event (current-item object) event args)))))
 
 (defun exit-event-loop (object &optional args)

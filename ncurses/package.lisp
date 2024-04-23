@@ -231,19 +231,25 @@
    nocbreak
    echo
    noecho
-   halfdelay
    intrflush
    keypad
    meta
    nodelay
+   notimeout
+   nl
+   nonl
    raw
    noraw
-   noqiflush
    qiflush
-   notimeout
+   noqiflush
+   halfdelay
    timeout
    wtimeout
    typeahead
+   is-cbreak
+   is-echo
+   is-nl
+   is-raw
 
    ;; insch / insert a character before cursor in a curses window
    insch
@@ -390,8 +396,6 @@
    scrollok
    setscrreg
    wsetscrreg
-   nl
-   nonl
 
    ;; pad / create and display curses pads
    newpad

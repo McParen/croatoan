@@ -1416,13 +1416,6 @@ returned byte by byte as with get-char."
     (define-function-key #s(key :name :alt-1) (list #\esc #\1))
     (define-function-key #s(key :name :alt-n) (list #\esc #\n))
 
-    ;; even though non-standard function keys with modifiers are added on startup,
-    ;; depending on terminfo they are sometimes not recognized
-    ;; here those sequences can be added manually.
-    (define-function-key #s(key :name :left   :ctrl t :alt t :shift t) (list #\esc #\[ #\1 #\; #\8 #\D))
-    (define-function-key #s(key :name :right  :ctrl t :alt t :shift t) (list #\esc #\[ #\1 #\; #\8 #\C))
-    (define-function-key #s(key :name :delete :ctrl t :alt t :shift t) (list #\esc #\[ #\3 #\; #\8 #\~))
-
     (bind scr #\q 'exit-event-loop)
     (bind scr t (lambda (w e)
                   (format w "Event: ~A ~A~%" (event-key e) (event-code e))))
@@ -4194,43 +4187,37 @@ Press C-j, C-m, C-i, C-h to see the difference."
     (bind scr "^Q" 'exit-event-loop)
     (bind scr t
           (lambda (win event)
-            (with-accessors ((key event-key)
-                             (code event-code)) event
+            (with-accessors ((key event-key) (code event-code)) event
               (clear win)
               (add win "Press C-q to exit." :y 0 :x 0)
               (move win 2 0)
-              (typecase key
-                (character
-                 (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
-                 (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
-                 (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string key))
-                 (let ((str (function-key-definition code)))
-                   (format win "key-definition (ncurses:keybound)~19@S code from definition: ~A~&" str (function-key-code str))))
 
-                ;; function-key-p is a boolean flag returned by get-event/get-wide-event
-                ;; it can be used to distinguish whether an event is a single character code
-                ;; or a code representing a function key sequence.
-                (keyword
-                 (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
-                 (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
-                 ;; decoding a char of a function key returns no useful result
-                 (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string code))
-                 (let ((str (function-key-definition code)))
-                   (format win "key-definition (ncurses:keybound)~19@S code: ~A~&" str (function-key-code str))))
+              ;; function-key-p is a boolean flag returned by get-event/get-wide-event
+              ;; it can be used to distinguish whether an event is a single character code
+              ;; or a code representing a function key sequence.
 
-                ;; if a code is returned as the event key, that means that a function key has been defined,
-                ;; but the code has not been assigned a keyword name in croatoan (use add-function-key).
-                ;; The underlying ncurses/terminfo name can be accessed through key-to-string (or ncurses:keyname).
-                (number
-                 (format win "event-key      (get-wide-event)  ~20@A code: ~A type: ~A~&" key code (type-of key))
-                 (format win "key-to-string  (ncurses:keyname) ~20@A~&" (key-to-string key))
-                 ;; decoding a char of a function key returns no useful result
-                 (format win "char-to-string (ncurses:unctrl)  ~20@A~&" (char-to-string key))
-                 (let ((str (function-key-definition code)))
-                   (format win "key-definition (ncurses:keybound)~19@S code: ~A~&" str (function-key-code str))))
+              ;; if a code is returned as the event key, that means that a function key has been defined,
+              ;; but the code has not been assigned a keyword name in croatoan (use add-function-key).
+              ;; The underlying ncurses/terminfo name can be accessed through key-to-string (or ncurses:keyname).
 
-                (t
-                 (format win "Unknown event key type ~A ~A" key code)))
+              (format win "event type: ~A~&" (type-of key))
+              (format win "event-key:  ~A~&" key)
+              (format win "event-code: ~A~&" code)
+              (terpri win)
+
+              (format win "croatoan                 ncurses~&")
+              (format win "--------                 -------~&")
+              (format win "key-to-string            keyname      ~A~&" (key-to-string key))
+              (terpri win)
+
+              ;; the definition of a function key is the escape sequence stored in terminfo as a string.
+              (let ((str (function-key-definition code)))
+                (format win "function-key-definition  keybound     ~S~&" str)
+                (format win "function-key-code        key-defined  ~A~&" (function-key-code str)))
+
+              (terpri win)
+              ;; decoding a char of a function key returns no useful result
+              (format win "char-to-string           unctrl       ~A~&" (char-to-string code))
               (refresh win))))
     (clear scr)
     (add scr "Press C-q to exit." :y 0 :x 0)
@@ -4246,19 +4233,31 @@ Press C-j, C-m, C-i, C-h to see the difference."
                     :cursor-visible        nil
                     :use-terminal-colors   t)
     (setf *print-right-margin* (width scr))
-
     (bind scr #\q 'exit-event-loop)
-    (clear scr)
-
-    (loop for i from 517 to 537 do
-      (format scr "~A -- " i)
-      (format scr "~20@A -- " (key-code-to-name i))
-      (format scr "key-to-string  (ncurses:keyname) ~12@A " (key-to-string i))
-      (format scr "char-to-string (ncurses:unctrl)  ~12@A " (char-to-string i))
-      (let ((str (function-key-definition i)))
-        (format scr "key-definition (ncurses:keybound)~12@S code: ~A~&" str (function-key-code str))))
-
-    (refresh scr)
+    (let ((n 1))
+      (flet ((update ()
+               (clear scr)
+               (format scr "   i | key-name                | keyname        | unctrl       | definition    | code~&")
+               (loop for i from n to (+ n (- (height scr) 2)) do
+                 (format scr "~4@A | " i)
+                 (format scr "~23A | " (key-code-to-name i))
+                 (format scr "~14A | " (key-to-string i))
+                 (format scr "~12A | " (char-to-string i))
+                 (let ((str (function-key-definition i)))
+                   (if str
+                       (format scr "~12A | ~A~&" str (function-key-code str))
+                       (format scr "~13A | ~A~&" "--" (function-key-code str)))))
+               (refresh scr)))
+        (update)
+        (bind scr :up
+              (lambda ()
+                (when (plusp (- n (height scr)))
+                  (setq n (- n (height scr))))
+                (update)))
+        (bind scr :down
+              (lambda ()
+                (setq n (+ n (height scr)))
+                (update)))))
     (run-event-loop scr)))
 
 ;; https://www.invisible-island.net/xterm/xterm-function-keys.html

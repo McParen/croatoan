@@ -273,8 +273,6 @@
 
    ;; define_key / define a keycode
    define-function-key
-   function-key-code
-   function-key-definition
 
    ;; delch / delete character under the cursor in a curses window
    delete-char
@@ -347,8 +345,13 @@
    ;; kernel / low-level curses routines
 
    ;; keybound / return definition of keycode
+   function-key-definition
 
    ;; key_defined / check if a keycode is defined
+   function-key-code
+
+   ;; keyok / enable or disable a keycode
+   enable-function-key
 
    ;; legacy / get curses cursor and window coordinates, attributes
 

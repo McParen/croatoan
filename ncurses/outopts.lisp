@@ -16,9 +16,6 @@
 ;; int setscrreg(int top, int bot);
 ;; int wsetscrreg(WINDOW *win, int top, int bot);
 
-;; int nl(void);
-;; int nonl(void);
-
 ;;; Low-level CFFI wrappers
 
 (cffi:defcfun ("clearok"    clearok)    :int  (win window) (bf :boolean))
@@ -30,6 +27,3 @@
 
 (cffi:defcfun ("setscrreg"  setscrreg)  :int               (top :int) (bot :int))
 (cffi:defcfun ("wsetscrreg" wsetscrreg) :int  (win window) (top :int) (bot :int))
-
-(cffi:defcfun ("nl"         nl)         :void)
-(cffi:defcfun ("nonl"       nonl)       :void)
