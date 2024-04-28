@@ -1,13 +1,20 @@
 * ChangeLog
 
-** Notable changes since v0.2
+** v0.3 (240428)
+
+This version provides the third tagged development release.
 
 Notable changes since v0.2 (231014), which corresponds to Quicklisp release 231021:
+
+*** Increment version to v0.3, add missing xterm F-key sequences (240428)
+
+- Add sequences for xterm F-keys that are not covered by terminfo caps.
+- Increment version to v0.3.
 
 *** Add escape sequences for function keys with all three modifiers (240423)
 
 - Since xterm and xterm-based terminals do not include terminfo
-  capabilities for function keys with all three modifiers active 
+  capabilities for function keys with all three modifiers active
   (like kRIT8), add them with add-extended-function-keys during
   initialization of a screen.
 

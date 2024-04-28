@@ -2,7 +2,7 @@
   :description "Low-level Lisp CFFI bindings for the ncurses terminal library."
   :author "Anton Vidovic <anton.vidovic@gmx.de>"
   :licence "MIT"
-  :version "0.2"
+  :version "0.3"
   :depends-on (:cffi)
   :pathname "ncurses/"
   :components

@@ -366,9 +366,9 @@ f12     kf12    kf24    kf60            kf36    kf48
     ("kNXT7" . #s(key :name :page-down          :alt t :ctrl t))
     ("kNXT8" . #s(key :name :page-down :shift t :alt t :ctrl t))))
 
-;; Function keys with all three active modifiers (C,M,S) that for some
-;; reason are missing in the xterm terminfo.
-(defparameter *extended-key-xterm-sequences*
+;; Function keys with all three active modifiers (C,M,S) are missing
+;; in the xterm terminfo because of a size limit in the texinfo format.
+(defparameter *missing-xterm-cap-sequences*
   (list
    (cons "kUP8"  (list #\esc #\[ #\1 #\; #\8 #\A))
    (cons "kDN8"  (list #\esc #\[ #\1 #\; #\8 #\B))
@@ -380,6 +380,47 @@ f12     kf12    kf24    kf60            kf36    kf48
    (cons "kDC8"  (list #\esc #\[ #\3 #\; #\8 #\~))
    (cons "kPRV8" (list #\esc #\[ #\5 #\; #\8 #\~))
    (cons "kNXT8" (list #\esc #\[ #\6 #\; #\8 #\~))))
+
+;; xterm terminfo only pre-defines 63 f-key capabilities (kf1-kf63).
+;; add the missing f-keys (with SA,AC,SAC modifiers) manually.
+(defparameter *missing-xterm-fkey-sequences*
+  (list
+   ;; SA (after kf63)
+   (cons #s(key :name :f4  :shift t :alt t) (list #\esc #\[ #\1 #\; #\4 #\S))
+   (cons #s(key :name :f5  :shift t :alt t) (list #\esc #\[ #\1 #\5 #\; #\4 #\~))
+   (cons #s(key :name :f6  :shift t :alt t) (list #\esc #\[ #\1 #\7 #\; #\4 #\~))
+   (cons #s(key :name :f7  :shift t :alt t) (list #\esc #\[ #\1 #\8 #\; #\4 #\~))
+   (cons #s(key :name :f8  :shift t :alt t) (list #\esc #\[ #\1 #\9 #\; #\4 #\~))
+   (cons #s(key :name :f9  :shift t :alt t) (list #\esc #\[ #\2 #\0 #\; #\4 #\~))
+   (cons #s(key :name :f10 :shift t :alt t) (list #\esc #\[ #\2 #\1 #\; #\4 #\~))
+   (cons #s(key :name :f11 :shift t :alt t) (list #\esc #\[ #\2 #\3 #\; #\4 #\~))
+   (cons #s(key :name :f12 :shift t :alt t) (list #\esc #\[ #\2 #\4 #\; #\4 #\~))
+   ;; AC (can not be used on Linux because linux VT bindings override them)
+   (cons #s(key :name :f1  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\; #\7 #\P))
+   (cons #s(key :name :f2  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\; #\7 #\Q))
+   (cons #s(key :name :f3  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\; #\7 #\R))
+   (cons #s(key :name :f4  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\; #\7 #\S))
+   (cons #s(key :name :f5  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\5 #\; #\7 #\~))
+   (cons #s(key :name :f6  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\7 #\; #\7 #\~))
+   (cons #s(key :name :f7  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\8 #\; #\7 #\~))
+   (cons #s(key :name :f8  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\9 #\; #\7 #\~))
+   (cons #s(key :name :f9  :shift t :alt t :ctrl t) (list #\esc #\[ #\2 #\0 #\; #\7 #\~))
+   (cons #s(key :name :f10 :shift t :alt t :ctrl t) (list #\esc #\[ #\2 #\1 #\; #\7 #\~))
+   (cons #s(key :name :f11 :shift t :alt t :ctrl t) (list #\esc #\[ #\2 #\3 #\; #\7 #\~))
+   (cons #s(key :name :f12 :shift t :alt t :ctrl t) (list #\esc #\[ #\2 #\4 #\; #\7 #\~))
+   ;; SAC (not supported on many non-xterm-compatible terminals)
+   (cons #s(key :name :f1  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\; #\8 #\P))
+   (cons #s(key :name :f2  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\; #\8 #\Q))
+   (cons #s(key :name :f3  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\; #\8 #\R))
+   (cons #s(key :name :f4  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\; #\8 #\S))
+   (cons #s(key :name :f5  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\5 #\; #\8 #\~))
+   (cons #s(key :name :f6  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\7 #\; #\8 #\~))
+   (cons #s(key :name :f7  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\8 #\; #\8 #\~))
+   (cons #s(key :name :f8  :shift t :alt t :ctrl t) (list #\esc #\[ #\1 #\9 #\; #\8 #\~))
+   (cons #s(key :name :f9  :shift t :alt t :ctrl t) (list #\esc #\[ #\2 #\0 #\; #\8 #\~))
+   (cons #s(key :name :f10 :shift t :alt t :ctrl t) (list #\esc #\[ #\2 #\1 #\; #\8 #\~))
+   (cons #s(key :name :f11 :shift t :alt t :ctrl t) (list #\esc #\[ #\2 #\3 #\; #\8 #\~))
+   (cons #s(key :name :f12 :shift t :alt t :ctrl t) (list #\esc #\[ #\2 #\4 #\; #\8 #\~))))
 
 ;; called from :around window when :enable-function-keys is t
 (defun add-extended-function-keys ()
@@ -411,7 +452,14 @@ returned as valid events."
             (unless (or (stringp (tigetstr cap))
                         (function-key-code seq))
               (define-function-key (cdr (assoc cap *extended-key-caps* :test #'equalp)) seq))))
-        *extended-key-xterm-sequences*))
+        *missing-xterm-cap-sequences*)
+  ;; add xterm sequences for missing F-keys.
+  (mapc (lambda (x)
+          (destructuring-bind (key . seq) x
+            ;; check if the sequences already exist.
+            (unless (function-key-code seq)
+              (define-function-key key seq))))
+        *missing-xterm-fkey-sequences*))
 
 (defmacro access-alist (key find-fn test-fn get-value-fn default)
   "Helper macro for 'key-name-to-code' and 'key-code-to-name'."

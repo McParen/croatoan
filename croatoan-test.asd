@@ -2,7 +2,7 @@
   :description "Tests and examples for the croatoan CLOS API and the low-level ncurses CFFI bindings."
   :author "Anton Vidovic <anton.vidovic@gmx.de>"
   :licence "MIT"
-  :version "0.2"
+  :version "0.3"
   :depends-on (:croatoan)
   :pathname "test/"
   :serial t
