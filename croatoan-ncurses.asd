@@ -57,7 +57,7 @@
    (:file "resizeterm")       ; change the curses terminal size
    (:file "scroll")           ; scroll a curses window
    (:file "slk")              ; curses soft label routines
-   (:file "termattrs")        ; environment query routines
+   (:file "termattrs")        ; get and set terminal attributes with curses
    (:file "terminfo")         ; curses interfaces to terminfo database
    (:file "touch")            ; curses refresh control routines
    (:file "util")             ; miscellaneous curses utility routines

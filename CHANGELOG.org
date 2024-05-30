@@ -1,5 +1,15 @@
 * ChangeLog
 
+** Changes since the previous release
+
+Notable changes since v0.3 (240428):
+
+*** Add support for the new ncurses 6.5 shared libraries (240530)
+
+- Add support for the new ncurses 6.5 shared libraries
+
+- Add CFFI wrappers for terminfo functions erasewchar, killwchar
+
 ** v0.3 (240428)
 
 This version provides the third tagged development release.

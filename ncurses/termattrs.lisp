@@ -1,7 +1,7 @@
 (in-package :de.anvi.ncurses)
 
 ;;; termattrs
-;;; environment query routines
+;;; get and set terminal attributes with curses
 ;;; http://invisible-island.net/ncurses/man/curs_termattrs.3x.html
 
 ;;; C prototypes
@@ -22,9 +22,11 @@
 
 (cffi:defcfun ("baudrate"   baudrate)   :int)
 (cffi:defcfun ("erasechar"  erasechar)  :char)
+(cffi:defcfun ("erasewchar" erasewchar) :int (wc (:pointer wchar_t)))
 (cffi:defcfun ("has_ic"     has-ic)     :boolean)
 (cffi:defcfun ("has_il"     has-il)     :boolean)
 (cffi:defcfun ("killchar"   killchar)   :char)
+(cffi:defcfun ("killwchar"  killwchar)  :int (wc (:pointer wchar_t)))
 (cffi:defcfun ("longname"   longname)   :string)
 (cffi:defcfun ("term_attrs" term-attrs) attr_t)
 (cffi:defcfun ("termattrs"  termattrs)  chtype)

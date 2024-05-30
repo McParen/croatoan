@@ -443,12 +443,14 @@
    slk-color
    extended-slk-color
 
-   ;; termattrs / environment query routines
+   ;; termattrs / get and set terminal attributes with curses
    baudrate
    erasechar
+   erasewchar
    has-ic
    has-il
    killchar
+   killwchar
    longname
    term-attrs
    termattrs

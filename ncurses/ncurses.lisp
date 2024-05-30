@@ -4,9 +4,11 @@
 ;;; CRT screen handling and optimization package
 ;;; http://invisible-island.net/ncurses/man/ncurses.3x.html
 
-(defparameter *library-name* nil)
+(defparameter *library-name* nil
+  "Name of the used ncurses library: either libncurses or libncursesw.")
 
-;; The wide multi-byte library is preferred and will be loaded when the underlying lisp system supports unicode.
+;; The wide multi-byte library is preferred and will be
+;; loaded when the underlying lisp system supports unicode.
 #+(or sb-unicode unicode openmcl-unicode-strings)
 (progn
   (cffi:define-foreign-library libncursesw
@@ -16,7 +18,8 @@
           "libncursesw.dylib"
           "libcurses.dylib"))
     (:unix
-     (:or "libncursesw.so.6.4"
+     (:or "libncursesw.so.6.5"
+          "libncursesw.so.6.4"
           "libncursesw.so.6.3"
           "libncursesw.so.6.2"
           "libncursesw.so.6.1"
@@ -33,7 +36,8 @@
   (cffi:use-foreign-library libncursesw)
   (setq *library-name* 'libncursesw))
 
-;; Attempt to use the legacy single-byte library only when the lisp implementation doesnt support unicode.
+;; Attempt to use the legacy single-byte library only
+;; when the lisp implementation doesnt support unicode.
 #-(or sb-unicode unicode openmcl-unicode-strings)
 (progn
   (cffi:define-foreign-library libncurses
@@ -43,7 +47,8 @@
           "libncurses.dylib"
           "libcurses.dylib"))
     (:unix
-     (:or "libncurses.so.6.4"
+     (:or "libncurses.so.6.5"
+          "libncurses.so.6.4"
           "libncurses.so.6.3"
           "libncurses.so.6.2"
           "libncurses.so.6.1"
@@ -56,7 +61,10 @@
   (cffi:use-foreign-library libncurses)
   (setq *library-name* 'libncurses))
 
-(defparameter *library-file-name* (file-namestring (cffi:foreign-library-pathname *library-name*)))
+(defparameter *library-file-name*
+  (when *library-name*
+    (file-namestring (cffi:foreign-library-pathname *library-name*)))
+  "Filename of the used ncurses library, for example libncursesw.so.6.5.")
 
 ;; TODO 200307: add open library, push :ncurses and :croatoan to *features*
 (defun close-library ()
